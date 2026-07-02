@@ -1,6 +1,7 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — post v2.1/v2.2 update (boundary fix, shared-query/projection/characterization conventions)
 
 ## TypeScript & Next.js App Router Idioms
 
@@ -83,7 +84,7 @@ return (
 2. `server/routers/` tRPC procedures
 3. `"use server"` actions co-located in the route (lazy/on-demand only)
 
-`coordinationActions.ts` is the documented exception: it imports `{ db }` from `@/server/db` inside a `"use server"` file, not inside a client component.
+(Historical note: `coordinationActions.ts` used to be a documented exception importing `{ db }` directly; v2.1 Ph10 (BND-01) moved the query behind `server/routers/acc-coordination.ts` — the action is now a thin delegate and the `direct-prisma-in-ui` ast-grep rule returns 0 matches. There are no sanctioned exceptions anymore.)
 
 **`components/` is Prisma-free.** `PremiumSurface`, `DrillSheet`, `EChart`, and all shadcn/Radix-derived primitives must import only from `react`, `@/lib/core/utils`, or other pure-UI packages.
 
@@ -213,6 +214,14 @@ await db.accProjectRole.groupBy({
   where: { projectId: { in: projectIds } },
 });
 ```
+
+**Shared query owner (v2.2 Ph15):** When two or more surfaces need the same base join, extract a single owner module in `lib/server/` (pattern: `lib/server/folderPermQuery.ts` — `loadFolderPermRows(projectId, {l2Only?})` with static, byte-identical tagged-template `$queryRaw` branches so test mocks stay stable). Do **not** add single-use queries to a shared owner, and do not duplicate its join inline in a view file.
+
+**Materialized projection pattern (v2.2 Ph18):** For analytics over very large tables (e.g., ~6M-row `AccFolderPermission`), materialize a small projection model (`AccFolderPermissionSummary`: per project×role `folderCount`/`totalBytes`/`permTypes[]`), backfill server-side with `INSERT .. SELECT .. GROUP BY` (idempotent), reconcile counts against the source, and refresh it from the ingest cron success branch. Consumers read the projection; the raw-scan path is guarded behind an explicit env flag (`ACC_ALLOW_RAW_PERMISSION_SCAN=1`).
+
+**`$transaction` timeout for long server-side writes (Ph18 deviation):** Prisma's default interactive-transaction timeout is 5s — widen it (v2.2 used 300s) when a transaction wraps a long server-side `INSERT .. SELECT` backfill.
+
+**Characterization-before-split (v2.1 Ph14 / v2.2):** Never split a large module or move a query owner without first pinning current behavior with byte-identical characterization tests (see `TESTING.md` — TEST-01/02/03). The pins stay in the suite as standing regression guards after the split ships.
 
 ## Comments
 

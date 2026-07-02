@@ -206,7 +206,11 @@ tree; resurrecting the archive dir would re-open the v1.0/v2.0 history question 
 migration task (not done unless the owner asks).
 
 **Next: `/gsd:new-milestone`** to start the next cycle (questioning → requirements → roadmap).
-Deferred candidates to consider: SVC-01 (service-override classification), the `/users/spatial-graph`
+**Lead candidate (owner direction, 2026-07-02): new graphs for `/access-analysis` and `/template-mty`** —
+grounded opportunities inventoried in ROADMAP.md "v2.3 Candidates (Seeds)" (AccIssue timeline/status,
+AccFolderPermissionSummary footprint charts, AccDcIngestRun freshness panel, lastSignIn dormancy,
+AccActivityAccds verb/object breakdowns, folder-storage treemap, tier×depth heatmap, provisioned-vs-active).
+Other deferred candidates to consider: SVC-01 (service-override classification), the `/users/spatial-graph`
 concerns milestone, DC-01/DC-02 external-data unlocks, and the per-folder terrain projection seed
 from Phase 19. All work remains on `feat/access-analysis-redesign`; deploy stays local `:3000`
 rebuild (Railway retired). The v2.2 tag was created locally — pushing it to `origin` is the owner's call.

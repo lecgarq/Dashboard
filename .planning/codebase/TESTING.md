@@ -1,6 +1,7 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — post v2.1/v2.2 update (test counts, characterization suites)
 
 ## Test Framework
 
@@ -276,6 +277,17 @@ NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but 
 - Static gate inside Playwright: runs `npx tsc --noEmit` via `execSync` as a test case.
 - Helpers in `tests/e2e/uat-helpers.ts`: `parseTrpcBatch`, `injectAxeAndRunContrast`, `toggleTheme`, `assertNoHorizontalOverflow`, `uatScreenshot`.
 
+## Characterization Test Suites (v2.1 Ph14 + v2.2)
+
+Central to the v2.2 refactor strategy: pin behavior byte-identically **before** splitting or rewiring, keep the pins green after. These suites are now standing regression guards:
+
+- **TEST-01** — `AccFolderPermissionSummary` projection / OOM-guard suite (12/12): pins the aggregate path that serves `includePermissionSummary` in `lib/server/acc-hot-cache.ts`; guards against re-introducing the raw 5M-row scan.
+- **TEST-02** — `lib/server/__tests__/folderPermissionTerrainView.test.ts`: byte-identical pin of the `/access-analysis` terrain view output across the Ph15 shared-query extraction and Ph16 terrain split.
+- **TEST-03** — `templateFolderTerrain.sharedQuery.test.ts`: byte-identical pin of the `/template-mty` terrain output over `lib/server/folderPermQuery.ts`.
+- **`HybridAnalyticsSurface.mainQuery.test.tsx`** — pins the `/users/access-analysis` surface's main query behavior across the Ph17 split.
+
+Convention: any future split of a large module (or query-owner change) must add equivalent characterization pins first — see `CONVENTIONS.md`.
+
 ## What NOT to Mock
 
 - Real Prisma schema / DB calls in `lib/server/` view functions — these are tested by injecting a fake `db` object with `vi.fn()` methods, not by importing real `@prisma/client`.
@@ -284,7 +296,7 @@ NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but 
 
 ## Coverage
 
-No enforced coverage thresholds. The access-analysis route has the densest unit coverage (~38+ test files). Run count: ~1400+ Vitest unit tests as of Phase 8.
+No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. Run count: **2,256 passed / 1 skipped across 302 test files** (v2.2 close baseline, 2026-07-02; supersedes the ~1400 Phase 8 figure).
 
 ---
 
@@ -292,5 +304,5 @@ No enforced coverage thresholds. The access-analysis route has the densest unit 
 - Context: `vitest.config.ts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright/global-setup.ts`, test files in `app/`, `lib/server/`, `server/routers/`, `tests/e2e/`, `package.json` scripts.
 - Evidence: all test files and patterns verified by direct Read and Grep.
 - Constraints: no jest-dom, no real DB in unit tests, e2e on :3100 with NEXT_DIST_DIR=.next-e2e.
-- Gates: `npx tsc --noEmit` before rebuild; `npm test` before commit; `npm run repo-map:check` for boundary changes.
-- VERIFY: total unit test count may drift as phases add tests — count cited (~1400+) reflects Phase 8 state.
+- Gates: `npx tsc --noEmit` before rebuild; `npm test` before commit; `npm run repo-map:check` for boundary changes; `node scripts/gsd-self-gate.cjs --rebuild` for end-of-phase/deploy gates.
+- VERIFY: total unit test count drifts as phases add tests — count cited (2,256 / 302 files) reflects the v2.2 close baseline (2026-07-02).

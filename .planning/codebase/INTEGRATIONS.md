@@ -1,6 +1,7 @@
 # External Integrations
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — stamp corrected (the `AccFolderPermissionSummary` projection section was appended in v2.2 Ph19); DC coverage framing and resolved warnings updated
 
 ---
 
@@ -46,7 +47,7 @@
 
 **Authorization:**
 - Requires 3-leg user-context token (2-leg permanently blocked for DC)
-- Access limited to projects where `luis` is project-scoped admin: 428/1,152 active projects extractable; 724 locked (403)
+- Access limited to projects where `luis` is project-scoped admin. Historical framing was "428/1,152 extractable; 724 locked (403)"; the v2.1 Ph11 data-truthfulness pass rejected that headline (coverage had grown to roughly ~550/1,153). VERIFY the current covered-project count from `AccDcBackfillProgress` before citing a figure in UI or docs.
 - Env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET` (same APS app)
 - Feature flag: `DC_PRIORITY_BACKFILL` — priority ordering mode
 - Feature flag: `DC_RESUME` — resume a failed ingest batch after 429 quota hit
@@ -133,9 +134,9 @@ note that role names reflect the live APS state, not the DC snapshot date.
   immediate rebuild outside the cron cycle.
 
 **ACC Activity (DC-extracted):**
-- Prisma model: `AccActivity` — 4.55M rows as of phase 8 completion; 623K rows in AccActivity grouped query
+- Prisma model: `AccActivity` — 4.55M rows per the 2026-06-23 data census in `STATE.md` (still cited as current at v2.2 close); 623K rows in AccActivity grouped query
 - Taxonomy classifier: `app/(dashboard)/users/access-analysis/accTaxonomy.ts` + `accTaxonomyActions.generated.ts`
-- Module overrides: `app/(dashboard)/access-analysis/moduleOverrides.ts` — shared with diagnostic scripts (dependency-cruiser warns: move to `lib/`)
+- Module overrides: `app/(dashboard)/access-analysis/moduleOverrides.ts` — UI re-export shell; the pure classification logic moved to `lib/acc/activityClassification.ts` in v2.1 Ph10 (BND-02), so diagnostic scripts now import from `lib/` (dependency-cruiser warning resolved)
 - Activity attribution: `lib/acc/activityAttribution.ts`
 - Role name fix: `lib/acc/activityActorClassification.ts`
 
@@ -432,4 +433,4 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 ---
 
-*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`*
+*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted.*

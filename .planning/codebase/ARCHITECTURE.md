@@ -1,7 +1,8 @@
-<!-- refreshed: 2026-06-23 -->
+<!-- refreshed: 2026-07-02 -->
 # Architecture
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 update (repo-map basis unchanged, 2026-06-19)
 
 ## System Overview
 
@@ -75,7 +76,7 @@
 - Pages are async RSC. They call `lib/server/*View` helpers directly (no tRPC), then pass data as props into client components. For ACC graph pages they call `lib/server/acc-route-hydration.ts` to prefetch tRPC, then hydrate via `<HydrationBoundary>`.
 - tRPC routers (`server/routers/`) are the request boundary for all client-side data. Client components call `trpc.<router>.<procedure>` via React Query.
 - The dashboard layout owns `overflow-hidden` on `<main>`; individual pages own `h-full overflow-y-auto` (or `h-screen`) for their own scroll context.
-- No direct Prisma imports in `components/`. One legacy exception is tracked by the ast-grep rule `direct-prisma-in-ui` (1 match as of 2026-06-19 repo-map).
+- No direct Prisma imports in `components/`. The last legacy exception (`coordinationActions.ts`) was removed in v2.1 Ph10 (BND-01); the ast-grep rule `direct-prisma-in-ui` now returns **0 matches**.
 
 ## Layers
 
@@ -118,7 +119,7 @@
 ### Primary RSC Page Path (e.g., `/access-analysis`)
 
 1. `app/(dashboard)/access-analysis/page.tsx` renders `<Suspense><MainCharts /></Suspense>`
-2. `MainCharts` (RSC) calls seven `lib/server/*View` helpers in `Promise.all` — each queries Prisma directly
+2. `MainCharts` (RSC) calls eight `lib/server/*View` helpers in `Promise.all` — each queries Prisma directly
 3. Props passed as-is into `<AccessAnalysisCharts>` (client boundary)
 4. `AccessAnalysisCharts` owns cross-filter Zustand/useState, renders ECharts donuts + timeline + terrain
 5. Drill interactions open `<DrillSheet>` with `<PeopleDrillList>` or `<FolderPermissionTerrain>`
@@ -194,6 +195,17 @@
 - Purpose: In-process cache of assembled DC snapshot users, keyed by input flags (leanProjects, includePermissionSummary, includeActivityMix). Avoids repeated multi-table Prisma joins on tRPC procedure calls.
 - Location: `lib/server/acc-hot-cache.ts`
 - Source: `accDcGraph.bulkUsers` tRPC procedure → `getCachedAccDcBulkUsers(db, input)`
+- **v2.2 update (Ph18/Ph19):** `includePermissionSummary` now reads the materialized `AccFolderPermissionSummary` projection (per project×role: `folderCount`, `totalBytes`, `permTypes[]`) instead of aggregating the ~6M-row `AccFolderPermission` table. The raw `includePermissionContexts` path **throws** unless `ACC_ALLOW_RAW_PERMISSION_SCAN=1`. The projection refreshes in the dc-daily-ingest cron success branch (Ph19 PROJ-03).
+
+**folderPermQuery (shared join owner, v2.2 Ph15):**
+- Purpose: Single owner of the base `AccFolderPermission ⋈ AccRole ⋈ AccFolder` join for terrain/role analytics. `loadFolderPermRows(projectId, {l2Only?})` with two byte-identical tagged-template branches: all-folders (template-mty consumers) and `l2Only` (access-analysis terrain). Single-use queries must not be added here.
+- Location: `lib/server/folderPermQuery.ts`
+- Used by: `lib/server/folderPermissionTerrainView.ts`, `templateFolderTerrain.ts`, `templateRoleTree.ts`, `templateRoleSimilarity.ts`, `templateView.ts`
+
+**Post-split module families (v2.2 Ph16–17):**
+- `/access-analysis` 3D terrain: `FolderPermissionTerrain.tsx` (thin, 212 lines) + `TerrainStage.tsx`, `TerrainControls.tsx`, `TerrainReveal.tsx`, `terrainViewModel.ts`, `useFolderPermissionTerrainCamera.ts`; terrain math split into `folderTerrainCamera.ts` / `folderTerrainLayout.ts` / `folderTerrainModel.ts` / `folderTerrainScene.ts` (all ≤400 lines).
+- `/users/access-analysis`: `HybridAnalyticsSurface.tsx` reduced to a thin shell over `useHybridAnalytics.ts` (data/queries) + `hybridAnalyticsTransforms.ts` (pure transforms) + view/panel/drilldown modules.
+- All splits are pinned by byte-identical characterization tests (v2.1 Ph14 + TEST-02/03).
 
 **DuckDB-Wasm client (`duckdbClient.ts`):**
 - Purpose: Browser-side DuckDB singleton for Arrow table queries (featureSnapshot, graphSql). Self-hosted WASM bundles under `/public/duckdb-wasm/`.
@@ -234,15 +246,11 @@
 
 ## Anti-Patterns
 
-### Route-owned shared logic
-**What happens:** `moduleOverrides.ts` and `graphNodesFromUsers.ts` / `instanceFeatureTokens.ts` live under `app/(dashboard)/` route directories but are imported by `scripts/`.
-**Why it's wrong:** Creates `no-scripts-to-app` dependency-cruiser warnings; shared logic should be in `lib/`.
-**Do this instead:** Move to `lib/acc/` or `lib/server/` and update all importers. (`scripts/build-instance-features.ts`, `scripts/diag-activity-*.cjs` are the violators.)
+### Route-owned shared logic — ✅ resolved (v2.1 Ph10 BND-02)
+**What happened:** `moduleOverrides.ts` was imported by diagnostic `scripts/`. The pure classification logic now lives in `lib/acc/activityClassification.ts` and scripts import from `lib/`. Keep new shared logic in `lib/` from the start; a subset of lib→app edges remains documented-deferred in `CONCERNS.md` (BND-03 groups 2–3).
 
-### Direct Prisma in UI
-**What happens:** 1 match (`direct-prisma-in-ui` ast-grep rule, exact file VERIFY) reaches into Prisma from a UI-adjacent module.
-**Why it's wrong:** Breaks the server/client boundary; risks bundling Prisma into the client chunk.
-**Do this instead:** Move data access to a tRPC procedure or `lib/server/` helper.
+### Direct Prisma in UI — ✅ resolved (v2.1 Ph10 BND-01)
+**What happened:** The single `direct-prisma-in-ui` match (`app/(dashboard)/access-analysis/coordinationActions.ts`) was moved behind `server/routers/acc-coordination.ts`. The rule now returns 0 matches — keep it that way.
 
 ### Expanding lean payload
 **What happens:** `accDcGraph.bulkUsers` with `leanProjects:true` empties per-project `roles[]` and `modules[]`; new consumers that need those fields unknowingly get empty arrays.
@@ -260,7 +268,7 @@
 
 ## Cross-Cutting Concerns
 
-**Logging:** `lib/server/logger.ts` (server-only). Client uses `console.*` (123 no-console-log ast-grep matches — review queue, not auto-delete).
+**Logging:** `lib/server/logger.ts` (server-only). Client uses `console.*` (no-console-log ast-grep matches are a review queue, not auto-delete; 123 was the 2026-06-19 point-in-time count — v2.1 Ph12 observability work removed the stale `TODO[02.5]` guards).
 **Validation:** Zod schemas on tRPC procedure inputs (`z.object(...)` in each router).
 **Authentication:** NextAuth.js (`server/auth.ts`). Dashboard layout redirects unauthenticated requests. `DualAuthGuard` provides in-tree session guard. APS OAuth is separate (`lib/server/aps-oauth.ts`, `lib/server/aps-user-token.ts`).
 **Theme:** `next-themes` `ThemeProvider` in root layout. CSS variables (`--foreground`, `--background`, `--primary`, etc.) on `:root` / `.dark`. Background anchor is `#09090B` in dark mode (zinc-950). Components must use semantic vars, not hardcoded zinc values.
@@ -269,10 +277,10 @@
 
 ## Dashboard Self-Check
 
-- **Context:** architecture-summary.md (2026-06-19), root.ts, page.tsx for all 4 routes, key component files read directly from source.
-- **Evidence:** All paths, routers, components, and patterns verified from source files. Prisma models verified from `prisma/schema.prisma`. tRPC procedures verified from `server/routers/root.ts`.
+- **Context:** architecture-summary.md (2026-06-19), root.ts, page.tsx for all 4 routes, key component files read directly from source; 2026-07-02 refresh grounded in v2.1/v2.2 phase artifacts (STATE.md, ROADMAP.md) and post-split source reads.
+- **Evidence:** All paths, routers, components, and patterns verified from source files. Prisma models verified from `prisma/schema.prisma` (incl. `AccFolderPermissionSummary`, Ph18). tRPC procedures verified from `server/routers/root.ts`.
 - **Constraints:** zinc theme, MASK bus invariant, no-Prisma-in-UI, page scroll ownership documented explicitly.
 - **Gates:** No compilation run (map-only artifact). `npx tsc --noEmit` required before any edits.
-- **VERIFY:** Exact file containing the 1 `direct-prisma-in-ui` ast-grep match (name not surfaced in summary). VERIFY: Whether `dimensionRegistry.ts` / `dimensionGroups.ts` are fully unwired or still active consumers remain (SliderContext still imports both as of the source read).
+- **VERIFY:** Whether `dimensionRegistry.ts` / `dimensionGroups.ts` are fully unwired or still active consumers remain (SliderContext still imported both as of the 2026-06-23 source read).
 
-*Architecture analysis: 2026-06-23*
+*Architecture analysis: 2026-06-23; targeted refresh 2026-07-02 (post v2.1 Concerns Hardening + v2.2 Structural Refactors)*

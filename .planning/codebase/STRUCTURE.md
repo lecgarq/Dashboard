@@ -1,7 +1,8 @@
-<!-- refreshed: 2026-06-23 -->
+<!-- refreshed: 2026-07-02 -->
 # Codebase Structure
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 update (monolith splits, shared query owner, projection model)
 
 ## Directory Layout
 
@@ -143,24 +144,26 @@ C:/LECG/Dashboard/
 
 **Purpose:** Account-wide ACC access & activity dashboard. Pure RSC page with server-aggregated data.
 
-**Key files:**
-- `page.tsx` — RSC shell; `<Suspense><MainCharts /></Suspense>`; owns `h-full overflow-y-auto`
-- `mainCharts.tsx` — async RSC; `Promise.all` of 7 `lib/server/*View` calls; passes props to `AccessAnalysisCharts`
+**Key files (post v2.2 Ph16 split — no file exceeds ~640 lines):**
+- `page.tsx` (58 lines) — RSC shell; `<Suspense><MainCharts /></Suspense>`; owns `h-full overflow-y-auto`
+- `mainCharts.tsx` (80) — async RSC; `Promise.all` of 8 `lib/server/*View` calls; passes props to `AccessAnalysisCharts`
 - `loading.tsx` — route-level Suspense fallback skeleton
-- `components/AccessAnalysisCharts.tsx` — client hub; owns `sliceFilters`, `selected` project set, drill state; renders all chart sub-components; cross-filter drives every donut + timeline
-- `components/EChart.tsx` — local legacy EChart wrapper (canonical is `components/ui/EChart.tsx`)
-- `components/FolderPermissionTerrain.tsx` (50 KB) — terrain grid rendered on expand (lazy `TerrainReveal`)
-- `folderTerrain.ts` (49 KB) — terrain data model + cell builder
+- `components/AccessAnalysisCharts.tsx` (640) — client hub; owns `sliceFilters`, `selected` project set, drill state; renders all chart sub-components; cross-filter drives every donut + timeline
+- `components/EChart.tsx` — local legacy EChart wrapper, test-only (canonical is `components/ui/EChart.tsx`)
+- Chart panels (`components/`): `RolesPieChart.tsx` (341), `CompaniesPieChart.tsx` (335), `ActivityByRolePieChart.tsx` (343), `CompaniesActivityPieChart.tsx` (340), `ModulesPieChart.tsx` (311), `ActivityTimelineChart.tsx` (178), `CoordinationByProject.tsx` (322), `FolderActivityReveal.tsx` (177) + `FolderActivityByRole.tsx` (163), `ProjectPicker.tsx` (359), `FilterBanner.tsx` (91)
+- 3D terrain (split in Ph16 from the former 50 KB monolith): `components/FolderPermissionTerrain.tsx` (212) + `TerrainStage.tsx` (392), `TerrainControls.tsx` (252), `TerrainReveal.tsx` (68), `terrainViewModel.ts` (121), `useFolderPermissionTerrainCamera.ts` (154)
+- Terrain math (split in Ph16 from the former 49 KB `folderTerrain.ts`): `folderTerrainCamera.ts` (387), `folderTerrainLayout.ts` (279), `folderTerrainModel.ts` (270), `folderTerrainScene.ts` (260)
 
 **Pure transform modules (co-located, route-owned):**
-- `roleCounts.ts`, `moduleCounts.ts`, `companyActivityCounts.ts`, `roleActivityCounts.ts`, `companyCounts.ts`, `timelineCounts.ts`, `coordinationCounts.ts`, `coverageCounts.ts`, `dormantActivity.ts`, `projectFilter.ts`, `projectGroups.ts`
+- `roleCounts.ts`, `moduleCounts.ts`, `companyActivityCounts.ts`, `roleActivityCounts.ts`, `companyCounts.ts`, `timelineCounts.ts`, `coordinationCounts.ts`, `coverageCounts.ts`, `dormantActivity.ts`, `folderActivityCounts.ts`, `projectFilter.ts`, `projectGroups.ts`
+- Note: `timelineCounts.ts` / `coordinationCounts.ts` are 1-line re-export barrels — the pure logic moved to `lib/acc/` in v2.1 Ph10 (BND-03)
 
 **Server actions (RSC-safe, used by MainCharts):**
-- `coordinationActions.ts`, `folderTerrainActions.ts`, `folderActivityActions.ts`
+- `coordinationActions.ts` (thin delegate to `server/routers/acc-coordination.ts` since Ph10 BND-01), `folderTerrainActions.ts`, `folderActivityActions.ts`
 
-**WARN:** `moduleOverrides.ts` is imported by 4 diagnostic scripts (`scripts/diag-activity-*.cjs`) — `no-scripts-to-app` dependency-cruiser violation. Candidate for move to `lib/acc/`.
+**Resolved (was WARN):** the `moduleOverrides.ts` scripts→app violation was fixed in v2.1 Ph10 (BND-02) — pure classification logic now lives in `lib/acc/activityClassification.ts`.
 
-**Tests:** `__tests__/` — 38+ Vitest unit tests for every pure transform module. `page.test.tsx` tests the RSC render.
+**Tests:** `__tests__/` — Vitest unit tests for every pure transform module plus characterization pins for the terrain/query splits (TEST-02/03). `page.test.tsx` tests the RSC render.
 
 ## Focus Area: `/users` (`app/(dashboard)/users/`)
 
@@ -181,7 +184,7 @@ C:/LECG/Dashboard/
 
 **`app/(dashboard)/users/access-analysis/` — Physics Graph Module (explicit in-scope):**
 
-This subdirectory (~180 files, 59+ KB largest) hosts the full 3D physics graph and ALL graph infrastructure. It is currently served at `/users/spatial-graph` via `AccessAnalysisShellClient`.
+This subdirectory (~180 files) hosts the full 3D physics graph and ALL graph infrastructure. It is currently served at `/users/spatial-graph` via `AccessAnalysisShellClient`. The former 59 KB `HybridAnalyticsSurface.tsx` monolith was split in v2.2 Ph17 (SPLIT-03/04) into a thin shell + `useHybridAnalytics.ts` (data/queries) + `hybridAnalyticsTransforms.ts` (pure transforms) + view/panel/drilldown modules, all ≤400 lines.
 
 Key structural groups:
 
@@ -260,6 +263,7 @@ Key structural groups:
 - `/forma-proposal`: `AccFolder`, `AccProject`
 - `/users` directory: `AccDcUser`, `AccDcProjectUser`, `AccDcProjectUserRole`, `AccDcProjectUserProduct`, `AccProjectMember`, `AccRole` (via `accDcGraph.bulkUsers` → `lib/server/acc-hot-cache`)
 - `/users/spatial-graph`: same as /users directory + `AccInstanceEmbedding`, `AccGraphLayoutCache`, `AccPersonGraphSnapshot`, `AccFolderPermission` (for folder-reach dims)
+- **`AccFolderPermissionSummary`** (new in v2.2 Ph18): materialized per-(projectId, roleId) projection — `folderCount`, `totalBytes` (BigInt), `permTypes[]`. Serves `includePermissionSummary` in `lib/server/acc-hot-cache.ts`; refreshed by the dc-daily-ingest cron. Not yet charted on any surface (v2.3 graph candidate).
 
 **UI primitives (always use these):**
 - `components/ui/EChart.tsx` — canonical EChart wrapper
@@ -353,6 +357,6 @@ Key structural groups:
 - **Evidence:** All paths verified from `find` output and file reads. No invented paths.
 - **Constraints:** No `src/` root. No Prisma in `components/`. Page scroll ownership noted.
 - **Gates:** Map artifact only — no compilation.
-- **VERIFY:** Whether `dimensionRegistry.ts` / `dimensionGroups.ts` are removed or still active (SliderContext still imports SLIDER_DIMENSION_IDS from dimensionGroups at time of read).
+- **VERIFY:** Whether `dimensionRegistry.ts` / `dimensionGroups.ts` are removed or still active (SliderContext still imported SLIDER_DIMENSION_IDS from dimensionGroups at time of the 2026-06-23 read).
 
-*Structure analysis: 2026-06-23*
+*Structure analysis: 2026-06-23; targeted refresh 2026-07-02 (post v2.2 splits — line counts read from disk)*

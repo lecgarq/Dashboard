@@ -144,7 +144,7 @@ Plans:
 
 ---
 
-## 🚧 v2.2 Structural Refactors (In Progress)
+## ✅ v2.2 Structural Refactors (Complete — 2026-07-02)
 
 **Milestone goal:** Execute the deferred structural refactors now safe behind v2.1's golden-master tests — extract the shared `AccFolderPermission` join to `lib/server/folderPermQuery.ts`, split the three access-analysis monoliths (`folderTerrain.ts`, `FolderPermissionTerrain.tsx`, `HybridAnalyticsSurface.tsx`) into data-hook / pure transform / thin-view modules, and materialise an `AccFolderPermissionSummary` projection to retire the raw ~5M-row scan path — with zero change to what the workshop pages show.
 
@@ -281,3 +281,44 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
+
+---
+
+## 🌱 v2.3 Candidates (Seeds — input for `/gsd:new-milestone`, 2026-07-02)
+
+Not a milestone yet: no phases, no requirements. These seeds inform the next
+`/gsd:new-milestone` questioning round. **Lead candidate (owner direction): new
+graphs for `/access-analysis` and `/template-mty`** — every opportunity below is
+derivable from the existing Prisma DB (per PROJECT.md constraints) and names its
+data authority.
+
+### New-graph opportunities (grounded in existing models)
+
+| Graph idea | Data authority | Why it's untapped |
+|---|---|---|
+| Issues over time / by status / by type | `AccIssue.createdAt` / `status` / `issueTypeId` / `issueSubtypeId` | Only the coordination-classified subset is charted today (`CoordinationByProject`); the full issue funnel/timeline is unvisualized. Loader precedent: `lib/server/coordinationByProjectView.ts` already does `db.accIssue.groupBy`. |
+| Permission footprint by role (folder count + bytes) | `AccFolderPermissionSummary` (Ph18: `folderCount`, `totalBytes`, `permTypes[]` per project×role) | Materialized and read by acc-hot-cache but **never charted** — a "reach by role" bar or bytes treemap with zero touch of the ~6M-row raw table. |
+| Ingest freshness / throughput panel | `AccDcIngestRun` (`startedAt/endedAt`, `status`, `rowsByModule`, `quotaUsed`, `projectsProcessed`) | **Zero current consumers** in `lib/server` or `app`. Caveat: `rowsByModule` is always 0 (known telemetry gap) — measure rows from `AccActivity` directly. |
+| Issue-fetch coverage donut | `AccIssueFetchRun` / `AccIssueProjectFetchResult` (`status ok\|zero_issues\|forbidden\|error`) | Shows which projects issues can even be read from — honest-coverage labeling in chart form. |
+| Dormant users by sign-in recency | `AccProjectMember.lastSignIn` / `addedOn` | Distinct from the existing dormant-*role/company* tails; `lastSignIn` is currently unused by any chart. |
+| Activity verb / object-type breakdown | `AccActivityAccds.activityVerb` / `objectType` / `serviceGroup` | Richer than the coarse module donut; fields unvisualized. Respect the ~12-mo ACCDS floor label. |
+| Folder storage treemap | `AccFolder.fileCount` / `totalSizeBytes` / `lastModifiedTime` rollups | Crawl-populated rollups exist but are unvisualized. |
+| Permission tier × folder-depth heatmap | `loadFolderPermRows` (`lib/server/folderPermQuery.ts`) + `AccFolder.parentId`/`fullPath` | The terrain shows this in 3D only; a 2D heatmap is a data-surface-safe (no new WebGL) alternative view. |
+| Provisioned-vs-active module coverage | `AccProjectMember.products` (Json tier map) / `AccDcProjectUserProduct.accessLevel` | Provisioning exists in data but only activity is charted; the provisioned-vs-used gap is the story. |
+
+**Registration pattern for new `/access-analysis` panels** (established, follow it):
+`lib/server/<name>View.ts` loader (`"server-only"`, raw SQL/groupBy over the model) →
+add to the `Promise.all` in `app/(dashboard)/access-analysis/mainCharts.tsx` →
+pure `*Counts.ts` transform at the page root (co-located `__tests__/`) →
+`components/<Name>Chart.tsx` (`"use client"`, `@/components/ui/EChart`, palette via
+`roleColors.ts`/theme) → render inside `AccessAnalysisCharts.tsx` as
+`<Reveal><PremiumSurface>` + `SectionHeader`; wire `onSliceClick`/`activeSlice` for
+cross-filter participation; add a KPI to the `kpis` array if relevant.
+`/template-mty` panels follow the analogous `lib/server/template*.ts` → `TemplateAnalysisCharts.tsx` path.
+
+### Carried-forward deferred candidates (from v2.2 close)
+
+- **SVC-01** — `service`-override classification refinement (~966 clash-issue rows).
+- **Spatial-graph milestone** — CONCERNS.md §3 + §8.2/8.3 items.
+- **DC-01 / DC-02** — Account Admin provisioning unlock + DC CSV `activity_in_module` join.
+- **Per-folder terrain projection** — only if terrain read cost becomes a concern (Ph19 boundary note).

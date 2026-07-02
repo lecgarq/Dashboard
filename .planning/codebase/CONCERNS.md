@@ -1,8 +1,17 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 status update (repo-map basis unchanged, 2026-06-19)
 **Repo-map date:** 2026-06-19 (architecture-summary.md)
 **Branch:** feat/access-analysis-redesign
+
+> **Reading note (2026-07-02):** v2.1 Concerns Hardening (Phases 09–14) and
+> v2.2 Structural Refactors (Phases 15–19) were built directly against this
+> document and closed most of §1, §2, §6, §7, and §8.1. Each resolved item
+> keeps its original text with a dated **Status** line. Still-open concerns
+> (§3 spatial-graph, §4, §5, §8.2–8.3) are seeds for future milestones. See
+> the "v2.1/v2.2 Resolution Summary" section at the end for the roll-up and
+> the new current concerns.
 
 ---
 
@@ -14,6 +23,7 @@
 - **What it is:** `AccFolderPermission` holds ~5M rows. The OOM/77s-load bug was fixed for the `getKpiSummary` / `bulkUsers` path by switching the `includePermissionSummary` branch to a SQL `GROUP BY` aggregate (→ ~13k rows). However, the `includePermissionContexts: true` path still issues a raw `db.accFolderPermission.findMany` that materialises all matching rows into Node heap. Any caller that sets `includePermissionContexts: true` re-opens the OOM window.
 - **Impact:** Heap exhaustion and 60-90s load on any request that exercises the contexts path. Currently no production caller is confirmed to use `includePermissionContexts: true`; but the path is structurally live and undocumented for new contributors.
 - **Guardrail:** Add a comment block to the `includePermissionContexts` branch warning of the row-count risk. Add a `VERIFY:` note that the contexts path has no active callers before enabling any feature that needs per-folder grant details. Long-term: materialise a `AccFolderPermissionSummary` view or indexed projection table.
+- **Status (2026-07-02): ✅ RESOLVED (v2.2 Ph18 PROJ-01/REF-03 + Ph19 PROJ-02).** The long-term guardrail shipped: `AccFolderPermissionSummary` projection materialized (22,082 rows, reconciliation PASS), `includePermissionSummary` now reads the projection via `lib/server/acc-hot-cache.ts`, and `includePermissionContexts` **throws** unless `ACC_ALLOW_RAW_PERMISSION_SCAN=1`. Raw-scan path is hard-guarded, refreshed daily by the dc-daily-ingest cron success branch (Ph19 PROJ-03).
 
 ### 1.2 AccFolderPermission missing index on `roleId`
 
@@ -21,6 +31,7 @@
 - **What it is:** `AccFolderPermission` has `@@index([folderId])` and `@@unique([folderId, roleId])`, but no standalone `@@index([roleId])`. Queries that filter or join by `roleId` alone (e.g., permission-terrain views, template-role-tree) require a full index scan on `folderId` first.
 - **Impact:** Template and terrain queries joining `AccFolderPermission` by `roleId` are slower than necessary at 5M rows.
 - **Guardrail:** Add `@@index([roleId])` to `AccFolderPermission` and run `prisma migrate dev` after validating with `EXPLAIN ANALYZE` on the terrain query.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph09 DB-01).** `@@index([roleId])` added to `AccFolderPermission`.
 
 ### 1.3 `scripts/count-acc-data.cjs` — `ssl:{rejectUnauthorized:false}` fossil
 
@@ -28,6 +39,7 @@
 - **What it is:** This diagnostic script creates a raw `pg.Client` with `ssl: { rejectUnauthorized: false }`, a Supabase-era workaround. The dashboard migrated to local trust-auth Postgres (2026-05-18); local connections do not use SSL at all. This flag silently succeeds on local Postgres but would accept a spoofed certificate on any TLS-enabled server.
 - **Impact:** Low operational risk (diagnostic-only script, local machine), but the pattern is a fossil that could be copy-pasted into a production script. The Prisma adapter path (`server/db.ts`) is unaffected and correct.
 - **Guardrail:** Remove the `ssl` option from `scripts/count-acc-data.cjs` line 14 and replace the raw `pg.Client` with the project Prisma client or a pool that inherits `DATABASE_URL`.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph09 DB-02).** The `ssl:{rejectUnauthorized:false}` fossil was removed.
 
 ### 1.4 PG pool ceiling not documented as a tuning knob
 
@@ -35,6 +47,7 @@
 - **What it is:** `PG_POOL_MAX` defaults to `5` in production and `10` in development. The `.env` sets it to `32` (verified: `.env` line references in memory). There is no `.env.example` entry or in-code comment explaining why 32 was chosen or what the Postgres server's `max_connections` ceiling is.
 - **Impact:** If `.env` is not carried forward after a machine re-provision, the pool silently reverts to 5 concurrent connections — under-serving the parallel tRPC calls the access-analysis page fires at load (at least 5 concurrent queries observed in `HybridAnalyticsSurface.tsx`).
 - **Guardrail:** Add `PG_POOL_MAX=32` to `.env.example` with a comment. Document the local Postgres `max_connections` setting and the formula (pool × workers ≤ max_connections).
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph09 DB-03).** `PG_POOL_MAX` documented in `.env.example`.
 
 ### 1.5 Heap configuration via `NODE_OPTIONS` not tracked in repo
 
@@ -42,6 +55,7 @@
 - **What it is:** The `--max-old-space-size=8192` flag was added to prevent OOM during AccFolderPermission / bulkUsers loads (memory note: "8GB heap"). There is no `NODE_OPTIONS` entry in `.env.example` or in `package.json` scripts to ensure this is reproduced on rebuild.
 - **Impact:** On a fresh machine or after `.env` loss, the process starts with the default ~1.5GB heap and can OOM on large access-analysis or bulkUsers requests.
 - **Guardrail:** Add `NODE_OPTIONS=--max-old-space-size=8192` to `.env.example` with a `# required for access-analysis at scale` comment.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph09 DB-03).** `NODE_OPTIONS` heap flag documented in `.env.example`.
 
 ---
 
@@ -53,6 +67,7 @@
 - **What it is:** This Server Action imports `db` from `@/server/db` directly, bypassing the tRPC router layer. Confirmed by `ast-grep` rule `direct-prisma-in-ui` (1 match, baseline 1). The action itself is a well-scoped `accIssue.findMany` gated by `auth()`, so there is no immediate security hole, but the pattern breaks the boundary rule that Prisma access belongs in `server/routers/` or `lib/server/`.
 - **Impact:** Cross-layer coupling. If auth logic evolves or Prisma logging/middleware is added at the router layer, this action is bypassed.
 - **Guardrail:** Move the query into `server/routers/acc-members.ts` or a new `server/routers/acc-coordination.ts` procedure, and call it via `trpc.accMembers.getProjectClashes.query()` from the Server Action or a client hook.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph10 BND-01).** Query moved behind `server/routers/acc-coordination.ts` (`getProjectClashes`); `coordinationActions.ts` is now a thin delegate (19 lines). The `direct-prisma-in-ui` ast-grep rule returns 0 matches.
 
 ### 2.2 `moduleOverrides.ts` imported directly by four diagnostic scripts (scripts→app boundary)
 
@@ -60,6 +75,7 @@
 - **What it is:** Four `scripts/` files cross the `no-scripts-to-app` dependency boundary (all 6 dependency-cruiser warnings involve `app/` imports from `scripts/`). The other 2 warnings are from `scripts/build-instance-features.ts` importing `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts` and `instanceFeatureTokens.ts`.
 - **Impact:** `moduleOverrides.ts` cannot be safely moved or refactored without updating these scripts. Any change to its import graph (e.g., adding a Next.js-only module) breaks script execution. Currently non-blocking in CI but flagged as growth-gated warnings.
 - **Guardrail:** Extract the pure classification logic (`classifyActivity`, `donutModules`, `n()`, `CATEGORY_LABELS`) from `moduleOverrides.ts` into `lib/acc/activityClassification.ts` and re-export from `moduleOverrides.ts` for the UI. Scripts import from `lib/`. Similarly, move `graphNodesFromUsers` and `instanceFeatureTokens` to `lib/acc/` or `lib/server/`.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph10 BND-02).** Classification logic extracted to `lib/acc/activityClassification.ts`; diagnostic scripts import from `lib/`.
 
 ### 2.3 Large monolithic files in `/access-analysis`
 
@@ -70,6 +86,10 @@
 - **What it is:** These files combine data fetching, pure transforms, GPU/canvas interaction, and UI rendering in single modules. `HybridAnalyticsSurface.tsx` alone fires at least 6 tRPC queries, manages DuckDB-Wasm state, and owns filter/selection state (confirmed from import + hook scan).
 - **Impact:** Changes to data shape, rendering, or filter logic all land in the same file, creating high merge-conflict risk. Test isolation is poor — unit tests must mock many layers at once.
 - **Guardrail:** Before any refactor, add characterization tests at the tRPC boundary (`server/routers/acc-members.ts` procedure outputs) and for pure transform functions. Split data-fetch hooks into `useAccessAnalysisData.ts`, transforms into `lib/acc/accessAnalytics.ts`, and keep `HybridAnalyticsSurface.tsx` as a thin composition shell.
+- **Status (2026-07-02): ✅ RESOLVED (v2.2 Ph16–17 SPLIT-01–04, after v2.1 Ph14 characterization tests).** All three monoliths split with byte-identical output pins held:
+  - `FolderPermissionTerrain.tsx` 1,041 → 212 lines + `TerrainStage.tsx` (392), `TerrainControls.tsx` (252), `TerrainReveal.tsx` (68), `terrainViewModel.ts` (121), `useFolderPermissionTerrainCamera.ts` (154)
+  - `folderTerrain.ts` 1,093 → `folderTerrainCamera.ts` (387), `folderTerrainLayout.ts` (279), `folderTerrainModel.ts` (270), `folderTerrainScene.ts` (260)
+  - `HybridAnalyticsSurface.tsx` 1,326 → thin shell + `useHybridAnalytics.ts`, `hybridAnalyticsTransforms.ts`, view/panel/drilldown modules (8 files ≤400 lines)
 
 ### 2.4 `AccDcRole` permanently empty — role analytics rely on fallback join
 
@@ -77,6 +97,7 @@
 - **What it is:** Autodesk's Data Connector has never delivered `admin_roles.csv`, so `AccDcRole` has 0 rows in production. Role names are resolved via `mergeRoleNames()` which falls back to `AccRole` (live API-synced, 13,711 matches). If the DC ever starts sending role data, the merge will silently prefer DC names over live names on conflict — which may or may not be correct.
 - **Impact:** Silent data correctness risk. If `AccRole` sync breaks, role counts drop to 0 with no user-visible error. No alert or monitoring exists for `AccRole` row count.
 - **Guardrail:** Add an observable to `acc-hot-cache.ts` that logs a warning when `AccDcRole` is still empty after a cache refresh. Document the fallback in `INTEGRATIONS.md`. VERIFY: whether `AccRole` sync (APS account-roles API) runs on a reliable schedule.
+- **Status (2026-07-02): 🟡 PARTIALLY ADDRESSED (v2.1 Ph11 TRUTH-04).** The fallback is documented in `INTEGRATIONS.md`. Row-count monitoring / empty-`AccDcRole` warning remains open.
 
 ### 2.5 Activity `service` field ignored — module donut misattribution
 
@@ -84,6 +105,7 @@
 - **What it is:** `AccActivity.service` is Autodesk's own product attribution field. `classifyActivity()` derives module from `rawAction` only and ignores `service`. According to the diagnostic scripts, ~40.7% of rows have a `service` value that disagrees with the `rawAction`-derived module. The Model Coordination donut category is intentionally excluded and redirected to Data Management, but Autodesk's own Build/Model Coordination boundary is ambiguous for ~966 clash-issue rows. The `service` refinement is noted as a deferred surgical fix.
 - **Impact:** Module-activity donuts on `/access-analysis` may overcount Data Management and undercount Build for clash/issue workflows. Labeled as a data-truthfulness limitation, not a bug, but not communicated to the user in the UI.
 - **Guardrail:** Add a tooltip or footnote to the module-activity donut explaining that classification is based on `rawAction` and that Autodesk's service attribution is not yet reconciled. Track the `service`-override refinement as a deferred phase item.
+- **Status (2026-07-02): ✅ RESOLVED — UI labeling (v2.1 Ph11 TRUTH-02).** The classification caveat is labeled in the UI. The underlying `service`-override refinement itself remains deferred as **SVC-01** (next-milestone candidate).
 
 ### 2.6 ACCDS ~12-month history floor not labeled in UI
 
@@ -91,6 +113,7 @@
 - **What it is:** The unified activity source (`AccActivityAccds` + `AccActivity` DC backfill) has a practical history floor of approximately 12 months for the ACCDS-fed portion (confirmed in Phase 8 memory: "~12mo history floor"). The union correctly avoids double-counting via the `astart` CTE, but activity timeline charts do not display a data-floor caveat to the user.
 - **Impact:** A user viewing the timeline for a project fully covered by ACCDS will see activity only back to ~12 months ago, with no indication this is a source limitation rather than actual inactivity.
 - **Guardrail:** Add a `dataFloor` field to the activity timeline API response and display a "Data available from [date]" footnote on timeline charts. VERIFY: exact per-project `MIN(createdAt)` from `AccActivityAccds` to confirm the floor.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph11 TRUTH-03).** `ActivityTimelineChart.tsx` now renders `dataFloor` / `floorByProject` captions.
 
 ---
 
@@ -102,6 +125,7 @@
 - **What it is:** DuckDB-Wasm is eagerly warmed in a `useEffect` at mount time (`canInitializeDuckDbInBrowser()` + `getDuckDbClient()`). When DuckDB is not available the component falls back to server-computed distributions, but the warm-up attempt blocks the Worker thread budget and contributes to the sub-second threshold miss. The memory note records "True sub-second still needs server-precomputed snapshot (client DuckDB on critical path)."
 - **Impact:** First meaningful paint is delayed by Wasm module fetch + instantiation on cold loads. Slow machines and throttled connections will see noticeable lag before charts resolve.
 - **Guardrail:** Move DuckDB warm-up to an `idle` callback (via `requestIdleCallback`) rather than a synchronous `useEffect`. Consider pre-computing distribution data server-side and shipping it as part of the page payload, reserving DuckDB for interactive drill-downs.
+- **Note (2026-07-02):** File references changed — `HybridAnalyticsSurface.tsx` was split in v2.2 Ph17 (SPLIT-03/04); the data/warm-up logic now lives in `useHybridAnalytics.ts` + `hybridAnalyticsTransforms.ts`. The concern itself (client DuckDB on the critical path) remains **open**, deferred to a future spatial-graph milestone.
 
 ### 3.2 cosmos.gl GPU simulation reheat fight on slider change
 
@@ -166,6 +190,7 @@
 - **What it is:** The production APS `client_id` is project-scoped admin only (not Account Admin). 724 of 1,152 active projects return 403 from the Data Connector API. The bisect-on-403 helper (`lib/acc/dcProgressiveBackfill.ts`, flag `DC_403_BISECT`) salvages good projects from a forbidden batch, but the fundamental coverage gap requires Account Admin provisioning.
 - **Impact:** ~63% of projects are permanently excluded from DC activity data. Analytics for those projects default to null/zero, which is not labeled in the UI.
 - **Guardrail:** Surface the 428/1,152 covered-project count on the `/access-analysis` data freshness panel. Label any metric derived from DC data with "Based on X of Y projects with Data Connector access." VERIFY: Account Admin provisioning status.
+- **Update (2026-07-02):** Still **open** (the Account Admin provisioning blocker is unchanged — DC-01/DC-02 next-milestone candidates). Note the v2.1 Ph11 data-truthfulness work rejected the "428 of 1,152" headline figure; VERIFY the current covered-project count before surfacing it in any UI (~550/1,153 per Ph11 correction).
 
 ### 5.3 `lib/acc/acc-admin.ts` — stale field-name TODO guards from sync 02.5
 
@@ -184,6 +209,7 @@
 - **What it is:** Both `/template-mty` and `/access-analysis` derive their folder-permission terrain from `AccFolderPermission`. The server logic is split across four `lib/server/template*.ts` files and one `lib/server/folderPermissionTerrainView.ts`. The client-side terrain in `folderTerrain.ts` (1,093 lines) duplicates some aggregation logic that also exists server-side.
 - **Impact:** Schema changes to `AccFolderPermission` (e.g., adding `roleId` index, new columns) must be reconciled in at least six files. The shared SQL pattern is repeated rather than composed from a single helper.
 - **Guardrail:** Extract a shared `lib/server/folderPermQuery.ts` that owns the base `AccFolderPermission` join pattern, filtered by `folderCrawlStatus`. Both template and access-analysis server helpers import from it. This reduces the blast radius of schema changes.
+- **Status (2026-07-02): ✅ RESOLVED (v2.2 Ph15 QUERY-01/REF-02).** `lib/server/folderPermQuery.ts` now owns the shared join (`loadFolderPermRows`, two static branches: all-folders and `l2Only`); both template and access-analysis server helpers consume it. Byte-identical characterization tests (TEST-02/03, 9/9) pin the outputs. The client-side `folderTerrain.ts` monolith was separately split in Ph16 (see §2.3).
 
 ---
 
@@ -195,6 +221,7 @@
 - **What it is:** 20 edges flow from `lib/` into `app/`, the reverse of the expected direction (`app -> lib`). The exact modules were not individually enumerated in the repo-map output but the count is flagged as a boundary smell. One confirmed example: `lib/acc/dcUserAssembly.ts` imports from `app/(dashboard)/users/access-analysis/internalDomains.ts`.
 - **Impact:** Any `lib/` code that imports from `app/` creates a coupling that prevents `lib/` from being tested or reused outside of the Next.js app context.
 - **Guardrail:** Run `node scripts/repo-map/check.cjs` to enumerate all `lib -> app` edges. Move pure modules like `internalDomains.ts` to `lib/acc/` and update all importers. Target: 0 `lib -> app` edges.
+- **Status (2026-07-02): ✅ AUDITED &amp; RESOLVED IN SCOPE (v2.1 Ph10 BND-03).** Full enumeration and classification recorded in the "BND-03 / BND-04 Resolution" section below. Note: the "Phase-14 monolith" blocker cited there for deferred group (3) was cleared when `folderTerrain.ts` was split in v2.2 Ph16, but those edges were not migrated in v2.2 (out of scope) — they remain future-cleanup candidates.
 
 ### 7.2 `app -> server` direct imports (29 edges)
 
@@ -202,6 +229,7 @@
 - **What it is:** 29 edges import directly from `server/` in `app/`. This is expected for Server Components and Server Actions that call tRPC procedures or `auth()`, but some may be importing server utilities directly rather than going through the tRPC boundary.
 - **Impact:** Direct `server/` imports in client components bypass tRPC type-safety and error handling middleware.
 - **Guardrail:** VERIFY: which of the 29 edges are from Server Components/Actions (acceptable) vs. client components (violation). Use `rg -n "from.*@/server" app/ --include="*.tsx"` and filter for files without `"use server"` or `"use client"` (server component convention) at the top.
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph10 BND-04).** Audit verdict: **zero `"use client"` violations** — all edges are route handlers, Server Actions, or RSCs (the legitimate Next.js boundary pattern). See the BND-04 section below.
 
 ---
 
@@ -213,6 +241,7 @@
 - **What it not tested:** The SQL `GROUP BY` aggregate that replaced the OOM `findMany` has no Vitest test. If the query is accidentally reverted or the SQL is corrupted, the OOM regression is invisible until production load.
 - **Priority:** High — this was the dominant production failure mode.
 - **Guardrail:** Add a Vitest test using a Prisma `$queryRaw` mock or a small in-memory Postgres (e.g., `pg-mem`) that verifies the aggregate returns ≤ `n_roles × n_projects` rows (not raw permissions).
+- **Status (2026-07-02): ✅ RESOLVED (v2.1 Ph14 characterization tests + v2.2 Ph18 TEST-01).** The aggregate path is pinned by characterization tests; the TEST-01 OOM-guard suite (12/12) covers the `AccFolderPermissionSummary` projection path that now serves `includePermissionSummary`.
 
 ### 8.2 Spatial-graph physics layer tests are large and slow
 
@@ -369,3 +398,46 @@ no code fix is required.
    `"use server"` (Server Action = acceptable), or neither (RSC or route = acceptable).
 3. Files under `app/api/` are always route handlers (acceptable).
 4. `app/(dashboard)/layout.tsx` is always an RSC (acceptable).
+
+---
+
+## v2.1 / v2.2 Resolution Summary and Current Concerns (2026-07-02)
+
+### Resolved by milestone
+
+| Concern | Resolved by |
+|---|---|
+| §1.1 raw 5M-row scan path | v2.2 Ph18 (projection) + Ph19 (consumer switch + `ACC_ALLOW_RAW_PERMISSION_SCAN` hard guard) |
+| §1.2 missing `@@index([roleId])` | v2.1 Ph09 DB-01 |
+| §1.3 `count-acc-data.cjs` ssl fossil | v2.1 Ph09 DB-02 |
+| §1.4/§1.5 pool/heap knobs undocumented | v2.1 Ph09 DB-03 (`.env.example`) |
+| §2.1 direct Prisma in Server Action | v2.1 Ph10 BND-01 (`acc-coordination.ts`) |
+| §2.2 scripts→app `moduleOverrides` imports | v2.1 Ph10 BND-02 (`lib/acc/activityClassification.ts`) |
+| §2.3 three monoliths (1,041/1,093/1,326 lines) | v2.2 Ph16–17 SPLIT-01–04 (all modules now ≤~640 lines, most ≤400) |
+| §2.5 module-donut misattribution unlabeled | v2.1 Ph11 TRUTH-02 (UI label; SVC-01 refinement still deferred) |
+| §2.6 ACCDS ~12-mo floor unlabeled | v2.1 Ph11 TRUTH-03 (`dataFloor` captions) |
+| §6.1 duplicated terrain query | v2.2 Ph15 QUERY-01/REF-02 (`lib/server/folderPermQuery.ts`) |
+| §7.1/§7.2 boundary edge audits | v2.1 Ph10 BND-03/BND-04 |
+| §8.1 untested aggregate query | v2.1 Ph14 + v2.2 Ph18 TEST-01 |
+
+### Still open (future-milestone seeds)
+
+- §2.4 `AccDcRole` empty — monitoring/warning still missing (fallback documented only).
+- §3.1–3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, cosmos.gl reheat, 176-action catalog, lasso e2e flake, prefetch regression guard) — deferred spatial-graph milestone.
+- §4.1/§4.2 lean-payload trap and filter-type assert.
+- §5.1 ACCDS session expiry alerting; §5.2 DC 403 coverage (DC-01/DC-02); §5.3 stale TODO guards in `acc-admin.ts` (VERIFY: whether Ph12 observability work removed these).
+- §8.2/§8.3 oversized physics/e2e test files.
+
+### New concerns introduced or made visible by v2.2 (2026-07-02)
+
+1. **`AccFolderPermissionSummary` freshness is cron-coupled.** The projection only refreshes in the dc-daily-ingest success branch (Ph19 PROJ-03). If the ingest cron fails or is disabled, `/access-analysis` permission summaries silently age; staleness bound is documented in `INTEGRATIONS.md`. No UI staleness indicator exists.
+2. **Terrain still reads the live `folderPermQuery` `$queryRaw`.** Scoped out of v2.2 with evidence; the per-folder terrain projection is a deferred seed if terrain read cost becomes a concern.
+3. **`.planning/` is mid-migration.** `MILESTONES.md`, `RETROSPECTIVE.md`, `milestones/`, and phase dirs 01–08 are deleted in the working tree (history retained in git HEAD); archival is deliberately deferred. Docs referencing those paths (e.g., the retrospective format pointer in the project skill) will not resolve until `/gsd:complete-milestone` regenerates them.
+
+### Dashboard Self-Check (2026-07-02 refresh)
+
+- **Context:** `.planning/STATE.md`, `PROJECT.md`, `ROADMAP.md` (v2.2 close, `5974d6f2`), phase artifacts 09–19, current source tree (post-split line counts read from disk), `prisma/schema.prisma`.
+- **Evidence:** Resolution claims map to recorded phase requirements (DB-01..03, BND-01..04, TRUTH-02..04, QUERY-01, SPLIT-01..04, PROJ-01..03, TEST-01..03) and their commits in ROADMAP.md/STATE.md.
+- **Constraints:** Statuses appended, original findings preserved; no code changed by this refresh.
+- **Gates:** Docs-only update; no build/tsc gates applicable.
+- **VERIFY:** current DC covered-project count (~550/1,153 per Ph11 correction); whether §5.3 TODO guards were removed by Ph12.

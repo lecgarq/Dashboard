@@ -1,6 +1,7 @@
 # Technology Stack
 
-**Analysis Date:** 2026-06-23
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-02 — pins re-verified against `package.json`; deploy-gate note updated
 
 ---
 
@@ -48,7 +49,7 @@
 - `patch-package ^8.0.1` — applied in `postinstall` hook
 - `repomix ^1.14.1` — source digest generation for `scripts/repo-map/`
 - `dependency-cruiser ^17.4.3` — import graph and boundary enforcement (`npm run repo-map:check`)
-- `knip ^6.26.2` — unused exports/files detection (`npm run knip`)
+- `knip ^6.12.2` — unused exports/files detection (`npm run knip`)
 
 ---
 
@@ -140,9 +141,10 @@
 - Key settings: webpack mode forced, DuckDB WASM alias, `serverExternalPackages` for Google libs, `optimisticClientCache`, `removeConsole` in production
 
 **Prisma:**
-- Schema: `prisma/schema.prisma`
+- Schema: `prisma/schema.prisma` (64 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection)
 - Generator: `prisma-client-js` + `prisma-erd-generator` (ERD → `docs/erd.md`)
 - Client generation in `postinstall` hook: `prisma generate && patch-package && node scripts/copy-duckdb-wasm.cjs`
+- Note (Ph18 deviation): `prisma migrate dev` chokes on the pgvector extension — the Ph18 projection shipped via a raw SQL migration; long server-side `INSERT .. SELECT` writes need the `$transaction` timeout widened (300s used)
 
 **Vitest:**
 - Config: `vitest.config.ts` (excluded from `tsconfig.json`)
@@ -157,12 +159,14 @@
 ## Build / Deploy
 
 **Local Deploy (primary):**
-1. Stop Task Scheduler `LECG Dashboard` task (prevents port conflict)
+1. Stop Task Scheduler `LECG Dashboard` task (prevents port conflict — NEVER build while `:3000` is live)
 2. `npx tsc --noEmit` — typecheck gate (must pass before build)
 3. `npm run build` (`next build --webpack`) — compiles to `.next/`
 4. Restart Task Scheduler task → `scripts/start-local.ps1` starts Next.js on `:3000` + Yjs on `:4444`
 
 **Deploy mechanism:** rebuild the working tree's `.next` output; NOT a git merge. The running server reads the current checkout's `.next/`.
+
+**GSD gate split (since v2.1):** the GSD `workflow.build_command` in `.planning/config.json` is `npx tsc --noEmit` **only** — the full `npm run build` + Task Scheduler restart + live route probes belong to `node scripts/gsd-self-gate.cjs --phase <N> --rebuild`, which stops `:3000` first. Do not run `npm run build` from a GSD post-merge step while the server is live.
 
 **Dev stack:**
 - `npm run dev` → `python scripts/run_dev_stack.py` — orchestrates Next.js dev + Yjs server
@@ -194,4 +198,4 @@
 
 ---
 
-*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`*
+*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02: all dependency pins re-checked against `package.json` (one correction: knip ^6.12.2).*

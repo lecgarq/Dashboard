@@ -91,6 +91,14 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 <!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. SVC-01, spatial-graph, DC-01/02 remain deferred candidates for the next milestone. -->
 
+- [ ] **New graphs for `/access-analysis` + `/template-mty`** (lead candidate for
+  v2.3, owner direction 2026-07-02) — add charts from existing-but-unvisualized
+  Prisma data: `AccIssue` timeline/status/type, `AccFolderPermissionSummary`
+  permission-footprint charts (materialized in Ph18, never charted),
+  `AccDcIngestRun` data-freshness panel, `AccProjectMember.lastSignIn` dormancy,
+  `AccActivityAccds` verb/object-type breakdowns, `AccFolder` storage rollups,
+  tier×depth heatmap via `folderPermQuery`, provisioned-vs-active module coverage.
+  Full inventory + registration pattern: ROADMAP.md "v2.3 Candidates (Seeds)".
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
