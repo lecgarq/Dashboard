@@ -35,12 +35,12 @@ requirements-completed: [PROJ-03]
 
 duration: ~25min
 completed: 2026-07-02
-status: in-progress
+status: complete
 ---
 
-# Phase 19 Plan 02: Projection Refresh Cron Wiring (PROJ-03) Summary — Task 1 complete, Task 2 checkpoint PENDING
+# Phase 19 Plan 02: Projection Refresh Cron Wiring (PROJ-03) Summary — COMPLETE (both tasks; owner visual parity approved 2026-07-02)
 
-**`dc-daily-ingest.cjs` now re-runs `backfill-folder-perm-summary.cjs` (non-fatal, server-side) as the first success-branch step so `AccFolderPermissionSummary` never lags more than one ingest cycle; INTEGRATIONS.md documents the bound and the folder-crawl staleness caveat. Owner visual parity on `/access-analysis` + `/template-mty` (Task 2) is a blocking checkpoint NOT yet executed — this plan is paused, not complete.**
+**`dc-daily-ingest.cjs` now re-runs `backfill-folder-perm-summary.cjs` (non-fatal, server-side) as the first success-branch step so `AccFolderPermissionSummary` never lags more than one ingest cycle; INTEGRATIONS.md documents the bound and the folder-crawl staleness caveat. Task 2 (owner visual parity on `/access-analysis` + `/template-mty`) is RESOLVED: after a fresh `:3000` rebuild (tsc 0, `npm run build` 0, scheduled task restarted, `/api/health` 200, workshop routes 307 auth-redirect — no 500s), the owner confirmed both pages render identically ("approved", 2026-07-02). This plan and Phase 19 are complete.**
 
 ## Performance
 
@@ -119,19 +119,19 @@ None - no external service configuration required. Task 2 requires the OWNER (no
 
 ## Next Phase Readiness
 
-**This plan is NOT complete.** Task 1 (automated) is done and committed (`e34ec7e7`). Task 2 is a `gate="blocking"` `checkpoint:human-verify` — the phase-close SC#3 owner visual parity gate — and requires:
-1. `npx tsc --noEmit` (already re-confirmed clean above, re-run again at rebuild time is fine).
-2. Stop the app running on `:3000` (Task Scheduler "LECG Dashboard" stop).
-3. `npm run build`.
-4. Restart on `:3000`.
-5. Owner visits `/access-analysis` and `/template-mty` and confirms both render IDENTICALLY to before the phase (expected: zero visible change — this is an internal data-source swap + cron wiring, not a UI change).
-6. Owner types "approved" (or describes any visible diff) as the resume signal.
+**This plan is COMPLETE.** Task 1 (automated) done and committed (`e34ec7e7`). Task 2 (`gate="blocking"` `checkpoint:human-verify` — the phase-close SC#3 owner visual parity gate) is RESOLVED. The rebuild was executed with the owner's explicit go:
+1. `npx tsc --noEmit` → exit 0.
+2. Scheduled task "LECG Dashboard Local" stopped; `:3000` freed (killed the port owner).
+3. `npm run build` (`next build --webpack`) → exit 0, full route manifest emitted.
+4. Scheduled task restarted → State=Running; `:3000` listening.
+5. `/api/health` → 200; `/access-analysis`, `/template-mty`, `/users/access-analysis`, `/forma-proposal`, `/users` → 307 (auth redirect — server healthy, no 500s).
+6. Owner visited `/access-analysis` + `/template-mty` and confirmed identical render → **"approved" (2026-07-02)**.
 
-This is the last plan of the last phase (19) of milestone v2.2. Completing Task 2 closes the phase and the milestone. No blockers identified for Task 2 — all automated gates (tsc, full test suite, reconciliation) are green going into the rebuild.
+This was the last plan of the last phase (19) of milestone v2.2. With Task 2 approved, Phase 19 and milestone v2.2 close.
 
 ---
 *Phase: 19-raw-scan-retirement-refresh*
-*Task 1 completed: 2026-07-02 — Task 2 (owner visual parity checkpoint) PENDING*
+*Task 1 completed: 2026-07-02 — Task 2 (owner visual parity checkpoint) APPROVED 2026-07-02*
 
 ## Self-Check: PASSED
 
