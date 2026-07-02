@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: New Graphs
-current_phase: 20
-current_phase_name: "Foundation Wins & Engagement Panels"
-status: ready-to-plan
-stopped_at: "Roadmap created 2026-07-02 — v2.3 New Graphs scoped into 4 phases (20-23), continuing numbering from v2.2's Phase 19. 8/8 requirements mapped (ISSUE-01..05, PERM-01, ENG-01, PIPE-01). Ready to plan Phase 20 (Foundation Wins & Engagement Panels: ISSUE-01, PERM-01, ENG-01, PIPE-01)."
-last_updated: "2026-07-02T23:59:00Z"
-last_activity: 2026-07-02
-last_activity_desc: "Roadmap created for v2.3 New Graphs (ROADMAP.md updated in place, REQUIREMENTS.md traceability filled, STATE.md advanced). Next: /gsd:plan-phase 20."
+milestone: v1.0
+milestone_name: Concerns Hardening
+status: planning
+stopped_at: Phase 20 context gathered
+last_updated: "2026-07-02T23:49:13.110Z"
+last_activity: "2026-07-02 — Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending")."
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 12
+  completed_phases: 11
+  total_plans: 22
+  completed_plans: 22
 ---
 
 # Project State
@@ -195,6 +191,6 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-02 (roadmap → v2.3 New Graphs Phases 20-23 created; REQUIREMENTS.md traceability filled; STATE.md advanced to Phase 20/ready-to-plan)
-**Stopped at:** Roadmap complete. Ready to plan Phase 20 (Foundation Wins & Engagement Panels).
-**Resume file:** none — continue with `/gsd:plan-phase 20`.
+**Last session:** 2026-07-02T23:49:13.106Z
+**Stopped at:** Phase 20 context gathered
+**Resume file:** .planning/phases/20-foundation-wins-engagement-panels/20-CONTEXT.md
