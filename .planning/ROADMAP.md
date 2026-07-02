@@ -7,6 +7,7 @@
 - ✅ **Phase 08 — Activity Re-extraction** (interim phase, shipped 2026-06-23)
 - ✅ **v2.1 Concerns Hardening** - Phases 09-14 (shipped 2026-07-01)
 - ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
+- 🚧 **v2.3 New Graphs** - Phases 20-23 (in progress, opened 2026-07-02)
 
 ---
 
@@ -103,7 +104,6 @@ Plans:
   3. `lib/acc/acc-admin.ts` no longer contains the two `TODO[02.5]` defensive-logging guards at lines 51 and 207; field names are confirmed against the live schema before removal
 
 **Plans**: 2 plans
-Plans:
 
 - [x] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, <12h threshold, estimate-labeled (wave 1) — COMPLETE 2026-06-30
 - [x] 12-02-PLAN.md — OBS-02 + OBS-03: effective-empty `[ACC-ROLES]` warn at the real role-resolution boundary `loadInstanceView()` in `lib/server/accessInstanceView.ts` (NOT acc-hot-cache.ts); remove stale `TODO[02.5]` diagnostics from `lib/server/acc-admin.ts` (verified path; fields confirmed code-grounded) (wave 1) — COMPLETE 2026-06-30, commits cac1a07e + 72b4079d
@@ -121,7 +121,6 @@ Plans:
   2. `app/(dashboard)/users/accGraphFilters.ts` contains a `satisfies` or `AssertExtends` compile-time assert that fails if the two filter union types drift; `npx tsc --noEmit` confirms the assert compiles
 
 **Plans**: 1/1 plans complete
-Plans:
 
 - [x] 13-01-PLAN.md — TYPE-01: type the lean `bulkUsers` return `roles`/`modules` as `never[]` at the verified construction site `lib/server/acc-hot-cache.ts` (`getCachedAccDcBulkUsers` lean branch) — NOT `acc-members.ts`, which has no `bulkUsers` proc; + TYPE-02: one-directional subset drift assert (`SimilarityDimKey` ⊆ `SimilarityDim`) with a type-only import in `app/(dashboard)/users/accGraphFilters.ts` (wave 1)
 
@@ -262,11 +261,119 @@ Plans:
 
 **Boundary note (planner, evidence-backed):** SC#1's "terrain files read from `AccFolderPermissionSummary`" is a conflation — the terrain views read PER-FOLDER tier via `folderPermQuery.ts`, whereas the projection is a per-`(projectId,roleId)` rollup with no per-folder detail. Forcing terrain onto the projection would lose granularity and break TEST-02. PROJ-02 therefore switches only the summary aggregate the projection genuinely mirrors; terrain stays on `folderPermQuery.ts`. A per-folder terrain projection is a future-milestone seed, not Phase 19.
 
+---
+
+## 🚧 v2.3 New Graphs (In Progress — opened 2026-07-02)
+
+**Milestone goal:** Add new truthful charts to `/access-analysis` (and `/template-mty` only
+where a genuine non-duplicative fit exists) from existing-but-unvisualized Prisma data,
+following the established panel registration pattern (`lib/server/<name>View.ts` loader →
+pure `*Counts.ts` transform with a co-located test → `"use client"` chart via
+`@/components/ui/EChart` → `AccessAnalysisCharts.tsx` `<Reveal><PremiumSurface>`) — no new
+npm dependencies, no new WebGL, honest coverage labels throughout.
+
+**Source requirements:** `.planning/REQUIREMENTS.md` (v2.3, 8 requirements: ISSUE-01–05, PERM-01, ENG-01, PIPE-01)
+
+**Research:** `.planning/research/SUMMARY.md`, `ARCHITECTURE.md`, `PITFALLS.md` (2026-07-02,
+confidence HIGH). Build order is risk-graded (small/materialized tables first, the one
+external-call + migration-risk item isolated in its own phase, workshop curation last) —
+not feature-request order. 5 of the original 9 seed candidates were promoted into this
+milestone's 8 requirements (one seed — "issues over time/by status/by type" — split into
+ISSUE-02/03/05 plus the new ISSUE-04 GUID-resolution requirement); the remaining 4 seeds
+are deferred (see `REQUIREMENTS.md` "Future Requirements").
+
+**Overarching guardrail:** every panel follows the registration pattern; `AccDcIngestRun.rowsByModule`
+is never charted (confirmed always-zero telemetry gap); `AccFolderPermissionSummary.totalBytes`
+(BigInt) is converted to `Number`/a formatted string server-side before the RSC→client boundary;
+the "Never signed in" (`lastSignIn: null`) bucket is always labeled, never silently dropped;
+issue type/subtype GUIDs never render raw — unresolved IDs get an honest fallback label
+("Unknown type"); aggregates over `AccActivityAccds`/`AccActivity`/`AccFolder`-scale tables use
+server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterization tests
+(TEST-01/02/03) stay green and byte-identical; `/users/spatial-graph` is untouched.
+
+## Phases
+
+- [ ] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk
+- [ ] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill
+- [ ] **Phase 22: Issue Type Resolution** - APS issue-type/subtype metadata backfill + local lookup table, then an issues-by-type breakdown chart
+- [ ] **Phase 23: Workshop Curation & Milestone Close** - Panel count/grouping review across all new + existing surfaces, full gate sequence, rebuild + owner parity check
+
+## Phase Details
+
+### Phase 20: Foundation Wins & Engagement Panels
+
+**Goal**: Four low-risk, high-value panels land on `/access-analysis` — permission reach by role, ingest freshness/throughput, issue-fetch coverage, and dormant-users-by-sign-in-recency — each reading an already-small or already-materialized table with zero shared-query risk, establishing the BigInt-conversion and honest-labeling conventions the rest of v2.3 reuses. These four requirements are grouped in one phase because they share almost no file surface beyond `mainCharts.tsx`/`AccessAnalysisCharts.tsx` (per ARCHITECTURE.md), so sequencing/grouping them avoids repeated merge contention on those two files across four separate phases.
+**Depends on**: Phase 19 (v2.2, shipped) — first phase of v2.3, no intra-milestone dependency
+**Requirements**: ISSUE-01, PERM-01, ENG-01, PIPE-01
+**Success Criteria** (what must be TRUE):
+
+  1. User can see a permission-reach-by-role chart (folder count + human-readable bytes, e.g. "42.3 GB") sourced from the already-materialized `AccFolderPermissionSummary` (22,082 rows); `totalBytes` is converted from `BigInt` to `Number`/a formatted string inside the server loader, verified by an actual live page load showing no serialization error (not just `tsc --noEmit`, which won't catch this).
+  2. User can see a compact, visually secondary ingest-freshness panel showing the latest `AccDcIngestRun` (started/ended, status, duration, projects processed) with throughput measured from live `AccActivity` row counts grouped by `ingestRunId` — never from `rowsByModule` (confirmed always-zero); the panel does not live-poll (static per-page-load read).
+  3. User can see an issue-fetch coverage donut with all 4 honest status buckets (`ok` / `zero_issues` / `forbidden` / `error`) sourced from the latest `AccIssueFetchRun`/`AccIssueProjectFetchResult` run, positioned so it frames trust ahead of the issue metrics rendered beside it (coverage precedes metric).
+  4. User can see dormant users bucketed by `AccProjectMember.lastSignIn` recency bands (<30d / 30–90d / 90–365d / >365d), with an explicit, labeled "Never signed in" bucket for `null` values verified against at least one real project with a never-signed-in member — not silently dropped.
+  5. All four panels render inside the zinc theme via `@/components/ui/EChart` with theme-resolved colors; `npx tsc --noEmit` passes; `mainCharts.tsx`'s `Promise.all` fan-out is reviewed for the +4 new entries (consolidated per data domain where sensible, not four independent top-level additions) and `/access-analysis` load time is spot-checked before/after.
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+### Phase 21: Issue Funnel — Status & Time
+
+**Goal**: The full `AccIssue` set (17,360 issues, not just the coordination-classified subset) is visualized as a timeline and status breakdown on `/access-analysis`, reusing the trust-precedes-metric framing the Phase 20 coverage donut establishes.
+**Depends on**: Phase 20 (issue-fetch coverage donut establishes the honest-coverage framing this funnel sits beside; also lets the fan-out review from Phase 20 land before adding a 5th loader)
+**Requirements**: ISSUE-02, ISSUE-03
+**Success Criteria** (what must be TRUE):
+
+  1. User can see issues over time as a histogram/timeline (`date_trunc('month', "createdAt")`) covering the full issue set for the selected project(s), following the existing activity-timeline visual pattern (including a coverage caption sourced from the Phase 20 issue-fetch coverage loader, never a hardcoded figure).
+  2. User can see issues by status — all 8 verified live statuses (open, closed, completed, in_review, draft, pending, not_approved, in_progress) — as a chart supporting the existing `onSliceClick`/`activeSlice` cross-filter/drill convention, matching the current pie/donut drill pattern.
+  3. Both charts render an explicit "No issues for this view" empty state for a project with zero issues, rather than a blank or broken chart.
+  4. `npm test` stays green including a new aggregate-bound Vitest test for the issue-funnel loader (asserting output row count is bounded by `n_status × n_projects`/`n_months × n_projects`, not raw issue rows); `npx tsc --noEmit` passes.
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+### Phase 22: Issue Type Resolution
+
+**Goal**: Issue type/subtype GUIDs resolve locally to human-readable names via a one-time APS issue-types metadata backfill into a new Prisma lookup table, and issues-by-type renders as a top-N + "other" breakdown chart — never a raw GUID. This phase is kept isolated because it is the only v2.3 phase carrying external-API-call + Prisma-migration risk (per ARCHITECTURE.md/PITFALLS.md); ISSUE-04 (backfill + lookup table) must land and be verified before ISSUE-05 (the chart) is built.
+**Depends on**: Phase 21 (issues-by-status/time established; type breakdown is the remaining issue cut, and this phase's higher risk is deliberately sequenced after the safer funnel work)
+**Requirements**: ISSUE-04, ISSUE-05
+**Success Criteria** (what must be TRUE):
+
+  1. A new Prisma lookup table exists, populated by a one-time APS issue-types metadata backfill (existing 3-leg auth, `acc-issues-backfill.cjs` pattern) covering the verified 316 type / 515 subtype GUIDs; the backfill and lookup table are additive — no edit to `AccIssue`'s existing columns or any existing issue query.
+  2. ISSUE-04 (backfill + lookup table, committed and verified) lands as a separate, earlier plan than ISSUE-05 (the chart) within this phase — the migration/backfill risk is resolved before the chart is built on top of it.
+  3. User can see issues by type as a breakdown chart (top-N + "other" bucketing) with every `issueTypeId` resolved to a human-readable name via the new lookup table.
+  4. Any `issueTypeId`/`issueSubtypeId` not resolved by the lookup table renders an honest fallback label ("Unknown type") — never a raw GUID — verified against at least one live unresolved ID if one exists in the dataset.
+  5. `npm test` stays green (existing suite + any new lookup-table/transform tests); `npx tsc --noEmit` passes.
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+### Phase 23: Workshop Curation & Milestone Close
+
+**Goal**: All new v2.3 panels are reviewed as a whole against the existing `/access-analysis` panel surface for count, grouping, and above-the-fold priority, and the full gate sequence (tests, typecheck, rebuild) confirms the milestone is workshop-ready. This phase carries no new v1 requirement of its own — it is the milestone's mandatory curation + verification gate (PITFALLS.md Pitfall 7: shipping all new panels flat/always-visible dilutes the workshop narrative) that collectively closes out ISSUE-01–05, PERM-01, ENG-01, and PIPE-01.
+**Depends on**: Phase 20, Phase 21, Phase 22 (all new panels must exist before the cumulative count/grouping question can be answered concretely)
+**Requirements**: None new (milestone-closing gate — see Goal)
+**Success Criteria** (what must be TRUE):
+
+  1. `/access-analysis`'s total panel count and grouping is explicitly reviewed against the pre-v2.3 baseline (15 panels); the 7 new panels from Phases 20–22 (permission footprint, ingest freshness, issue coverage, dormant users, issue timeline, issue status, issue type) are grouped or made expandable/collapsible where the review finds the page would otherwise read as an undifferentiated wall of charts, rather than shipped flat by default.
+  2. Owner visual parity/sign-off is captured on `/access-analysis` (and `/template-mty` if any v2.3 panel landed there) after a fresh `:3000` rebuild — Task Scheduler stop → `npx tsc --noEmit` → `npm run build` → restart → `/api/health` 200 check.
+  3. `npm test` is green — all existing characterization tests (TEST-01/02/03) stay byte-identical, plus every v2.3 aggregate-bound test added in Phases 20–22; `npx tsc --noEmit` exits 0.
+  4. `git diff`/`node scripts/repo-map/check.cjs` confirms no new WebGL was introduced on `/access-analysis` and `/users/spatial-graph` was not touched by any v2.3 phase.
+
+**Plans**: TBD
+
+**UI hint**: yes
+
+---
+
 ## Progress
 
 **Execution Order (v2.1):** 09 → 10 → 11 → 12 → 13 → 14
 **Execution Order (v2.2):** 15 → 16 → 17 → 18 → 19
 Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 16–17 (monolith splits). The sequences 15→16→17 and 15→18→19 could run in parallel; they are ordered here for risk management on a solo workflow.
+**Execution Order (v2.3):** 20 → 21 → 22 → 23 — risk-graded (small/materialized tables → issue funnel → external-call/migration-risk type-resolution → curation/close), not feature-request order; see `.planning/research/SUMMARY.md`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -281,42 +388,29 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
+| 20. Foundation Wins & Engagement Panels | 0/TBD | Ready to plan | - |
+| 21. Issue Funnel — Status & Time | 0/TBD | Not started | - |
+| 22. Issue Type Resolution | 0/TBD | Not started | - |
+| 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
 
 ---
 
-## 🌱 v2.3 Candidates (Seeds — input for `/gsd:new-milestone`, 2026-07-02)
+## 📦 v2.3 Seed Pool — Consumed (2026-07-02)
 
-Not a milestone yet: no phases, no requirements. These seeds inform the next
-`/gsd:new-milestone` questioning round. **Lead candidate (owner direction): new
-graphs for `/access-analysis` and `/template-mty`** — every opportunity below is
-derivable from the existing Prisma DB (per PROJECT.md constraints) and names its
-data authority.
+The full 9-candidate inventory and the panel registration pattern used to scope v2.3 are
+now recorded in `.planning/REQUIREMENTS.md` (v2.3 section + "Future Requirements"), which
+is the authoritative source going forward — this section is retired to a pointer.
 
-### New-graph opportunities (grounded in existing models)
+5 of the 9 original seeds were promoted into the phases above (Phase 20-23): permission
+footprint by role, ingest freshness/throughput, issue-fetch coverage donut, dormant users
+by sign-in recency, and "issues over time/by status/by type" (split into ISSUE-02/03/05
+plus the new ISSUE-04 GUID-resolution requirement).
 
-| Graph idea | Data authority | Why it's untapped |
-|---|---|---|
-| Issues over time / by status / by type | `AccIssue.createdAt` / `status` / `issueTypeId` / `issueSubtypeId` | Only the coordination-classified subset is charted today (`CoordinationByProject`); the full issue funnel/timeline is unvisualized. Loader precedent: `lib/server/coordinationByProjectView.ts` already does `db.accIssue.groupBy`. |
-| Permission footprint by role (folder count + bytes) | `AccFolderPermissionSummary` (Ph18: `folderCount`, `totalBytes`, `permTypes[]` per project×role) | Materialized and read by acc-hot-cache but **never charted** — a "reach by role" bar or bytes treemap with zero touch of the ~6M-row raw table. |
-| Ingest freshness / throughput panel | `AccDcIngestRun` (`startedAt/endedAt`, `status`, `rowsByModule`, `quotaUsed`, `projectsProcessed`) | **Zero current consumers** in `lib/server` or `app`. Caveat: `rowsByModule` is always 0 (known telemetry gap) — measure rows from `AccActivity` directly. |
-| Issue-fetch coverage donut | `AccIssueFetchRun` / `AccIssueProjectFetchResult` (`status ok\|zero_issues\|forbidden\|error`) | Shows which projects issues can even be read from — honest-coverage labeling in chart form. |
-| Dormant users by sign-in recency | `AccProjectMember.lastSignIn` / `addedOn` | Distinct from the existing dormant-*role/company* tails; `lastSignIn` is currently unused by any chart. |
-| Activity verb / object-type breakdown | `AccActivityAccds.activityVerb` / `objectType` / `serviceGroup` | Richer than the coarse module donut; fields unvisualized. Respect the ~12-mo ACCDS floor label. |
-| Folder storage treemap | `AccFolder.fileCount` / `totalSizeBytes` / `lastModifiedTime` rollups | Crawl-populated rollups exist but are unvisualized. |
-| Permission tier × folder-depth heatmap | `loadFolderPermRows` (`lib/server/folderPermQuery.ts`) + `AccFolder.parentId`/`fullPath` | The terrain shows this in 3D only; a 2D heatmap is a data-surface-safe (no new WebGL) alternative view. |
-| Provisioned-vs-active module coverage | `AccProjectMember.products` (Json tier map) / `AccDcProjectUserProduct.accessLevel` | Provisioning exists in data but only activity is charted; the provisioned-vs-used gap is the story. |
+4 seeds are deferred — see `REQUIREMENTS.md` "Future Requirements" for the per-item
+deferral reason: folder storage treemap, permission tier × folder-depth heatmap, activity
+verb/object-type breakdown, and provisioned-vs-active module coverage.
 
-**Registration pattern for new `/access-analysis` panels** (established, follow it):
-`lib/server/<name>View.ts` loader (`"server-only"`, raw SQL/groupBy over the model) →
-add to the `Promise.all` in `app/(dashboard)/access-analysis/mainCharts.tsx` →
-pure `*Counts.ts` transform at the page root (co-located `__tests__/`) →
-`components/<Name>Chart.tsx` (`"use client"`, `@/components/ui/EChart`, palette via
-`roleColors.ts`/theme) → render inside `AccessAnalysisCharts.tsx` as
-`<Reveal><PremiumSurface>` + `SectionHeader`; wire `onSliceClick`/`activeSlice` for
-cross-filter participation; add a KPI to the `kpis` array if relevant.
-`/template-mty` panels follow the analogous `lib/server/template*.ts` → `TemplateAnalysisCharts.tsx` path.
-
-### Carried-forward deferred candidates (from v2.2 close)
+### Carried-forward deferred candidates (from v2.2 close, still deferred)
 
 - **SVC-01** — `service`-override classification refinement (~966 clash-issue rows).
 - **Spatial-graph milestone** — CONCERNS.md §3 + §8.2/8.3 items.

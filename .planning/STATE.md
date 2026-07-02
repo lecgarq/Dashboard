@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
-current_phase: null
-current_phase_name: Not started (defining requirements)
-status: defining-requirements
-stopped_at: "Milestone v2.3 New Graphs opened 2026-07-02 — defining requirements. Scope: new charts for /access-analysis + /template-mty from existing-but-unvisualized Prisma data (candidate pool: ROADMAP.md 'v2.3 Candidates (Seeds)'). Prior milestone v2.2 Structural Refactors SHIPPED + closed 2026-07-02 (safe-logical-close, tagged v2.2; 5/5 phases 15-19, 9/9 plans, 8/8 requirements, owner parity approved after :3000 rebuild)."
+current_phase: 20
+current_phase_name: "Foundation Wins & Engagement Panels"
+status: ready-to-plan
+stopped_at: "Roadmap created 2026-07-02 — v2.3 New Graphs scoped into 4 phases (20-23), continuing numbering from v2.2's Phase 19. 8/8 requirements mapped (ISSUE-01..05, PERM-01, ENG-01, PIPE-01). Ready to plan Phase 20 (Foundation Wins & Engagement Panels: ISSUE-01, PERM-01, ENG-01, PIPE-01)."
 last_updated: "2026-07-02T23:59:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "Milestone v2.3 New Graphs started — PROJECT.md updated (Current Milestone section + Active promotion), STATE.md reset. Next: requirements definition → roadmap."
+last_activity_desc: "Roadmap created for v2.3 New Graphs (ROADMAP.md updated in place, REQUIREMENTS.md traceability filled, STATE.md advanced). Next: /gsd:plan-phase 20."
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,19 +24,19 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` + `/template-mty` from existing-but-unvisualized Prisma data. Defining requirements.
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` (+ `/template-mty` where a genuine fit exists) from existing-but-unvisualized Prisma data. Roadmap created; ready to plan Phase 20.
 
 ## Current Position
 
-- **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: new ECharts panels on `/access-analysis` and `/template-mty` derived from existing Prisma models (candidate pool: ROADMAP.md "v2.3 Candidates (Seeds)"); no new data sources, no new WebGL, honest coverage labels.
-- **Phase:** Not started (defining requirements)
-- **Plan:** —
-- **Status:** Defining requirements
-- **Last activity:** 2026-07-02 — Milestone v2.3 started (PROJECT.md Current Milestone section added; STATE.md reset). Prior milestone v2.2 Structural Refactors shipped + closed 2026-07-02 (safe-logical-close, tagged `v2.2`; details in PROJECT.md Shipped Milestone section and `.planning/phases/15..19` artifacts).
+- **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (not yet planned)
+- **Plan:** — (none yet; next step is `/gsd:plan-phase 20`)
+- **Status:** Ready to plan phase 20
+- **Last activity:** 2026-07-02 — Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending").
 
 ## Status (data baseline — still current)
 
-- **State:** Data extraction COMPLETE and VERIFIED (census below), unchanged since 2026-06-23. v2.1 shipped on this baseline; v2.2 refactors it without changing the data or what the workshop pages show.
+- **State:** Data extraction COMPLETE and VERIFIED (census below), unchanged since 2026-06-23. v2.1/v2.2 shipped on this baseline; v2.3 adds charts over it without changing the data.
 
 ## Data Extraction — Verified 2026-06-23
 
@@ -66,115 +66,102 @@ Confirmed read-only against the live local PostgreSQL DB.
 
 All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unified total `4,597,370` == merged query `4,597,370`; backfill + account-admin rows kept; boundary spot-check reconciles.
 
-> Note: `AccFolderPermission` = ~6.04M rows here (census) — the "~5M-row scan" language in code/CONCERNS predates the last folder crawl; REF-03 targets whichever count is live at build time.
+> Note: `AccFolderPermission` = ~6.04M rows here (census) — the "~5M-row scan" language in code/CONCERNS predates the last folder crawl; REF-03 (shipped in v2.2) targeted whichever count was live at build time.
+
+### v2.3-specific verified counts (research pass, 2026-07-02)
+
+| Table / metric | Count | Source |
+|-----------------|-------|--------|
+| `AccFolderPermissionSummary` (materialized in v2.2 Ph18/19) | 22,082 rows | `.planning/research/ARCHITECTURE.md` |
+| `AccIssue` issue-type GUIDs | 316 distinct `issueTypeId` | REQUIREMENTS.md ISSUE-04 (verified live 2026-07-02) |
+| `AccIssue` issue-subtype GUIDs | 515 distinct `issueSubtypeId` | REQUIREMENTS.md ISSUE-04 (verified live 2026-07-02) |
+| `AccIssue` full set (funnel scope) | 17,360 issues | REQUIREMENTS.md ISSUE-02 |
+| `AccIssue.status` distinct live values | 8 (open, closed, completed, in_review, draft, pending, not_approved, in_progress) | REQUIREMENTS.md ISSUE-03 |
+| `AccProjectMember`, `AccDcIngestRun`, `AccIssueFetchRun`/`AccIssueProjectFetchResult` exact row counts | `VERIFY:` not independently re-counted this pass | `.planning/research/ARCHITECTURE.md` (reasoned estimates: tens of thousands / 72 / small-per-run — all well below `AccActivityAccds` scale) |
 
 ## Accumulated Context
 
 ### Decisions
 
-v2.1 (shipped) decisions are recorded in `PROJECT.md` Key Decisions + the per-plan
-SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 work:
+v2.1/v2.2 (shipped) decisions are recorded in `PROJECT.md` Key Decisions + the per-plan
+SUMMARY files in `.planning/phases/09..19`. Decisions relevant to v2.3 planning:
 
-- **QUERY-01/REF-02 shipped (2026-07-01, commit a4d923ca).** `lib/server/folderPermQuery.ts` owns the shared base `AccFolderPermission` join. Both terrain loaders (`templateFolderTerrain.ts` all-folders; `folderPermissionTerrainView.ts` l2Only) consume it via `loadFolderPermRows(projectId, { l2Only? })`. Plain tagged-template `db.$queryRaw` (no Prisma.sql) keeps TEST-02/TEST-03 byte-identical. Phase 16 splits and Phase 18 projection build on this shared owner.
+- **v2.3 roadmap = 4 phases (20-23), not the 5-wave shape from research SUMMARY.md.**
+  Research suggested 5 phases matching risk-graded waves across the original 9 candidates;
+  after REQUIREMENTS.md scoped the milestone to 8 requirements (4 seeds deferred to Future
+  Requirements), the roadmap folds ENG-01 (dormant users) into the foundation-wins phase
+  (Phase 20) alongside ISSUE-01/PERM-01/PIPE-01 — all four are P1/LOW-risk panels that share
+  no file surface except `mainCharts.tsx`/`AccessAnalysisCharts.tsx` (per ARCHITECTURE.md),
+  so grouping them avoids repeated merge contention on those two files across four separate
+  phases and avoids a thin single-requirement "ENG-01 only" phase (granularity guidance).
+  Standalone phases are preserved for: the issue funnel (ISSUE-02/03 — new groupBy shapes),
+  issue type resolution (ISSUE-04/05 — the only phase carrying external APS-call +
+  Prisma-migration risk, isolated per PITFALLS.md/ARCHITECTURE.md), and a final workshop
+  curation + milestone-close gate (Phase 23, zero new requirements — mandatory per
+  PITFALLS.md Pitfall 7, not automatic).
+
+- **Phase numbering continues sequentially from v2.2** (Phase 20, not reset to Phase 1) —
+  consistent with how v2.1→v2.2 continued 09→19 without a milestone-scoped reset; `config.json`
+  has no `phase_id_convention` key, so the default `sequential` form (`### Phase N:`) applies.
+
+- **ISSUE-04 must land before ISSUE-05 within Phase 22** — the lookup-table backfill (external
+  APS call + new Prisma model/migration) is the milestone's only genuinely risky item; it is
+  planned/executed/verified as an earlier plan than the issues-by-type chart that consumes it.
+
+- **Deferred from v2.3 scope (see REQUIREMENTS.md "Future Requirements"):** folder storage
+  treemap (needs depth-cap/leaf-rollup UX design), permission tier × folder-depth heatmap
+  (needs its own OOM/perf regression test against the test-pinned `folderPermQuery.ts`),
+  activity verb/object-type breakdown (needs top-N/other bucketing design + must avoid the
+  deferred spatial-graph-coupled `lib→app` edges), provisioned-vs-active module coverage
+  (needs `products` Json → `ModuleId[]` vocabulary alignment). None of these are in Phase 20-23.
+
+- **Guardrails carried into every v2.3 phase** (from PITFALLS.md, HIGH confidence, repo-grounded):
+  never chart `AccDcIngestRun.rowsByModule` (confirmed always-zero); convert
+  `AccFolderPermissionSummary.totalBytes` (BigInt) server-side before the RSC→client boundary;
+  never duplicate the `AccFolderPermission` join — future heatmap-style work must import
+  `loadFolderPermRows` from `lib/server/folderPermQuery.ts`, never re-derive it; never
+  hardcode the historical "428/1,152" DC-coverage figure — always call a live loader; every
+  new `AccActivityAccds`/`AccActivity`/`AccFolder`-scale aggregate must be server-side SQL/
+  `groupBy`, never `findMany` + JS reduce (the TEST-01 OOM-guard class of regression);
+  `mainCharts.tsx`'s `Promise.all` fan-out (8 entries pre-v2.3) should be reviewed for
+  consolidation once 3+ new loaders share a data domain, not left to grow unbounded.
+
+Prior (v2.1/v2.2) decisions still relevant as standing constraints:
+
+- **QUERY-01/REF-02 shipped (2026-07-01, commit a4d923ca).** `lib/server/folderPermQuery.ts` owns the shared base `AccFolderPermission` join. Both terrain loaders (`templateFolderTerrain.ts` all-folders; `folderPermissionTerrainView.ts` l2Only) consume it via `loadFolderPermRows(projectId, { l2Only? })`. Any new consumer (e.g. a future heatmap) must import, not fork, this function.
 
 - **REF-01 access-analysis splits shipped (2026-07-01, Phase 16).** `folderTerrain.ts` → `folderTerrainModel`/`folderTerrainLayout`/`folderTerrainScene`/`folderTerrainCamera` + thin barrel (SPLIT-01). `FolderPermissionTerrain.tsx` → `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure) + `TerrainStage`/`TerrainControls` (presentational) + thin shell (SPLIT-02). All 9 files ≤ ~400 lines; pinning tests byte-identical; owner visual parity confirmed.
 
-- **PROJ-03 Task 1 shipped (2026-07-02, Phase 19 plan 19-02, commit `e34ec7e7`).**
-  `scripts/dc-daily-ingest.cjs`'s success branch now refreshes `AccFolderPermissionSummary`
-  as the FIRST step — before the person-graph rebuild and before `build-instance-features.ts`
-  (which reads the projection via `includePermissionSummary`, PROJ-02) — by invoking
-  `node scripts/backfill-folder-perm-summary.cjs` verbatim inside a non-fatal try/catch,
-  matching the existing person-graph/embedding pattern. `.planning/codebase/INTEGRATIONS.md`
-  documents the `<=1-ingest-cycle` staleness bound, the out-of-band folder-crawl caveat
-  (source table updates lag until the next ingest), and the manual fallback command.
-  Verified: backfill re-run 22,082 rows (904 projects x 107 roles, within bound),
-  `verify-folder-perm-summary.cjs` VERDICT PASS (0 mismatches, 20/20 spot-checks),
-  `npx tsc --noEmit` clean, full `npm test` 2256/1-skipped (identical to 19-01 baseline).
-  **Task 2 (owner `:3000` rebuild + visual parity on `/access-analysis` + `/template-mty`,
-  the phase-close SC#3 gate) APPROVED 2026-07-02 (commit `a92ffe0d`)** — a fresh rebuild ran
-  with owner consent (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health`
-  200, workshop routes 307, no 500s) and the owner confirmed identical render. Phase 19 CLOSED;
-  gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`). This was the last open item in v2.2.
+- **PROJ-02/PROJ-03 shipped (2026-07-02, Phase 19).** `AccFolderPermissionSummary` (22,082 rows, materialized in Ph18) is the summary-aggregate consumer's data source; the `includePermissionContexts:true` raw scan is hard-guarded behind `ACC_ALLOW_RAW_PERMISSION_SCAN=1` (throws by default); a refresh mechanism runs inside `dc-daily-ingest.cjs`'s success branch (≤1-ingest-cycle staleness, documented in INTEGRATIONS.md). This is the exact table Phase 20's permission-footprint-by-role panel reads — zero touch of the raw ~6M-row table required.
 
-- **PROJ-02 shipped (2026-07-02, Phase 19 plan 19-01, commits `9dbe606b`/`08e78f9c`).**
-  `getCachedAccDcBulkUsers`'s `includePermissionSummary` else-branch switched from the live
-  `$queryRaw` GROUP BY to `db.accFolderPermissionSummary.findMany` (the Phase 18 projection);
-  `includePermissionContexts:true` now throws by default (hard-guard) unless
-  `ACC_ALLOW_RAW_PERMISSION_SCAN=1` is set. `lib/acc/dcUserAssembly.ts` unchanged. Verified:
-  `npx tsc --noEmit` clean, full `npm test` 2256/1-skipped green, TEST-02 terrain golden
-  masters 12/12 byte-identical (terrain untouched), `verify-folder-perm-summary.cjs` PASS
-  (22,082==22,082, 0 mismatches) re-run against the live DB post-switch. Consumer call sites
-  (`AccessAnalysisShell.tsx`, `RightPanelStack.tsx`, `acc-route-hydration.ts`) unchanged —
-  data-source swap is entirely internal. Owner visual parity on `/access-analysis` +
-  `/template-mty` deferred to 19-02's phase-close checkpoint (single rebuild covers both plans).
-
-- **PROJ-01 shipped (2026-07-02, Phase 18, commits `77909b10`/`9d55539c`/`fb8ba765`).**
-  `AccFolderPermissionSummary` Prisma model + migration + server-side backfill +
-  reconciliation script landed. Migration applied via the raw-SQL +
-  `prisma migrate resolve` fallback (pgvector shadow-DB blocks `migrate dev` on this
-  DB, confirmed again). Backfill: 22,082 rows, idempotent, entirely server-side
-  (`INSERT...SELECT...GROUP BY`, zero Node-side row scan) — TEST-01 stayed green
-  12/12 throughout. Reconciliation: live aggregate == projection (22,082 == 22,082),
-  0 full-outer-join mismatches, 20/20 spot-checked keys matched — PASS verdict in
-  `18-RECONCILIATION.md`. No consumer switched yet; Phase 19 (PROJ-02/PROJ-03) owns
-  switching `/access-analysis`/`/template-mty` consumers onto this projection and
-  retiring the `includePermissionContexts` raw scan.
-
-- **SPLIT-04 shipped (2026-07-02, Phase 17, commits `e0bb6e66`/`da2f230b`).** `HybridAnalyticsSurface.tsx` (1,328 lines) → `hybridAnalyticsTransforms.ts` (pure) + `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsPanels.tsx` + `HybridAnalyticsView.tsx`/`HybridAnalyticsPostureSection.tsx`/`HybridAnalyticsRankingsSection.tsx` (presentational, 3-way split to honor ~400L) + `HybridAnalyticsDrilldown.tsx` + a 196-line thin shell still exporting zero-arg `HybridAnalyticsSurface()`. Both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed. **This closes all three REF-01 monolith splits.** Parity was accepted on the byte-identical-DOM-golden-test basis only — `/users/access-analysis` currently redirects to `/users/spatial-graph` and no production code mounts the surface, so there was no live route to visually verify. Owner visual sign-off did NOT occur and remains open for later review if/when the surface gets a live mount.
-
-- **Behavior-preserving refactors only.** REF-01/REF-02/REF-03 must keep their
-  characterization tests (TEST-02 `folderPermissionTerrainView.test.ts`, TEST-03
-  `templateFolderTerrain.sharedQuery.test.ts`, TEST-01 OOM guard) byte-identical /
-  green. No workshop-visible change.
-
-- **Sequence:** REF-02 (extract shared `folderPermQuery.ts`) lands before/with the
-  REF-01 splits so both `/template-mty` and `/access-analysis` consume one owned query;
-  REF-03 (summary projection) builds on the centralised query.
-
-- **`HybridAnalyticsSurface.tsx` pin was thin, now widened** — SPLIT-03 (17-01, `b6084f5f`)
-  added `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm main path BEFORE
-  the SPLIT-04 split (17-02) executed. Phase 17 is now closed.
-
-- **REF-03 is the risk carrier** — it adds a Prisma migration + backfill on the live
-  `AccFolderPermission` table (~6M rows). Reconcile projection-vs-live-aggregate parity
-  before retiring the `includePermissionContexts` raw scan in `lib/server/acc-hot-cache.ts`.
-  A materialised summary needs a refresh path (wire into the existing ingest cron or a
-  rebuild step); bound + document staleness.
+- **Behavior-preserving refactors only (v2.1/v2.2 guardrail, still binding for shared modules).** REF-01/REF-02/REF-03 characterization tests (TEST-02 `folderPermissionTerrainView.test.ts`, TEST-03 `templateFolderTerrain.sharedQuery.test.ts`, TEST-01 OOM guard) must stay byte-identical / green through v2.3 as well — any v2.3 phase touching `folderPermQuery.ts` or `acc-hot-cache.ts` inherits this guardrail.
 
 - **Gates:** `npx tsc --noEmit` before any rebuild; deploy = rebuild + Task Scheduler
   restart on `:3000` (not a branch merge); Prisma migrations on this DB have historically
-  choked on pgvector — apply via raw `ALTER` + `prisma migrate resolve` when `migrate dev` fails.
+  choked on pgvector — apply via raw `ALTER` + `prisma migrate resolve` when `migrate dev`
+  fails (directly relevant to Phase 22's new issue-type lookup table migration).
 
 - **`.planning/` mid-migration:** `MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/` are
-  deleted in the working tree; v1.0/v2.0 history lives only in git HEAD. v2.2 evolves
-  PROJECT/STATE/REQUIREMENTS in place (same "safe logical close" pattern as v2.1).
+  deleted in the working tree; v1.0/v2.0/v2.1/v2.2 history lives only in git HEAD. v2.3
+  continues evolving PROJECT/STATE/REQUIREMENTS/ROADMAP in place (same "safe logical close"
+  pattern used for v2.1 and v2.2).
 
-- **gsd-tools `phase complete` is unreliable on this repo** — it mangled STATE frontmatter
-  on Phase 16 close (reset milestone to `v1.0/Concerns Hardening`, set `status: completed`,
-  overwrote `progress` with v2.1's 8/8·17/17, reported `is_last_phase: true` though Phases
-  17–19 remain). ROADMAP checkbox + Progress table updates were correct. **Always inspect
-  and repair STATE frontmatter (milestone/status/current_phase/progress) manually after
-  running it.** The wrong milestone label originates in the tool's ROADMAP-Milestones parse,
-  not `config.json` (which carries no milestone field).
+- **gsd-tools `phase complete` is unreliable on this repo** — it has previously mangled
+  STATE frontmatter on phase close (wrong milestone label, wrong progress numbers). **Always
+  inspect and repair STATE frontmatter (milestone/status/current_phase/progress) manually
+  after running it**, including during v2.3 phase closes.
 
 ### Blockers/Concerns
 
-- None blocking v2.2. Risks tracked above (REF-03 migration/backfill/refresh).
+- None blocking v2.3 Phase 20. Risk is concentrated and isolated in Phase 22 (ISSUE-04's
+  external APS call + new Prisma migration) — tracked above and sequenced deliberately after
+  the lower-risk Phase 20/21 work.
 
-- **Open (non-blocking):** owner visual sign-off on the HybridAnalyticsSurface split (17-02,
-  SPLIT-04) has not occurred. `/users/access-analysis` currently redirects to
-  `/users/spatial-graph` and no production code mounts the surface (the
-  `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` flag appears only in a test file), so there was nothing to
-  visually eyeball at execution time. Parity was accepted on the byte-identical DOM-golden-test
-  basis (plan how-to-verify step 3) instead. Revisit if/when the surface gets a live, unflagged
-  mount.
-
-- **Resolved 2026-07-01 (16-02 Task 1):** the 2 pre-existing `FolderPermissionTerrain.test.tsx`
-  failures were root-caused and fixed — folder-label over-pruning at default zoom (restored the
-  roomy evenly-spaced layout for small/typical datasets in `folderTerrainCamera.ts`) and a
-  ground-plane `<polygon>` inflating the polygon-count pin (rendered as `<path>` instead). Both
-  bugs trace to commit `d2d990bf` (2026-06-15). `FolderPermissionTerrain.test.tsx` is now 13/13
-  green. See `16-02-SUMMARY.md` Deviations for full root-cause detail.
+- **Open (non-blocking, carried from v2.2):** owner visual sign-off on the Phase 17
+  HybridAnalyticsSurface split (SPLIT-04) has not occurred — `/users/access-analysis`
+  currently redirects to `/users/spatial-graph` and no production code mounts the surface.
+  Parity was accepted on the byte-identical DOM-golden-test basis instead. Revisit if/when
+  the surface gets a live, unflagged mount. Not part of v2.3 scope.
 
 - Branch is `feat/access-analysis-redesign` with heavy uncommitted WIP + the `.planning/`
   migration deletions in the working tree. **Commit by explicit path only** (never `-A`/`.`);
@@ -183,9 +170,9 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Milestone **v2.3 New Graphs** opened 2026-07-02. Requirements definition in progress
-(`/gsd:new-milestone` cycle): scope the ROADMAP.md "v2.3 Candidates (Seeds)" inventory
-into REQUIREMENTS.md with REQ-IDs, then roadmap (phases continue from 20).
+Roadmap created for milestone **v2.3 New Graphs** (`.planning/ROADMAP.md` updated in place;
+`.planning/REQUIREMENTS.md` traceability filled 8/8). Next: `/gsd:plan-phase 20` (Foundation
+Wins & Engagement Panels: ISSUE-01, PERM-01, ENG-01, PIPE-01).
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
@@ -195,16 +182,19 @@ SUMMARY/VERIFICATION artifacts, and git history. Physical archival (MILESTONES.m
 
 Guardrails carried forward: explicit-path commits with `git diff --cached --name-only` proof,
 `npx tsc --noEmit` before any rebuild, no new WebGL on data surfaces, zinc theme untouched,
-`/users/spatial-graph` not touched, honest coverage labels on under-covered sources.
+`/users/spatial-graph` not touched, honest coverage labels on under-covered sources, never chart
+`rowsByModule`, convert `totalBytes` BigInt server-side, never drop the null-`lastSignIn` bucket,
+never render a raw issue-type GUID.
 
 Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split is still
-pending (test-basis-only acceptance — no live mount) — see Blockers/Concerns above.
+pending (test-basis-only acceptance — no live mount) — see Blockers/Concerns above. Not part
+of v2.3 scope.
 
 ---
-*Last updated: 2026-07-02 — Milestone v2.3 New Graphs started. PROJECT.md updated (Current Milestone section; new-graphs Active item promoted), STATE.md reset. Next: requirements → roadmap.*
+*Last updated: 2026-07-02 — v2.3 New Graphs roadmap created (Phases 20-23). Next: plan Phase 20.*
 
 ## Session
 
-**Last session:** 2026-07-02 (new-milestone → v2.3 New Graphs opened; PROJECT.md + STATE.md updated)
-**Stopped at:** Defining requirements for v2.3 (scoping the ROADMAP.md seed inventory into REQUIREMENTS.md).
-**Resume file:** none — continue the `/gsd:new-milestone` cycle (requirements → roadmap).
+**Last session:** 2026-07-02 (roadmap → v2.3 New Graphs Phases 20-23 created; REQUIREMENTS.md traceability filled; STATE.md advanced to Phase 20/ready-to-plan)
+**Stopped at:** Roadmap complete. Ready to plan Phase 20 (Foundation Wins & Engagement Panels).
+**Resume file:** none — continue with `/gsd:plan-phase 20`.

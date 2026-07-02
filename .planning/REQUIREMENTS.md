@@ -78,20 +78,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ISSUE-01 | — | Pending |
-| ISSUE-02 | — | Pending |
-| ISSUE-03 | — | Pending |
-| ISSUE-04 | — | Pending |
-| ISSUE-05 | — | Pending |
-| PERM-01 | — | Pending |
-| ENG-01 | — | Pending |
-| PIPE-01 | — | Pending |
+| ISSUE-01 | Phase 20 | Pending |
+| ISSUE-02 | Phase 21 | Pending |
+| ISSUE-03 | Phase 21 | Pending |
+| ISSUE-04 | Phase 22 | Pending |
+| ISSUE-05 | Phase 22 | Pending |
+| PERM-01 | Phase 20 | Pending |
+| ENG-01 | Phase 20 | Pending |
+| PIPE-01 | Phase 20 | Pending |
 
 **Coverage:**
 - v2.3 requirements: 8 total
-- Mapped to phases: 0 (roadmap pending)
-- Unmapped: 8 ⚠️ (expected — roadmap not yet created)
+- Mapped to phases: 8 (100%)
+- Unmapped: 0
+
+Phase 23 (Workshop Curation & Milestone Close) carries no new requirement mapping — it is
+the milestone-closing curation/verification gate covering all 8 requirements collectively
+(see `ROADMAP.md` Phase 23 Goal).
 
 ---
 *Requirements defined: 2026-07-02*
-*Last updated: 2026-07-02 after initial definition (research-scoped, owner-confirmed)*
+*Last updated: 2026-07-02 after roadmap creation (8/8 requirements mapped to Phases 20-22; Phase 23 closes the milestone) — see `.planning/ROADMAP.md`*
