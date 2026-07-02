@@ -113,6 +113,24 @@ async function main() {
       logErr(`ERROR: ${result.errorMessage}`);
     }
     if (result.status === 'success') {
+      // PROJ-03 (REF-03 completion): refresh the AccFolderPermissionSummary
+      // projection FIRST — before the person-graph rebuild and (critically)
+      // before build-instance-features.ts, which reads the projection via
+      // includePermissionSummary (PROJ-02), so the same run's embedding sees
+      // fresh data. Reuses the idempotent server-side backfill script
+      // (TRUNCATE + INSERT...SELECT...GROUP BY) verbatim — the single owner
+      // of the aggregate SQL, no duplication, no Node-side row scan. Non-fatal
+      // (matches the person-graph / embedding blocks below): a refresh
+      // failure never aborts the ingest exit status. The TRUNCATE takes a
+      // brief ACCESS EXCLUSIVE lock (~seconds); concurrent projection readers
+      // wait then see the new rows — they never observe an empty table.
+      try {
+        log('Refreshing AccFolderPermissionSummary projection (server-side aggregate)...');
+        const { execSync } = require('node:child_process');
+        execSync('node scripts/backfill-folder-perm-summary.cjs', { stdio: 'inherit' });
+      } catch (e) {
+        log('AccFolderPermissionSummary refresh failed (non-fatal): ' + e.message);
+      }
       try {
         log('Rebuilding person-similarity graph snapshot...');
         const { execSync } = require('node:child_process');

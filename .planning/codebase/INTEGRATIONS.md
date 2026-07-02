@@ -107,6 +107,31 @@ note that role names reflect the live APS state, not the DC snapshot date.
 - Verified: 111,308 folders / 3.49TB crawled (FOLD-04 gate passed)
 - 6 folder attrs (size, version, last-updated, updated-by, added-by, description) are available in crawl response
 
+**AccFolderPermissionSummary projection (REF-03):**
+- WHAT: a materialised projection of the `includePermissionSummary` GROUP BY aggregate —
+  per `(projectId, roleId)`: `folderCount`, `totalBytes`, `permTypes` (model
+  `prisma/schema.prisma`, built by `scripts/backfill-folder-perm-summary.cjs`, reconciled
+  by `scripts/verify-folder-perm-summary.cjs`). Entirely server-side: `TRUNCATE` +
+  `INSERT...SELECT...GROUP BY`, never a Node-side row scan of the ~6M-row
+  `AccFolderPermission` table.
+- CONSUMER: `lib/server/acc-hot-cache.ts` `includePermissionSummary` path reads it
+  (PROJ-02), feeding the per-project permission dims (`permissionStrength`,
+  `folderBreadth`, `accessibleDataBytes`, `permMixedProfile`, `fullController`) on
+  `/access-analysis`; the runtime hot-cache adds <=10min (sliding-TTL ceiling <=1h) on top.
+- REFRESH + STALENESS BOUND (SC#4): `scripts/dc-daily-ingest.cjs` re-runs
+  `scripts/backfill-folder-perm-summary.cjs` as the first step of its success branch,
+  non-fatal, after every successful daily ingest — before the person-graph rebuild and
+  before `build-instance-features.ts` (which reads this same projection via
+  `includePermissionSummary`, PROJ-02), so the same run's embedding sees fresh data.
+  Staleness bound: **<=1 daily ingest cycle**.
+- CAVEAT (honest): the projection's SOURCE (`AccFolderPermission`) is updated by the
+  SEPARATE folder-crawl task (`scripts/folder-crawl-cron.cjs`), not by the DC ingest.
+  Folder-permission changes made by a crawl between ingest runs lag until the next
+  successful ingest refresh — the bound above is measured from ingest cycles, not crawl
+  cycles.
+- MANUAL FALLBACK: `node scripts/backfill-folder-perm-summary.cjs` (idempotent) forces an
+  immediate rebuild outside the cron cycle.
+
 **ACC Activity (DC-extracted):**
 - Prisma model: `AccActivity` — 4.55M rows as of phase 8 completion; 623K rows in AccActivity grouped query
 - Taxonomy classifier: `app/(dashboard)/users/access-analysis/accTaxonomy.ts` + `accTaxonomyActions.generated.ts`
