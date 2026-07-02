@@ -259,13 +259,15 @@ export async function getCachedAccDcBulkUsers(
         }),
       ]);
 
-      // [Perf 2026-06] Folder-permission data. AccFolderPermission is ~5M rows; loading
-      // them all into Node (the old findMany) was the dominant cause of the 60-90s
-      // access-analysis load + heap OOM. The graph only needs the SUMMARY
-      // (includePermissionSummary, NOT contexts), so aggregate in SQL — per
-      // (projectId, roleId): distinct folder count, summed folder bytes, distinct
-      // permTypes — collapsing ~5M grant rows to ~13k group rows. The contexts path
-      // (WS2 edge feed) still needs raw folder-level grants, so it keeps the row scan.
+      // [Perf 2026-06, switched 2026-07 PROJ-02] Folder-permission data. AccFolderPermission
+      // is ~6M rows; loading them all into Node (the old findMany) was the dominant cause of
+      // the 60-90s access-analysis load + heap OOM. The graph only needs the SUMMARY
+      // (includePermissionSummary, NOT contexts). The summary path now reads the materialised
+      // `AccFolderPermissionSummary` projection (Phase 18) — refreshed post-ingest by
+      // `dc-daily-ingest.cjs`, PROJ-03 — instead of running the live GROUP BY aggregate. The
+      // projection is a proven byte-identical mirror of that aggregate (Phase 18 reconciliation:
+      // 22,082 == 22,082 rows, 0 mismatches). The contexts path (WS2 edge feed) still needs raw
+      // folder-level grants and keeps the row scan, now hard-guarded below.
       let rawFolderPermissions: Array<{
         folderId: string;
         roleId: string;
@@ -279,10 +281,11 @@ export async function getCachedAccDcBulkUsers(
         | undefined;
       if (needsFolderPerms) {
         // WARNING (DB-04): the includePermissionContexts:true branch below materialises the
-        // FULL AccFolderPermission table (~5M+ rows) into Node heap via a findMany scan.
-        // This re-opens the OOM window that the $queryRaw GROUP BY aggregate in the else-branch
-        // was added to close (2026-06 access-analysis OOM fix). Only enable this path when
-        // raw folder-level grants are strictly required (e.g. WS2 edge-feed / per-folder ACL).
+        // FULL AccFolderPermission table (~6M+ rows) into Node heap via a findMany scan.
+        // This re-opens the OOM window that the live GROUP BY aggregate in the else-branch
+        // was added to close (2026-06 access-analysis OOM fix; PROJ-02 now switches the
+        // else-branch to the materialised projection). Only enable this path when raw
+        // folder-level grants are strictly required (e.g. WS2 edge-feed / per-folder ACL).
         // VERIFY: no active non-test caller enables includePermissionContexts:true
         // (grep confirms only test files reference this flag).
         if (includePermissionContexts) {
@@ -301,26 +304,15 @@ export async function getCachedAccDcBulkUsers(
             select: { id: true, totalSizeBytes: true },
           });
         } else {
-          const aggRows = await db.$queryRaw<
-            Array<{ projectId: string; roleId: string; folderCount: number; totalBytes: bigint | number; permTypes: string[] }>
-          >`
-            SELECT f."projectId" AS "projectId",
-                   fp."roleId" AS "roleId",
-                   COUNT(DISTINCT fp."folderId")::int AS "folderCount",
-                   COALESCE(SUM(COALESCE(f."totalSizeBytes", 0)), 0)::bigint AS "totalBytes",
-                   array_agg(DISTINCT fp."permType") AS "permTypes"
-            FROM "AccFolderPermission" fp
-            JOIN "AccFolder" f ON f.id = fp."folderId"
-            JOIN "AccProject" p ON p.id = f."projectId"
-            WHERE p."folderCrawlStatus" IN ('ok', 'partial')
-            GROUP BY f."projectId", fp."roleId"
-          `;
+          const summaryRows = await db.accFolderPermissionSummary.findMany({
+            select: { projectId: true, roleId: true, folderCount: true, totalBytes: true, permTypes: true },
+          });
           folderSummaryByProjectRole = new Map(
-            aggRows.map((r) => [
+            summaryRows.map((r: any) => [
               `${r.projectId}::${r.roleId}`,
               {
                 folderCount: Number(r.folderCount),
-                totalBytes: Number(r.totalBytes),
+                totalBytes: Number(r.totalBytes), // BigInt → number, mirrors the old Number(r.totalBytes)
                 permTypes: r.permTypes ?? [],
               },
             ]),

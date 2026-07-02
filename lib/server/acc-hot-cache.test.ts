@@ -57,6 +57,9 @@ function makeDcDb() {
         folder: { projectId: "p1", fullPath: "/Project Files" },
       },
     ]),
+    accFolderPermissionSummary: versionedModel([
+      { projectId: "p1", roleId: "r1", folderCount: 1, totalBytes: BigInt(0), permTypes: ["View Only"] },
+    ]),
   };
 }
 
@@ -167,9 +170,10 @@ describe("ACC hot cache", () => {
 
     const result = await prewarmAccHotCache(db);
 
-    // The heavy variant's folder-perm aggregate + activity grouping run through
-    // `$queryRaw`; the lean variant never touches it. If prewarm only warmed the
-    // lean snapshot (the old bug), `$queryRaw` is never called here.
+    // The heavy variant's activity grouping runs through `$queryRaw` (folder-perm
+    // summary no longer does — PROJ-02 switched it to accFolderPermissionSummary.findMany);
+    // the lean variant never touches `$queryRaw`. If prewarm only warmed the lean
+    // snapshot (the old bug), `$queryRaw` is never called here.
     expect(db.$queryRaw).toHaveBeenCalled();
     expect(
       result.tasks.some((task) => /summary|activity/i.test(task.name) && task.ok),
@@ -258,7 +262,7 @@ describe("ACC hot cache", () => {
   it("bounds the permission-summary aggregate to <= n_roles x n_projects group rows, never raw permission rows", async () => {
     // Fixture: 2 roles × 2 projects = 4 group-row upper bound.
     // The raw AccFolderPermission table would have many more rows in production
-    // (~5M+). We simulate a realistic imbalance: 8 raw rows vs 4 group rows.
+    // (~6M+). We simulate a realistic imbalance: 8 raw rows vs 4 group rows.
     const roles = [
       { id: "r1", name: "Architect" },
       { id: "r2", name: "Project Admin" },
@@ -281,8 +285,9 @@ describe("ACC hot cache", () => {
       { folderId: "f8", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p2", fullPath: "/H" } },
     ];
 
-    // The GROUP BY aggregate collapses the 8 raw rows into 4 group rows
-    // (one per projectId × roleId combination).
+    // The materialised AccFolderPermissionSummary projection collapses the 8 raw
+    // rows into 4 group rows (one per projectId × roleId combination) — this is
+    // the shape the projection's findMany now returns (PROJ-02 switch).
     const groupRows = [
       { projectId: "p1", roleId: "r1", folderCount: 2, totalBytes: BigInt(1024), permTypes: ["View Only"] },
       { projectId: "p1", roleId: "r2", folderCount: 2, totalBytes: BigInt(2048), permTypes: ["Editor"] },
@@ -291,19 +296,18 @@ describe("ACC hot cache", () => {
     ];
 
     // Build the db mock using the standard helpers.
-    // Override accRole + accProject with our fixture data; wire $queryRaw to return group rows.
+    // Override accRole + accProject with our fixture data; wire the projection's
+    // findMany to return group rows.
     const db = makePrewarmDb();
     db.accRole = versionedModel(roles);
     db.accProject = versionedModel(projects);
     db.accDcProject = versionedModel(projects.map((p) => ({ id: p.id, name: p.name, status: p.status })));
     // accFolderPermission carries the raw rows so we can assert findMany is NOT called.
     db.accFolderPermission = versionedModel(rawPermissionRows);
+    // accFolderPermissionSummary is the projection the summary path now reads.
+    db.accFolderPermissionSummary = versionedModel(groupRows);
 
-    // $queryRaw is called once for the folder-perm aggregate (no activity mix here).
-    // mockResolvedValueOnce so any subsequent $queryRaw calls get [] (safe default).
-    db.$queryRaw.mockResolvedValueOnce(groupRows);
-
-    // Act: call the summary variant (NOT contexts) — this must use the GROUP BY path.
+    // Act: call the summary variant (NOT contexts) — this must use the projection path.
     const result = await getCachedAccDcBulkUsers(db, { includePermissionSummary: true });
 
     // Assert 1: the group-row upper bound contract.
@@ -315,7 +319,7 @@ describe("ACC hot cache", () => {
     expect(rawPermissionRows.length).toBeGreaterThan(groupRows.length);
 
     // Assert 3: the summary path must NOT call accFolderPermission.findMany
-    // (that is the ~5M-row raw-scan path guarded by includePermissionContexts).
+    // (that is the ~6M-row raw-scan path guarded by includePermissionContexts).
     expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
 
     // Assert 4: the assembled result is a non-empty BulkAccUser array
