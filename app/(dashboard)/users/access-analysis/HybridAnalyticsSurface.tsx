@@ -3,40 +3,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, Network, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Selection } from "@uwdata/mosaic-core";
-import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
-import { useMergedAccUsers } from "../useMergedAccUsers";
-import { canInitializeDuckDbInBrowser, getDuckDbClient } from "./duckdbClient";
-import {
-  buildFallbackAnalyticsState,
-  type ChartDatum,
-  EMPTY_ANALYTICS_QUERY_STATE,
-  errorToAnalyticsDiagnostic,
-  runGraphAnalyticsQueries,
-  type AnalyticsQueryState,
-} from "./analyticsQueries";
-import type { GraphFolderPermissionRow } from "./graphTables";
 import { HistogramPanel } from "./HistogramPanel";
 import { DistributionPanel } from "./DistributionPanel";
 import { HeatmapPanel } from "./HeatmapPanel";
-import { DonutPanel, type DonutSlice } from "./DonutPanel";
+import { DonutPanel } from "./DonutPanel";
 import { KpiHeroStrip } from "./KpiHeroStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
-import {
-  buildExecutiveFindings,
-  computeFolderProjectCoverage,
-  computeSignInCoverage,
-  isAdmin,
-} from "./analyticsFindings";
-import { HeadlineInsights, type HeadlineInsightItem } from "./HeadlineInsights";
+import { isAdmin } from "./analyticsFindings";
+import { HeadlineInsights } from "./HeadlineInsights";
 import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
-import { chartColor, sequenceColor } from "./chartColors";
 import { ChartPanel } from "./ChartPanel";
 import {
   Dialog,
@@ -55,229 +36,14 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { ActiveFiltersBar } from "./ActiveFiltersBar";
-import type { ScopedSelection } from "./selectionFilters";
-
-const ACTIVE_REFRESH_MS = 15_000;
-const IDLE_REFRESH_MS = 5 * 60_000;
-
-function toFolderRows(rawRows: readonly unknown[] | undefined): GraphFolderPermissionRow[] {
-  return (rawRows ?? [])
-    .map((row) => {
-      const r = row as Record<string, unknown>;
-      return {
-        folderId: String(r.folderId ?? ""),
-        folderPath: String(r.folderPath ?? ""),
-        projectId: String(r.projectId ?? ""),
-        roleId: String(r.roleName ?? r.roleId ?? ""),
-        permType: String(r.permType ?? ""),
-      };
-    })
-    .filter((row) => row.folderId && row.roleId && row.permType);
-}
-
-const ACCENTS = {
-  distribution: chartColor("seq4"),
-  distributionAdmin: chartColor("watch"),
-  heatmap: chartColor("seq2"),
-  membership: chartColor("good"),
-  role: chartColor("seq4"),
-  company: chartColor("seq1"),
-} as const;
-
-const STATUS_ROLE: Record<string, Parameters<typeof chartColor>[0]> = {
-  active: "good",
-  pending: "watch",
-  deleted: "risk",
-  unknown: "neutral",
-};
-const RECENCY_ROLES = ["good", "info", "watch", "neutral"] as const;
-const ADMIN_MIX_ROLES = ["risk", "watch", "info", "neutral"] as const;
-
-function computeUserStatus(users: BulkAccUser[]): DonutSlice[] {
-  const counts = new Map<string, number>();
-  for (const u of users) {
-    const key = u.aggregatedStatus ?? "unknown";
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([label, value]) => ({
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      value,
-      color: chartColor(STATUS_ROLE[label] ?? "neutral"),
-    }))
-    .sort((a, b) => b.value - a.value);
-}
-
-function computeActivityRecency(users: BulkAccUser[]): DonutSlice[] {
-  const now = Date.now();
-  const buckets = [
-    { label: "Signed in 30d", value: 0 },
-    { label: "31-90d", value: 0 },
-    { label: "Older than 90d", value: 0 },
-    { label: "Never signed in", value: 0 },
-  ];
-  for (const u of users) {
-    const t = u.lastSignIn ? Date.parse(u.lastSignIn) : NaN;
-    if (!Number.isFinite(t)) {
-      buckets[3].value++;
-      continue;
-    }
-    const days = (now - t) / 86_400_000;
-    if (days <= 30) buckets[0].value++;
-    else if (days <= 90) buckets[1].value++;
-    else buckets[2].value++;
-  }
-  return buckets.map((b, i) => ({ ...b, color: chartColor(RECENCY_ROLES[i]) }));
-}
-
-function computeAdminMix(users: BulkAccUser[]): DonutSlice[] {
-  let accountOnly = 0;
-  let projectOnly = 0;
-  let both = 0;
-  let none = 0;
-  for (const u of users) {
-    const isAccount = u.isAccountAdmin;
-    const isProject = u.adminCount > 0;
-    if (isAccount && isProject) both++;
-    else if (isAccount) accountOnly++;
-    else if (isProject) projectOnly++;
-    else none++;
-  }
-  return [
-    { label: "Account admin", value: accountOnly, color: chartColor(ADMIN_MIX_ROLES[0]) },
-    { label: "Account + project", value: both, color: chartColor(ADMIN_MIX_ROLES[1]) },
-    { label: "Project admin only", value: projectOnly, color: chartColor(ADMIN_MIX_ROLES[2]) },
-    { label: "Standard member", value: none, color: chartColor(ADMIN_MIX_ROLES[3]) },
-  ];
-}
-
-function computePermTiers(folderRows: GraphFolderPermissionRow[]): DonutSlice[] {
-  const counts = new Map<string, number>();
-  for (const r of folderRows) counts.set(r.permType, (counts.get(r.permType) ?? 0) + 1);
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value], i) => ({ label, value, color: sequenceColor(i) }));
-}
-
-function toTime(value: Date | string | null | undefined): number | null {
-  if (!value) return null;
-  const time = new Date(value).getTime();
-  return Number.isFinite(time) ? time : null;
-}
-
-function latestTime(values: Array<Date | string | null | undefined>): number | null {
-  const times = values.map(toTime).filter((value): value is number => value !== null);
-  return times.length ? Math.max(...times) : null;
-}
-
-function formatDateTime(value: number | null): string {
-  if (value === null) return "No extraction yet";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-interface FallbackBarDatum {
-  label: string;
-  value: number;
-}
-
-function toFallbackRows(rows: readonly ChartDatum[]): FallbackBarDatum[] {
-  return rows.map((row) => ({ label: row.label, value: row.value })).filter((row) => row.value > 0);
-}
-
-function projectCountDistribution(users: readonly BulkAccUser[]): FallbackBarDatum[] {
-  const buckets = new Map<string, number>();
-  for (const user of users) {
-    const key = user.projectCount >= 10 ? "10+" : String(user.projectCount);
-    buckets.set(key, (buckets.get(key) ?? 0) + 1);
-  }
-  return Array.from(buckets.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => Number.parseInt(a.label, 10) - Number.parseInt(b.label, 10));
-}
-
-function adminGrantDistribution(users: readonly BulkAccUser[]): FallbackBarDatum[] {
-  const buckets = new Map<string, number>();
-  for (const user of users) {
-    const key = user.adminCount >= 10 ? "10+" : String(user.adminCount);
-    buckets.set(key, (buckets.get(key) ?? 0) + 1);
-  }
-  return Array.from(buckets.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => Number.parseInt(a.label, 10) - Number.parseInt(b.label, 10));
-}
-
-function topCompanies(users: readonly BulkAccUser[], limit = 20): FallbackBarDatum[] {
-  const counts = new Map<string, number>();
-  for (const user of users) {
-    const label = (user.companyName ?? user.companyRole ?? "Unknown").trim() || "Unknown";
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-    .slice(0, limit);
-}
-
-function topProjects(users: readonly BulkAccUser[], limit = 20): FallbackBarDatum[] {
-  const counts = new Map<string, Set<string>>();
-  for (const user of users) {
-    for (const project of user.projects) {
-      const label = project.name || project.id || "Unknown";
-      const emails = counts.get(label) ?? new Set<string>();
-      emails.add(user.email.toLowerCase());
-      counts.set(label, emails);
-    }
-  }
-  return Array.from(counts.entries())
-    .map(([label, emails]) => ({ label, value: emails.size }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-    .slice(0, limit);
-}
-
-function topRoles(users: readonly BulkAccUser[], limit = 20): FallbackBarDatum[] {
-  const counts = new Map<string, Set<string>>();
-  for (const user of users) {
-    const roles = new Set([...(user.allRoles ?? []), ...(user.perProjectRoleNames ?? [])].filter(Boolean));
-    for (const project of user.projects) {
-      for (const role of project.roles) if (role) roles.add(role);
-    }
-    for (const role of roles) {
-      const emails = counts.get(role) ?? new Set<string>();
-      emails.add(user.email.toLowerCase());
-      counts.set(role, emails);
-    }
-  }
-  return Array.from(counts.entries())
-    .map(([label, emails]) => ({ label, value: emails.size }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-    .slice(0, limit);
-}
-
-function roleStatusHeatmapRows(users: readonly BulkAccUser[], limit = 12): FallbackBarDatum[] {
-  const counts = new Map<string, number>();
-  for (const user of users) {
-    for (const project of user.projects) {
-      const roles = project.roles.length ? project.roles : user.allRoles;
-      for (const role of roles) {
-        const label = `${role || "Unknown"} / ${project.status || "unknown"}`;
-        counts.set(label, (counts.get(label) ?? 0) + 1);
-      }
-    }
-  }
-  return Array.from(counts.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-    .slice(0, limit);
-}
-
-function adminGrantFinding(users: readonly BulkAccUser[]): string {
-  const grants = users.reduce((sum, user) => sum + user.adminCount, 0);
-  if (grants === 0) return "No project admin grants found.";
-  return `${grants.toLocaleString()} project admin ${grants === 1 ? "grant" : "grants"}`;
-}
+import { useHybridAnalytics } from "./useHybridAnalytics";
+import {
+  ACCENTS,
+  adminGrantFinding,
+  formatDateTime,
+  toFallbackRows,
+  type FallbackBarDatum,
+} from "./hybridAnalyticsTransforms";
 
 function SectionHeading({ title, hint }: { title: string; hint?: string }) {
   return (
@@ -349,36 +115,41 @@ function FallbackBarPanel({
 }
 
 export function HybridAnalyticsSurface() {
-  const activeJobQuery = trpc.accSync.getActiveDeepSyncJob.useQuery(undefined, {
-    refetchInterval: 60_000,
-    staleTime: 10_000,
-  });
-  const syncActive = !!activeJobQuery.data;
-  const refreshInterval = syncActive ? ACTIVE_REFRESH_MS : false;
-  const freshnessQuery = trpc.accSync.getSyncFreshness.useQuery(undefined, {
-    refetchInterval: syncActive ? ACTIVE_REFRESH_MS : IDLE_REFRESH_MS,
-    staleTime: 60_000,
-  });
-  const dcStatusQuery = trpc.accSync.getDcIngestStatus.useQuery(undefined, {
-    refetchInterval: syncActive ? ACTIVE_REFRESH_MS : IDLE_REFRESH_MS,
-    staleTime: 60_000,
-  });
-  const kpiSummaryQuery = trpc.accMembers.getKpiSummary.useQuery(
-    { window: "all" },
-    { refetchInterval: refreshInterval, staleTime: 60_000 },
-  );
-  const { users, loading } = useMergedAccUsers({ refetchInterval: refreshInterval });
-  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
-    staleTime: 600_000,
-    retry: false,
-    enabled: users.length > 0,
-    refetchInterval: refreshInterval,
-  });
+  const {
+    users,
+    folderRows,
+    loading,
+    syncActive,
+    kpiSummary,
+    usersSelection,
+    projectsSelection,
+    scopedSelections,
+    queryState,
+    isRefreshingCharts,
+    isReady,
+    isFallback,
+    userStatusSlices,
+    recencySlices,
+    adminMixSlices,
+    permTierSlices,
+    findings,
+    headlineItems,
+    topProjectRows,
+    topRoleRows,
+    projectDistributionRows,
+    adminDistributionRows,
+    topCompanyRows,
+    roleStatusRows,
+    signInCoverage,
+    folderCoverage,
+    activeShare,
+    adminTotal,
+    latestExtractionAt,
+    elapsedHrs,
+    isStale,
+    syncStateLabel,
+  } = useHybridAnalytics();
 
-  const folderRows = useMemo(
-    () => toFolderRows(folderMatrixQuery.data?.rows),
-    [folderMatrixQuery.data?.rows],
-  );
   const [detailFilter, setDetailFilter] = useState<{
     title: string;
     subtitle: string;
@@ -387,21 +158,6 @@ export function HybridAnalyticsSurface() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleCount, setVisibleCount] = useState(50);
-
-  // Mosaic crossfilter must NOT be shared across panels that query different
-  // base tables: a clause from a `user_projects` panel applied to a `users`
-  // panel (or vice versa) makes Mosaic compute one table's measure against the
-  // other's columns → "column not found" Binder Errors. Keep one selection per
-  // table so within-table crossfilter still works, cross-table never forms.
-  const usersSelection = useMemo(() => Selection.crossfilter(), []);
-  const projectsSelection = useMemo(() => Selection.crossfilter(), []);
-  const scopedSelections = useMemo<ScopedSelection[]>(
-    () => [
-      { selection: usersSelection as unknown as ScopedSelection["selection"], scope: "Users" },
-      { selection: projectsSelection as unknown as ScopedSelection["selection"], scope: "Projects" },
-    ],
-    [usersSelection, projectsSelection],
-  );
 
   useEffect(() => {
     setVisibleCount(50);
@@ -554,154 +310,6 @@ export function HybridAnalyticsSurface() {
     }
   };
 
-  const [queryState, setQueryState] = useState<AnalyticsQueryState>(EMPTY_ANALYTICS_QUERY_STATE);
-  const [isRefreshingCharts, setIsRefreshingCharts] = useState(false);
-  const queryStatusRef = useRef<AnalyticsQueryState["status"]>(queryState.status);
-
-  useEffect(() => {
-    queryStatusRef.current = queryState.status;
-  }, [queryState.status]);
-
-  useEffect(() => {
-    if (!users.length) return;
-    if (canInitializeDuckDbInBrowser()) {
-      void getDuckDbClient().catch(() => {});
-    }
-  }, [users.length]);
-
-  const syncVersionKey = useMemo(
-    () => [
-      freshnessQuery.data?.quick.lastRunAt ?? "",
-      freshnessQuery.data?.deep.lastRunAt ?? "",
-      freshnessQuery.data?.deep.lastIngestAt ?? "",
-      dcStatusQuery.data?.lastRunAt ?? "",
-      dcStatusQuery.data?.lastSuccessAt ?? "",
-      users.length,
-      folderRows.length,
-    ].join("|"),
-    [
-      freshnessQuery.data?.quick.lastRunAt,
-      freshnessQuery.data?.deep.lastRunAt,
-      freshnessQuery.data?.deep.lastIngestAt,
-      dcStatusQuery.data?.lastRunAt,
-      dcStatusQuery.data?.lastSuccessAt,
-      users.length,
-      folderRows.length,
-    ],
-  );
-
-  useEffect(() => {
-    if (loading) return;
-    let cancelled = false;
-    if (!users.length) {
-      setQueryState(EMPTY_ANALYTICS_QUERY_STATE);
-      setIsRefreshingCharts(false);
-      return;
-    }
-
-    const hasReusableData = queryStatusRef.current === "ready" || queryStatusRef.current === "fallback";
-    setIsRefreshingCharts(hasReusableData);
-    setQueryState((prev) =>
-      hasReusableData || prev.status === "loading" ? prev : { ...prev, status: "loading", diagnostic: null },
-    );
-
-    getDuckDbClient()
-      .then(({ connection }) => runGraphAnalyticsQueries({ connection, users, folderRows }))
-      .then((state) => {
-        if (!cancelled) {
-          setQueryState(state);
-          setIsRefreshingCharts(false);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setQueryState(buildFallbackAnalyticsState(users, folderRows, errorToAnalyticsDiagnostic(error)));
-          setIsRefreshingCharts(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [loading, users, folderRows, syncVersionKey]);
-
-  const isReady = queryState.status === "ready";
-  const isFallback = queryState.status === "fallback";
-  const userStatusSlices = useMemo(() => computeUserStatus(users), [users]);
-  const recencySlices = useMemo(() => computeActivityRecency(users), [users]);
-  const adminMixSlices = useMemo(() => computeAdminMix(users), [users]);
-  const permTierSlices = useMemo(() => computePermTiers(folderRows), [folderRows]);
-  const findings = useMemo(() => buildExecutiveFindings({ users, folderRows }), [users, folderRows]);
-  const headlineItems = useMemo<HeadlineInsightItem[]>(
-    () => [
-      { id: "stale", label: "Stale access", text: findings.staleMembers, severity: "risk" },
-      { id: "active", label: "Active members", text: findings.activeMembers, severity: "good" },
-      { id: "admins", label: "Admin concentration", text: findings.adminConcentration, severity: "watch" },
-      { id: "breadth", label: "Access breadth", text: findings.projectBreadth, severity: "info" },
-    ],
-    [findings],
-  );
-  const topProjectRows = useMemo(() => topProjects(users), [users]);
-  const topRoleRows = useMemo(() => topRoles(users), [users]);
-  const projectDistributionRows = useMemo(() => projectCountDistribution(users), [users]);
-  const adminDistributionRows = useMemo(() => adminGrantDistribution(users), [users]);
-  const topCompanyRows = useMemo(() => topCompanies(users), [users]);
-  const roleStatusRows = useMemo(() => roleStatusHeatmapRows(users), [users]);
-
-  const signInCoverage = useMemo(() => computeSignInCoverage(users), [users]);
-  const folderCoverage = useMemo(
-    () => computeFolderProjectCoverage(folderRows, users),
-    [folderRows, users],
-  );
-
-  // Share of users with a *recorded* sign-in in the last 30 days, measured
-  // against users who have any sign-in date — not the whole population — so the
-  // ~66% with no recorded sign-in don't deflate the number into noise.
-  const activeShare = useMemo(() => {
-    if (!signInCoverage.withSignIn) return "0%";
-    const t = recencySlices[0]?.value ?? 0;
-    return `${Math.round((t / signInCoverage.withSignIn) * 100)}%`;
-  }, [recencySlices, signInCoverage.withSignIn]);
-
-  const adminTotal = useMemo(
-    () => users.filter((u) => u.isAccountAdmin || u.adminCount > 0).length,
-    [users],
-  );
-  const latestExtractionAt = useMemo(
-    () => latestTime([
-      freshnessQuery.data?.deep.lastIngestAt,
-      freshnessQuery.data?.deep.lastSuccessCompletedAt,
-      freshnessQuery.data?.deep.lastRunAt,
-      freshnessQuery.data?.quick.lastRunAt,
-      dcStatusQuery.data?.lastSuccessAt,
-      dcStatusQuery.data?.lastRunAt,
-    ]),
-    [
-      freshnessQuery.data?.deep.lastIngestAt,
-      freshnessQuery.data?.deep.lastSuccessCompletedAt,
-      freshnessQuery.data?.deep.lastRunAt,
-      freshnessQuery.data?.quick.lastRunAt,
-      dcStatusQuery.data?.lastSuccessAt,
-      dcStatusQuery.data?.lastRunAt,
-    ],
-  );
-
-  const { elapsedHrs, isStale } = useMemo(() => {
-    const lastSuccessTime = dcStatusQuery.data?.lastSuccessAt
-      ? new Date(dcStatusQuery.data.lastSuccessAt).getTime()
-      : null;
-    if (!lastSuccessTime) return { elapsedHrs: null, isStale: false };
-    const hrs = (Date.now() - lastSuccessTime) / 3_600_000;
-    return { elapsedHrs: hrs, isStale: hrs > 36 };
-  }, [dcStatusQuery.data?.lastSuccessAt]);
-
-  const syncStateLabel = syncActive
-    ? `Sync ${activeJobQuery.data?.status ?? "running"}`
-    : dcStatusQuery.data?.lastRunStatus
-      ? `DC ${dcStatusQuery.data.lastRunStatus}`
-      : freshnessQuery.data?.deep.ingestState
-        ? `Ingest ${freshnessQuery.data.deep.ingestState}`
-        : "Idle";
-
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -762,7 +370,7 @@ export function HybridAnalyticsSurface() {
 
       <SectionHeading title="Executive summary" />
 
-      <KpiHeroStrip users={users} folderGrantCount={folderRows.length} summary={kpiSummaryQuery.data} />
+      <KpiHeroStrip users={users} folderGrantCount={folderRows.length} summary={kpiSummary} />
 
       <HeadlineInsights items={headlineItems} onSelect={handleHeadlineSelect} />
 
