@@ -1,76 +1,97 @@
-# Requirements: LECG Dashboard — v2.2 Structural Refactors
+# Requirements: LECG Dashboard — v2.3 New Graphs
 
-**Defined:** 2026-07-01
+**Defined:** 2026-07-02
 **Core Value:** Truthful, fast analytics over the fully extracted ACC dataset — every metric derivable from the local Prisma DB and honest about coverage.
-**Source:** the deferred structural refactors seeded by v2.1 (`PROJECT.md` Active → REF-01/REF-02/REF-03), now safe behind the v2.1 characterization tests (TEST-01/TEST-02/TEST-03).
-**Prior milestone:** v2.1 Concerns Hardening (20/20 shipped, tagged `v2.1`) — its requirements are preserved in `PROJECT.md` Requirements → Validated and in git HEAD (`REQUIREMENTS.md@ad1e65e4`).
+**Source:** owner direction 2026-07-02 (ROADMAP.md "v2.3 Candidates (Seeds)") scoped through `.planning/research/` (STACK/FEATURES/ARCHITECTURE/PITFALLS + SUMMARY, committed `57011f2d`).
+**Prior milestone:** v2.2 Structural Refactors (8/8 shipped, tagged `v2.2`) — its requirements are preserved in `PROJECT.md` Requirements → Validated and in git HEAD.
 
-**Overarching guardrail:** every requirement below is **behavior-preserving**. The
-characterization test that pins the touched surface must stay green and byte-identical;
-the workshop pages (`/users`, `/access-analysis`, `/template-mty`, `/forma-proposal`)
-must render identically; `/users/spatial-graph` is not touched.
+**Overarching guardrails:** every panel follows the established registration pattern
+(`lib/server/<name>View.ts` loader → pure `*Counts.ts` transform with co-located test →
+`"use client"` chart via `@/components/ui/EChart` → `AccessAnalysisCharts.tsx`
+`<Reveal><PremiumSurface>`); zero new npm dependencies (`echarts@6.1.0` covers all
+chart types); zinc theme with resolved ECharts colors; no new WebGL on data surfaces;
+under-covered data labeled, never hidden; aggregates server-side SQL/`groupBy` only
+(never `findMany` + JS reduce on large tables); `/users/spatial-graph` untouched;
+existing characterization tests (TEST-01/02/03) stay green and byte-identical.
 
-## v2.2 Requirements
+## v2.3 Requirements
 
-In scope for this milestone. Each maps to a roadmap phase (numbering continues from Phase 15).
+In scope for this milestone. Each maps to a roadmap phase (numbering continues from Phase 20).
 
-### Shared Query Extraction (QUERY → REF-02)
+### Issue Analytics (ISSUE)
 
-- [x] **QUERY-01**: the base `AccFolderPermission` join is extracted from `lib/server/templateFolderTerrain.ts` into a new `lib/server/folderPermQuery.ts` (owning the TEST-03 contract: 5-column set, row-bound, project-scoped, null-path handling). Both `templateFolderTerrain.ts` (`/template-mty`) and `lib/server/folderPermissionTerrainView.ts` (`/access-analysis`) import the base query from it — no duplicated join SQL. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes unchanged.
+- [ ] **ISSUE-01**: User can see per-project issue-fetch coverage (`ok` / `zero_issues` / `forbidden` / `error` from `AccIssueProjectFetchResult.status`) as a donut that frames trust for the issue metrics rendered beside it (TRUTH convention: coverage precedes the metric).
+- [ ] **ISSUE-02**: User can see issues over time (histogram/timeline on `AccIssue.createdAt`, full 17,360-issue set — not just the coordination-classified subset), following the existing activity-timeline visual pattern.
+- [ ] **ISSUE-03**: User can see issues by status (8 verified live statuses: open, closed, completed, in_review, draft, pending, not_approved, in_progress) with the existing `onSliceClick`/`activeSlice` cross-filter/drill convention.
+- [ ] **ISSUE-04**: Issue type/subtype GUIDs resolve locally to human-readable names — a new Prisma lookup table populated by a one-time APS issue-types metadata backfill (existing 3-leg auth, `acc-issues-backfill.cjs` pattern; 316 type / 515 subtype GUIDs verified live 2026-07-02). Unresolved IDs render an honest fallback label ("Unknown type"), never a raw GUID.
+- [ ] **ISSUE-05**: User can see issues by type (resolved names via ISSUE-04) as a breakdown chart with top-N + "other" bucketing.
 
-### Monolith Splits (SPLIT → REF-01)
+### Permission Footprint (PERM)
 
-- [x] **SPLIT-01**: `app/(dashboard)/access-analysis/folderTerrain.ts` (1,096 lines) is split into a pure transform module + a thin orchestrator (no single file > ~400 lines). The `folderPermissionTerrainView.test.ts` golden masters (`loadFolderPermissionTerrain` / `loadFolderPermissionOverview` / `loadTerrainProjects`) pass byte-identical. — Complete 2026-07-01 (Phase 16, commits `3cfd3734`/`71df53db`)
-- [x] **SPLIT-02**: `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` (1,044 lines) is split into a data-hook, a pure transform module, and a thin presentational view. `FolderPermissionTerrain.test.tsx` + the terrain golden masters pass; `/access-analysis` renders identically (owner visual check). — Complete 2026-07-01 (Phase 16, commits `0dbae11f`/`40126798`/`224519a4`; owner-approved)
-- [x] **SPLIT-03**: characterization coverage for `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx` is widened to pin its **main** DuckDB-Wasm query path (today only `HybridAnalyticsSurface.fallback.test.tsx` covers the fallback). The new/expanded test is green **before** any split.
-- [x] **SPLIT-04**: `HybridAnalyticsSurface.tsx` (1,328 lines) is split into a DuckDB-client data-hook + a pure transform + a thin view. SPLIT-03's tests and the fallback test pass; `/users/access-analysis` renders identically. — Complete 2026-07-02 (Phase 17, commits `e0bb6e66`/`da2f230b`; parity accepted on the byte-identical-DOM-golden-test basis — no live route mounts the surface, owner visual review remains open)
+- [ ] **PERM-01**: User can see permission reach by role — folder count + human-readable bytes per role — charted from the already-materialized `AccFolderPermissionSummary` (22,082 rows, cron-refreshed since Ph18/19; `totalBytes` BigInt converted server-side before the RSC→client boundary).
 
-### Summary Projection (PROJ → REF-03)
+### Engagement (ENG)
 
-- [x] **PROJ-01**: an `AccFolderPermissionSummary` Prisma model + migration is added; a backfill script populates it from `AccFolderPermission`; a reconciliation script proves the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) before any consumer is switched. — Complete 2026-07-02 (`77909b10`/`9d55539c`/`fb8ba765`; reconciliation PASS 22,082==22,082, 0 mismatches, 20/20 spot-checks)
-- [x] **PROJ-02**: the `includePermissionSummary` path and its terrain consumers read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded. TEST-01 (OOM aggregate guard) and the terrain golden masters still pass; `/access-analysis` + `/template-mty` render identically.
-- [x] **PROJ-03**: a refresh mechanism keeps `AccFolderPermissionSummary` current — wired into the existing ingest cron (`dc-daily-ingest.cjs` path) or an explicit rebuild step — and the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`.
+- [ ] **ENG-01**: User can see dormant users bucketed by `AccProjectMember.lastSignIn` recency bands (e.g. <30d / 30–90d / 90–365d / >365d), with a labeled "never signed in" bucket for `null` values (not silently dropped).
+
+### Pipeline Health (PIPE)
+
+- [ ] **PIPE-01**: User can see a compact, visually secondary ingest-freshness panel (latest `AccDcIngestRun`: started/ended, status, duration, projects processed) with throughput measured from `AccActivity` row counts by time window — never from `rowsByModule` (known always-zero telemetry gap). No live polling (static per-page-load read).
 
 ## Future Requirements
 
-Tracked but **not** in the v2.2 roadmap. Carried forward from v2.1's deferred seeds.
+Tracked but **not** in the v2.3 roadmap.
 
-- **SVC-01**: `service`-override classification refinement — reconcile Build vs Model Coordination for ~966 clash-issue rows (~40.7% disagreement flagged by v2.1 TRUTH-03). Needs a classification design decision.
-- **Spatial-graph milestone**: the deferred `/users/spatial-graph` concerns (CONCERNS §3, §8.2/8.3) — DuckDB warm-up, cosmos.gl reheat, 176-action catalog lazy-load, lasso e2e flake, hydration-prefetch test, physics/e2e test splits.
+Deferred from the v2.3 seed pool (research-flagged design work required first):
+
+- **Folder storage treemap** — `AccFolder` rollups; needs depth-cap / leaf-rollup UX design (unreadable-treemap failure mode).
+- **Permission tier × folder-depth heatmap** — new aggregation against the OOM-hardened `folderPermQuery.ts` path; needs its own perf regression test before scheduling.
+- **Activity verb/object-type breakdown** — `AccActivityAccds` facets; needs top-N bucketing design; must carry the ~12-mo ACCDS floor label; must read raw columns (not spatial-graph taxonomy helpers — BND-03 boundary risk).
+- **Provisioned-vs-active module coverage** — needs module-key vocabulary alignment (`products` Json vs activity module labels) or the "gap" is a labeling artifact; strictly no $-cost framing.
+- **`/template-mty` variants** — footprint/storage panels could get MTY-scoped versions; deferred with their parents.
+
+Carried forward from v2.2's deferred seeds:
+
+- **SVC-01**: `service`-override classification refinement (~966 clash-issue rows). Needs a classification design decision.
+- **Spatial-graph milestone**: the deferred `/users/spatial-graph` concerns (CONCERNS §3, §8.2/8.3).
 - **DC-01**: unlock the 724 Data-Connector-403 projects via APS Account Admin provisioning (external).
-- **DC-02**: resolve the two `dataLayer.ts` TODOs (per-project roles/modules) once the DC CSV `activity_in_module` / `total_activity` join is wired (data-blocked).
+- **DC-02**: per-project roles/modules via the DC CSV `activity_in_module` / `total_activity` join.
+- **Per-folder terrain projection**: only if terrain read cost becomes a concern (Ph19 boundary note).
 
 ## Out of Scope
 
-Explicitly excluded from v2.2. Documented to prevent scope creep.
+Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Any workshop-visible change to charts, tables, labels, or layout | v2.2 is behavior-preserving refactor only; the pages must render identically before/after |
-| `/users/spatial-graph` rework | Standing out-of-scope boundary; its concerns are a separate future milestone |
-| Cosmos.gl / WebGL changes on `HybridAnalyticsSurface` | It is a DuckDB/Mosaic client surface, not WebGL; the split is a structural refactor, not a graph rework |
-| New analytics or new data sources | v2.2 restructures existing paths; no new metrics, no new extraction |
-| Full `.planning/` migration + v2.1 archival (`MILESTONES.md`/`milestones/v2.1-*`) | Deferred bookkeeping from the v2.1 close; not gated on v2.2 execution |
+| Live-refresh / auto-polling freshness panel | Contradicts the "no manual sync UI" convention; `AccDcIngestRun` only changes once per cron cycle |
+| License-cost / $-value framing on any chart | No billing data in the Prisma DB — any $-figure would be invented (Evidence Standard violation) |
+| Kanban/board view for issues | Read-only analytics dashboard; boards imply write affordances this product doesn't have |
+| CSV export / audit-log download UI | Duplicates Data Connector exports; new file-generation surface out of milestone shape |
+| Recursive folder-tree browser UI | Duplicates ACC's native file browser; scope explosion beyond "chart panel" |
+| `/users/spatial-graph` changes | Standing out-of-scope boundary (own future milestone) |
+| New WebGL on data surfaces | Standing PROJECT.md constraint |
 
 ## Traceability
 
-| Requirement | Seed | Phase | Status |
-|-------------|------|-------|--------|
-| QUERY-01 | REF-02 | Phase 15 | Complete (2026-07-01, a4d923ca) |
-| SPLIT-01 | REF-01 | Phase 16 | Complete (2026-07-01, 3cfd3734/71df53db) |
-| SPLIT-02 | REF-01 | Phase 16 | Complete (2026-07-01, 0dbae11f/40126798/224519a4) |
-| SPLIT-03 | REF-01 | Phase 17 | Complete (2026-07-02, b6084f5f) |
-| SPLIT-04 | REF-01 | Phase 17 | Complete (2026-07-02, e0bb6e66/da2f230b, test-basis parity) |
-| PROJ-01 | REF-03 | Phase 18 | Complete (2026-07-02, 77909b10/9d55539c/fb8ba765) |
-| PROJ-02 | REF-03 | Phase 19 | Complete (2026-07-02, 9dbe606b/08e78f9c) |
-| PROJ-03 | REF-03 | Phase 19 | Complete (2026-07-02, e34ec7e7; phase-level owner visual parity checkpoint SC#3 APPROVED 2026-07-02, a92ffe0d) |
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ISSUE-01 | — | Pending |
+| ISSUE-02 | — | Pending |
+| ISSUE-03 | — | Pending |
+| ISSUE-04 | — | Pending |
+| ISSUE-05 | — | Pending |
+| PERM-01 | — | Pending |
+| ENG-01 | — | Pending |
+| PIPE-01 | — | Pending |
 
 **Coverage:**
-
-- v2.2 requirements: 8 total
-- Mapped to phases: 8 / 8 ✓
-- Unmapped: 0
+- v2.3 requirements: 8 total
+- Mapped to phases: 0 (roadmap pending)
+- Unmapped: 8 ⚠️ (expected — roadmap not yet created)
 
 ---
-*Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-02 — Phase 19 CLOSED: PROJ-02 (9dbe606b/08e78f9c) + PROJ-03 (e34ec7e7) shipped; owner visual parity checkpoint (SC#3, 19-02 Task 2) APPROVED 2026-07-02 (a92ffe0d) after a fresh :3000 rebuild; gsd-verifier PASSED 10/10 (19-VERIFICATION.md). All 8/8 v2.2 requirements complete — v2.2 milestone functionally done, ready for formal close (/gsd:complete-milestone).*
+*Requirements defined: 2026-07-02*
+*Last updated: 2026-07-02 after initial definition (research-scoped, owner-confirmed)*
