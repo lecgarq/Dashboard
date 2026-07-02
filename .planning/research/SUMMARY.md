@@ -1,329 +1,162 @@
 # Project Research Summary
 
-**Project:** LECG Dashboard — v3.0 Access Analysis: Hub Story & Scenario Explorer
-**Domain:** BIM/VDC operational analytics — ACC hub access, activity, and coordination
-**Researched:** 2026-06-22
-**Confidence:** HIGH (all four files grounded in verified repo source, Prisma schema, and project post-mortems)
-
----
+**Project:** LECG Dashboard - v2.3 "New Graphs"
+**Domain:** New ECharts analytics panels on an existing internal BIM/VDC dashboard (/access-analysis + /template-mty), sourced entirely from already-populated but currently-unvisualized Prisma models
+**Researched:** 2026-07-02
+**Confidence:** HIGH
 
 ## Executive Summary
 
-v3.0 turns `/access-analysis` from a flat 14-panel scroll into a navigable, sectioned hub story with a flexible scenario explorer at its center. The approach is fully additive — no existing panel is removed — and every new capability layers on top of the RSC-loader pattern already established in v2.0: async RSC functions aggregate in `Promise.all`, heavy on-demand views use server actions, and client-side transforms stay pure and testable. The tech stack requires zero new packages: ECharts `^6.1.0` (already in `package.json`) ships Sankey, calendar heatmap, treemap, and the new ECharts 6.0 chord series natively. The scenario pivot engine aggregates server-side in a new `lib/server/scenarioPivotView.ts`, fires on-demand via `scenarioActions.ts`, and auto-selects chart type client-side via a static rule table — no BI-builder complexity.
+v2.3 is a pure charting milestone, not a data-collection milestone: all 9 candidate panels read Prisma models that are already populated (some materialized specifically for this purpose in v2.2, e.g. AccFolderPermissionSummary) and render through an already-proven registration pattern (lib/server/<name>View.ts loader -> pure *Counts.ts transform -> "use client" ECharts component -> mainCharts.tsx Promise.all -> AccessAnalysisCharts.tsx orchestrator). No new npm dependencies are needed: echarts@6.1.0 already ships treemap, heatmap, funnel, and calendar series natively, and the canonical components/ui/EChart.tsx wrapper already handles zinc dark-theme injection for any new series type.
 
-The hard architectural prerequisite before any data-dependent view phase is DC re-extraction. The ACC Data Connector quota is ~25 requests/UTC-day; re-extracting all-time data for all 428 admin-accessible projects requires approximately 9 requests (possibly up to 18 with 403-bisect retries) spread over multiple days. All activity-dependent panels — calendar heatmap, behavior-mix, hottest files, scenario presets — are meaningless until this extraction is current. A second prerequisite is migrating `app/(dashboard)/access-analysis/moduleOverrides.ts` to `lib/acc/moduleOverrides.ts` before building the pivot engine; it fixes 4 of 6 existing dependency-cruiser boundary warnings and is the only path that lets `scenarioPivotView.ts` import the activity taxonomy without violating the lib/app boundary.
+The recommended approach is to build in dependency/risk-ordered waves rather than feature-request order: start with the three panels that read small, already-materialized tables with zero query risk (permission footprint by role, ingest freshness, issue-fetch coverage donut), then the issue funnel (small table, new groupBy shapes), then member-scale panels needing a small vocabulary-mapping step (dormant users, provisioned-vs-active coverage), then panels that reuse shared, test-pinned query modules (permission-tier x folder-depth heatmap via folderPermQuery.ts), and finally the two panels touching the largest tables or riskiest transforms (activity verb/object breakdown against 4.55M rows; folder storage treemap needing a hierarchy walk). This ordering front-loads near-zero-risk wins and defers the two genuinely open questions - the AccIssue "by type" GUID-naming problem and the heatmap's need for its own OOM-regression test - until they can be deliberately resolved rather than rushed.
 
-The top risks are: (1) pivot queries touching `AccFolderPermission` without SQL `LIMIT` — the v2.0 OOM incident showed this table produces 5M rows uncapped; (2) ECharts Sankey/chord cardinality blowup if node counts are not capped server-side before rendering; (3) coverage-honesty omissions on new panels — every activity-derived panel must display "428 of 1,152 projects" in-line, not in a tooltip; (4) prescriptive risk framing — no red colors, no "High Risk" labels, descriptive facts only; and (5) APS refresh-token rotation — a single-use token not persisted after an extraction run breaks the live dashboard login. All five are avoidable with the guardrails specified in PITFALLS.md.
-
----
+The dominant risk category is not "will it work" but "will it stay honest and stay fast": several fields look like obvious data sources but are known traps. AccDcIngestRun.rowsByModule is a confirmed always-zero field, AccFolderPermissionSummary.totalBytes is a BigInt that crashes RSC serialization if not converted, and the historical "428/1,152" DC-coverage figure was already corrected once and must not be reintroduced. Query-perf risk concentrates on AccActivityAccds (4.55M rows) and AccFolderPermission (~6M rows): every new loader touching either must aggregate server-side (groupBy/$queryRaw), never findMany() plus JS-reduce, mirroring the TEST-01 guardrail already proven in v2.1/v2.2. Finally, /access-analysis already renders 15 panel surfaces; shipping all 9 new ones flat and always-visible would dilute the workshop narrative, so a final curation/grouping pass is a required phase, not an afterthought.
 
 ## Key Findings
 
 ### Recommended Stack
 
-No new packages required. The entire v3.0 feature set is covered by the existing `echarts@^6.1.0`, `echarts-for-react@^3.0.6`, `@tanstack/react-table`, `framer-motion`, and `next-themes` versions already in `package.json`. ECharts 6.0 (included in 6.1.0) added the native `type: 'chord'` series — this is the only new chart type that needs API verification before use (VERIFY: `ChordSeriesOption` export). `mergeEChartsTheme` in `lib/colors/echartsTheme.ts` covers tooltip and axis text injection automatically, but `visualMap`, `calendar`, `treemap` breadcrumb, and `chord`/`sankey` arc colors are caller-owned and must be wired manually using the `ECHARTS_DARK`/`ECHARTS_LIGHT` palette pattern from `ActivityTimelineChart.tsx` (lines 44–47).
+Zero new dependencies. echarts@6.1.0 (installed, peer-compatible with echarts-for-react@3.0.6) natively supports every series type the 9 panels need (treemap, heatmap + visualMap, funnel, bar/line/pie). The one genuine integration gap: lib/colors/echartsTheme.ts's mergeEChartsTheme does not auto-theme visualMap/calendar components - the tier x depth heatmap (the only panel needing visualMap) must supply an explicit zinc-safe gradient (e.g. zinc-800 to indigo-500 to amber-400) rather than ECharts' default blue-white ramp.
 
-**Core technologies (unchanged from v2.0):**
-- `echarts@^6.1.0` — all chart rendering including Sankey, chord, calendar heatmap, treemap — already installed
-- `echarts-for-react@^3.0.6` — React wrapper with built-in ResizeObserver and dispose-on-unmount; instance leak risk exists only if a chart bypasses the `components/ui/EChart.tsx` wrapper
-- `lib/colors/echartsTheme.ts` — `mergeEChartsTheme`, `ECHARTS_DARK`, `ECHARTS_LIGHT`; use `ActivityTimelineChart.tsx` pattern for uncovered fields
-- `next-themes@^0.4.6` — `resolvedTheme` drives `dark: bool` for all chart palette resolution
-- Server Actions (`"use server"`) — the established pattern for on-demand heavy loads; use for `scenarioActions.ts`, NOT a new tRPC procedure
-
-**Do-not-add list:** `echarts-gl`, `echarts-stat`, `d3-chord`, `recharts`, `visx`, `nivo`, any new animation library.
-
-**Cross-agent reconciliation — ECharts dispose:** Stack says `echarts-for-react` v3 handles dispose automatically; Pitfalls warns about leak risk. These are not contradictory: the risk exists only if a component calls `echarts.init()` directly, bypassing the `EChart.tsx` wrapper. Rule: always use `EChart.tsx` wrapper, never raw `echarts.init()`.
-
----
+**Core technologies:**
+- echarts@6.1.0 (installed) - chart rendering, all needed series types built in, no plugin packages required
+- echarts-for-react@3.0.6 (installed) - React wrapper, peer range explicitly covers 6.1.0
+- components/ui/EChart.tsx (in-repo, canonical) - theme-aware wrapper every new panel must render through; do NOT use the legacy app/(dashboard)/access-analysis/components/EChart.tsx
+- date-fns@4.1.0 (installed) - date bucketing for timeline/recency panels
+- roleColors.ts (in-repo) - reuse for any role-keyed dimension instead of inventing a new palette
 
 ### Expected Features
 
-**Must have (table stakes):**
-- B1 Sticky in-page section nav — IntersectionObserver active highlight; `scrollIntoView` not `router.push`
-- B2 Section wrappers — `SectionBlock` with `id` anchors; structural, not decorative (no card-inside-card)
-- B3 Hub-wide default landing — page header states "Across 428 admin-accessible projects (of 1,152 total)" as fact
-- B4 Section-level coverage badges — `ActivityCoverageBadge` inline with Activity section heading
-- A1 Measure picker — 3-5 measures: activity count, member count, role count, issue count
-- A2 Primary grouping dimension picker — role, company, module, folder, time, action type, project, user
-- A3 Auto chart-type selection — static rule table; no chart-type dropdown exposed
-- A5 Drill behavior — slice click → `DrillSheet` + `PeopleDrillList`; in-memory only, zero new server round-trips
-- A6 Named saved presets — 7 hardcoded TypeScript config objects; not persisted to DB
-- A7 Explorer coverage state — `ActivityCoverageBadge` always visible when measure is activity-derived
-- C1 Calendar heatmap — `AccActivity` grouped by date; manual `visualMap` + `calendar` color wiring required
-- C4 Folder reach & exposure (factual) — internal vs external access, dormant facts, storage treemap if crawl data available
-- C7 Hygiene facts — `DataTable` of junk/duplicate/outlier roles from existing `computeAllFindings()`; no severity colors
+**Must have (v1 - lowest risk, highest ROI):**
+- Permission footprint by role - near-zero backend work, AccFolderPermissionSummary already materialized (22,082 rows) by Ph18/19
+- Issue-fetch coverage donut - extends the existing AccIssueFetchRun/AccIssueProjectFetchResult read already used by coordinationByProjectView.ts
+- AccIssue funnel - status + time only for v1; defer "by type" (raw GUIDs, no name-resolution table exists)
+- Dormant users by sign-in recency - mirrors BIM 360's own native "Last Sign In" pattern; must honestly label the "never signed in" (lastSignIn: null) bucket
 
-**Should have (differentiators):**
-- C2 Behavior mix over time — stacked bar by action category; extend `activityTimelineView.ts` with rawAction GROUP BY
-- C3 Hottest files/models — top-N `AccActivityAccds` horizontal bar; conditional on ACCDS data completeness post-extraction
-- C5 Sankey (Company → Role → Module) — 3-level flow; top-10 companies, top-15 roles, all modules; "Other" bucket mandatory
-- A4 Optional second grouping (cross-tab heatmap) — when both dimensions ≤ 30 categories
+**Should have (v1.x, after validation):**
+- Ingest freshness/throughput panel - credibility-supporting but secondary; keep visually small
+- Activity verb/object-type breakdown - needs top-N/other bucketing design before charting
 
-**Defer to v3.1:**
-- C6 Chord / co-occurrence matrix — high complexity; VERIFY API before planning; Sankey covers the more impactful story
-- Export/download, custom user-persisted presets, date range filter UI, real-time updates, mobile-first layout
+**Defer (v2+, blocked on open design questions):**
+- Folder storage treemap - defer until depth-capping/leaf-rollup UX is designed (unreadable-treemap risk)
+- Permission tier x folder-depth heatmap - defer until a dedicated OOM/perf regression test exists for the new aggregation
+- Provisioned-vs-active module coverage - defer until the products JSON to ModuleId[] vocabulary alignment is designed
+- AccIssue "by type" slice - resolve GUID-naming (external APS call vs. descope) first
 
----
+**Anti-features (explicitly reject):** live-refresh/polling for the freshness panel (contradicts "no manual sync UI" convention), any dollar-cost/license-value framing (no billing data exists in the Prisma DB), a Kanban/board view for issues (this is read-only analytics, not a PM tool), CSV export UI, and a fully-expandable recursive folder-tree browser bolted onto the treemap.
 
 ### Architecture Approach
 
-Fully additive over the existing RSC-loader pattern. `mainCharts.tsx` gains `loadPivotPresets()` and `loadRoleHygiene()` in its `Promise.all`; the seven existing loaders are untouched. Novel dimension combinations fire as server actions from `scenarioActions.ts`. Auto-chart-type logic lives client-side in `ScenarioExplorer.tsx` (static rule table). Role hygiene runs server-side in new `roleHygieneView.ts` calling `computeAllFindings()` from `lib/acc/dashboardAnalytics.ts` — currently wired only to `/users`, confirmed zero references on `/access-analysis`.
+Both target pages follow an identical, already-proven pipeline: an async RSC (mainCharts.tsx for access-analysis, page.tsx for template-mty) fans out a Promise.all of lib/server/<name>View.ts loaders, each producing a small serializable shape via server-only Prisma/raw-SQL; a pure, unit-tested *Counts.ts module (co-located __tests__/) transforms raw rows into chart-ready summaries; a "use client" components/<Name>Chart.tsx renders through the canonical EChart wrapper; and a client orchestrator (AccessAnalysisCharts.tsx / TemplateAnalysisCharts.tsx) wires everything into <Reveal><PremiumSurface> sections plus an optional kpis[] strip.
 
-**New/modified files:**
+**Major components:**
+1. lib/server/<name>View.ts - server-only loader, in-process 5-min TTL cache, must aggregate in Postgres (never findMany()+JS-reduce) for any large table
+2. <name>Counts.ts + co-located test - pure DB-free transform, the established unit-testable seam
+3. mainCharts.tsx (+ AccessAnalysisCharts.tsx) - the two files every one of the 9 candidates touches; the cross-filter bus (sliceFilters/applySliceFilters) only recognizes "role"/"company" today, so new dimensions default to project-picker-only filtering unless a phase explicitly extends applySliceFilters
+4. folderPermQuery.ts::loadFolderPermRows - the single shared, test-pinned owner of the AccFolderPermission join; new consumers (the heatmap) must import it, never duplicate or edit its return shape
 
-| File | Type | Change |
-|---|---|---|
-| `lib/server/scenarioPivotView.ts` | NEW | Preset pivot aggregation; `import "server-only"` |
-| `lib/server/roleHygieneView.ts` | NEW | Runs `computeAllFindings()`; added to `Promise.all` |
-| `lib/server/activityCalendarView.ts` | NEW | `GROUP BY DATE(createdAt)`; lazy server-action candidate |
-| `lib/server/hotObjectsView.ts` | NEW | `AccActivityAccds` group by object |
-| `lib/server/interconnectionsView.ts` | NEW | Sankey + chord matrix from accessInstanceView rows |
-| `app/(dashboard)/access-analysis/scenarioActions.ts` | NEW | `"use server"` on-demand pivot |
-| `app/(dashboard)/access-analysis/components/ScenarioExplorer.tsx` | NEW | Client; rule-table chart selector |
-| `app/(dashboard)/access-analysis/components/HygieneFacts.tsx` | NEW | Client; renders `DashboardFindings` |
-| `app/(dashboard)/access-analysis/mainCharts.tsx` | MODIFY | Add new loaders to `Promise.all` |
-| `app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx` | MODIFY | Additive: new props + panels only |
-| `lib/acc/moduleOverrides.ts` (moved from `app/`) | MIGRATE | Prerequisite; dep-cruiser warnings 6 → 2 |
-| `lib/acc/dashboardAnalytics.ts` | NO CHANGE | Already correct |
-
-**Pivot rule table (first-match wins):**
-- activity × date → calendar heatmap
-- company × role → sankey
-- role × module → sankey
-- company × company → chord
-- folder × size → treemap
-- role → pie
-- company → pie
-- * → bar (fallback)
-
-**Server caps (mandatory):**
-- Sankey: ≤50 nodes / ≤200 links; top-10 companies, top-15 roles, "Other" bucket in SQL
-- Chord: ≤20 entities / ≤100 edges
-- Treemap: ≤3 levels / ≤500 leaves
-- Pivot max-groups guard: cartesian product > 2,000 cells → return warning + top-N
-
----
+Recommended build order (from ARCHITECTURE.md, risk-graded): Wave A (permission footprint, ingest freshness, issue-fetch coverage - trivial risk, small/materialized tables) then Wave B (issue funnel) then Wave C (dormant users, provisioned-vs-active - member-scale tables + vocabulary mapping) then Wave D (tier x depth heatmap - shared-query reuse) then Wave E (activity verb/object breakdown, folder storage treemap - largest tables / hardest transforms, done last for isolation).
 
 ### Critical Pitfalls
 
-1. **AccFolderPermission OOM** — Any pivot query touching `AccFolderPermission` without SQL `LIMIT` + `GROUP BY` will OOM. v2.0 incident: 5M rows, 77s, process killed. Every query against this table must cap at the Prisma/raw-query level. `PG_POOL_MAX=32` and 8 GB heap are backstops, not primary defenses.
-
-2. **Sankey/chord cardinality blowup** — ACC has 77 roles, 428 projects, ~3,367 users. Naive cross-join produces hundreds of Sankey nodes. Server-side caps and "Other" bucket must be in the server-action spec, enforced with a unit test (adversarial input → assert ≤ cap).
-
-3. **ECharts instance leak** — Risk exists only when code bypasses `EChart.tsx` wrapper and calls `echarts.init()` directly. Enforce wrapper rule in every chart component. Verify with Playwright canvas-count check after each chart phase.
-
-4. **APS refresh-token rotation** — APS v2 tokens are single-use. Any DC extraction must persist both new `access_token` and `refresh_token` to DB atomically. Broke the live dashboard 2026-06-01; recovery: `node scripts/aps-login.cjs`.
-
-5. **Coverage-honesty omission + prescriptive risk framing** — Two non-negotiable owner constraints: (a) every activity-derived panel shows "428 of 1,152 projects" in-line; (b) no label implies a verdict ("External access" not "Exposed"). Both are explicit acceptance criteria in every phase plan; verify with `rg -i "risk|danger|critical|exposed|suspicious"`.
-
----
+1. **Client-side/unindexed aggregation reopens the 4.55M-row OOM class** - every new loader touching AccActivityAccds/AccActivity/AccFolder must use groupBy/$queryRaw, never findMany()+JS-reduce; add a row-count-bound Vitest test in the same phase as the loader.
+2. **Ingest-freshness panel must not chart AccDcIngestRun.rowsByModule** - confirmed always-zero; substitute AccActivity/AccActivityAccds counts joined by ingestRunId/time window.
+3. **AccFolderPermissionSummary.totalBytes is BigInt** - convert to Number/formatted string inside the loader, never in the client component, or RSC serialization crashes.
+4. **mainCharts.tsx's Promise.all fan-out must not grow unbounded** - currently 8 entries; consolidate related loaders (e.g. one issueAnalyticsView.ts for multiple issue cuts) once 3+ new loaders share a data domain, and re-measure page load time per wave.
+5. **Never reintroduce the stale "428/1,152" DC-coverage figure** - already corrected once (Ph11 TRUTH-01) to ~550/~1,153 via dcCoverageView.ts; any new coverage caption must call a live loader, never a literal.
+6. **Panel overload dilutes the workshop story** - /access-analysis already has 15 panel surfaces; a dedicated curation phase (grouping/expand-collapse, above-the-fold cap) is required after all new panels land, not automatic.
 
 ## Implications for Roadmap
 
-Phases continue from v2.0 (phases 1–7 shipped). v3.0 phases are numbered 8–14.
+Based on combined research, suggested phase structure (5 phases matching the architecture-recommended waves, sequenced cheapest/most-isolated to largest-table/most-coupled):
 
-### Phase 8: DC Re-Extraction (Data Currency Gate)
+### Phase 1: Foundation Wins - Permission Footprint, Ingest Freshness, Issue Coverage
+**Rationale:** All three read already-small or already-materialized tables (22,082-row AccFolderPermissionSummary, 72-row AccDcIngestRun, per-run AccIssueProjectFetchResult) with zero new query risk and no shared-file contention beyond mainCharts.tsx/AccessAnalysisCharts.tsx. Establishes the byte-formatting (BigInt to Number) and coverage-labeling conventions the rest of the milestone reuses.
+**Delivers:** Permission-footprint-by-role bar chart, ingest freshness/throughput panel (using AccActivity/ingestRunId, not rowsByModule), issue-fetch coverage donut (4-bucket status, sourced from the latest AccIssueFetchRun).
+**Addresses:** FEATURES.md P1 items (permission footprint, issue-fetch coverage) plus the P2 freshness panel pulled forward for shared-convention value.
+**Avoids:** Pitfall 2 (rowsByModule lie), Pitfall 3 (BigInt crash), Pitfall 5 (stale coverage figure).
 
-> **CORRECTION (2026-06-22, owner):** The refresh uses the FREE ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`, session bootstrapped by `scripts/accds-login.cjs` → `AccActivityAccds`), NOT the Data Connector API. There is NO ~25/day quota, no `DC_403_BISECT`, and no APS refresh-token rotation — auth is the logged-in ACC web session (`scratch/acc-session.json`, gitignored). The DC quota/token/403 runbook in this file and in ARCHITECTURE.md §C applies ONLY to the OPTIONAL secondary DC `AccActivity` refresh. The corrected source of truth is ROADMAP.md Phase 8 + REQUIREMENTS DATA-01..04.
+### Phase 2: Issue Funnel (Status + Time)
+**Rationale:** Small table (approximately 14k rows, two orders of magnitude below AccActivityAccds), straightforward sibling of Phase 1 coverage donut, but needs its own groupBy shapes - sequenced right after Phase 1 so it can reuse the coverage-donut framing precedent (trust before metric).
+**Delivers:** Issue funnel chart (status breakdown plus date_trunc month timeline), explicitly deferring the by-type slice pending a GUID-naming decision.
+**Uses:** coordinationByProjectView.ts groupBy (projectId, status) pattern as the direct analog, minus the isCoordination filter, plus activityTimelineView.ts date_trunc idiom for the time cut.
+**Implements:** New lib/server/issueFunnelView.ts plus issueFunnelCounts.ts plus IssueFunnelChart.tsx, following the standard registration pattern.
 
-**Rationale:** Hard gate — all activity-dependent views are meaningless without current data. Runs in parallel with Phase 9 (no data dependency between them).
+### Phase 3: Member-Scale Panels - Dormant Users and Provisioned-vs-Active Coverage
+**Rationale:** Both touch AccProjectMember (tens-of-thousands rows, not multi-million); sequencing dormant-users first lets provisioned-vs-active reuse a freshly-exercised AccProjectMember loader plus the products JSON to ModuleId array vocabulary-mapping helper it additionally needs.
+**Delivers:** Dormant-users-by-sign-in-recency chart (with an explicit Never-signed-in bucket for null lastSignIn) and provisioned-vs-active module coverage chart (framed strictly as usage-gap, never cost/license framing).
+**Addresses:** FEATURES.md P1 (dormant users) and P2 (provisioned-vs-active, a genuine differentiator vs ACC native admin UI).
+**Avoids:** the null-lastSignIn silent-drop UX pitfall; the module-vocabulary-mismatch risk that would otherwise produce a misleading gap.
 
-**Delivers:** All 428 projects re-extracted all-time; `AccDcBackfillProgress.earliestCovered` ≤ 2019-01-02 for all 428; zero new Unmapped actions from `diag-activity-types.cjs`.
+### Phase 4: Permission Tier x Folder-Depth Heatmap
+**Rationale:** Reuses folderPermQuery.ts loadFolderPermRows, a shared module already guarded by byte-identical golden-master tests (TEST-01/02/03) from v2.1/v2.2 - sequencing this after Phase 3 means the team is freshly re-familiarized with the folder-permission code area (from Phase 1 permission-footprint work) before touching this test-pinned surface.
+**Delivers:** 2D ECharts heatmap (tier x depth), an additive query variant (new exported function importing loadFolderPermRows, never editing it in place), plus a new aggregate-bound regression test specific to this grouping (not automatically covered by existing pins).
+**Implements:** lib/server/folderPermHeatmapView.ts (imports, does not fork, the shared join).
+**Avoids:** Pitfall 8 (golden-master breakage) - explicit gate: npm test must stay green with zero edits to existing expected-value blocks.
 
-**Key env vars:** `DC_MAX_REQUESTS=20`, `DC_403_BISECT=1` (mandatory), `DC_DAILY_SAFE_BUDGET=20`, `DC_PRIORITY_BACKFILL=1`, `DC_SKIP_ADMIN_SNAPSHOT=1` (intra-day continuation only).
-
-**Phase gate:** `fully_backfilled = 428` AND `diag-activity-types.cjs` zero Unmapped. Do not proceed to Phases 12+ until this passes.
-
-**Avoids:** Pitfalls 10 (quota exhaustion), 11 (token breakage), 12 (403 cascade), 8 (taxonomy drift).
-
-**Research flag:** Standard patterns — full runbook documented in ARCHITECTURE.md §C.
-
----
-
-### Phase 9: Structural Prerequisites (Parallel with Phase 8)
-
-**Rationale:** No data dependency; can run concurrently with Phase 8. Unblocks all subsequent phases.
-
-**Delivers:**
-- `moduleOverrides.ts` migrated to `lib/acc/`; all import sites updated; dep-cruiser warnings 6 → 2
-- `CoverageHonesty` UI atom — reusable component rendering "Based on N of M projects" strip
-- `countDistinctUsers()` helper in `lib/acc/` — shared by all phases with people-count metrics
-
-**Avoids:** Pitfalls 3 (OOM), 4 (coverage omission), 6 (double counting), dep-cruiser boundary violation.
-
-**Research flag:** Standard patterns. No research phase needed.
-
----
-
-### Phase 10: Sectioned Hub Narrative
-
-**Rationale:** Pure layout work — must precede new analytics panels so they land in correct sections. Lowest risk phase; immediately makes the page feel like a navigable story.
-
-**Delivers:** Sticky section nav (B1), `SectionBlock` wrappers (B2), hub-wide coverage header (B3), section-level coverage badges (B4). All 14 existing panels reorganized without changing their data or behavior.
-
-**Key constraints:** `scrollIntoView({ behavior: "smooth" })` not `router.push`; no card-inside-card; section labels ≤ 15 chars; `position: sticky` inside scroll container.
-
-**Avoids:** Pitfall 9 (prescriptive labels — section titles factual), Pitfall 13 (theme drift — no new charts this phase).
-
-**Research flag:** Standard patterns. No research phase needed.
-
----
-
-### Phase 11: Scenario Explorer Core
-
-**Rationale:** The centerpiece. Requires Phase 9 (moduleOverrides migration) and Phase 10 (section slot). Table-stakes subset only (A1–A3, A5, A6, A7); cross-tab (A4) defers.
-
-**Delivers:** `scenarioPivotView.ts` + `scenarioActions.ts` + `ScenarioExplorer.tsx` + mainCharts wiring. 7 hardcoded named presets. Drill on any segment → `DrillSheet`.
-
-**Critical rules:**
-- Pivot aggregation server-side only; never client-side over raw rows
-- `scenarioActions.ts` server action for on-demand picks — NOT a new tRPC procedure
-- Auto-chart-type is a static rule table — no chart-type dropdown exposed
-- Any pivot touching `AccFolderPermission`/`AccActivity` must have max-groups guard (>2,000 cells → warning)
-- All pivot results include `coverageNote` field; component renders it unconditionally
-
-**Avoids:** Pitfalls 2 (cardinality), 3 (folder OOM), 4 (coverage), 1 (instance leak).
-
-**Research flag:** Needs `gsd:plan-phase --research-phase 11` — pivot aggregation query plan against real ACC data needs verification.
-
----
-
-### Phase 12: Activity Depth Views
-
-**Rationale:** Unlocked by Phase 8 (current data) and Phase 10 (section slot). Calendar heatmap and behavior-mix extend existing loader patterns with minimal risk.
-
-**Delivers:** C1 (calendar heatmap), C2 (behavior-mix stacked bar), C7 (hygiene facts table). C3 (hottest files) conditional on `AccActivityAccds` row count > 0 post-Phase 8.
-
-**Before speccing calendar heatmap:** Run `SELECT MIN(createdAt), MAX(createdAt), COUNT(*) FROM "AccActivity"` — VERIFY exact timestamp column name and actual date range. Default range to where ≥ 80% of activity falls, not current calendar year. (RESOLVED: timestamp column is `AccActivity.createdAt`, indexed by autodeskId/userEmail/projectId + createdAt DESC.)
-
-**Attribution honesty:** Behavior-mix must include footnote: "Model Coordination attribution may include Build activity." Every activity loader returns `{ data, attributionQuality: { resolved: N, unresolved: M } }`.
-
-**Role hygiene:** `roleHygieneView.ts` calls `computeAllFindings()` server-side; only `DashboardFindings` prop passed to client — never `BulkAccUser[]`.
-
-**Avoids:** Pitfalls 5 (attribution gap), 14 (calendar date mismatch), 13 (theme drift — manual calendar/visualMap color wiring).
-
-**Research flag:** One diagnostic query before calendar spec (timestamp column name — now resolved). Otherwise standard.
-
----
-
-### Phase 13: Folder Reach & Exposure
-
-**Rationale:** Medium risk (large `folderPermissionTerrainView.ts` server file); comes after simpler activity phases stabilize the new loader pattern.
-
-**Delivers:** C4 — internal vs external access breakdown, who-reaches-which-folder, dormant access (surfaces `rankDormantByPeople` more prominently), storage treemap if `AccFolder.totalSizeBytes`/`fileCount` populated.
-
-**Key rules:** All `AccFolderPermission` queries use `GROUP BY` + `LIMIT`; verify response < 5s. Always `COUNT(DISTINCT email)` for people counts. Labels: "External access" not "Exposed", "Dormant access (>90 days)" not "Risk". Folder dimension in pivot: always group by tier (L1/L2), never leaf folders.
-
-**Avoids:** Pitfalls 3 (OOM), 6 (double counting), 9 (prescriptive labels).
-
-**Research flag:** Standard patterns. Treemap wiring follows STACK.md §6.
-
----
-
-### Phase 14: Interconnections (Sankey)
-
-**Rationale:** Highest visual impact for workshop finale. Depends on stable data and section structure from prior phases. Chord (C6) deferred to v3.1 pending API verification.
-
-**Delivers:** C5 — Sankey (Company → Role → Module) with drill-to-people on link click. `lib/server/interconnectionsView.ts` + `buildSankeyLinks()`. Role names from `AccRole` via `mergeRoleNames()` — never `AccDcRole`.
-
-**Sankey caps (non-negotiable):** Top-10 companies + "Other"; top-15 roles; all modules (≤10). `layoutIterations: 8–16`. Label `fontSize` minimum 11px. `lineStyle.color: 'source'` for ribbon gradient.
-
-**Avoids:** Pitfalls 2 (cardinality — caps + unit test), 7 (AccDcRole empty).
-
-**Research flag:** Chord API needs runtime verification (`ChordSeriesOption` export) before including in this phase. Sankey patterns are well-documented in STACK.md §2.
-
----
+### Phase 5: Largest-Table Panels - Activity Verb/Object Breakdown, Folder Storage Treemap, Workshop Curation
+**Rationale:** Both remaining candidates touch the largest tables (AccActivityAccds 4.55M rows; AccFolder 415,908 rows) or need the most complex transform (hierarchy walk for the treemap); doing them last isolates any load-time regression to a single phase, easy to bisect. This phase also folds in the mandatory curation pass, since by this point all 9 panels exist and the cumulative panel-count question can be answered concretely rather than speculatively.
+**Delivers:** Activity verb/object-type breakdown (server-side groupBy, top-N plus other bucketing, reusing the dataFloor/12-month-floor caption pattern; built directly off raw AccActivityAccds columns, NOT via activityClassification.ts spatial-graph-adjacent classifier), folder storage treemap (depth-capped 2-3 levels, N-more-folders rollup), and a final panel-count/grouping review across all 24 (15 existing plus 9 new) access-analysis surfaces.
+**Uses:** Proven moduleActivityView.ts/activityTimelineView.ts groupBy pattern for the verb breakdown; folderActivityView.ts buildProjectNameMap/resolveProjectName helpers for the treemap.
 
 ### Phase Ordering Rationale
 
-- Phase 8 gates Phases 12–14 on data freshness; runs in parallel with Phase 9
-- Phase 9 gates Phase 11 on the `moduleOverrides.ts` migration; establishes shared atoms for all downstream phases
-- Phase 10 must precede Phases 11–14 so new panels land in correct section slots from day one
-- Phase 11 before 12–14: pivot engine section slot and server-action pattern must be established first
-- Phases 12 and 13 can run sequentially or in parallel (separate agents; no shared files)
-- Phase 14 is last: widest data coverage dependency; benefits from stable section structure
+- Ordering is risk-graded by table size and shared-module coupling (per ARCHITECTURE.md explicit wave recommendation), not by feature-request priority - this front-loads near-zero-risk wins and pushes the two genuinely open design questions (issue by-type naming, heatmap dedicated perf test) to the phases where they can be deliberately resolved.
+- Phase 1 deliberately batches 3 candidates because they share almost no file surface beyond mainCharts.tsx/AccessAnalysisCharts.tsx and all read tables the codebase has already proven safe (materialized or trivially small).
 
-> Optional finale: a light projector/perf UAT pass (mirroring v2.0's Phase 7) may be appended after Phase 14 if the owner wants a single pre-workshop acceptance gate; otherwise per-phase gates suffice.
+- Phase 4 is isolated on its own because it is the only remaining candidate touching a test-pinned shared module (folderPermQuery.ts) - bundling it with anything else risks conflating a golden-master regression with an unrelated change.
+- Phase 5 intentionally bundles the workshop-curation gate with the two heaviest panels, since PITFALLS.md is explicit that curation must happen after all new panels are built, not per-panel - doing it earlier would require re-litigating panel count after every subsequent phase.
+- The AccIssue by-type slice and provisioned-vs-active cost-framing anti-feature are treated as explicit non-goals within their phases, not silently dropped - plan-phase should carry these constraints forward into each phase UAT criteria.
 
 ### Research Flags
 
-Needs research phase before planning:
-- **Phase 11 (Scenario Explorer):** Pivot aggregation query plan against real ACC data (623k AccActivity rows, 5M AccFolderPermission); PivotResult discriminated union shape needs validation
+Phases likely needing deeper research during planning:
+- **Phase 4 (heatmap):** needs its own perf/regression-test design pass against folderPermQuery.ts before implementation - TEST-01/02/03 do not automatically cover a new tier x depth aggregation shape.
+- **Phase 5 (activity verb/object breakdown):** needs a top-N/other bucketing design decision (cardinality of activityVerb/objectType/serviceGroup should be sampled first) and explicit confirmation that no import path touches activityClassification.ts spatial-graph-coupled helpers.
+- **Phase 5 (folder storage treemap):** needs a depth-capping/leaf-rollup UX decision before implementation - this is a design question, not a data question.
 
-Needs one diagnostic query result, then standard:
-- **Phase 12 (Activity Depth):** Exact timestamp column name in `AccActivity` (RESOLVED: `createdAt`)
-
-Standard patterns (no research phase needed):
-- **Phase 8:** Full runbook in ARCHITECTURE.md §C
-- **Phase 9:** File migration + helper extraction
-- **Phase 10:** IntersectionObserver + scrollIntoView
-- **Phase 13:** Extends existing terrain loader
-- **Phase 14 (Sankey only):** Patterns in STACK.md §2; chord needs API verification first
-
----
+Phases with standard patterns (skip research-phase, proceed straight to plan-phase):
+- **Phase 1:** all three panels have a directly analogous existing loader (coordinationByProjectView.ts, dcCoverageView.ts-style direct read); zero new query risk.
+- **Phase 2:** coordinationByProjectView.ts plus activityTimelineView.ts together fully specify the shape needed.
+- **Phase 3:** moduleAccess.ts (MTY analog) plus dormantActivity.ts (existing dormant concept, different dimension) give enough precedent; the main task is careful null-bucket handling and vocabulary alignment, both already documented above.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | `package.json` verified; wrapper/theme behavior verified from source. Only gap: `ChordSeriesOption` runtime export (VERIFY) |
-| Features | HIGH | All grounded in verified Prisma schema, existing components, PROJECT.md owner decisions. AccActivityAccds row count and AccFolder size are LOW pending Phase 8 |
-| Architecture | HIGH | All 7 existing loaders verified; `computeAllFindings()` gap confirmed by grep; DC flag names verified from dcIngest.ts source |
-| Pitfalls | HIGH | All 16 pitfalls grounded in verified repo files and MEMORY.md post-mortems (OOM incident, token breakage, AccDcRole empty, build-blocks-on-test-error) |
+| Stack | HIGH | Verified directly against installed package.json/node_modules versions and the in-repo EChart.tsx/echartsTheme.ts wrappers; no new dependencies needed, low uncertainty |
+| Features | MEDIUM | Chart-archetype expectations are well-attested against ACC Insight/BIM 360/Procore precedent, but several field-level specifics (exact row counts, issueTypeId naming resolution) are marked VERIFY rather than fully confirmed against a live DB query |
+| Architecture | HIGH | Every model/field claim verified directly against prisma/schema.prisma line numbers and existing loader files read in full; two exact row counts (AccIssue, AccProjectMember) are marked VERIFY (not present in a repo artifact at research time) |
+| Pitfalls | HIGH | Every pitfall is repo-grounded with a cited file/model/line - no generic ECharts/Next.js gotchas, all specific to this codebase known history (TEST-01/02/03, BigInt Ph19 deviation, rowsByModule telemetry gap, DC-coverage correction) |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-All VERIFY items consolidated — planners must resolve before the relevant phase (several already resolved during synthesis, noted inline):
-
-| VERIFY Item | Phase | Status / How to Resolve |
-|---|---|---|
-| `AccActivity` timestamp column name | 12 | RESOLVED — `createdAt` (schema.prisma:553) |
-| `AccDcUser.lastSignIn` field presence | 12 | RESOLVED — present (schema.prisma:634) |
-| `classifyActivity` file path and export | 12 | RESOLVED — `lib/acc/activityCategories.ts:539` |
-| `AccFolder.fileCount` / `totalSizeBytes` presence | 13 | RESOLVED — present (schema.prisma:518–519), nullable until crawl |
-| APS token storage model | 8 | RESOLVED — `refresh_token` on the Account model (schema.prisma:43) + `server/auth.ts` |
-| `BulkAccUser[]` fields needed by `computeAllFindings()` vs DC-snapshot tables | 11/12 | Read `lib/acc/dashboardAnalytics.ts` signatures; check if `AccProjectMember` join is needed |
-| `ChordSeriesOption` export from `echarts` at runtime | v3.1 (C6) | Import type in throwaway test; if missing, use `EChartsOption` with inline type assertion |
-| `AccActivityAccds` row count after Phase 8 re-extraction | 12 | `SELECT COUNT(*) FROM "AccActivityAccds"` after Phase 8; gate C3 on count > 0 |
-| `AccFolder` size population rate after folder crawl | 13 | `SELECT COUNT(*) FILTER (WHERE "totalSizeBytes" IS NOT NULL) FROM "AccFolder"` after Phase 8 |
-| Exact attribution-gap percentage in `AccActivity` (cited 3–20%) | 12 | `SELECT COUNT(*) FILTER (WHERE "userEmail" IS NULL), COUNT(*) FROM "AccActivity"` |
-
----
+- **AccIssue by-type slice is explicitly unresolved** - issueTypeId/issueSubtypeId are raw APS GUIDs with no local name-resolution table in this schema; requires either a new external APS metadata call (tension with no-new-data-sources) or a v1 descope. Roadmap should NOT include this in any phase success criteria until resolved.
+- **Exact row counts for AccIssue and AccProjectMember** are not present in .planning/STATE.md census as read - reasoned estimates (tens of thousands, well below AccActivityAccds) are used for risk-grading, but the assigned phase should re-verify with a quick count query before finalizing loader design.
+- **Whether the tier x depth heatmap replaces or sits beside the existing 3D Folder Permission Terrain** (a 2D/3D toggle vs a standalone new section) is an open integration-point design call, not resolved by research - flag for discuss-phase.
+- **Whether the issue-fetch coverage donut extends coordinationByProjectView.ts existing CoordinationByProjectData shape in place vs a new standalone loader** is a phase-level design call (smaller diff either way) - flag for plan-phase.
 
 ## Sources
 
-### Primary — HIGH confidence (verified from repo files)
+### Primary (HIGH confidence)
+- C:/LECG/Dashboard/prisma/schema.prisma - all 9 candidates models/fields verified directly
+- C:/LECG/Dashboard/package.json, node_modules/echarts/package.json, node_modules/echarts-for-react/package.json - exact installed versions
+- C:/LECG/Dashboard/app/(dashboard)/access-analysis/mainCharts.tsx, components/AccessAnalysisCharts.tsx, projectFilter.ts - Promise.all wiring, cross-filter bus, verified in full
+- C:/LECG/Dashboard/lib/server/coordinationByProjectView.ts, folderPermQuery.ts, moduleActivityView.ts, activityTimelineView.ts, activityByActorView.ts, folderActivityView.ts, dcCoverageView.ts - loader precedent, read in full
+- C:/LECG/Dashboard/components/ui/EChart.tsx, lib/colors/echartsTheme.ts - canonical theme wrapper, read in full
+- .planning/PROJECT.md, .planning/ROADMAP.md (v2.3 Candidates seed table), .planning/codebase/CONCERNS.md, .planning/STATE.md - planning-doc facts and live row-count census
 
-- `package.json` — ECharts 6.1.0, echarts-for-react 3.0.6 version facts [VERIFIED]
-- `components/ui/EChart.tsx` — wrapper lifecycle, `notMerge`, `key={resolvedTheme}` [VERIFIED]
-- `lib/colors/echartsTheme.ts` — `mergeEChartsTheme` covered vs uncovered fields [VERIFIED]
-- `prisma/schema.prisma` — `AccActivity` (542), `AccActivityAccds` (564), `AccDcUser` (627), `AccFolder` (506), `AccFolderPermission`, `AccRole` models [VERIFIED]
-- `app/(dashboard)/access-analysis/mainCharts.tsx` — all 7 existing loader functions [VERIFIED]
-- `lib/acc/dashboardAnalytics.ts` — `computeAllFindings` signatures; gap on `/access-analysis` confirmed by grep [VERIFIED]
-- `lib/acc/activityCategories.ts:539` — `classifyActivity` export [VERIFIED]
-- `lib/acc/dcIngest.ts` — quota mechanics, DC flag names [VERIFIED]
-- `.planning/codebase/CONCERNS.md` — `moduleOverrides.ts` boundary violation priority 1 [VERIFIED]
-- `ActivityTimelineChart.tsx` lines 44–47 — canonical palette pattern [VERIFIED]
-- MEMORY.md post-mortems — OOM incident, APS token breakage, AccDcRole empty, build-blocks-on-test-error [VERIFIED]
-- PROJECT.md — v3.0 milestone goals, owner constraints [VERIFIED]
+### Secondary (MEDIUM confidence)
+- Autodesk BIM 360/ACC Insight and Account Analytics documentation (learnacc.autodesk.com, knowledge.autodesk.com) - chart-archetype expectations for issue/dormant-user views
+- Procore Analytics support docs - confirms seat/license-gap analytics is a known off-the-shelf gap this milestone provisioned-vs-active panel fills
+- echarts.apache.org v6 upgrade guide plus feature notes - confirms treemap/heatmap/funnel/calendar have no breaking changes in v6
 
-### Secondary — MEDIUM confidence (external sources)
-
-- apache/echarts GitHub — SankeySeries.ts, ChordSeries.ts, TreemapSeries.ts defaults
-- ECharts 6.0 release handbook — chord series introduction (official)
-- echarts CalendarModel.d.ts — calendar option types
-- npm/GitHub echarts-for-react — ResizeObserver + dispose behavior in v3
-
-### Tertiary — LOW confidence (depends on Phase 8 results)
-
-- `AccActivityAccds` row count and coverage adequacy — depends on re-extraction outcome
-- `AccFolder` size population rate — depends on folder crawl completion
-- Exact attribution-gap percentage — needs real query against post-extraction data
+### Tertiary (LOW confidence)
+- Prior-session project memory (project_rowsbymodule_telemetry_disconnect, Ph19 BigInt deviation note) - used to corroborate repo-grounded pitfalls, not independently re-verified in this pass beyond schema/code confirmation
 
 ---
-
-*Research completed: 2026-06-22*
-*Ready for roadmap: yes*
-*Phases: 8–14 (continuing from v2.0 phases 1–7)*
+Research completed: 2026-07-02
+Ready for roadmap: yes

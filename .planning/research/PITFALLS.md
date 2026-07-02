@@ -1,502 +1,465 @@
 # Pitfalls Research
 
-**Domain:** Adding heavy interconnection/pivot/calendar charts to an existing ECharts data dashboard + re-running quota-limited ACC Data Connector extraction (v3.0 milestone)
-**Researched:** 2026-06-22
-**Confidence:** HIGH — all pitfalls grounded in verified repo files (PROJECT.md, CONCERNS.md, CONVENTIONS.md, ARCHITECTURE.md) and prior LECG Dashboard incident history (MEMORY.md post-mortems)
-
----
+**Domain:** Adding ~9 new ECharts analytics panels to an existing internal BIM/VDC
+dashboard (`/access-analysis` + `/template-mty`) — Next.js 16 App Router + tRPC +
+Prisma over local PostgreSQL, live workshop demos on `:3000`.
+**Researched:** 2026-07-02
+**Confidence:** HIGH (repo-grounded — every pitfall below cites a verified file/model/line;
+no external ecosystem research was needed because these are integration pitfalls specific
+to this codebase, not generic ECharts/Next.js gotchas)
 
 ## Critical Pitfalls
 
-### Pitfall 1: ECharts Instance Leak — Charts Not Disposed on Unmount
+### Pitfall 1: Client-side or unindexed aggregation reopens the 77s-OOM regression
 
 **What goes wrong:**
-New heavy chart types (Sankey, calendar heatmap, chord diagram, treemap) are added as React components that call `echarts.init()` but never call `dispose()` on unmount. On `/access-analysis`, where 14+ panels already exist and more are being added, accumulated canvas instances consume memory until the browser tab becomes unresponsive or crashes — especially on a full re-render triggered by the cross-filter `FilterBanner` or section navigation.
+A new loader for `AccActivityAccds` (~4.55M rows, per `PROJECT.md`/memory) or the
+~2.58M-row `AccActivity` DC-backfill table does a `findMany()` and reduces/groups in
+Node instead of pushing the `GROUP BY` into SQL. This is exactly the failure mode
+`lib/server/acc-hot-cache.ts`'s `includePermissionSummary` branch hit before it was
+rewritten as a SQL aggregate (CONCERNS.md §1.1, §8.1) — and the `includePermissionContexts`
+raw-scan branch still exists behind a hard guard (`ACC_ALLOW_RAW_PERMISSION_SCAN=1`,
+throws by default) specifically because re-opening this path is a known, named risk.
 
 **Why it happens:**
-ECharts creates a stateful canvas-backed instance. If `useEffect` cleanup is missing, React re-mounts (e.g., due to key changes, Suspense fallback → resolve, or parent re-render) silently leak the old instance. The existing codebase already has 148 large-`useEffect` matches (CONCERNS.md); new chart components added without review join this footprint.
+The existing `Promise.all` pattern in `mainCharts.tsx` makes it look easy to "just add
+another loader" — but the loaders that are fast today (`loadModuleActivity`,
+`loadCoordinationByProject`, etc.) are fast *because* they already push `groupBy`/`SUM`
+into Postgres (verified: `lib/server/coordinationByProjectView.ts:27`
+`db.accIssue.groupBy(...)`). A new activity-verb/object-type breakdown or a folder
+storage treemap over `AccFolder.fileCount`/`totalSizeBytes` is tempting to prototype
+with `findMany()` + `.reduce()` because that's how you'd write it against a small table.
 
 **How to avoid:**
-- Every `echarts.init()` call must have a paired `echarts.dispose(instance)` in the `useEffect` cleanup function.
-- Use the `EChart` wrapper established in v2.0 for every new chart — it already manages lifecycle. Do not reach around it to create raw instances.
-- After adding new chart panels, run the Playwright UAT canvas-count check: if canvas count grows beyond the v2.0 baseline, a leak has been introduced.
-- Run `npm run repo-map:check` after adding chart panels; new `react-use-effect` AST matches are flagged for review.
+Every new `lib/server/<name>View.ts` loader for `AccActivityAccds`, `AccActivity`, or
+`AccFolder` must use `db.$queryRaw`/`groupBy` with the aggregation happening in Postgres,
+returning row counts bounded by the actual cardinality (e.g., ≤ n_verbs × n_projects, not
+raw activity rows). Model the new test on the existing TEST-01 pattern (`npm test` guard
+asserting aggregate output ≤ `n_roles × n_projects`).
 
 **Warning signs:**
-- Browser tab memory climbs from ~200 MB to 800 MB+ during a session without a page reload.
-- Switching section tabs causes a flicker or blank followed by a newly-painted chart (double-init without dispose).
-- `echarts.getInstanceByDom()` returns an instance on a DOM node that was supposedly freshly mounted.
+- A new `lib/server/*View.ts` file contains `.findMany(` on `AccActivityAccds` or
+  `AccActivity` without a `where` that bounds it to a single project, or without a
+  raw SQL `GROUP BY`.
+- Local dev load time for `/access-analysis` visibly increases (`Promise.all` in
+  `mainCharts.tsx` is only as fast as its slowest entry).
+- No new Vitest test asserts a row-count upper bound for the new aggregate.
 
 **Phase to address:**
-Every phase that adds Sankey, chord, calendar heatmap, or treemap panels (Activity Depth and Interconnections phases). Enforce the `EChart` wrapper rule in the phase plan before any chart component is written.
+Foundation/data-loader phase (first phase that adds any loader touching
+`AccActivityAccds`/`AccActivity`) — add the aggregate-bound test in the same phase as
+the loader, not as a follow-up.
 
 ---
 
-### Pitfall 2: Sankey / Chord Cardinality Explosion — Node-Count Blowup
+### Pitfall 2: Ingest-freshness panel measures `AccDcIngestRun.rowsByModule` and lies
 
 **What goes wrong:**
-The Sankey (Company→Role→Module) and chord (firm collaboration, role co-occurrence) charts are built naively by streaming all unique values from the DB. With 428 projects, ~3,367 users, 77 roles, and multiple modules, an uncapped cross-join produces hundreds of nodes and thousands of links. ECharts Sankey degrades to an unreadable hairball at >40–50 nodes; the chord diagram becomes a solid disc. The chart fails to convey anything useful and may freeze on a projector-connected laptop.
+`AccDcIngestRun.rowsByModule` is a `Json` column (verified `prisma/schema.prisma:820`)
+that is a known, permanent zero per project memory
+("`project_rowsbymodule_telemetry_disconnect`" — "AccDcIngestRun.rowsByModule always 0").
+A freshness/throughput panel built by reading this field directly will render a chart
+that always shows 0 rows ingested, which is worse than no panel at all on a live demo.
 
 **Why it happens:**
-Developers fetch distinct combinations from Prisma and pass them directly to ECharts series data without aggregation caps. The data volume for ACC — 16,942 user×project instances, 428 projects — is large enough that even a single GROUP BY still produces hundreds of top-level nodes.
+The field exists on the exact model (`AccDcIngestRun`) the ROADMAP.md seed names as the
+data authority for this panel, so it looks like the obvious source — but the ingest
+pipeline never actually populates it correctly.
 
 **How to avoid:**
-- Cap Sankey input: top-N companies by member count (e.g., top 12), top-N roles by assignment frequency, top-N modules by activity. Expose the cap as a UI control.
-- Aggregate before render: group the long tail into an "Other" node at the Prisma query level (`LIMIT` + a remainder bucket), not in JavaScript after the fetch.
-- For chord/matrix, restrict to role co-occurrence only (roles × roles = 77×77 = 5,929 cells — still dense; cap to active roles with >10 members).
-- Write a unit test on the aggregation helper asserting it returns ≤N nodes for adversarial inputs (all 3,367 users × 77 roles) before the chart is wired.
+Measure "rows ingested" by querying `AccActivity` directly
+(`db.accActivity.count({ where: { ingestRunId, ... } })` — `ingestRunId` is a real,
+indexed FK-like column on `AccActivity`, verified `prisma/schema.prisma:573,582`) or by
+diffing `AccActivity` counts bracketed by `AccDcIngestRun.startedAt`/`endedAt`. Use
+`AccDcIngestRun` only for `status`, `startedAt/endedAt`, `quotaUsed`,
+`projectsProcessed` — fields that are actually populated.
 
 **Warning signs:**
-- Sankey series `data` array length > 60 at any zoom level.
-- Chord matrix edges > 500 before capping is applied.
-- ECharts emits a silent render timeout or the browser tab goes unresponsive on chart mount.
+- Any new chart reads `rowsByModule` and renders a non-zero value in a screenshot/demo
+  without first confirming it against a live `AccActivity` count for the same run.
+- The panel shows a flat zero line across all historical ingest runs.
 
 **Phase to address:**
-Interconnections phase — the aggregation cap and "Other" bucket must be specified in the phase plan, not discovered at render time.
+The phase that builds the ingest-freshness/throughput panel specifically — verify the
+row-count field against `AccActivity` before wiring the chart, not after.
 
 ---
 
-### Pitfall 3: Pivot Explorer Cardinality Blowup — Folder × Role × User OOM
+### Pitfall 3: `AccFolderPermissionSummary.totalBytes` is a `BigInt` — serializing it to a client chart crashes or silently truncates
 
 **What goes wrong:**
-The scenario explorer allows any measure×dimension(×dimension) pick. A user selects `Folder × Role` or `Folder × User`: `AccFolderPermission` has been shown to produce ~5M rows when fully joined (v2.0 OOM post-mortem: "bulkUsers loaded ~5M AccFolderPermission rows → 77s+OOM"). An uncapped pivot query against this table will OOM the Node process or time out, killing the dashboard.
+`AccFolderPermissionSummary.totalBytes` is declared `BigInt` (verified
+`prisma/schema.prisma:554`). Passing a Prisma row containing a `BigInt` field straight
+into a Server Component's props (or `JSON.stringify`-ing it anywhere in the RSC →
+client boundary) throws `TypeError: Do not know how to serialize a BigInt` — this
+project has already hit an adjacent BigInt trap during Ph19
+("`0n`/`2048n` BigInt literals break ES2017 target → use `BigInt()`", per project
+memory), so the codebase's TS target is already known to be BigInt-fragile.
 
 **Why it happens:**
-The pivot engine generates a GROUP BY from the chosen dimension pair without a row-limit guard. Developers assume Prisma aggregation is safe at any cardinality because it runs server-side.
+`AccFolderPermissionSummary` is explicitly called out in ROADMAP.md as "materialized
+... but never charted" for the permission-footprint-by-role panel — it is the correct
+data authority, but the `totalBytes` field must be converted (`Number(totalBytes)` for
+values that fit safely, or a formatted string) at the loader boundary before it ever
+reaches a `"use client"` component or gets embedded in RSC JSON.
 
 **How to avoid:**
-- Any pivot query involving `AccFolderPermission` or `AccActivity` must use SQL `GROUP BY` + `HAVING COUNT(*) > threshold` + `LIMIT` at the Prisma/raw-query level — not in JS post-processing.
-- Enforce a "max groups" guard in the tRPC router for pivot queries: if the cartesian product of the two selected dimensions exceeds a safe ceiling (e.g., 2,000 cells), return a warning and the top-N aggregated rows.
-- Folder dimension specifically: never enumerate all leaf folders; group by folder tier (L1/L2) for cross-folder pivots.
-- The v2.0 fix (GROUP-BY aggregate: 5M → 21k rows, 77s → 9s, `PG_POOL_MAX=32`) is the reference pattern. Apply it to all new pivot backends.
+Convert `BigInt` → `Number` (or a pre-formatted bytes string) inside the
+`lib/server/<name>View.ts` loader, never in the client component. Add a unit test on
+the pure transform asserting the output type is `number`/`string`, not `bigint`.
 
 **Warning signs:**
-- tRPC procedure response time > 5s for any pivot combo.
-- Node heap approaches 8 GB (current `--max-old-space-size` ceiling from the v2.0 OOM fix).
-- The page freezes when `Folder` is selected as either dimension in the pivot explorer.
+- `npx tsc --noEmit` passes (TypeScript doesn't catch this — it's a runtime
+  serialization failure) but the page throws a 500 or a hydration error mentioning
+  `BigInt` when the permission-footprint panel is added.
+- A `console.error` about serializing `BigInt` appears in the dev server log after
+  wiring the new panel.
 
 **Phase to address:**
-Scenario Explorer phase — the row-limit guard must be part of the tRPC procedure spec before the pivot engine is built.
+The phase that builds the permission-footprint-by-role panel (the only new-graph seed
+that reads `AccFolderPermissionSummary`).
 
 ---
 
-### Pitfall 4: Coverage-Honesty Omission — 428/1,152 Unlabeled
+### Pitfall 4: `mainCharts.tsx`'s `Promise.all` fan-out grows unbounded and breaches the documented heap/pool budget
 
 **What goes wrong:**
-New analytics panels (calendar heatmap, activity depth, folder reach, Sankey) are rendered without any indicator that they represent 428 of 1,152 hub projects (~37% coverage). Non-technical executives see "Company Activity Heatmap" and infer it covers the entire hub. This directly contradicts the owner constraint ("coverage-honest") and breaks trust when an audience member asks why their project is missing.
+`app/(dashboard)/access-analysis/mainCharts.tsx` already runs **8 concurrent**
+server-side loaders in one `Promise.all` (verified: `loadInstanceView`,
+`loadModuleActivity`, `loadActivityByActor`, `loadCoordinationByProject`,
+`loadProjectCoverage`, `loadTerrainProjects`, `loadActivityTimeline`,
+`loadDcCoverage`) plus terrain/folder-activity loaders fired separately. Adding 9 more
+loaders (one per new-graph seed) without consolidation pushes a single page load past
+15+ concurrent Postgres queries. `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`
+were tuned for the *current* load pattern (CONCERNS.md §1.4/§1.5); this is a documented,
+previously-fixed OOM-adjacent concern, not a hypothetical one.
 
 **Why it happens:**
-Developers add the panel data correctly but treat the coverage label as a "nice to have" or polish-pass item. In a live workshop, the absence of this label is a credibility failure.
+The registration pattern in ROADMAP.md ("add to the `Promise.all` in `mainCharts.tsx`")
+is correct for one or two panels but doesn't itself cap concurrency — nothing stops nine
+sequential additions from turning one `Promise.all` into an unmanageable fan-out.
 
 **How to avoid:**
-- Every new analytics panel that draws from `AccActivity`, `AccFolderPermission`, or `AccDc*` tables must include a coverage indicator inline: "Based on 428 of 1,152 projects (admin-accessible)" — not only in a tooltip.
-- Reuse the v2.0 `FilterBanner` or create a dedicated `CoverageHonesty` strip component; do not invent ad-hoc disclaimers per panel.
-- Add a unit test asserting that each panel's data-fetching hook/tRPC call returns a `coverageNote` field, and that the component renders it.
-- The phase plan for each data panel must include "coverage label" as an explicit acceptance criterion.
+Batch new loaders logically (e.g., issue-related loaders share one combined
+`lib/server/issueAnalyticsView.ts` doing multiple `groupBy`s in one module rather than
+9 separate top-level `Promise.all` entries) and re-measure page load time after each
+wave. Treat "page load time regression" as a phase gate, not an afterthought — spot-check
+with `console.time`/server logs before and after each wave of panels.
 
 **Warning signs:**
-- A PR adds a new analytics panel without a `coverageNote` string being rendered.
-- The Prisma query uses `AccActivity` or `AccFolderPermission` but the component has no coverage text.
+- `mainCharts.tsx`'s `Promise.all` array grows past ~12 entries.
+- Local `/access-analysis` load time visibly increases wave-over-wave during
+  development (no formal perf test exists for this today — this must be eyeballed or a
+  lightweight timing assertion added).
 
 **Phase to address:**
-All data panel phases. The `CoverageHonesty` pattern should be established in Phase 1 (DC re-extraction) as a reusable UI atom so all downstream phases import it without reinventing it.
+Every panel-adding phase should re-check `mainCharts.tsx`'s total loader count; a
+dedicated "wave 2" phase (once ~5+ new loaders exist) should explicitly measure and, if
+needed, consolidate loaders before adding more.
 
 ---
 
-### Pitfall 5: Attribution Gap Invisibility — UnresolvedAttribution Silently Excluded
+### Pitfall 5: Reusing the stale "428/1,152 DC-extractable" coverage figure instead of the corrected ~550/1,153
 
 **What goes wrong:**
-`AccActivity` rows with failed author attribution (3–20% of rows, per milestone context) are silently excluded from activity charts. Calendar heatmaps, behavior-mix charts, and hottest-files panels show lower-than-actual activity counts with no indication of the gap. BIM managers who know the real activity level notice the discrepancy and lose confidence in the data.
+The milestone brief and CONCERNS.md §5.2 both cite "428/1152 DC-extractable, 724
+LOCKED (403)" as the historical figure — but `PROJECT.md` (Ph11 TRUTH-01) explicitly
+records that this framing was **rejected by the owner** as the headline number, and the
+current, correct source is `lib/server/dcCoverageView.ts`, which computes "covered ≈ 550
+— AccDcProject rows" against "total ≈ 1,153 — AccProject rows" (verified,
+`lib/server/dcCoverageView.ts:8-9`). A new issue-fetch coverage donut or provisioned-vs-active
+panel that hardcodes "428 of 1,152" (copied from the seed list or old docs) ships a
+number the project already corrected once.
 
 **Why it happens:**
-The `WHERE` clause filters out `UnresolvedAttribution` rows cleanly; the resulting totals look plausible. There is no downstream assertion that the excluded percentage is disclosed.
+The ROADMAP.md seed table and CONCERNS.md §5.2 both still contain the old figure in
+prose (with a `VERIFY:` flag already attached in CONCERNS.md), so a new-graph author
+skimming those files for "the coverage number" can easily grab the wrong one.
 
 **How to avoid:**
-- Every activity-derived chart must include an "Attribution quality" strip showing: total rows fetched, rows with resolved attribution, rows excluded.
-- At the tRPC router level, return `{ data, attributionQuality: { resolved: N, unresolved: M } }` so the UI always has the denominator.
-- Do not merge `UnresolvedAttribution` rows into an "Unknown" bucket that inflates the total — keep them as a disclosed exclusion.
+Any new coverage-labeling chart must call `loadDcCoverage()` (or an equivalent
+`lib/server/dcCoverageView.ts`-style live query) for its number — never a number typed
+into a component or a doc. Treat every coverage/freshness caption as **computed**, per
+the Ph11 precedent (`dataFloor`, coverage header line).
 
 **Warning signs:**
-- A tRPC procedure returns activity data but has no `attributionQuality` field.
-- Activity totals appear suspiciously round or match a perfect 100%.
-- No `UnresolvedAttribution` count is visible anywhere on the `/access-analysis` activity section.
+- A hardcoded percentage or fraction (e.g., `"428 of 1,152"`, `"63% locked"`) appears as
+  a string literal in a new chart component instead of a prop threaded from a server
+  loader.
 
 **Phase to address:**
-Activity Depth phase. The `attributionQuality` return shape must be defined in the tRPC router spec before any activity chart component is built.
+The issue-fetch coverage donut and provisioned-vs-active module coverage panels
+specifically — both must source their numbers from a live query, following the
+`loadDcCoverage()` precedent.
 
 ---
 
-### Pitfall 6: Instance-vs-User Double Counting
+### Pitfall 6: New activity/verb loaders reintroduce the deferred `/users/spatial-graph`-coupled `lib→app` edges
 
 **What goes wrong:**
-`AccFolderPermission` and `AccDc*` tables are instance-level (user×project tuples). If a pivot shows "unique users with folder access" and the query counts rows rather than `DISTINCT userEmail`, a user with access to 200 projects appears 200 times. The "total people with access" KPI looks inflated by an order of magnitude.
+CONCERNS.md's BND-03 resolution explicitly lists 5 `lib→app` edges as
+**deferred, spatial-graph-coupled, out of scope** — including
+`lib/acc/activityClassification.ts → app/.../accTaxonomy.ts` and
+`→ app/.../accNormalize.ts` (both under `/users/access-analysis`, the spatial-graph
+route family). The "Activity verb / object-type breakdown" new-graph seed reads
+`AccActivityAccds.activityVerb`/`objectType`/`serviceGroup` — fields adjacent to the
+same classification logic these deferred edges touch. Reaching for
+`activityClassification.ts`'s helpers (or worse, importing directly from
+`accTaxonomy.ts`/`accNormalize.ts` under `/users/access-analysis`) to build the new
+`/access-analysis` chart re-couples the two route families the project has deliberately
+kept apart.
 
 **Why it happens:**
-Prisma `count()` without `distinct` on a table with instance-level rows is a natural mistake. The distinction between instance-level and user-level cardinality is not obvious from schema names alone.
+`activityClassification.ts` already has the verb/module classification logic the new
+panel needs conceptually, and it's tempting to import a taxonomy helper that "already
+exists" without checking which module it actually resolves to.
 
 **How to avoid:**
-- For any "people count" or "user count" metric, always use `COUNT(DISTINCT userEmail)` or Prisma's `distinct` aggregation option.
-- Label metrics explicitly: "428 project-access records" vs. "3,367 distinct users."
-- Write a unit test for each aggregation helper asserting that a fixture with one user and 5 projects returns count=1 for people and count=5 for access records.
-- Code-review gate: any new `count()` call on `AccFolderPermission` or `AccDc*` tables must be reviewed for distinct-user intent.
+Build the activity verb/object-type breakdown loader directly off raw
+`AccActivityAccds` columns (`activityVerb`, `objectType`, `serviceGroup` — no
+classification needed, these are already the raw dimensions) rather than routing
+through `activityClassification.ts`'s module-donut classifier. If classification is
+genuinely needed, extract only the pure function into `lib/acc/` — do not import from
+anything under `app/(dashboard)/users/access-analysis/`.
 
 **Warning signs:**
-- A "users with folder access" KPI > 10,000 (the hub has ~3,367 distinct users per v2.0 data).
-- A panel shows "16,942 people" rather than "16,942 user×project instances."
+- `node scripts/repo-map/check.cjs` (or `npm run repo-map:check`) shows the `lib→app`
+  edge count rising above 21 (the documented Phase-10 post-state) with a new edge
+  rooted in the new chart's loader.
+- A new import statement in `lib/server/` or `lib/acc/` references anything under
+  `app/(dashboard)/users/access-analysis/`.
 
 **Phase to address:**
-All phases with people-count metrics. Establish a shared `countDistinctUsers()` helper in `lib/acc/` during Phase 1 so all later phases import it.
+The activity verb/object-type breakdown phase — run `npm run repo-map:check` as an
+explicit gate before considering that phase done.
 
 ---
 
-### Pitfall 7: Empty AccDcRole — Role Names Sourced from Wrong Table
+### Pitfall 7: Panel overload dilutes the workshop story — `/access-analysis` already renders 15 panel surfaces
 
 **What goes wrong:**
-A new panel queries `AccDcRole` for role names (e.g., for the Sankey Company→Role→Module chart) and returns empty data or role IDs without display labels. `AccDcRole` is permanently empty — Autodesk never delivered `admin_roles.csv` to the Data Connector. Role names come from the live `AccRole` table via `mergeRoleNames()` (the v2.0 fix). New code that skips this and queries `AccDcRole` directly silently produces no data.
+`app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx` already
+instantiates **15** `PremiumSurface`-wrapped panels (verified count). The ROADMAP.md
+seed list proposes 9 more chart ideas for the same two pages. Shipping all 9
+unconditionally turns a curated workshop narrative into an undifferentiated wall of
+charts — the opposite of "credible demos, fast comprehension" (per project skill's
+Senior Contributor Defaults).
 
 **Why it happens:**
-The table name `AccDcRole` sounds like the authoritative DC role table. A developer unfamiliar with the v2.0 fix uses it directly. The query succeeds (zero rows, no error), and the chart renders empty.
+Each seed is individually well-justified (real, unvisualized data), so there's no
+single moment where "should we ship all 9 at once" gets asked — the registration
+pattern makes each addition mechanically easy, which hides the cumulative UX cost.
 
 **How to avoid:**
-- Add a `/* AccDcRole is always empty — use AccRole + mergeRoleNames() */` comment to the Prisma model and to any router file that touches roles.
-- The `mergeRoleNames()` function is the single point of role-name resolution; no new code queries `AccDcRole.name` directly.
-- Add a unit test asserting that any role-name aggregation returns non-empty results when `AccRole` has data and `AccDcRole` is empty (fixture test).
+Curate: group the 9 seeds by user question, not by data-model convenience (e.g.,
+combine "activity verb/object breakdown" and "provisioned-vs-active module coverage"
+under one expandable section rather than two always-visible top-level panels).
+Consider collapsible/accordion sections for the newer panels rather than flat
+always-rendered `PremiumSurface`s. Cap the count that renders above-the-fold; put
+lower-priority panels behind a "More analytics" expand.
 
 **Warning signs:**
-- A chart or panel with `role` as a dimension renders with zero items or shows role IDs (e.g., "role_abc123") instead of display names.
-- A Prisma query references `AccDcRole` for `.name` or `.displayName` in new code.
+- Total panel count on `/access-analysis` exceeds ~20 without any grouping/expand
+  mechanism.
+- Owner feedback during a workshop dry run says "too much on this page" or scrolls past
+  charts without engaging.
 
 **Phase to address:**
-Any phase adding role-dimension charts (Interconnections, Scenario Explorer). The phase plan must explicitly state: "role names come from AccRole via mergeRoleNames() — do not query AccDcRole."
+A dedicated final "workshop curation" phase (after all new panels are built) that
+explicitly reviews panel count, grouping, and above-the-fold priority — do not treat
+curation as automatic once all loaders/charts are wired.
 
 ---
 
-### Pitfall 8: Shifting Module Taxonomy — New Ingest Overwrites Existing Classifications
+### Pitfall 8: New consumers of `folderPermQuery.ts`/`acc-hot-cache.ts` silently break the byte-identical golden-master tests (TEST-01/02/03)
 
 **What goes wrong:**
-After re-extracting all-time data (Phase 1), the `moduleOverrides.ts` taxonomy is applied to freshly ingested `AccActivity` rows. If the ingest pipeline encounters new action strings not in the existing catalog (~204 entries across `dimensionCatalog.structural` and `moduleOverrides.ts`), they are silently bucketed as `Unmapped/Other`. Charts showing module distribution quietly change between pre- and post-extraction without any alert.
+v2.1/v2.2 shipped exactly for the purpose of making `folderPermQuery.ts`,
+`acc-hot-cache.ts`, and the terrain views safe to extend — but they are guarded by
+characterization tests that assert **byte-identical** output
+(`templateFolderTerrain.sharedQuery.test.ts`, `folderPermissionTerrainView.test.ts`,
+the TEST-01 OOM-guard suite). A new permission-tier × folder-depth heatmap (seed #8,
+explicitly meant to reuse `loadFolderPermRows` from `folderPermQuery.ts`) or a
+permission-footprint-by-role panel that touches `acc-hot-cache.ts`'s
+`includePermissionSummary` branch can change output shape in a way that breaks these
+pins without the change being "wrong" for the new chart's purpose — the pins exist to
+catch exactly this kind of silent shape drift.
 
 **Why it happens:**
-The taxonomy catalog was built from one historical slice of activity data. All-time historical data may include action strings from project types, modules, or time periods not previously seen.
+The shared query/cache modules are correctly reused (that's the whole point of
+`folderPermQuery.ts`), but adding a new consumer that needs slightly different columns
+or grouping can tempt an edit to the shared function's *existing* return shape instead
+of adding a new, additive query variant.
 
 **How to avoid:**
-- After each DC re-extraction run, execute `scripts/diag-activity-types.cjs` (which already imports `moduleOverrides.ts`) and check for new `Unmapped` action strings before declaring extraction complete.
-- Gate the "extraction complete" milestone condition on: zero new Unmapped actions OR new actions are deliberately added to the catalog.
-- If new actions appear, update `moduleOverrides.ts` before data-dependent view phases begin.
+Add new query variants (a new exported function, or an additive parameter with a
+default that preserves the existing branch's exact output) rather than editing the
+existing `loadFolderPermRows`/`includePermissionSummary` code paths in place. Run
+`npm test` after every touch to these files and treat any TEST-01/02/03 diff as a stop
+signal, not a test-file update.
 
 **Warning signs:**
-- `Unmapped` or `Other` category in activity charts grows beyond the pre-extraction baseline percentage.
-- `scripts/diag-activity-types.cjs` output shows new action strings not present in the existing catalog.
+- `npm test` fails on `folderPermissionTerrainView.test.ts`,
+  `templateFolderTerrain.sharedQuery.test.ts`, or the TEST-01 suite after adding a new
+  chart's loader.
+- A PR/commit touches `lib/server/folderPermQuery.ts` or
+  `lib/server/acc-hot-cache.ts` *and* modifies an existing test's expected values in the
+  same commit (should almost never happen together).
 
 **Phase to address:**
-DC Re-extraction phase — taxonomy validation is an explicit acceptance criterion before that phase is marked complete.
-
----
-
-### Pitfall 9: Prescriptive Risk Framing — UI Implying a Verdict
-
-**What goes wrong:**
-A panel labels data with words like "High Risk," "Exposed," "Critical," or uses red color for certain folder-access patterns without the owner's explicit request. The owner specifically rejected synthetic risk scores: "i dont care about risk scores… i would make it myself." A red "High Risk" label in a live workshop creates anxiety and misrepresents the descriptive intent.
-
-**Why it happens:**
-Developers default to traffic-light (red/yellow/green) color semantics for access data because it is a familiar convention. Folder exposure, dormant access, and role co-occurrence charts look like "risk indicators" by default.
-
-**How to avoid:**
-- Color encodes category or quantity, never severity. Red must not mean "bad" or "dangerous." Use the zinc/chart-color token palette with semantic neutrality.
-- Labels state facts only: "External access" not "Exposed"; "Dormant access (>90 days)" not "Risk: dormant"; "Role outlier" not "Suspicious role."
-- The phase plan for each panel must include a "label review" checklist item: does any label imply a verdict? If yes, rewrite it as a fact.
-- Code-review gate: any string containing "risk," "danger," "critical," "alert," "exposed," "threat," or "suspicious" in a UI-rendered label must be flagged for review.
-
-**Warning signs:**
-- Color scale uses red for highest values on folder-access or dormant-access charts.
-- A component renders text containing "High Risk," "Exposed," or severity grades.
-- Tooltip copy says "This role is dangerous" rather than "This role has N overlapping permissions."
-
-**Phase to address:**
-All phases. Establish a "descriptive label vocabulary" in the phase 1 plan and reference it in every subsequent phase's acceptance criteria.
-
----
-
-### Pitfall 10: DC Quota Exhaustion — Re-extraction Stalls Mid-Run
-
-**What goes wrong:**
-The ACC Data Connector quota is ~25 requests/UTC-day per user. A full re-extraction of 428 projects requires multiple days. If the extraction script does not checkpoint progress and resume cleanly, a quota-hit (429 response) mid-run produces a mixed-vintage dataset: some projects freshly extracted, others still stale. Panels that depend on "freshly extracted" data show misleading before/after comparisons.
-
-**Why it happens:**
-The extraction script is run without a resume checkpoint, or `DC_RESUME=1` is not set when resuming. This exact failure was documented 2026-05-13: "DC daily quota hit. Use DC_RESUME=1 to retry after 429."
-
-**How to avoid:**
-- The re-extraction phase plan must include: (1) verify `DC_RESUME=1` is armed before each day's run, (2) log extracted project IDs to a durable checkpoint file, (3) set `DC_PRIORITY_BACKFILL=1` and `SAFE_BUDGET=20` (leaving headroom for bisect retries).
-- Do not mark the DC Re-extraction phase complete until a completeness query confirms all 428 target project IDs have at least one `AccActivity` row with an `extractedAt` timestamp from the current run.
-
-**Warning signs:**
-- Extraction log shows HTTP 429 with no subsequent resume.
-- `AccActivity` row count does not grow between day 1 and day 2 of extraction.
-- Project IDs in the checkpoint file are absent from the `AccActivity` table after the run.
-
-**Phase to address:**
-Phase 1: DC Re-extraction — must be the first phase and must gate all data-dependent view phases.
-
----
-
-### Pitfall 11: APS Refresh Token Breakage — Single-Use Token Not Persisted
-
-**What goes wrong:**
-The DC extraction script calls the APS API, which returns a new refresh token on each token refresh (v2 single-use rotation). If the script does not persist the new token back to the DB immediately, the old token is invalidated. The next dashboard login fails with an auth error. This broke the live dashboard on 2026-06-01 and required manual recovery via `scripts/aps-login.cjs`.
-
-**Why it happens:**
-A script refreshes the APS token to make a DC API call but does not write the new `refreshToken` back to the database. Any subsequent request — by the script or by a user logging in — uses the invalidated old token and gets a 401.
-
-**How to avoid:**
-- Every script that calls `lib/acc/` APS token-refresh helpers must use the helper that both refreshes AND persists the new token atomically.
-- Add a post-run assertion: after the DC extraction script completes, verify the token in the DB is newer than the token at the start of the run (compare `updatedAt` timestamp).
-- Never call APS token endpoints outside the single canonical helper.
-- Recovery reference: `scripts/aps-login.cjs` re-authenticates; document this in the phase runbook.
-
-**Warning signs:**
-- Dashboard login returns a 401 or session error immediately after a DC extraction run.
-- The extraction script logs a 401/403 on the second API call of the run (token was rotated by the first call but not persisted).
-
-**Phase to address:**
-Phase 1: DC Re-extraction — the token-persistence requirement must be an explicit step in the script runbook, not assumed.
-
----
-
-### Pitfall 12: 403-Cascade Contamination — Locked Projects Abandoning Good Batches
-
-**What goes wrong:**
-428 of 1,152 projects are admin-extractable; the other 724 return 403. If the extraction script does not cleanly separate the 403 set from genuine extraction failures, a batch containing a single 403-returning project may abort early, leaving good projects in the batch un-extracted and consuming the day's quota budget on overhead retries.
-
-**Why it happens:**
-The bisect logic (`DC_403_BISECT`) was added in v2.0 but requires the flag to be armed. Without it, the default batch strategy aborts on 403. The 724 locked projects are permanently locked (needs Account Admin provisioning) but look like transient errors to a script without the denylist.
-
-**How to avoid:**
-- Arm `DC_403_BISECT=1` for the re-extraction run (verified: this flag exists in `lib/acc/dcIngest.ts`).
-- Maintain a denylist of known 403-returning project IDs; skip them in the planning phase of each day's budget allocation so quota is not wasted on retries.
-- The completeness check query must use 428 as the denominator, not 1,152.
-
-**Warning signs:**
-- Extraction log shows 403 errors followed by early abort rather than bisect-and-continue.
-- The completeness query reports ~37% coverage as a "failure" rather than the expected full result.
-- `DC_403_BISECT` is absent from `.env` or set to `0` in the current environment.
-
-**Phase to address:**
-Phase 1: DC Re-extraction — `DC_403_BISECT=1` and the 428-project denominator must be in the extraction script runbook.
-
----
-
-### Pitfall 13: ECharts Theme Drift — Hardcoded Colors Bypass the Token System
-
-**What goes wrong:**
-New chart components (Sankey, heatmap, treemap) hardcode hex colors or use ECharts default palette instead of resolving colors from the active theme. In dark (zinc) mode, chart labels or axis ticks become invisible. The UAT-critical THM-01 gate fails and the workshop experience breaks.
-
-**Why it happens:**
-ECharts does not participate in Tailwind CSS custom properties automatically. Developers copy chart configs from ECharts examples that use hex literals. The v2.0 fix (use `useTheme()` → `resolvedTheme` → resolve CSS variables) is not obvious when adding a new chart type.
-
-**How to avoid:**
-- All ECharts options must resolve colors through the theme helper established in v2.0. The `EChart` wrapper should accept a `themeColors` prop computed from `useTheme()` and `getComputedStyle(document.documentElement)` — never from hardcoded hex.
-- The phase plan for each chart panel must include "theme-resolved colors" as an acceptance criterion.
-- Verify in Playwright UAT: toggle dark/light theme and confirm charts remain readable in both modes.
-
-**Warning signs:**
-- A chart looks correct in one theme and washed-out or invisible in the other.
-- `rg "#[0-9a-fA-F]{6}" app/(dashboard)/access-analysis/` returns new non-token hex strings in component files.
-- ECharts `color` array in a new series option contains raw hex instead of a CSS-var reference.
-
-**Phase to address:**
-Every phase that adds chart components. Enforce the theme-resolution rule in the component starting template.
-
----
-
-### Pitfall 14: Calendar Heatmap Date-Range Mismatch — Appears Sparser Than Reality
-
-**What goes wrong:**
-The calendar heatmap for `AccActivity` shows a large chunk of blank days because the date range defaults to the current calendar year but activity data may be concentrated in historical periods, or because the GROUP BY uses `createdAt` (ingest timestamp) rather than the actual activity timestamp from the ACC event. The heatmap looks sparse, executives conclude activity is low, and the dashboard loses credibility.
-
-**Why it happens:**
-Two separate issues: (1) the heatmap defaults to the current year without checking the actual date distribution of the data; (2) `AccActivity` rows may have an ingest timestamp distinct from the real activity date. VERIFY: confirm which field holds the actual activity timestamp (may be `createdAt`, `activityAt`, `timestamp`, or similar — check `prisma/schema.prisma`).
-
-**How to avoid:**
-- Before building the calendar heatmap component, run a diagnostic query: `SELECT MIN(activityDate), MAX(activityDate), COUNT(*) FROM AccActivity` (VERIFY: exact column name) to understand the actual date range.
-- Default the heatmap to the date range that contains at least 80% of activity, not the current calendar year.
-- If the activity timestamp and the ingest timestamp are different columns, always use the activity timestamp.
-- Add a unit test for the date-aggregation helper using a fixture with activities spread over two years to assert correct bucketing.
-
-**Warning signs:**
-- The heatmap renders with >60% blank cells even after a successful DC re-extraction.
-- The max-activity day in the heatmap is the day of the extraction run (ingest timestamp leak).
-- The heatmap date range starts in 2026 but DC activity data may span 2023–2026.
-
-**Phase to address:**
-Activity Depth phase — the diagnostic query must be run and the date field confirmed before the heatmap component is specced.
-
----
-
-### Pitfall 15: next build Blocked by Test-File Type Errors
-
-**What goes wrong:**
-A new chart component or tRPC procedure introduces a TypeScript error in a test file (mismatched fixture type, missing mock type). Because `next build` typechecks the entire tree including test files (no `ignoreBuildErrors` — verified in PROJECT.md), the deploy build fails with a test-file path in the error, which is confusing and blocks the `:3000` restart.
-
-**Why it happens:**
-Developers run `npx tsc --noEmit` only on production source, or a concurrent dev session has an open test file with a type error. The prior incident (MEMORY.md: "any tsc error (even a concurrent session's test) BLOCKS the :3000 deploy build") proves this is a real failure mode.
-
-**How to avoid:**
-- Always run `npx tsc --noEmit` (which covers the entire tree) as the gate before `next build`.
-- When adding new chart/pivot types, add corresponding test fixture types at the same time as the implementation.
-- The phase plan for every phase must include `npx tsc --noEmit` as a mandatory pre-build gate with zero errors.
-
-**Warning signs:**
-- `next build` fails with an error in `*.test.ts` or `*.test.tsx`.
-- The TSC error path is under `app/(dashboard)/access-analysis/__tests__/` rather than production source.
-- The error only appears in build, not in the `vitest` run (test runner bypasses strict-mode inference on some import paths).
-
-**Phase to address:**
-All phases — this is a workflow gate, not a feature pitfall, but must be in every phase's verification checklist.
-
----
-
-### Pitfall 16: npm run build While :3000 Is Serving — Corrupts .next Cache
-
-**What goes wrong:**
-Running `npm run build` while the Task Scheduler task is serving `:3000` from the current `.next` directory corrupts the in-use build artifacts. The running server starts returning 500 errors. Recovery requires stopping the task, clearing `.next`, rebuilding, and restarting — costing 15–20 minutes in a pre-workshop scenario.
-
-**Why it happens:**
-The deploy mechanism is not a git-branch merge; it is a local rebuild of the current working tree. The running Next.js server holds `.next` open. A new build writes into the same directory concurrently.
-
-**How to avoid:**
-- Always stop the Task Scheduler task before running `npm run build`. The deploy sequence from `references/deploy-sequence.md` must be followed verbatim for any rebuild that ships DC extraction results or new panels.
-- The DC re-extraction phase and any subsequent phase that requires a rebuild must include "stop Task Scheduler → tsc → build → restart" as the explicit final step.
-
-**Warning signs:**
-- `:3000` returns 500 errors immediately after a build completes.
-- `npm run build` log shows "deleting .next" while the server is running.
-
-**Phase to address:**
-Phase 1: DC Re-extraction (first rebuild after extraction) and all subsequent phases. The deploy sequence must be in every phase's verification gate.
+The permission-tier × folder-depth heatmap and permission-footprint-by-role phases
+specifically — both are the only two seeds that touch these shared, test-pinned
+modules.
 
 ---
 
 ## Technical Debt Patterns
 
+Shortcuts that seem reasonable but create long-term problems.
+
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Adding a chart component directly in the route `page.tsx` without extracting a pure transform | Faster to write | Untestable data logic; grows already-large access-analysis modules (50KB flagged in CONCERNS.md) | Never — extract the transform first |
-| Querying `AccFolderPermission` without a LIMIT in a pivot query | Simpler SQL | 5M+ row OOM, identical to the v2.0 incident that caused 77s+crash | Never — LIMIT is mandatory |
-| Copying ECharts example configs with hardcoded hex colors | Faster chart setup | THM-01 failure; chart invisible in dark mode at workshop | Never on this surface |
-| Adding a new tRPC procedure with `publicProcedure` instead of `protectedProcedure` | Avoids session lookup | Unauthenticated access to ACC analytics data | Never |
-| Skipping the coverage label on a new analytics panel | Cleaner UI | Misleads executives; breaks owner's coverage-honest constraint | Never |
-| Running `npm run build` during an active `:3000` session | Saves a restart step | Corrupts `.next` cache, causes 500s (MEMORY.md confirmed) | Never — stop task scheduler first |
-| Placing a new shared taxonomy helper in `app/(dashboard)/access-analysis/` instead of `lib/acc/` | Colocation convenience | Scripts that need the helper import route-owned app code, adding to the 6 existing dependency-cruiser warnings | Never for anything used outside the UI route |
-| Using `count()` on `AccFolderPermission` without `DISTINCT` | Simpler Prisma call | People counts inflated by user×project fan-out | Never for user-count metrics |
-
----
+| Prototype a new loader with `findMany()` + client-side `.reduce()` against a small local dev sample | Faster to write, works fine on a filtered/small project | Reopens the exact 4.55M-row OOM class already fixed once (Pitfall 1) | Never for `AccActivityAccds`/`AccActivity`/`AccFolderPermission` — acceptable only for genuinely small tables (e.g., `AccIssueFetchRun`, one row per fetch run) |
+| Hardcode a coverage percentage from the ROADMAP.md seed table prose | Ships the panel faster, no new query needed | Ships a number the project already corrected once (Pitfall 5) | Never — always source from a live loader |
+| Add a 9th/10th ad-hoc `Promise.all` entry to `mainCharts.tsx` instead of consolidating related loaders | Follows the documented registration pattern literally | Unbounded fan-out growth (Pitfall 4) | Acceptable for the first 1-2 additions; consolidate once 3+ new loaders share a data domain (e.g., all issue-funnel views) |
+| Skip the `"server-only"` directive on a new `lib/server/<name>View.ts` loader "because it's obviously server code" | Saves one import line | Silent bundling into a client chunk if a client component ever imports it by mistake — no compile error | Never — every existing `lib/server/*View.ts` loader carries it |
+| Inline a pure transform directly inside a new `components/<Name>Chart.tsx` instead of a co-located `*Counts.ts` module with its own test | Fewer files for a "simple" chart | No unit-testable seam; the established registration pattern's `*Counts.ts` + `__tests__/` step gets skipped, and the next refactor has nothing to pin against | Acceptable only for a genuinely trivial 1-line transform; anything with branching (null handling, bucket boundaries) needs its own test |
 
 ## Integration Gotchas
 
+Common mistakes when connecting new charts to existing data sources.
+
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| APS / ACC Data Connector | Calling APS token refresh without persisting the new refresh token (v2 single-use rotation) | Use the canonical `lib/acc/` helper that refreshes AND persists atomically; verify `updatedAt` after each run |
-| APS / ACC Data Connector | Setting quota budget to 25 without accounting for bisect retries | Real usable quota per day is ~20 after reserving for bisect overhead; use `SAFE_BUDGET=20` |
-| APS / ACC Data Connector | Not arming `DC_403_BISECT=1` before a batch run | Always arm the flag; maintain a 403-denylist so locked projects do not consume quota retries |
-| APS / ACC Data Connector | Using `fields=` param on ACC Issues API | Corrupts `deleted` field and drops ~3k issues — never use the `fields=` filter (MEMORY.md verified) |
-| ECharts | Calling `echarts.init()` outside the shared `EChart` wrapper component | Instance leaks across re-mounts; always use the wrapper |
-| ECharts | Passing raw `data` arrays to Sankey/chord without cardinality caps | Chart freezes or becomes unreadable at ACC-scale cardinality |
-| Prisma / PostgreSQL | `count()` on instance-level tables (`AccFolderPermission`) without `DISTINCT` | People counts inflated by user×project fan-out |
-| Prisma / PostgreSQL | Querying `AccDcRole` for role display names | Table is always empty; use `AccRole` via `mergeRoleNames()` |
-| next build | Running `npm run build` with a concurrent dev session or while `:3000` is serving | 500 errors from corrupted `.next` cache; stop the Task Scheduler task first |
-| next build | Not running `npx tsc --noEmit` before `npm run build` | Build typechecks test files; a test-file type error blocks deployment |
-
----
+| `AccDcIngestRun` (ingest-freshness panel) | Reading `rowsByModule` directly (always 0, Pitfall 2) | Count rows from `AccActivity` bounded by `ingestRunId`/`startedAt`/`endedAt`; use `AccDcIngestRun` only for `status`/timing/`quotaUsed` |
+| `AccFolderPermissionSummary` (permission-footprint panel) | Passing `totalBytes` (BigInt) straight to a client chart prop (Pitfall 3) | Convert to `Number`/formatted string inside the `lib/server/` loader |
+| `dcCoverageView`-style coverage numbers | Hardcoding "428/1,152" from old docs/seeds (Pitfall 5) | Call `loadDcCoverage()` or an equivalent live query; treat the number as computed, never literal |
+| `AccIssueFetchRun.status` (issue-fetch coverage donut) | Treating `status` as always one of a fixed enum without handling `"running"` (in-progress run) or a `finishedAt: null` row as a distinct, honestly-labeled state | Bucket `running` separately from `done`/`failed`; a run with `finishedAt: null` is "in progress," not zero/error |
+| `AccProjectMember.lastSignIn` (dormant-users chart) | Filtering out or defaulting `null` to epoch/zero, which silently drops or misplaces never-signed-in members | Bucket `lastSignIn: null` explicitly as "Never signed in" — a real, common, honest category (not every invited member has logged in) |
+| `AccActivityAccds` (activity verb/object breakdown) | Not repeating the ~12-month floor caption already established for the timeline chart (TRUTH-03 precedent) | Reuse the `dataFloor` pattern from `activityTimelineView.ts`/`ActivityTimelineChart.tsx` rather than inventing a new caveat format |
+| `activityClassification.ts` (verb/module logic reuse) | Importing helpers that resolve into the deferred spatial-graph-coupled `accTaxonomy.ts`/`accNormalize.ts` edges (Pitfall 6) | Read raw `AccActivityAccds` columns directly; only pull pure, `lib/acc/`-rooted helpers |
 
 ## Performance Traps
 
+Patterns that work in a quick local check but fail under the page's real fan-out.
+
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Uncapped `AccFolderPermission` join in pivot query | Server OOM, 77s+ response, Node process killed | Always use SQL GROUP BY + LIMIT at Prisma level | First pivot query touching folder dimension |
-| ECharts Sankey with >50 nodes | Chart renders as hairball; browser tab freezes on projector | Cap at top-N with "Other" bucket before passing to series | Whenever Company×Role×Module is naively joined |
-| Calendar heatmap over wrong date range | 60%+ blank days, looks broken | Confirm actual activity date range with diagnostic query before speccing | When date field defaults to ingest timestamp |
-| Re-mounting ECharts instances without dispose | Memory creep, tab unresponsive after 20+ min session | Always use `EChart` wrapper with cleanup; audit canvas count in UAT | After adding 3+ new chart panels to a page |
-| Pivot engine returning >2,000 cells | UI freezes during cell render, ECharts bar chart becomes unreadable | Enforce max-groups guard in tRPC router | When both dimensions have >45 distinct values |
-| DC extraction without checkpointing | Mixed-vintage data, misleading panels | Use `DC_RESUME=1` and checkpoint file; verify completeness before phase sign-off | Day 2+ of multi-day extraction |
+| Client-side aggregation over `AccActivityAccds`/`AccActivity` | Chart works instantly in dev against a filtered project, then the full-account load takes 60-90s or OOMs | SQL `GROUP BY`/`$queryRaw`, aggregate-bound test (Pitfall 1) | At the full ~4.55M-row / ~2.58M-row scale (i.e., immediately in the real workshop demo, not at any "future" scale) |
+| Unbounded `Promise.all` growth in `mainCharts.tsx` | Page load time creeps up wave-over-wave; no single loader is slow, but the sum is | Consolidate loaders per data domain; re-measure after each wave (Pitfall 4) | Once concurrent loader count approaches `PG_POOL_MAX=32` under any concurrent access (rare for a single-owner workshop, but heap pressure comes first) |
+| `EChart` component `notMerge=true` (default) on charts inside a cross-filter state update | Toggling a `sliceFilters` value causes every chart sharing that re-render path to fully unmount/remount its canvas, not just diff options | Verify which charts actually need `notMerge=false` (diff+animate) vs. full remount; keep remounts scoped to charts whose *data*, not just filter highlight, changed | Becomes visible as jank once 9 more charts share the same `sliceFilters` re-render tree (Pitfall 9 cross-reference below) |
+| Folder storage treemap over `AccFolder` (206+ rows per `/template-mty`, more account-wide) | Treemap re-renders the full node set on every hover/zoom interaction | Memoize the treemap's ECharts `option` object; only recompute on real data changes, not on hover state | Noticeable once folder count crosses into the hundreds — already true for `/template-mty`'s 206 folders |
 
----
+## Security Mistakes
+
+Domain-specific issues beyond general web security (internal tool, low external-attack
+surface, but real internal-data-exposure risks).
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| Reintroducing raw ACC project GUIDs in a new drill-down (e.g., issue funnel's per-project breakdown) | Already fixed once for folder-activity-by-role (TRUTH-01) — regressing to raw GUIDs makes the panel unreadable/leaky-looking in a live demo, not a real security hole but a credibility hole | Merge `AccProject` names in every new project-scoped loader; fall back to `"Unknown project"`, never a bare GUID |
+| Embedding a `BigInt`/`Json` Prisma field directly in RSC props without normalizing | Runtime crash (Pitfall 3) rather than a silent leak, but any raw `Json` column (`AccProjectMember.products`, `AccDcIngestRun.diffSummary`) passed through un-normalized risks leaking internal shape/fields into client-visible props | Always map Prisma rows to an explicit, narrow DTO shape in the loader before returning to the component tree |
+
+## UX Pitfalls
+
+Common user experience mistakes specific to adding panels to this dashboard.
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|------------------|
+| Shipping all 9 seeds as flat, always-visible `PremiumSurface` panels (Pitfall 7) | Owner/workshop attendees scroll past a wall of charts; no single panel gets attention | Group by question, use expand/collapse for secondary panels, cap above-the-fold count |
+| Adding new `sliceFilters` keys (issue status, tier, recency bucket) to the existing single-object cross-filter state without clarifying combination semantics | Users toggle two filters expecting an intersection but get an unexpected union (or vice versa), or land on a filter combination with zero results and no explanation | Explicitly define AND-across-dimensions/OR-within-dimension semantics (matching the existing `role`/`company` pattern in `AccessAnalysisCharts.tsx`); show an empty-state message when a combination yields zero rows rather than a blank chart |
+| Heatmap/treemap using ad-hoc colors instead of `roleColors.ts`/theme-resolved palette | Visual drift from the established zinc/role-color system; heatmap cells may be illegible on `#09090B` if colors aren't chosen for dark-background contrast | Reuse `roleColors.ts` or the `mergeEChartsTheme` palette; test contrast specifically for the darkest zinc background, not just "looks fine in light mode" |
+| A degenerate/empty-data project (zero issues, zero folder bytes, `lastSignIn` null for the whole team) renders a broken or blank chart instead of an explicit empty state | Looks like a bug during a live demo on exactly the kind of thin-data project that's common in this dataset (per PROJECT.md: some projects have zero issues) | Every new chart needs an explicit "No data for this view" state, matching the existing empty-state conventions used elsewhere on `/access-analysis` |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Coverage label:** Every new analytics panel shows "Based on 428 of 1,152 projects" — verify the string is rendered in the component, not just in a comment.
-- [ ] **Attribution quality strip:** Every activity-derived chart returns and renders `{ resolved: N, unresolved: M }` — verify the tRPC procedure returns both fields.
-- [ ] **ECharts dispose:** Every chart component using `echarts.init()` outside the `EChart` wrapper has a `useEffect` cleanup that calls `dispose()` — verify with canvas-count UAT.
-- [ ] **Role names:** Any role-dimension panel shows display names, not IDs — verify by checking that `AccRole` data exists and `mergeRoleNames()` is called.
-- [ ] **Distinct user counts:** Any "N users" metric on a panel backed by `AccFolderPermission` uses `DISTINCT userEmail` — verify with a fixture test (1 user × 5 projects = count 1, not 5).
-- [ ] **Sankey cardinality:** Sankey series `data` array length ≤ configured cap — verify in a unit test with adversarial input (all 3,367 users × 77 roles).
-- [ ] **Theme colors:** Chart renders correctly in both light and dark modes — verify by toggling `resolvedTheme` in the Playwright UAT.
-- [ ] **DC extraction completeness:** All 428 target project IDs have `AccActivity` rows with `extractedAt` from the current run — verify with the completeness SQL query before marking Phase 1 done.
-- [ ] **APS token persisted:** After a DC extraction run, the APS token `updatedAt` is newer than the run start time — verify with a post-run DB check.
-- [ ] **Taxonomy coverage:** `scripts/diag-activity-types.cjs` returns zero new Unmapped actions after re-extraction — verify before data-dependent phases begin.
-- [ ] **No prescriptive labels:** No new UI string contains "risk," "danger," "critical," "exposed," or "suspicious" — verify with `rg -i "risk|danger|critical|exposed|suspicious" app/(dashboard)/access-analysis/`.
-- [ ] **tsc clean:** `npx tsc --noEmit` exits 0 before any `npm run build` — verify this is the last step in every phase's verification gate.
-- [ ] **Task Scheduler stopped:** Task Scheduler task for `:3000` is stopped before `npm run build` is run — verify no 500 errors after restart.
+Things that appear complete but are missing critical pieces.
 
----
+- [ ] **Ingest freshness panel:** Often missing the `rowsByModule`→`AccActivity`
+      substitution — verify the panel's row counts match a manual
+      `db.accActivity.count({ where: { ingestRunId } })` for at least one real run, not
+      just that the chart renders.
+- [ ] **Permission-footprint-by-role panel:** Often missing `BigInt`→`Number`
+      normalization — verify by actually loading the page (not just `tsc --noEmit`,
+      which won't catch this) and confirming no serialization error in the server log.
+- [ ] **Any new coverage/freshness caption:** Often missing a live data source — verify
+      the displayed number changes if you `VERIFY:`-spot-check it against a live query
+      (e.g., `loadDcCoverage()`), not copied from ROADMAP.md prose.
+- [ ] **Dormant-users / recency chart:** Often missing an explicit "Never signed in"
+      bucket for `null` `lastSignIn` — verify by finding a real project with at least
+      one never-signed-in member and confirming they appear, correctly bucketed, not
+      dropped.
+- [ ] **Activity verb/object-type breakdown:** Often missing the ~12-month floor
+      caption — verify the same `dataFloor`/`floorByProject` pattern from
+      `activityTimelineView.ts` is reused, not a fresh, uncaptioned chart.
+- [ ] **Every new panel:** Often missing the golden-master/aggregate-bound test that
+      makes the loader safe to touch later — verify a Vitest test exists asserting the
+      new loader's output row-count/shape bound, following the TEST-01/TEST-02 pattern.
+- [ ] **Every new panel:** Often missing zinc-theme color resolution — verify colors
+      come from `roleColors.ts`/`mergeEChartsTheme`, not hardcoded hex values, and check
+      the panel specifically in dark mode (the project's default and only demo mode).
 
 ## Recovery Strategies
 
+When pitfalls occur despite prevention, how to recover.
+
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| ECharts instance leak (memory creep) | LOW | Identify leaking component via browser heap snapshot → add `dispose()` in `useEffect` cleanup → run UAT canvas-count check |
-| Sankey cardinality blowup (chart freeze) | LOW | Add top-N cap to the tRPC aggregation query → retest with production data |
-| AccFolderPermission OOM | MEDIUM | Kill Node process → add `LIMIT` + GROUP BY at query level → restart with `PG_POOL_MAX=32` (v2.0 fix) → verify ~9s response time |
-| APS token rotation breakage | MEDIUM | Run `node scripts/aps-login.cjs` to re-authenticate → verify new token in DB → arm token-persist assertion in extraction script |
-| DC quota exhaustion (partial extraction) | MEDIUM | Arm `DC_RESUME=1` → wait for UTC midnight quota reset → re-run with `DC_PRIORITY_BACKFILL=1` → check completeness query |
-| 403 cascade abandoning good projects | LOW | Set `DC_403_BISECT=1` → re-run the affected day's batch → verify bisect log shows successful extraction for non-403 projects |
-| next build blocked by test-file type error | LOW | Run `npx tsc --noEmit` → fix test fixture type → re-run build |
-| .next cache corrupted by concurrent build | MEDIUM | Stop Task Scheduler task → delete `.next` → `npm run build` → restart task |
-| Coverage label omitted (workshop credibility) | LOW | Add `CoverageHonesty` strip to the panel → rebuild → verify at `:3000` before workshop |
-| Taxonomy gap (new Unmapped actions post-extraction) | LOW | Run `scripts/diag-activity-types.cjs` → add new actions to `moduleOverrides.ts` → re-run affected panels |
-| Prescriptive label shipped to workshop | LOW | Find string → rewrite as a descriptive fact → rebuild; no data change needed |
-
----
+| OOM/slow-load regression from a client-side aggregate (Pitfall 1) | MEDIUM | Rewrite the loader as a SQL `GROUP BY`/`$queryRaw`; add the aggregate-bound Vitest test retroactively; re-verify `/access-analysis` load time before re-shipping |
+| BigInt serialization crash shipped (Pitfall 3) | LOW | Add `Number(totalBytes)` (or formatted string) conversion at the loader boundary; redeploy via the standard `:3000` rebuild sequence; no data migration needed |
+| Stale coverage number shipped (Pitfall 5) | LOW | Swap the hardcoded literal for a call to `loadDcCoverage()` (or equivalent); this mirrors the exact Ph11 TRUTH-01 correction already done once for the header line |
+| Golden-master test broken by a new shared-module consumer (Pitfall 8) | MEDIUM-HIGH | `git diff` the shared module change; extract the new chart's need into an additive query variant instead of editing the pinned function; re-run `npm test` until TEST-01/02/03 are byte-identical again; never edit the test's expected values to "make it pass" |
+| Panel overload shipped, workshop feedback is negative (Pitfall 7) | LOW-MEDIUM | Retrofit an expand/collapse wrapper around the lowest-priority 3-4 panels; no data/loader changes needed, purely a presentational grouping change |
+| Spatial-graph-coupled edge reintroduced (Pitfall 6) | MEDIUM | Re-point the new loader's import to a `lib/acc/`-rooted pure helper or inline the needed logic; re-run `npm run repo-map:check` to confirm the edge count returns to the documented baseline |
 
 ## Pitfall-to-Phase Mapping
 
+How the v2.3 roadmap phases should address these pitfalls. (No phases are numbered yet
+in ROADMAP.md for v2.3 — these map to the logical phase groupings implied by the
+registration pattern and panel dependencies; the roadmap-building step should assign
+real phase numbers.)
+
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| DC quota exhaustion + resume | Phase 1: DC Re-extraction | Completeness SQL: 428 project IDs with current `extractedAt` |
-| APS token rotation breakage | Phase 1: DC Re-extraction | Post-run token `updatedAt` check |
-| 403 cascade contamination | Phase 1: DC Re-extraction | Bisect log + 428-denominator completeness check |
-| Shifting module taxonomy | Phase 1: DC Re-extraction (gate before Phase 2+) | `diag-activity-types.cjs` zero-Unmapped assertion |
-| AccFolderPermission OOM / pivot cardinality | Phase: Scenario Explorer | tRPC procedure response < 5s under folder×role query |
-| Sankey/chord cardinality blowup | Phase: Interconnections | Unit test: adversarial input returns ≤ cap nodes |
-| Coverage-honesty omission | All data panel phases (establish in Phase 1) | Component renders "428 of 1,152" string; unit test asserts field present |
-| Attribution gap invisibility | Phase: Activity Depth | tRPC returns `attributionQuality`; component renders it |
-| Instance-vs-user double counting | All phases with people counts | Fixture test: 1 user × 5 projects → count = 1 |
-| Empty AccDcRole / role name sourcing | Phase: Interconnections + Scenario Explorer | Panel renders display names, not IDs; `mergeRoleNames()` verified in call chain |
-| ECharts instance leak + dispose | All chart phases | Playwright canvas-count check after each phase |
-| ECharts theme drift | All chart phases | UAT: toggle theme, both modes readable |
-| Calendar heatmap date mismatch | Phase: Activity Depth | Diagnostic query confirms date field + range before spec |
-| Prescriptive risk labels | All phases | `rg -i "risk|danger|critical"` over new components returns 0 |
-| next build test-file type errors | All phases | `npx tsc --noEmit` exits 0 in every phase verification gate |
-| npm run build during live :3000 | All rebuild phases | Deploy sequence: stop task → tsc → build → restart |
-
----
+| 1. Client-side/unindexed aggregation OOM regression | Every phase adding an `AccActivityAccds`/`AccActivity`/`AccFolder` loader | New Vitest aggregate-bound test passes; `npm test` green; manual load-time spot-check on `/access-analysis` |
+| 2. `rowsByModule` telemetry lie | Ingest-freshness/throughput panel phase | Panel's displayed row count matches a manual `AccActivity` count for a real ingest run |
+| 3. `BigInt` serialization crash | Permission-footprint-by-role panel phase | Live page load (not just `tsc`) confirms no serialization error; unit test asserts transform output type is `number`/`string` |
+| 4. `Promise.all` fan-out growth | Any phase that is the 3rd+ new loader added to `mainCharts.tsx` | Loader count reviewed; consolidation applied if 3+ loaders share a data domain; load-time spot-check |
+| 5. Stale DC coverage figure | Issue-fetch coverage donut phase; provisioned-vs-active coverage phase | Coverage number traced to a live loader call, not a literal, in code review |
+| 6. Spatial-graph-coupled edge reuse | Activity verb/object-type breakdown phase | `npm run repo-map:check` shows no new `lib→app` edge rooted in the new loader |
+| 7. Panel overload / workshop dilution | Final "workshop curation" phase (after all panels built) | Panel count + grouping reviewed against the owner's live-demo flow; expand/collapse applied where needed |
+| 8. Golden-master test breakage | Permission-tier × folder-depth heatmap phase; permission-footprint-by-role phase | `npm test` green with TEST-01/02/03 byte-identical; no edits to existing test expected-value blocks |
+| 9. Cross-filter combinatorics / null-handling / empty-state gaps | Every panel-adding phase | Manual UAT against at least one degenerate project (zero issues, null `lastSignIn`, thin activity) per new chart |
 
 ## Sources
 
-- `.planning/PROJECT.md` (v3.0 milestone context, constraints, key decisions) — [VERIFIED]
-- `.planning/codebase/CONCERNS.md` (large modules, ACC/DC coupling, dependency warnings, 148 useEffect matches) — [VERIFIED]
-- `.planning/codebase/CONVENTIONS.md` (theme, boundary, ESLint, AST-grep baselines, boundary rules) — [VERIFIED]
-- `.planning/codebase/ARCHITECTURE.md` (layer boundaries, data flow, entry points) — [VERIFIED]
-- MEMORY.md post-mortem: AccFolderPermission 5M-row OOM + fix (GROUP-BY, 77s→9s, `PG_POOL_MAX=32`) — [VERIFIED]
-- MEMORY.md post-mortem: APS refresh token rotation breakage + `aps-login.cjs` recovery (2026-06-01) — [VERIFIED]
-- MEMORY.md: `AccDcRole` always empty; `mergeRoleNames()` v2.0 fix — [VERIFIED]
-- MEMORY.md: DC quota ~25 req/UTC-day; `DC_RESUME=1`; `DC_403_BISECT`; `DC_PRIORITY_BACKFILL=1`; `SAFE_BUDGET=20` — [VERIFIED]
-- MEMORY.md: `next build` typechecks test files; `npx tsc --noEmit` before rebuild — [VERIFIED]
-- MEMORY.md: `npm run build` under running `:3000` causes 500s — [VERIFIED]
-- MEMORY.md: ACC Issues `fields=` param corrupts deleted + drops ~3k issues — [VERIFIED]
-- MEMORY.md: ECharts `resolvedTheme` + CSS-var resolution for chart colors (THM-01) — [VERIFIED]
-- Milestone context (prompt): 428/1,152 coverage, 3–20% attribution gap, instance-vs-user distinction — [CITED — VERIFY exact attribution-gap percentage against `AccActivity` data after Phase 1 extraction]
+- `C:/LECG/Dashboard/.planning/PROJECT.md` — v2.3 milestone scope, constraints, prior
+  Key Decisions (Ph11 TRUTH-01 coverage-number correction, Ph19 BigInt-literal
+  deviation)
+- `C:/LECG/Dashboard/.planning/ROADMAP.md` — v2.3 Candidates seed table, registration
+  pattern, phase history for TEST-01/02/03 and PROJ-01–03
+- `C:/LECG/Dashboard/.planning/codebase/CONCERNS.md` — §1.1 raw-scan/OOM history,
+  §1.4/§1.5 pool/heap tuning, §2.3 monolith-split history, §5.2 DC coverage figure +
+  its own `VERIFY:` flag, §8.1 aggregate-test history, BND-03 deferred `lib→app` edges,
+  "New concerns introduced ... by v2.2" (cron-coupled freshness)
+- `C:/LECG/Dashboard/prisma/schema.prisma` — `AccProjectMember` (`lastSignIn`),
+  `AccFolder`, `AccFolderPermissionSummary` (`totalBytes: BigInt`), `AccActivity`
+  (`ingestRunId`), `AccDcIngestRun` (`rowsByModule: Json`), `AccIssue`,
+  `AccIssueFetchRun` — read directly, lines cited inline above
+- `C:/LECG/Dashboard/app/(dashboard)/access-analysis/mainCharts.tsx` — verified current
+  8-entry `Promise.all` fan-out
+- `C:/LECG/Dashboard/app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx`
+  — verified 15 existing `PremiumSurface` panel instances; `sliceFilters` cross-filter
+  state shape
+- `C:/LECG/Dashboard/lib/server/coordinationByProjectView.ts` — verified existing
+  `db.accIssue.groupBy` SQL-aggregation precedent
+- `C:/LECG/Dashboard/lib/server/dcCoverageView.ts` — verified corrected coverage
+  figures (~550 of ~1,153)
+- `C:/LECG/Dashboard/components/ui/EChart.tsx` — verified `notMerge`/theme-remount
+  behavior
+- Project memory (`MEMORY.md` index): `project_rowsbymodule_telemetry_disconnect`
+  (AccDcIngestRun.rowsByModule always 0), Ph19 BigInt-literal deviation note
 
 ---
-
-*Pitfalls research for: /access-analysis v3.0 — heavy viz (Sankey, chord, calendar heatmap, treemap, pivot explorer) + DC re-extraction*
-*Researched: 2026-06-22*
+*Pitfalls research for: LECG Dashboard v2.3 New Graphs (analytics panel additions)*
+*Researched: 2026-07-02*

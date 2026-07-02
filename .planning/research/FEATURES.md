@@ -1,491 +1,170 @@
-# Feature Landscape — v3.0 Hub Story & Scenario Explorer
+# Features Research: v2.3 New Graphs
 
-**Domain:** BIM/VDC operational analytics — ACC hub access, activity, and coordination
-**Page:** `/access-analysis` (additive; 14 existing panels preserved)
-**Audience:** Non-technical executives + BIM/VDC managers; one presenter (Luis), live workshops
-**Data authority:** Prisma/PostgreSQL — `AccActivity`, `AccProjectMember`, `AccProjectRole`, `AccRole`, `AccFolder`, `AccFolderPermission`, `AccDcProjectUser`, `AccDcRole`, `AccIssue`; coverage cap = 428/1,152 admin-accessible projects
-**Researched:** 2026-06-22
-**Overall confidence:** HIGH — grounded in verified repo source, existing component contracts, and project decisions from PROJECT.md
+**Domain:** BIM/VDC admin analytics (ACC-adjacent internal dashboard) — new ECharts panels for `/access-analysis` and `/template-mty`
+**Researched:** 2026-07-02
+**Confidence:** MEDIUM (chart-behavior patterns are well-attested across ACC Insight / BIM 360 Account Analytics / Procore / generic data-pipeline-monitoring precedent; several field-level specifics are [VERIFIED] against this repo's own Prisma schema and loader precedent, not against Autodesk's UI directly)
 
----
+## Scope Note
 
-## Context: Existing Interaction Model (Do Not Break)
+This is a **feature-shape** research pass for 9 candidate charts already scoped in `ROADMAP.md` "v2.3 Candidates (Seeds)". It groups them into 4 coherent categories, rates complexity, and flags dependencies/pitfalls found by reading this repo's own schema and existing loader precedent (`coordinationByProjectView.ts`, `acc-issues-backfill.cjs`) alongside external research on how comparable BIM/VDC and construction-tech admin dashboards (ACC Insight, BIM 360 Account Analytics, Procore Analytics, generic RFI/issue-tracker funnels, generic data-pipeline-monitoring UIs) present these same chart archetypes.
 
-The following primitives are already shipped in `app/(dashboard)/access-analysis/` and
-must be reused, extended, or wrapped — never replaced — by v3.0 features.
+## Feature Landscape
 
-| Primitive | File (verified) | Contract |
-|-----------|-----------------|----------|
-| `AccessAnalysisCharts` | `components/AccessAnalysisCharts.tsx` | Single-mount client component that owns cross-filter state (`sliceFilters`, `selected`). All new panels inside the existing layout inherit its filter state. |
-| `FilterBanner` | `components/FilterBanner.tsx` | Named-dimension cross-filter UI. Accepts `filters: SliceFilters`, shows "N of M projects". Any new filterable dimension must extend `SliceFilters` type and call `toggleSliceFilter`. |
-| `ProjectPicker` | `components/ProjectPicker.tsx` | Office-grouped multi-select with `CoverageDots` per row and "Full data only" quick filter. Drives the `selected: Set<string>` that gates every panel. |
-| `CoverageBadges` / `ActivityCoverageBadge` | `components/CoverageBadges.tsx`, `components/ActivityCoverageBadge.tsx` | Honest coverage chips/dots anchored to `ProjectCoverage` (hasActivity, folderCrawled, fileCrawled). Must appear on every activity-derived panel. |
-| `DrillSheet` | `components/ui/DrillSheet.tsx` | Right-slide 480px panel shell. The shared drill target for people lists and author profiles. Extend by passing new children — do not create parallel slide-in mechanisms. |
-| `AuthorProfileDrawer` | `components/AuthorProfileDrawer.tsx` | Lazy-loaded (dynamic import) user profile triggered by email click. Already wired via `onUserClick` callbacks in every chart. |
-| `PeopleDrillList` + `SectionHeaderWithPeople` | `components/PeopleDrillList.tsx` | People list rendered inside `DrillSheet`. New panels that surface people use the same "View N people" button pattern. |
-| `EChart` | `components/ui/EChart.tsx` | Themed ECharts wrapper (reads `resolvedTheme`). All new charts use this — never raw `echarts-for-react`. ECharts 6.1.0 already ships Sankey, calendar heatmap, bar, heatmap, and treemap natively. |
-| `PremiumSurface` | `components/ui/PremiumSurface.tsx` | Panel wrapper with depth (glass, shadow, gradient). Every section panel wraps in `PremiumSurface variant="base"`. |
-| `Reveal` | `components/ui/animated-list.tsx` | Staggered reveal on panel mount. Wrap every new top-level panel. |
-| `MainCharts` RSC | `mainCharts.tsx` | Single async RSC in one Suspense boundary. New data fetches go into its `Promise.all`; new lazy/expand-triggered data uses Server Actions (pattern established by `TerrainReveal` / `FolderActivityReveal`). |
+### Category 1 — Issue/Workflow Analytics
 
-**Cross-filter protocol:** New chart dimensions (e.g. "module", "folder tier", "action type") that should participate in cross-filter must: (1) extend `SliceFilters` in `projectFilter.ts`, (2) add a dim label to the `labels` prop of `FilterBanner`, and (3) call `toggleSliceFilter(dim, val)` on segment click. Slice clicks must NOT open people sheets — that is a locked v2.0 decision (see `AccessAnalysisCharts.tsx` line 119 comment).
+Covers: **AccIssue funnel** (issues over time/status/type) and **issue-fetch coverage donut**.
 
----
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Issues-over-time timeline (createdAt histogram) | ACC Insight's own issue dashboards and every RFI/issue tracker (ConstructionOnline, Procore, Autodesk BIM 360) lead with a time-series count; this repo already has the visual language for it (existing activity timeline). | LOW | `AccIssue.createdAt` [VERIFIED schema.prisma:850]. Reuse the existing `activityByTime`-style timeline pattern; add a "Data available from" floor caption only if issues have their own coverage gap (VERIFY: does `AccIssue.createdAt` have a known floor like ACCDS activity does?). |
+| Issues-by-status breakdown (funnel/bar) | Every construction issue/RFI dashboard reviewed (ConstructionOnline RFI Breakdown: Overdue/Waiting/Resolved; generic Jira-style funnels) treats status-breakdown as the single most expected chart — it is the "state of the work" view. | LOW | `AccIssue.status` [VERIFIED schema.prisma:846] is a free-text string (nullable) from the raw ACC API, NOT a closed enum in this schema — confirm actual distinct values before choosing bucket labels (`groupBy(['status'])` first, per the `coordinationByProjectView.ts` precedent at line 27-29 which already does `groupBy(["projectId","status"])`). |
+| Cross-filter click-through from issue chart to a filtered list/drawer | Constructiononline explicitly notes: "Clicking into the individual dashboard segments automatically filters the selected RFI view" — this is the expected interaction, not a nice-to-have, for any issue-status chart. | LOW-MED | This dashboard's existing convention already wires `onSliceClick`/`activeSlice` cross-filter for donuts (role/company/module) — apply the same `FilterBanner` pattern rather than inventing a new interaction. |
+| Issues-by-type breakdown | Table stakes in generic issue trackers, BUT: | MED-HIGH | **Pitfall (repo-grounded):** `AccIssue.issueTypeId` / `issueSubtypeId` [VERIFIED schema.prisma:847-848] are raw APS GUIDs. `scripts/acc-issues-backfill.cjs:224` stores them verbatim from the raw API payload (`it.issueTypeId`) with **no local name-resolution table** in this schema (grep of `lib/` and `scripts/` found zero `issueType`-name lookups). Charting "by type" today would render bare GUIDs as category labels — a direct violation of this repo's own TRUTH-01 precedent ("Unknown project", never a raw GUID). Either (a) call the ACC issue-types metadata endpoint to resolve names (a new external call, arguably out of "no new data sources"), or (b) scope "by type" out of MVP and ship status+time only, or (c) group by `rawJson`-embedded label if the raw payload happens to include one (VERIFY: inspect a sample `rawJson` row for an embedded type name before committing to this slice). |
+| Issue-fetch coverage donut (ok / zero_issues / forbidden / error) | Not a native ACC Insight feature — this is domain-specific to how this dashboard's data was collected (a scraped/DC-derived issue extraction, not a live API pass-through). Its closest analogue is the DC-coverage badges this dashboard already ships (TRUTH-01/TRUTH-04). | LOW | `AccIssueProjectFetchResult.status` [VERIFIED schema.prisma:888, enum-like string `ok\|zero_issues\|forbidden\|error`] is a clean groupBy target. `AccIssueFetchRun` already surfaces `projectsOk`/`projectsForbidden`/`coordinationCount` and is read today by `coordinationByProjectView.ts` (lines 33-36) — this candidate is a straightforward widen of an existing loader, not new plumbing. |
 
-## Category A — Scenario Explorer
+**Dependency note:** the coverage donut should render adjacent to (or precede) the issue funnel, not after — construction dashboards and this repo's own TRUTH convention both treat "how much of this can I trust" as a prerequisite frame for the metric itself, not an afterthought footnote.
 
-The centerpiece: a flexible measure x dimension (optionally x second dimension) pivot that auto-renders the right chart type, is clickable/drillable, and ships named saved presets for live-demo use.
+### Category 2 — Permission & Storage Footprint
 
-### A1. Measure Picker
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** `projectFilter.ts` filter primitives; `AccessAnalysisCharts` state
+Covers: **permission footprint by role**, **folder storage treemap**, **permission tier × folder-depth heatmap**.
 
-What it is: a compact segmented control or dropdown that selects what is counted. Supported measures from the existing Prisma schema:
-- Activity count (source: `AccActivity.rawAction` + `createdAt`)
-- Member count (source: `AccProjectMember`)
-- Role count (source: `AccProjectRole` -> `AccRole`)
-- Issue count (source: `AccIssue`)
-- VERIFY: File/storage size could use `AccFolder.fileSize` if populated by the Slice D crawl
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Permission footprint by role (folder count + bytes) | BIM 360/ACC Account Analytics' own "Analytics" tab already shows member/project/company summary cards; a role-scoped reach summary is the natural admin question ("what can this role actually touch?") that ACC's native UI does NOT answer directly (Autodesk's own admin surfaces permissions per-folder, not aggregated per-role) — this is a genuine differentiator, not a copy of a native feature. | LOW | `AccFolderPermissionSummary` [VERIFIED schema.prisma:549-561] already has exactly the needed shape (`projectId`, `roleId`, `folderCount`, `totalBytes: BigInt`, `permTypes: String[]`) and is populated + refreshed by cron (Ph18/19, shipped). Zero new backend work — purely a charting task. Note: `totalBytes` is `BigInt`; ECharts/JSON-serialization needs `Number()` conversion (watch overflow only past ~9 PB, not a real risk here) and a human-readable byte formatter (KB/MB/GB), matching the existing storage-formatting convention if one exists (VERIFY: check for an existing `formatBytes` helper before writing a new one). |
+| Folder storage treemap | Storage/file-count rollups exist in BIM 360/ACC's native file browser (per-folder, not chart form); a treemap is the standard visualization for hierarchical size data (folder→subfolder) in every dashboard/BI tool (Databricks, generic BI treemaps) reviewed. | MED | `AccFolder.fileCount` / `totalSizeBytes` / `lastModifiedTime` [VERIFIED schema.prisma:518-522] plus `parentId` for hierarchy. **Complexity driver:** ECharts treemap needs a real parent-child tree built from `parentId`, not a flat groupBy — for large projects with deep folder trees this is a non-trivial transform (recursive tree-build + depth-capping for label legibility). Cap displayed depth (e.g., 2-3 levels) and/or cap leaf count with an "N more folders" rollup bucket to avoid an unreadable thousand-leaf treemap — this is the single biggest UX risk in this category. |
+| Permission tier × folder-depth heatmap (2D) | The existing 3D isometric terrain already answers this question in 3D; a 2D heatmap is the standard "same data, cheaper/clearer read" alternative — heatmaps-by-two-categorical-axes are a well-established BI pattern (matrix/heatmap is explicitly called out as a standard freshness-dashboard visualization in data-pipeline-monitoring precedent, and is directly analogous here: tier × depth instead of table × hour). | MED-HIGH | Reuses `loadFolderPermRows` (`lib/server/folderPermQuery.ts`) [per ROADMAP.md v2.3 seed table] + `AccFolder.parentId`/`fullPath` for depth bucketing. **Perf/complexity flag:** `folderPermQuery.ts` performs a raw scan pattern the codebase has spent two milestones (v2.1/v2.2) hardening against OOM (TEST-01 exists specifically to guard this query family) — a NEW consumer of this same raw path must either reuse the already-hardened aggregate shape or explicitly re-run the OOM-regression reasoning for the new grouping (tier × depth is a different aggregation than the existing terrain/summary paths, so it is not automatically covered by TEST-01/TEST-02's existing golden masters). Depth must be derived from `fullPath` (string split) or a recursive `parentId` walk — confirm which is cheaper before implementing. |
 
-**Why table-stakes:** Without a measure selector the explorer reduces to a fixed chart — the owner explicitly defined the feature as combinatorial (Activity x Folder, Role x Users, etc.), implying measure is a first-class axis.
+**Dependency note:** all three panels in this category share the folder-permission data family; sequencing the low-complexity permission-footprint-by-role panel FIRST validates the byte-formatting/perm-tier-labeling conventions that the other two heavier panels (treemap, heatmap) can then reuse, rather than each panel inventing its own formatting.
 
-**Design note:** 3-5 measures max in the initial cut. Do not expose raw counts vs. unique counts as two separate measures; derive the right unit per dimension pairing automatically (e.g. member count always uniques by email).
+### Category 3 — User Engagement & Coverage
 
-**Empty/coverage state:** When the selected measure has zero rows in the current project selection, show the same no-data pattern used by `ActivityTimelineChart` (icon + "No [measure] found" + "Select at least one project above").
+Covers: **dormant users by sign-in recency**, **activity verb/object-type breakdown**, **provisioned-vs-active module coverage**.
 
----
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Dormant users by `lastSignIn` recency | Table stakes — BIM 360's own Account Admin "Members" tab surfaces a "Last Sign In" column today, and Autodesk's own support docs describe using it plus Data Connector exports specifically "to identify dormant users based on their last login dates." This dashboard is re-deriving a feature Autodesk's native admin UI already treats as baseline. | LOW | `AccProjectMember.lastSignIn` (nullable `DateTime?`) / `addedOn` [VERIFIED schema.prisma:465-466]. Bucket into recency bands (e.g., <30d / 30-90d / 90-365d / >365d / never signed in) — the "never signed in" (`lastSignIn: null`) bucket is a real, expected state (per Autodesk's own caveat that "Last Sign-in does not reflect model opens in Revit," i.e. it can legitimately be null/stale for provisioned-but-unused seats) and must be labeled, not silently dropped from the chart. |
+| Activity verb/object-type breakdown | Differentiator — richer than the existing module-activity donut, closer to a raw audit-log facet view than a typical BIM 360 report (Autodesk's native activity log is a per-member export, not an aggregated verb/object chart). | MED | `AccActivityAccds.activityVerb` / `objectType` / `serviceGroup` [VERIFIED schema.prisma:591-595]. **Complexity driver:** verb/objectType are free-text-ish fields from the raw ACCDS crawl — likely high-cardinality; needs a top-N + "other" bucket, same treatment the module-donut already needed. MUST carry the same ~12-month ACCDS floor caption/tooltip this dashboard already ships on the activity timeline (TRUTH-02 precedent) — this is a hard truthfulness requirement, not optional polish, since it's the same underlying table. |
+| Provisioned-vs-active module coverage | Differentiator — this is the "seat utilization" story that Procore explicitly does NOT surface natively in its base product (Procore's own docs show license/seat analytics requires the paid Power BI-backed Analytics add-on, i.e. it's a known gap in off-the-shelf construction-tech dashboards, not a solved problem this project is merely copying). | MED | `AccProjectMember.products` (Json per-module tier map) [VERIFIED schema.prisma:469] vs. `AccDcProjectUserProduct.accessLevel` [VERIFIED schema.prisma:732-741] as the "provisioned" side, cross-referenced against the existing module-activity donut's "active" side. **Complexity driver:** this is a genuine two-source join (provisioning JSON/DC table vs. activity table), not a single groupBy — needs a shared module-key vocabulary between `products` JSON keys and the activity classification's module labels (`lib/acc/activityClassification.ts` / `moduleOverrides.ts`, already extracted in Phase 10) to avoid comparing apples to oranges. **Do not present this as a cost/license chart** — there is no billing/cost data in the Prisma DB; frame it strictly as "provisioned tier vs. observed activity" (a usage-gap story), never as $-value license waste, or the claim becomes unverifiable per PROJECT.md's Prisma-DB-only constraint. |
 
-### A2. Primary Grouping Dimension Picker
-**Classification:** TABLE-STAKES
-**Complexity:** Low-Medium
-**Depends on existing:** `summarizeRoles`, `summarizeModules`, `summarizeCompanies` pure transform pattern
+### Category 4 — Pipeline Health
 
-What it is: a dimension dropdown that sets the grouping axis. Supported dimensions from verified Prisma sources:
+Covers: **ingest freshness/throughput panel**.
 
-| Dimension | Prisma source | Already computed? |
-|-----------|--------------|-------------------|
-| Role | `AccProjectRole` -> `AccRole.name` | Yes — `summarizeRoles` |
-| Company | `AccProjectMember.companyName` | Yes — `summarizeCompanies` |
-| Module | `AccActivity.rawAction` -> `classifyActivity` | Yes — `summarizeModules` |
-| Folder | `AccFolder.name` / folder tier | Partial — `FolderPermissionTerrain` has it |
-| Time (month/year) | `AccActivity.createdAt` | Yes — `summarizeActivityTimeline` |
-| Action type (view/upload/edit/delete) | `AccActivity.rawAction` | Partial — `classifyActivity` in `lib/acc/activityCategories.ts` |
-| Project | `AccProject.name` | Yes — `projectFilter.ts` |
-| User | `AccProjectMember.email` | Yes — per-person rows in `loadInstanceView` |
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Ingest freshness / throughput panel | Not a BIM/VDC end-user feature at all — it's an operational-observability panel, closer to a data-pipeline-monitoring dashboard (Databricks-style run status/duration/last-run) than anything ACC/BIM 360/Procore ship to their own admins. For THIS dashboard specifically it is a differentiator that supports the "truthful and honest about coverage" core value, and is a natural extension of the OBS-01/OBS-02/OBS-03 observability work already shipped in v2.1 (session-health line on the `:4321` progress monitor). | LOW-MED | `AccDcIngestRun` (`startedAt`/`endedAt`, `status`, `rowsByModule`, `quotaUsed`, `projectsProcessed`) [VERIFIED schema.prisma:812-829]. **Known caveat carried from ROADMAP.md:** `rowsByModule` is a documented always-zero telemetry gap — do NOT chart it directly; measure rows/throughput from `AccActivity`/`AccActivityAccds` `createdAt` counts directly instead, joined by time window to the ingest-run's `startedAt`/`endedAt`. Keep this panel visually small/secondary (a status strip or single compact panel, not a headline chart) — for a live workshop-demo audience, "here's when our data was last refreshed" is credibility-supporting but not itself an exciting story; over-sizing it risks making the demo feel like an engineering status page rather than a BIM insight product. |
 
-**Design note:** Not every measure x dimension pair makes sense. Auto-disable invalid pairings (e.g. "Member count x Action type" has no natural join). Show a brief explanation when a combination is disabled rather than silently hiding it.
+### Anti-Features (Commonly Requested, Often Problematic)
 
-**Why table-stakes:** The dimension pick is half the explorer's definition. Without it there is no "pivot."
-
----
-
-### A3. Auto Chart-Type Selection
-**Classification:** TABLE-STAKES
-**Complexity:** Medium
-**Depends on existing:** `EChart` wrapper; ECharts 6.1.0 (verified in `package.json` — ships Sankey, calendar, heatmap, bar, treemap natively)
-
-What it is: given a (measure, dimension) pair, deterministically pick and render the most legible chart type. Recommended mapping:
-
-| Primary grouping | Measure | Recommended chart | Rationale |
-|-----------------|---------|-------------------|-----------|
-| Categorical (role, company, module, action) | Any count | Horizontal bar (sorted desc) | Most legible for 5-20 categories; scannable in live demo |
-| Time (month) | Activity count | Area/line (same as existing `ActivityTimelineChart`) | Already familiar to audience; shows trend |
-| Folder (hierarchy) | Any | Treemap | Encodes hierarchy + magnitude; existing `FolderPermissionTerrain` precedent |
-| User | Any count | Horizontal bar (top-N) | Preserve privacy-adjacent framing: rank by count, not by identity |
-| Project | Any count | Horizontal bar or donut | Matches existing donut style |
-
-**Why table-stakes:** Without auto chart-type the owner must configure the chart manually — that is the BI tool anti-feature. The whole point is "you pick the dimension pair, it auto-renders."
-
-**Auto-render rule:** Expose no chart-type dropdown. The system chooses. If the audience needs the full cross-tab, the second grouping (A4) enables that path.
-
----
-
-### A4. Optional Second Grouping (Cross-Tab Mode)
-**Classification:** DIFFERENTIATOR
-**Complexity:** High
-**Depends on existing:** `EChart` heatmap series type (built into ECharts 6.1.0)
-
-What it is: when a second dimension is selected, the explorer switches to a heatmap grid (x = dim1, y = dim2, cell = measure magnitude). Example: Role x Module activity -> who does what across the hub. This is the "matrix" view the owner described ("Role x Users, so on so on").
-
-**Why differentiator (not table-stakes):** Most of the high-value presets (A6) cover specific dimension pairs as standalone charts. Cross-tab is powerful but complex to make legible for a non-technical audience. Ship presets first; cross-tab second.
-
-**When to render:** Only when the combination is meaningful and the cardinality is bounded (both dimensions <= 30 categories). If either dimension produces > 30 distinct values in the current selection, auto-truncate to top-N by measure and show "Showing top 30 of N" notice (coverage-honest pattern).
-
-**Cross-tab chart types:**
-- Heatmap: the default. `EChart` heatmap series with color scale from theme tokens (not hardcoded hex).
-- Chord/Sankey: only for Company -> Role or Role -> Module (see C5, Interconnections section).
-
----
-
-### A5. Drill Behavior (Click-to-People)
-**Classification:** TABLE-STAKES
-**Complexity:** Low (reuses existing DrillSheet + PeopleDrillList)
-**Depends on existing:** `DrillSheet`, `PeopleDrillList`, `AuthorProfileDrawer`; the `onUserClick` -> `setProfileEmail` chain
-
-What it is: clicking a bar segment, heatmap cell, or Sankey link opens the `DrillSheet` with `PeopleDrillList` showing the people who make up that count. Each person row in the list is clickable -> `AuthorProfileDrawer`.
-
-**Why table-stakes:** Without drill the explorer is a static chart deck. The audience will always ask "who is this?" — the presenter needs a one-click answer without leaving the page.
-
-**Drill protocol (locked rules from v2.0):**
-1. Chart slice clicks set cross-filter OR open people sheet — not both. For the explorer, slice click should open people sheet (the chart itself IS the filter; cross-filter applies to the main dashboard panels below, not inside the explorer).
-2. Use the shared `DrillSheet` shell — do not create a new slide-in mechanism.
-3. People list sources from in-memory summaries only — no tRPC query on drill (zero new server round-trips on click, established by Pitfall 2 in v2.0 research).
-
----
-
-### A6. Named Saved Presets
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** component state pattern (no persistence needed — presets are hardcoded configs, not user-saved state)
-
-What it is: a horizontal row of named preset buttons that, on click, set the (measure, dimension1, optionally dimension2) to a pre-defined combination and immediately render the chart. Presets are hardcoded named configs — not user-configurable, not persisted to a database. This is a live-demo affordance, not a dashboard builder.
-
-**Recommended initial presets** (derived from the owner's examples and existing chart coverage):
-
-| Preset name | Measure | Dim1 | Dim2 | Chart |
-|-------------|---------|------|------|-------|
-| Activity by Role | Activity count | Role | — | Horizontal bar |
-| Activity by Module | Activity count | Module | — | Horizontal bar |
-| Activity by Company | Activity count | Company | — | Horizontal bar |
-| Who Works Where | Member count | Project | Role | Heatmap |
-| Action Mix | Activity count | Action type | — | Donut |
-| Monthly Trend | Activity count | Time (month) | — | Area line |
-| Top Contributors | Activity count | User (top 20) | — | Horizontal bar |
-
-**Why table-stakes for live demo:** The owner described presets explicitly as required. Without them, a live demo starts at a blank picker — too slow and fragile for a workshop setting.
-
-**Preset UX:** Each preset is a pill/chip button. Active preset gets a primary ring. Manually changing measure/dim deselects the active preset (moves to "Custom" state). Clicking the same preset twice is a no-op (idempotent).
-
----
-
-### A7. Explorer Coverage State (Honesty Strip)
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** `ActivityCoverageBadge` component; `covCovered`/`covTotal` derived from `activityCoverageCounts(coverage)`
-
-What it is: the explorer panel header always shows the `ActivityCoverageBadge` when the active measure is activity-derived. It shows "Showing 428 of 1,152 projects" context when relevant. No extra computation — wired from the same `coverage` prop already passed to `AccessAnalysisCharts`.
-
-**Why table-stakes:** The entire analytics surface is built on a 428/1,152 partial extract. Executives asking "is this all our projects?" must get an honest answer immediately visible in context, not buried in a tooltip.
-
-**Coverage rule:** Non-activity measures (member count, role count) do NOT carry the activity coverage badge — those are fully covered by the member feed. Be precise about which badge appears where.
-
----
-
-## Category B — Sectioned Hub Narrative
-
-A sticky in-page navigation bar and themed section wrappers that organize the existing 14 panels plus new v3.0 panels into a legible story arc for non-technical audiences.
-
-### B1. Sticky In-Page Section Nav
-**Classification:** TABLE-STAKES
-**Complexity:** Medium
-**Depends on existing:** Page scroll model (`h-full overflow-y-auto` on the page root div — verified in `page.tsx` line 12); no new layout primitives needed
-
-What it is: a horizontal sticky nav bar pinned below the existing page header (not the global sidebar). Contains named section anchors. Clicking a section name scrolls to that section's heading via the browser native `scrollIntoView`. On scroll, the active section highlights (IntersectionObserver on section headings).
-
-**Sections (ordered):**
-1. Overview (KPI strip + project picker + filter banner — already at top)
-2. People & Roles (role/company donuts, folder activity by role)
-3. Activity (timeline, calendar heatmap, behavior-mix, hottest files)
-4. Folders (terrain, folder reach & exposure)
-5. Coordination (Model Coordination panel, issues)
-6. Interconnections (Sankey, chord) — new in v3.0
-7. Scenario Explorer — new in v3.0 (placed last so it does not interrupt the narrative flow; it is the "dive deeper" affordance)
-
-**Why table-stakes:** Without the nav, the "sectioned hub story" goal is just a visual separator exercise. The nav is what makes a long scrolling page navigable for a live audience watching one presenter.
-
-**Implementation note:** The nav is a `position: sticky` bar inside the page scroll container (not fixed to viewport). It should collapse to horizontal scroll if viewport is narrower than all section labels — this page is primarily used on a wide projector.
-
-**Anti-pattern:** Do not use Next.js `router.push` with hash links — that triggers a full navigation. Use `document.getElementById(id).scrollIntoView({ behavior: "smooth" })` inside the click handler.
-
----
-
-### B2. Section Wrapper Components
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** `PremiumSurface`, `Reveal`, `SectionHeader` (already defined locally in `AccessAnalysisCharts.tsx`)
-
-What it is: a `SectionBlock` component that wraps a group of panels under a section heading (icon + title + subtitle + optional section-level coverage badge). Provides the `id` anchor for scroll targeting.
-
-**Design:** Thin visual separator line or gradient accent above the section title — not a full card around the entire section (that would produce card-inside-card layout, which is explicitly forbidden in UI defaults). The section wrapper is structural, not decorative.
-
-**Why table-stakes:** Section anchors are required by B1. The section wrapper standardizes the heading appearance and the anchor ID naming so scroll targeting is reliable.
-
----
-
-### B3. Hub-Wide Default Landing View
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** Existing KPI strip (`StatStrip` with `kpis` array in `AccessAnalysisCharts.tsx`) + `ProjectPicker` already default to all projects selected
-
-What it is: when the page loads with no project filter active and no cross-filter active, the page presents a hub-wide summary: all 428 projects, all panels showing aggregate counts. This is already mostly true (the `selected` state initializes to all options). The v3.0 requirement is to frame this explicitly as the "hub story" — a page header update describing the coverage context.
-
-**Coverage honesty rule:** The page header description must include the coverage context, e.g., "Across 428 admin-accessible projects (of 1,152 total)." This is descriptive fact, not a warning.
-
-**Why table-stakes:** The sectioned layout only makes sense if the default state tells a complete story. A page that opens with no data or requires immediate manual configuration fails the live demo goal.
-
----
-
-### B4. Section-Level Coverage Badges
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** `CoverageBadges.tsx` — `ActivityCoverageBadge`, `CoverageChips`, `FullyCoveredBadge`
-
-What it is: each section that contains activity-derived panels carries an `ActivityCoverageBadge` inline with the section heading. Folder-derived panels carry a folder-crawl count badge. Non-activity panels (member/role distribution) carry no badge.
-
-**Why table-stakes:** The coverage-honest contract from v2.0 (NA-01) applies at section level too. When a non-technical executive looks at the "Activity" section, they must immediately see its data scope, not hunt for a tooltip.
-
----
-
-## Category C — New View Types
-
-### C1. Calendar Heatmap (Activity Timing)
-**Classification:** TABLE-STAKES
-**Complexity:** Low (ECharts 6.1.0 ships `calendar` coordinate system natively — already in `package.json`)
-**Depends on existing:** `AccActivity.createdAt` (verified Prisma field); `EChart` wrapper; `ActivityCoverageBadge`
-**Section placement:** Activity
-
-What it is: a yearly calendar grid where each day cell's color encodes total activity count. When a day cell is clicked, it opens the `DrillSheet` with a breakdown of that day's activity (by action type or by user). Uses ECharts `calendar` type with `heatmap` series — zero new chart library needed.
-
-**Granularity:** Day-level. The `AccActivity.createdAt` field provides full datetime precision. Group by `DATE(createdAt)` on the server.
-
-**Server query:** A new `loadActivityCalendar()` view function in `lib/server/` returning `{ date: string, count: number }[]`. Single SQL group-by. Wire into `MainCharts` `Promise.all`.
-
-**Chart behavior:**
-- Empty weeks are rendered with zero-weight cells (do not hide them — the calendar grid shape itself is information: shows when data coverage starts)
-- Year picker or dataZoom (ECharts built-in) to switch between years when data spans multiple years
-- Color scale from theme tokens matching the amber accent already used by `ActivityTimelineChart`
-- Tooltip: "N activities on [date]"
-
-**Why table-stakes:** Activity timing is the most commonly requested executive insight ("when is the team working?"). The calendar format is immediately legible to a non-technical audience without any explanation. The data is already in `AccActivity.createdAt`.
-
-**Coverage badge:** Show `ActivityCoverageBadge` in the panel header, wired from the same `coverage` prop already in `AccessAnalysisCharts`.
-
----
-
-### C2. Behavior Mix Over Time (view/upload/edit/delete)
-**Classification:** DIFFERENTIATOR
-**Complexity:** Medium
-**Depends on existing:** `AccActivity.rawAction` -> `classifyActivity()` in `lib/acc/activityCategories.ts` (VERIFY exact path); `EChart` stacked bar; `ActivityCoverageBadge`
-**Section placement:** Activity
-
-What it is: a stacked bar chart (per month) where each bar segment encodes a behavior category: View, Upload, Edit/Markup, Delete/Archive, Admin. Uses the existing `classifyActivity` taxonomy. Shows how the behavioral mix of the hub shifts over time — executives can see "are users mostly viewing or actively collaborating?"
-
-**Behavior categories** (derived from `rawAction` via `classifyActivity`; VERIFY exact category names match the output of `lib/acc/activityCategories.ts`):
-- View / Download
-- Upload / Publish
-- Edit / Markup / Comment
-- Delete / Archive
-- Admin / Permission
-
-**Server query:** Extend or add alongside `loadActivityTimeline()`. Group by `(DATE_TRUNC('month', createdAt), classifyActivity(rawAction))`. The action classification can run in JavaScript post-query using the existing pure function rather than in SQL.
-
-**Why differentiator (not table-stakes):** The calendar heatmap (C1) already answers "when" at day granularity. The behavior mix adds "what type" over time — valuable but requires the audience to know the category names. Worth building but not blocking.
-
-**Attribution honesty:** Classification can only be as good as `classifyActivity`. The existing `AccActivity.service` attribution gap (40.7% of rows have service-level ambiguity per memory notes) means "Model Coordination" category is unreliable. Show a footnote: "Action categories are classified from rawAction; Model Coordination attribution may include Build activity."
-
----
-
-### C3. Hottest Files / Models
-**Classification:** DIFFERENTIATOR
-**Complexity:** Medium
-**Depends on existing:** `AccActivityAccds` model (verified in schema — has `objectName`, `folderId`, `folderName`); `DrillSheet` for file-level drill; `EChart` horizontal bar
-**Section placement:** Activity
-
-What it is: a top-N horizontal bar chart showing the most-accessed files or models by activity count. Uses `AccActivityAccds` (which has `objectName` and `objectType` fields). Drill on a bar -> `DrillSheet` with per-user breakdown for that file.
-
-**Why differentiator:** Depends on `AccActivityAccds` data completeness. VERIFY: confirm how many rows are in `AccActivityAccds` for the 428-project extract after Phase 1 re-extraction. If coverage is thin, this view needs a coverage badge and may degrade gracefully.
-
-**Empty state:** "No file-level activity data available for the selected projects. File activity requires the ACCDS activity feed to be ingested." — honest, not a spinner that never resolves.
-
----
-
-### C4. Folder Reach & Exposure (Factual, No Scores)
-**Classification:** TABLE-STAKES
-**Complexity:** Medium
-**Depends on existing:** `AccFolder` + `AccFolderPermission` (verified schema); `FolderPermissionTerrain` existing component; `PeopleDrillList` for drill
-**Section placement:** Folders
-
-What it is: a set of factual panels showing:
-- **Internal vs. External access** — for each folder tier, how many members are internal vs. external. Source: `AccFolderPermission.roleId` -> `AccProjectRole` -> `AccProjectMember.companyName` cross-reference. Uses the existing `AccFolder` + `AccFolderPermission` join already powering `FolderPermissionTerrain`.
-- **Who-can-reach-what** — for a selected role, which folder tiers does it have access to? Horizontal stacked bar or matrix. Source: same `AccFolderPermission` data the terrain already renders.
-- **Dormant access** — roles with permissions but zero activity in the period. Already exists as `rankDormantByPeople` in `dormantActivity.ts`. Surface this more prominently in the Folders section.
-- **Storage/data reach** — if `AccFolder.fileSize` and `AccFolder.fileCount` are populated (depends on Slice D folder crawl), show a treemap of storage by folder tier.
-
-**Why table-stakes:** Folder reach is the primary "risk framing" data for executives without using the word "risk." "External company X can access 47 folders across 12 projects" is a factual statement that executives immediately understand. The data is already in the DB via `FolderPermissionTerrain`.
-
-**Descriptive-not-prescriptive rule:** These panels state facts only. Labels: "External access" not "Permission leak." "Dormant access" not "Zombie permissions." No severity colors (no red/orange scoring). Use the zinc theme's neutral palette.
-
-**Coverage note:** Folder data coverage depends on `AccProject.folderCrawlStatus`. Panels must show `CoverageChips` for folder-crawled projects vs. total.
-
----
-
-### C5. Interconnections — Sankey (Company -> Role -> Module)
-**Classification:** DIFFERENTIATOR
-**Complexity:** Medium
-**Depends on existing:** `EChart` Sankey series (built into ECharts 6.1.0 — verified); `AccProjectMember.companyName` + `AccProjectRole` + `AccActivity` join; `DrillSheet` for link drill
-**Section placement:** Interconnections
-
-What it is: a three-level Sankey diagram showing flow from Company -> Role -> Module. Width of each link encodes activity count. The chart answers "which companies drive activity in which roles and modules?"
-
-**Data assembly:** Server-side join of `AccProjectMember.companyName` -> `AccProjectRole` -> activity attribution (same join chain used by `summarizeActivityByCompany` and `summarizeActivityByRole`). The triple-join produces `(company, role, module, count)` rows.
-
-**Drill on link click:** Opens `DrillSheet` with `PeopleDrillList` for the people who make up that flow segment.
-
-**Why differentiator (not table-stakes):** High visual impact for live demos but adds complexity in the data join and label management. The bar/donut panels already cover the same data from individual angles — Sankey adds the connective story. Worth building after the sectioned layout and presets are stable.
-
-**Legibility rules:**
-- Cap company nodes at top 10 by activity (show "Other" bucket)
-- Cap role nodes at top 15
-- Cap module nodes at the full taxonomy (<= 10 modules in ACC)
-- Use ECharts `orient: 'horizontal'`; label fontSize minimum 11px (projector legibility)
-- Color nodes by ECharts theme color palette (not hardcoded hex)
-
----
-
-### C6. Interconnections — Chord / Co-occurrence Matrix
-**Classification:** DIFFERENTIATOR
-**Complexity:** High
-**Depends on existing:** `EChart` (VERIFY: ECharts 6.1.0 includes chord diagram as `graph` series with `layout: 'circular'` — confirm before plan); `AccProjectMember` cross-project join
-**Section placement:** Interconnections
-
-What it is: a chord diagram showing firm-to-firm collaboration (which companies share project memberships) or role co-occurrence (which roles appear together on the same projects). Two sub-modes selectable via a toggle.
-
-**Why differentiator:** High complexity, niche use case. The Sankey (C5) covers the more impactful story. The chord adds "which firms work together" which is valuable for the executive audience but can be deferred to a later milestone or shipped after C5 stabilizes.
-
-**VERIFY:** Confirm ECharts 6.1.0 chord diagram API before planning. The `graph` series with circular layout is available in ECharts 5+, but verify axis labeling fits within the projector layout.
-
----
-
-### C7. Hygiene Facts — Role Junk / Duplicates (No Severity)
-**Classification:** TABLE-STAKES
-**Complexity:** Low
-**Depends on existing:** Existing computed role data in `AccRole` and `AccProjectRole`; `DataTable` (`components/ui/DataTable.tsx`)
-**Section placement:** People & Roles
-
-What it is: a compact `DataTable` listing roles that match junk/duplicate patterns:
-- Roles with very low member counts (< 2 members across all projects) — potential orphan roles
-- Roles with identical or near-identical names (duplicates across projects)
-- Roles with zero activity despite active memberships (dormant roles — overlaps with C4 dormant access)
-
-**Why table-stakes:** PROJECT.md explicitly lists "surface the already-computed junk/duplicate/outlier role facts" as an Active v3.0 requirement. The data is in `AccRole.memberCount` and `AccProjectRole`. The junk/duplicate detection is pure server-side logic, no new Prisma models needed.
-
-**Descriptive-not-prescriptive rule:** Column headers: "Member count", "Projects", "Activity (last 12 mo)". No "Risk" or "Health Score" column. The presenter judges what to do with the facts.
-
-**Empty state:** "No roles match junk/duplicate patterns in the current project selection." This is a positive outcome, not a bug.
-
----
-
-## Anti-Features (Do Not Build)
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| Custom dashboard builder (drag/drop panels, save layouts) | Turns the presenter tool into a BI product; scope explosion; the audience watches, they do not configure | Hardcode the section order and presets; allow only the preset picker in the explorer |
-| Risk scores / severity grades | Explicitly rejected by owner ("I dont care about risk scores… I would make it myself"). Descriptive, not prescriptive. | State facts (counts, percentages, dates) and let the presenter narrate the interpretation |
-| User-persisted saved presets (write to DB, per-user configurations) | This is a single-presenter tool; no user accounts drive the dashboard; adds a full CRUD surface | Hardcode named presets as TypeScript config objects in the explorer component |
-| Date range filter UI (custom from/to date inputs) | The data re-extraction for v3.0 is all-time; a date filter implies iterative querying not compatible with the RSC pre-load pattern; adds UI complexity for marginal value | Show all-time data with the timeline chart (existing) for temporal navigation; the calendar heatmap handles day-level exploration |
-| Export / download buttons (CSV, PNG) | Out of scope for a live-demo presentation tool; adds security surface (full dataset download) | The presenter shows the data live; screenshots of the ECharts visualizations are sufficient |
-| Real-time / push updates | No live data ingestion during a workshop; DC extract is batch; would require WebSocket or SSE | The static build on :3000 is the correct model; refresh means a rebuild |
-| Predictive / ML analytics | No model, no training data pipeline, no inference infra; violates the "existing Prisma DB is the source" constraint | Descriptive trends from historical data only |
-| Mobile-first responsive layout for the new sections | The workshop runs on a wide projector; mobile is not a use case for this page | Ensure it does not break below lg: but optimize for projector width (>= 1280px) |
-| Comments / annotations on charts | Collaboration feature; this is a read-only analytics surface | The presenter speaks the narrative; no in-app annotation |
-| Cross-page navigation from chart drill (router.push) | Clicking a role in the explorer should NOT navigate to /template-mty; that breaks the in-page narrative flow | All drill stays in DrillSheet within the page |
-| New Prisma models / DB tables for explorer presets | Presets are hardcoded UI config, not persistent data | TypeScript objects in an explorerPresets.ts file |
-
----
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|------------------|-------------|
+| Live-refresh / auto-polling for the freshness panel | "Real-time" feels more impressive in a demo | Contradicts this dashboard's own established convention ("no manual sync UI" — sync/refresh is cron-only, no live status polling) and adds client-side complexity for zero data-truthfulness benefit, since the underlying `AccDcIngestRun` rows only change once per cron cycle anyway | Static per-page-load read of the latest `AccDcIngestRun`; refresh via normal page navigation, same as every other panel |
+| License-cost / $-value overlay on the provisioned-vs-active chart | "Shows ROI/waste in dollars" sounds compelling for a workshop pitch | No billing/cost data exists anywhere in the Prisma DB (PROJECT.md constraint: "New analytics must be derivable from the existing Prisma DB") — any $-figure would be invented, violating the Evidence Standard outright | Frame purely as tier-provisioned vs. observed-activity counts/percentages; let the audience draw their own cost inference verbally |
+| Kanban/board view for issues (drag between status columns) | Jira/Trello-style boards are the "expected" issue UI in many people's mental model | This is a read-only analytics dashboard, not a project-management tool; a board implies write/mutate affordances this dashboard explicitly does not have (Prisma DB is analytics-only, not a live ACC issue editor) and would be a scope explosion vs. a chart panel | Status-breakdown bar/funnel chart with drill-down to a read-only filtered list, matching the existing `FilterBanner`/drill pattern |
+| Per-user exportable audit-log / CSV download UI for activity verb/object breakdown | "Let me export this for offline analysis" is a common admin ask | Adds an export/file-generation surface this dashboard doesn't otherwise have, and duplicates data Autodesk's own Data Connector CSVs already provide outside this tool | Keep it a chart-only panel with drill-down to an in-app filtered list (same UX as existing donut drill-downs), not a file export feature |
+| Full recursive folder-tree browser UI (expand/collapse every folder) bolted onto the storage treemap | Feels like "more complete" data exposure | Duplicates ACC's own native folder browser, and a fully-expandable arbitrary-depth tree UI is a different (heavier) feature than an analytics treemap — scope creep beyond "chart panel" | Cap treemap depth (2-3 levels) with an "N more" rollup leaf; link/drill into the existing terrain/permission views for deeper folder-level detail instead of rebuilding a tree browser |
 
 ## Feature Dependencies
 
 ```
-B1 (Sticky Nav) -> B2 (Section Wrappers) -> required before new panels land in sections
-A6 (Named Presets) -> A1 (Measure Picker) + A2 (Grouping Picker) + A3 (Auto Chart Type)
-A5 (Drill) -> DrillSheet + PeopleDrillList (already exists)
-C1 (Calendar Heatmap) -> loadActivityCalendar() new view in lib/server/
-C2 (Behavior Mix) -> classifyActivity() from lib/acc/activityCategories.ts (VERIFY exact path)
-C3 (Hottest Files) -> AccActivityAccds data completeness (data re-extraction Phase 1)
-C4 (Folder Reach) -> AccFolderPermission + folder crawl coverage
-C5 (Sankey) -> triple join server view; EChart Sankey series
-C7 (Hygiene Facts) -> AccRole + AccProjectRole; no new data dependency
-Data re-extraction (Phase 1 of milestone) -> C1, C2, C3, C4 all depend on fresh data
+Issue-fetch coverage donut (AccIssueFetchRun/AccIssueProjectFetchResult)
+    └──informs (narrative precedent, not code dep)──> AccIssue funnel (status/time reliable framing)
+
+AccIssue funnel "by type" slice
+    └──requires──> issueTypeId/issueSubtypeId name-resolution decision (VERIFY — currently raw GUIDs, no local lookup)
+
+Permission footprint by role (AccFolderPermissionSummary)
+    └──establishes byte-formatting + perm-tier-label conventions, reused by──> Folder storage treemap
+    └──establishes byte-formatting + perm-tier-label conventions, reused by──> Permission tier × folder-depth heatmap
+
+Permission tier × folder-depth heatmap
+    └──shares raw-scan risk with──> folderPermQuery.ts (already OOM-hardened for terrain/summary shapes; NEW aggregation needs its own regression check, not automatically covered by TEST-01/TEST-02)
+
+Provisioned-vs-active module coverage
+    └──requires──> existing module-activity donut's module-label vocabulary (lib/acc/activityClassification.ts / moduleOverrides.ts) to align "provisioned module key" with "charted activity module"
+
+Activity verb/object-type breakdown
+    └──carries same ~12-mo floor caveat as──> existing activity timeline (both read AccActivityAccds)
+
+Ingest freshness/throughput panel
+    └──must NOT chart──> AccDcIngestRun.rowsByModule (known-zero) — substitute AccActivity/AccActivityAccds counts by time window
 ```
 
+### Dependency Notes
+
+- **Issue-fetch coverage donut informs the AccIssue funnel:** this repo's own truthfulness convention (TRUTH-01–04, already shipped in v2.1) treats "how much can you trust this metric" as a precondition frame, not a footnote — sequence or co-locate accordingly.
+- **"By type" requires a naming decision first:** this is the single highest-risk item in the whole candidate pool because it is the only one where the repo currently has NO clean path to a truthful label (raw GUID only). Resolve this before committing "by type" to any phase's success criteria — it may need to be explicitly deferred or descoped to "status + time only" for MVP.
+- **Permission-footprint-by-role should ship before the treemap/heatmap:** it is by far the lowest-complexity of the three folder-permission panels (data pre-aggregated, zero new query risk) and establishes shared conventions (byte formatting, tier labeling) the two heavier panels can then reuse instead of re-deriving.
+- **Heatmap reuses a query family under active OOM-hardening scrutiny:** `folderPermQuery.ts` existing tests (TEST-01/TEST-02) pin specific existing shapes (terrain rows, summary aggregate) — a genuinely new tier×depth groupBy is a new code path against a large raw table and should get its own regression test, following the same pattern (row-count bound assertion) rather than assuming existing tests cover it.
+- **Provisioned-vs-active conflicts with nothing structurally**, but its truthfulness depends entirely on the module-key vocabulary alignment; get this wrong and the "gap" shown is an artifact of label mismatch, not real under-provisioning/under-use.
+
+## MVP Definition
+
+### Launch With (v1 — this milestone's likely core slice)
+
+- [ ] Issue-fetch coverage donut — lowest complexity, extends an already-loaded (`AccIssueFetchRun`) pattern, and frames trust for the funnel below it
+- [ ] AccIssue funnel — status + time only (defer "by type" pending the GUID-naming decision)
+- [ ] Permission footprint by role — near-zero backend work (data already materialized + refreshed since Ph18/19); highest ROI-to-effort ratio in the whole pool
+- [ ] Dormant users by sign-in recency — table-stakes-equivalent feature (mirrors BIM 360's own native "Last Sign In" column), low complexity, must label the null/"never signed in" bucket honestly
+
+### Add After Validation (v1.x)
+
+- [ ] Ingest freshness/throughput panel — valuable for credibility but secondary/operational; add once the above land and workshop feedback confirms appetite for an "under the hood" panel
+- [ ] Activity verb/object-type breakdown — needs top-N/other bucketing design pass before charting; add once module-donut's existing bucketing pattern can be directly reused
+
+### Future Consideration (v2+)
+
+- [ ] Folder storage treemap — defer until the depth-capping/leaf-rollup UX is designed; highest visual-design risk of the pool (unreadable-treemap failure mode)
+- [ ] Permission tier × folder-depth heatmap — defer until a dedicated OOM/perf regression test exists for the new tier×depth aggregation against `folderPermQuery.ts`
+- [ ] Provisioned-vs-active module coverage — defer until the provisioning-vocabulary-to-activity-vocabulary alignment is explicitly designed (real risk of a misleading "gap" if module keys don't line up 1:1)
+- [ ] AccIssue "by type" slice — resolve the GUID-naming question (external APS call vs. descope) before adding
+
+## Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Permission footprint by role | HIGH | LOW | P1 |
+| Issue-fetch coverage donut | MEDIUM | LOW | P1 |
+| AccIssue funnel (status+time) | HIGH | LOW | P1 |
+| Dormant users by sign-in recency | MEDIUM | LOW | P1 |
+| Ingest freshness/throughput panel | LOW-MEDIUM | LOW-MED | P2 |
+| Activity verb/object-type breakdown | MEDIUM | MEDIUM | P2 |
+| Folder storage treemap | MEDIUM | MEDIUM | P2 |
+| Provisioned-vs-active module coverage | HIGH | MEDIUM | P2 |
+| Permission tier × folder-depth heatmap | MEDIUM | MED-HIGH | P3 |
+| AccIssue "by type" slice | MEDIUM | HIGH (blocked on naming decision) | P3 |
+
+**Priority key:**
+- P1: Lowest-risk, highest-ROI slice — no new query-perf risk, no unresolved naming/vocabulary problems, directly mirrors an established convention in this repo or a native ACC/BIM 360 feature.
+- P2: Real value, moderate design/complexity cost that should get its own small design pass (bucketing, vocabulary alignment, depth-capping) before implementation.
+- P3: Either blocked on an open question (issue-type naming) or carries new query-perf risk against an already-hardened raw-scan path (heatmap) — should not be scheduled until its specific blocker is resolved.
+
+## Competitor Feature Analysis
+
+| Feature | ACC Insight / BIM 360 Account Analytics | Procore (base + Analytics add-on) | Our Approach |
+|---------|------------------------------------------|-------------------------------------|--------------|
+| Issue status/time charts | Native (Insight dashboards; risk/design/quality cards) — [CITED] learnacc.autodesk.com | Native (RFI/issue widgets across construction-tech peers generally) | Match table-stakes shape; add cross-filter drill to a filtered list per this dashboard's existing donut convention |
+| Dormant-user / last-sign-in view | Native (Account Admin "Members" tab Last Sign In column; DC export used explicitly for dormancy) — [CITED] Autodesk support docs | Not directly found in search; VERIFY | Match/extend the native BIM 360 pattern; recency-bucket rather than raw-date list |
+| Role-scoped permission-footprint aggregate | NOT found in ACC's native admin UI (permissions are per-folder, not aggregated per-role) | N/A | Differentiator — ship it; this is genuinely new relative to Autodesk's own admin surfaces |
+| Seat/license provisioned-vs-active gap | NOT native to ACC | Requires paid Power BI-backed Analytics add-on — [CITED] Procore support docs (known gap in base product) | Differentiator — but keep strictly usage-based, no cost/$ framing, since no billing data exists in this DB |
+| Ingest/pipeline freshness panel | N/A (not an Autodesk-admin-facing concept at all) | N/A | Differentiator unique to this dashboard's own truthfulness convention; keep small/secondary, not a headline panel |
+
+## Sources
+
+- [Construction Dashboards and Data Analytics | Autodesk Construction Cloud](https://construction.autodesk.eu/tools/dashboards-and-data-analytics/)
+- [Project-Level Insight | learnacc.autodesk.com](https://learnacc.autodesk.com/insight-project-level-insight)
+- [Account Analytics | BIM 360 | Autodesk Knowledge Network](https://knowledge.autodesk.com/support/bim-360/learn-explore/caas/CloudHelp/cloudhelp/ENU/BIM360D-Administration/files/About-Account-Admin/GUID-20087020-B0D4-402D-B821-CDA57B9A9814-html.html)
+- [How to find active member usage information for BIM 360 | Autodesk support](https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-find-active-member-usage-information-for-BIM-360.html)
+- [How to generate a report with last log in activities for projects in BIM 360/ACC | Autodesk support](https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-generate-a-report-with-last-log-in-activities-for-projects-in-BIM-360-ACC.html)
+- [Manage Account Members | BIM 360 | Autodesk Knowledge Network](https://knowledge.autodesk.com/support/bim-360/learn-explore/caas/CloudHelp/cloudhelp/ENU/BIM360D-Administration/files/About-Account-Admin/GUID-ED8251C5-D8EE-45DF-9F96-0A7BEBF2BFD0-html.html)
+- [Maximizing the Value of Project Data with Procore Dashboards — Vertex Innovations](https://vertex-us.com/insight/maximizing-the-value-of-project-data-with-procore-dashboards/)
+- [Procore Analytics — Procore support](https://support.procore.com/integrations/procore-analytics)
+- [Construction RFI Project Management | Autodesk Forma](https://construction.autodesk.com/tools/construction-rfi-tracking/)
+- [Construction RFI Tracking Software | UDA ConstructionOnline](https://us.constructiononline.com/construction-rfi-tracking-software)
+- [Data Pipeline Monitoring Dashboard | Yaro Labs](https://yaro-labs.com/blog/data-pipeline-monitoring-dashboard)
+- [Data Freshness Monitoring | Streamkap](https://streamkap.com/resources-and-guides/data-freshness-monitoring)
+- Repo evidence: `prisma/schema.prisma` (models `AccIssue`, `AccIssueFetchRun`, `AccIssueProjectFetchResult`, `AccFolderPermissionSummary`, `AccFolder`, `AccFolderPermission`, `AccProjectMember`, `AccActivityAccds`, `AccDcIngestRun`, `AccDcProjectUserProduct` — all line-cited above), `lib/server/coordinationByProjectView.ts`, `scripts/acc-issues-backfill.cjs`, `.planning/ROADMAP.md` "v2.3 Candidates (Seeds)", `.planning/PROJECT.md`
+
 ---
-
-## MVP Recommendation for Phase Ordering
-
-**Phase 1 (prerequisite, not a UI phase):** Data re-extraction for all 428 admin-accessible projects (all-time). This unlocks calendar heatmap, behavior mix, and hottest files to be meaningful.
-
-**Phase 2 — Sections + Nav (structural foundation):** Build B1 (sticky nav), B2 (section wrappers), B3 (hub-wide default), B4 (section coverage badges). Reorganize existing 14 panels into the themed sections. No new analytics yet — just structure. Lowest-risk phase and immediately makes the page feel like a "story" in the workshop.
-
-**Phase 3 — Explorer Core (table-stakes only):** Build A1 (measure picker), A2 (grouping dimension), A3 (auto chart type), A5 (drill), A6 (named presets), A7 (coverage state). With 7 hardcoded presets, the explorer is immediately useful without building the full combinatorial engine. Cross-tab (A4) deferred.
-
-**Phase 4 — Activity Depth:** C1 (calendar heatmap), C2 (behavior mix), C7 (hygiene role facts). All three have low-to-medium complexity and high audience legibility. C3 (hottest files) goes here only if AccActivityAccds coverage is confirmed adequate after Phase 1 re-extraction.
-
-**Phase 5 — Folder Reach + Interconnections:** C4 (folder reach), C5 (Sankey). Highest visual impact for the live demo finale. C6 (chord) deferred to v3.1 unless timeline permits.
-
-**Defer:** A4 (cross-tab mode), C6 (chord), export buttons, custom presets.
-
----
-
-## Phase-Specific Risks and Flags
-
-| Phase topic | Likely pitfall | Mitigation |
-|-------------|---------------|------------|
-| Sticky nav scroll targeting | `router.push` with hash = full navigation, not in-page scroll | Use `getElementById().scrollIntoView()` inside click handler |
-| Explorer state and cross-filter interaction | Explorer's slice click opens DrillSheet; main dashboard's slice click sets cross-filter — same `toggleSliceFilter` API, different behavior. Easy to confuse. | Keep explorer state locally in an ExplorerPanel component; pass `sliceFilters` and `toggleSliceFilter` as props from `AccessAnalysisCharts` but only the main panels wire back to filter updates |
-| AccessAnalysisCharts bundle size | Adding explorer + new charts to the single client component that already owns cross-filter state risks bundle bloat | Use `dynamic()` import for ExplorerPanel (same pattern as `AuthorProfileDrawer`); the explorer does not need to mount on initial paint |
-| Calendar heatmap ECharts config | ECharts `calendar` type requires explicit year range; if data spans 3+ years, the default single-year calendar clips silently | Add year picker or use dataZoom inside the calendar series; test with actual `AccActivity.createdAt` range first |
-| Sankey cardinality | A full Company x Role x Module join without capping produces unreadable diagrams (50+ nodes) | Server-side: return only top-10 companies, top-15 roles, all modules; client: verify node count before rendering; show "Showing top N" notice |
-| AccActivityAccds completeness | Hottest files (C3) depends on this table; if the all-time re-extraction did not populate it, the view will be empty | Make C3 conditional on ACCDS row count > 0; show honest empty state; do not block Phase 4 on this |
-| Section nav on projector | A long nav strip may wrap on projector if section labels are verbose | Keep section labels <= 15 characters each; use `overflow-x-auto` on the nav bar as a fallback |
-| Motion budget | New sections with staggered Reveal on scroll could produce repeated animation if user scrolls up/down during demo | Use `once: true` in the Reveal intersection observer so panels animate only on first entry, not on scroll re-entry |
-
----
-
-## Sources and Evidence Confidence
-
-| Claim | Source | Confidence |
-|-------|--------|------------|
-| ECharts 6.1.0 ships calendar, Sankey, heatmap | `package.json` line 104 | HIGH [VERIFIED] |
-| `AccActivity` schema (rawAction, createdAt, projectId) | `prisma/schema.prisma` lines 542-562 | HIGH [VERIFIED] |
-| `AccFolderPermission` schema | `prisma/schema.prisma` lines 529-540 | HIGH [VERIFIED] |
-| `AccActivityAccds` schema (objectName, folderId) | `prisma/schema.prisma` lines 564-586 | HIGH [VERIFIED] |
-| Cross-filter protocol (slice click != people sheet) | `AccessAnalysisCharts.tsx` line 119 comment | HIGH [VERIFIED] |
-| DrillSheet 480px right-slide shell | `components/ui/DrillSheet.tsx` | HIGH [VERIFIED] |
-| Coverage badge components | `components/CoverageBadges.tsx`, `ActivityCoverageBadge.tsx` | HIGH [VERIFIED] |
-| CoverageDots per project picker row | `components/ProjectPicker.tsx` line 173 | HIGH [VERIFIED] |
-| MainCharts RSC single Suspense boundary decision | `mainCharts.tsx` + `page.tsx` decomposition comment | HIGH [VERIFIED] |
-| 428/1,152 project coverage cap | PROJECT.md Active section | HIGH [VERIFIED] |
-| No risk scores (descriptive only) | PROJECT.md Key Decisions table, owner constraint | HIGH [VERIFIED] |
-| AccRole.memberCount field | `prisma/schema.prisma` line 483 | HIGH [VERIFIED] |
-| DataTable component | `components/ui/DataTable.tsx` (referenced in known-patterns.md) | HIGH [VERIFIED] |
-| classifyActivity location | Path assumed from architecture pattern; `lib/acc/activityCategories.ts` | MEDIUM [VERIFY exact file name before plan] |
-| ECharts chord diagram via `graph` series | ECharts 6.x documentation pattern | MEDIUM [VERIFY API before phase plan] |
-| AccActivityAccds row count / coverage adequacy | Not yet checked — depends on Phase 1 re-extraction | LOW [VERIFY after Phase 1] |
-| AccFolder.fileSize / fileCount population rate | Depends on Slice D folder crawl completion | LOW [VERIFY after Phase 1] |
-
----
-
-## Dashboard Self-Check
-
-**Context:** PROJECT.md (v3.0 milestone goals, constraints, key decisions), ARCHITECTURE.md, CONVENTIONS.md, `AccessAnalysisCharts.tsx`, `FilterBanner.tsx`, `ProjectPicker.tsx`, `CoverageBadges.tsx`, `DrillSheet.tsx`, `ActivityTimelineChart.tsx`, `mainCharts.tsx`, `page.tsx`, `prisma/schema.prisma`, `package.json`, `known-patterns.md` — all loaded and verified.
-
-**Evidence:** Every feature claim is grounded in a verified Prisma model, component file, or explicit PROJECT.md decision. No invented routes, tRPC procedures, or packages.
-
-**Constraints applied:**
-- Additive only — no existing panels removed
-- Descriptive, not prescriptive — no risk scores, no severity grades
-- 428/1,152 coverage honesty on every activity-derived panel
-- No new WebGL on data surfaces
-- Zinc dark theme, ECharts resolved theme colors
-- DrillSheet as the single drill mechanism (no parallel slide-in)
-- Slice click != people sheet (locked v2.0 rule enforced)
-- No user-persisted state, no custom dashboard builder scope
-
-**Gates selected:** This is a research artifact (no code changes). Phase execution gates: `npx tsc --noEmit` before rebuild; Vitest for pure transform tests; Playwright for new interactive panel smoke tests.
-
-**VERIFY:**
-- Exact file name and export of `classifyActivity` in `lib/acc/` — path assumed from architecture pattern
-- ECharts 6.1.0 chord diagram API (`graph` series + circular layout) — confirm before C6 phase plan
-- `AccActivityAccds` row count after Phase 1 re-extraction — determines whether C3 (Hottest Files) is viable
-- `AccFolder.fileSize` / `AccFolder.fileCount` population rate after folder crawl — determines storage treemap viability in C4
+*Feature research for: LECG Dashboard v2.3 New Graphs*
+*Researched: 2026-07-02*
