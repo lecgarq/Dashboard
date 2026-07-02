@@ -73,4 +73,4 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-02 — 18-01 shipped: PROJ-01 complete (6/8). Phase 18 plan executed (1/1), phase-goal verification pending. Phase 19 (PROJ-02/03) remains.*
+*Last updated: 2026-07-02 — 18-01 shipped: PROJ-01 complete (6/8). Phase 18 CLOSED (1/1, phase-goal verifier PASSED 6/6, `18-VERIFICATION.md`). Phase 19 (PROJ-02/03) remains — final v2.2 phase.*

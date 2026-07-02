@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Structural Refactors
-current_phase: 18
-current_phase_name: AccFolderPermissionSummary Foundation (PROJ-01)
-status: plan-complete
-stopped_at: "18-01 (PROJ-01) executed: AccFolderPermissionSummary Prisma model + migration (raw-SQL + migrate resolve fallback, pgvector shadow-DB blocked migrate dev as predicted) + server-side backfill (22,082 rows, idempotent, TEST-01 12/12 green) + reconciliation script (PASS: live=22,082 == projection=22,082, 0 mismatches, 20/20 spot-checks matched, verdict in 18-RECONCILIATION.md). Commits 77909b10/9d55539c/fb8ba765. Scope fence clean (schema+migration+2 scripts+.planning only; acc-hot-cache.ts and terrain loaders untouched). No consumer switched — zero workshop impact. Next = phase-goal verification then Phase 19 (PROJ-02/PROJ-03, Raw Scan Retirement)."
-last_updated: "2026-07-02T16:45:00Z"
+current_phase: 19
+current_phase_name: Raw Scan Retirement & Refresh (PROJ-02/PROJ-03)
+status: ready-to-plan
+stopped_at: "Phase 18 (PROJ-01) COMPLETE + goal-verified 6/6. 18-01 shipped AccFolderPermissionSummary Prisma model + migration (raw-SQL + migrate resolve fallback, pgvector shadow-DB blocked migrate dev as predicted) + server-side backfill (22,082 rows, idempotent, TEST-01 12/12 green) + reconciliation (PASS: live=22,082 == projection=22,082, 0 mismatches, 20/20 spot-checks). Commits 77909b10/9d55539c/fb8ba765/f0565459. gsd-verifier PASSED 6/6 must-haves with every gate independently re-run (fresh tsc 0, fresh TEST-01 12/12, fresh reconciliation 0 mismatches against the live DB's 22,082-row projection, scope fence clean, 0 package installs) — 18-VERIFICATION.md. Scope fence clean (schema+migration+2 scripts+.planning only; acc-hot-cache.ts and terrain loaders untouched). No consumer switched — zero workshop impact. Phase 18 CLOSED (1/1). Next = /gsd:plan-phase 19 (PROJ-02/PROJ-03, Raw Scan Retirement — depends on Phase 18, unblocked; not yet planned)."
+last_updated: "2026-07-02T17:00:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "18-01 (PROJ-01) executed: AccFolderPermissionSummary model+migration (Task 1, 77909b10), server-side backfill script (Task 2, 9d55539c, 22,082 rows idempotent, TEST-01 green 12/12), reconciliation script + PASS verdict (Task 3, fb8ba765, 0 mismatches / 20 spot-checks). Scope fence verified clean via git diff --name-only across all 3 commits. tsc --noEmit exit 0 throughout. No consumer switched (zero workshop impact, by design — Phase 19 switches consumers)."
+last_activity_desc: "execute-phase 18 complete: 18-01 (PROJ-01) executed (model+migration 77909b10, backfill 9d55539c/22,082 rows idempotent/TEST-01 12/12, reconciliation fb8ba765/0 mismatches/20 spot-checks) then phase-goal verified — gsd-verifier PASSED 6/6 (18-VERIFICATION.md), all gates independently re-run. Scope fence clean. Phase 18 CLOSED. No consumer switched (zero workshop impact, by design — Phase 19 switches consumers)."
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
   completed_plans: 6
-  percent: 68
+  percent: 75
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 18 of 19 — AccFolderPermissionSummary Foundation (PROJ-01). Plan 18-01 executed (1/1 plans); phase-goal verification not yet run.
+- **Phase:** 18 of 19 — AccFolderPermissionSummary Foundation (PROJ-01). COMPLETE + goal-verified 6/6 (1/1 plans). Next is Phase 19.
 - **Plan:** 18-01 (PROJ-01) shipped `77909b10` (model + migration) + `9d55539c` (server-side backfill) + `fb8ba765` (reconciliation script + PASS verdict). `AccFolderPermissionSummary` model added to `prisma/schema.prisma` mirroring the live `includePermissionSummary` GROUP BY aggregate (`acc-hot-cache.ts:304-317`) row-for-row. `prisma migrate dev` failed on the pgvector shadow-DB step exactly as predicted; applied via raw SQL + `prisma migrate resolve` fallback (Phase 09 DB-01 precedent). Backfill populated 22,082 rows entirely server-side (`INSERT...SELECT...GROUP BY`, no `findMany` scan) — idempotent (re-run produced the identical count), TEST-01 (OOM guard) stayed green 12/12. Reconciliation script proved parity against the live DB: 22,082 == 22,082 rows, 0 full-outer-join mismatches, 20/20 spot-checked keys matched — verdict PASS recorded in `18-RECONCILIATION.md`. No consumer switched (zero workshop impact, by design). 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b`; 17-01 (SPLIT-03) shipped `b6084f5f`. Phase 16 CLOSED (16-01 `3cfd3734`+`71df53db`; 16-02 `0dbae11f`+`40126798`+`224519a4`, owner-approved). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 18 plan 18-01 executed (1/1 plans). v2.2: 3 of 5 phases complete (6/8 plans). Milestone NOT complete — Phase 18 needs phase-goal verification/close, Phase 19 remains.
+- **Status:** Phase 18 CLOSED (1/1 plans; gsd-verifier PASSED 6/6, `18-VERIFICATION.md`). v2.2: 4 of 5 phases complete (6/8 plans). Milestone NOT complete — Phase 19 (PROJ-02/PROJ-03) remains.
 - **Last activity:** 2026-07-02 — 18-01 (PROJ-01) executed: `AccFolderPermissionSummary` model+migration+backfill+reconciliation, all 3 tasks committed by explicit path, scope fence verified clean (schema+migration+2 scripts+.planning only). tsc 0 throughout; TEST-01 green 12/12; reconciliation PASS (0 mismatches). ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
 
-Progress: [######▒░░░] 68% — v2.2: 3 of 5 phases complete (6/8 plans; Phase 18 plan 18-01 executed, verification pending)
+Progress: [#######▒░░] 75% — v2.2: 4 of 5 phases complete (6/8 plans; Phase 18 CLOSED, goal-verified 6/6)
 
 **Roadmap (Phases 15–19):**
 
@@ -43,7 +43,7 @@ Progress: [######▒░░░] 68% — v2.2: 3 of 5 phases complete (6/8 plans; 
 | 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
 | 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 2/2 ✅ (test-basis parity — no live mount; owner review open) |
-| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 1/1 ✅ (reconciliation PASS; phase-goal verification pending) |
+| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 1/1 ✅ (reconciliation PASS; goal-verified 6/6) |
 | 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 0/2 |
 
 ## Status (data baseline — still current)
@@ -166,18 +166,28 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 18 plan 18-01 (PROJ-01) is EXECUTED (2026-07-02), all 3 tasks committed and
-self-checked. **Next:** run Phase 18's phase-goal verification (`/gsd:verify-work` or the
-phase-goal verifier), then close Phase 18 and proceed to `/gsd:plan-phase 19` (PROJ-02/
-PROJ-03, Raw Scan Retirement & Refresh — switches `/access-analysis`/`/template-mty`
-consumers onto `AccFolderPermissionSummary` and retires the `includePermissionContexts`
-raw scan, now that reconciliation has proven parity).
+Phase 18 (PROJ-01) is COMPLETE and goal-verified (2026-07-02): `AccFolderPermissionSummary`
+projection is live and PROVEN equal to the live `includePermissionSummary` aggregate
+(0 mismatches). **Next: `/gsd:plan-phase 19`** (PROJ-02/PROJ-03, Raw Scan Retirement &
+Refresh) — switch `/access-analysis` + `/template-mty` consumers onto
+`AccFolderPermissionSummary`, retire or hard-guard the `includePermissionContexts:true`
+raw-scan branch in `lib/server/acc-hot-cache.ts`, and wire a refresh mechanism into the
+`dc-daily-ingest.cjs` cron (bound + document staleness in INTEGRATIONS.md). Phase 19 depends
+on Phase 18 (now shipped), and is unblocked. This is the last phase of v2.2.
 
-- **18-01 (PROJ-01) — DONE:** `AccFolderPermissionSummary` Prisma model + migration +
-  backfill script + reconciliation script, proving projection parity with the live
-  `includePermissionSummary` GROUP BY aggregate (0 mismatches, 20/20 spot-checks). No
-  consumer switched yet — zero behavior change. TEST-01 (OOM aggregate guard) passed
-  throughout the backfill run (12/12). See `18-01-SUMMARY.md` and `18-RECONCILIATION.md`.
+- **18-01 (PROJ-01) — DONE + VERIFIED:** `AccFolderPermissionSummary` Prisma model + migration
+  + backfill script + reconciliation script, proving projection parity with the live
+  `includePermissionSummary` GROUP BY aggregate (22,082 == 22,082 rows, 0 mismatches, 20/20
+  spot-checks). No consumer switched — zero behavior change. TEST-01 (OOM guard) green 12/12
+  throughout. gsd-verifier re-ran every gate independently (fresh tsc 0, fresh TEST-01,
+  fresh reconciliation, scope fence, 0 installs) → PASSED 6/6. See `18-01-SUMMARY.md`,
+  `18-RECONCILIATION.md`, `18-VERIFICATION.md`.
+
+- **Phase 19 risk (REF-03 completion):** the consumer switch + raw-scan retirement is the
+  point where behavior could change if the projection has any hidden gap. Parity is already
+  proven for the current DB snapshot; when Phase 19 switches consumers, re-run
+  `node scripts/verify-folder-perm-summary.cjs` post-refresh and confirm TEST-01 + the TEST-02
+  terrain golden masters + owner visual parity on `/access-analysis` and `/template-mty`.
 
 Guardrails carried forward: byte-identical characterization tests (no test edits), ~400-line
 ceiling per file, explicit-path commits with `git diff --cached --name-only` proof,
@@ -188,10 +198,10 @@ Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split 
 pending (test-basis-only acceptance) — see Blockers/Concerns above.
 
 ---
-*Last updated: 2026-07-02 — 18-01 (PROJ-01) executed (`77909b10`/`9d55539c`/`fb8ba765`): AccFolderPermissionSummary model+migration (raw-SQL+migrate-resolve fallback)+server-side backfill (22,082 rows, idempotent)+reconciliation script (PASS: 0 mismatches, 20/20 spot-checks). TEST-01 green 12/12 throughout; tsc 0; scope fence clean. No consumer switched — zero workshop impact. v2.2: 3 of 5 phases done, 6/8 plans. Next: Phase 18 verification/close, then Phase 19 (PROJ-02/PROJ-03).*
+*Last updated: 2026-07-02 — execute-phase 18 COMPLETE: 18-01 (PROJ-01) shipped (`77909b10`/`9d55539c`/`fb8ba765`/`f0565459`) — AccFolderPermissionSummary model+migration (raw-SQL+migrate-resolve fallback)+server-side backfill (22,082 rows, idempotent)+reconciliation (PASS: 0 mismatches, 20/20 spot-checks); then gsd-verifier PASSED 6/6 (`18-VERIFICATION.md`), all gates independently re-run. TEST-01 green 12/12; tsc 0; scope fence clean. No consumer switched — zero workshop impact. Phase 18 CLOSED. v2.2: 4 of 5 phases done, 6/8 plans. Next: `/gsd:plan-phase 19` (PROJ-02/PROJ-03, last phase).*
 
 ## Session
 
-**Last session:** 2026-07-02T16:45:00Z (execute-phase 18 → 18-01)
-**Stopped at:** 18-01 (PROJ-01) complete — `AccFolderPermissionSummary` model + migration (Task 1, `77909b10`) + server-side backfill (Task 2, `9d55539c`, 22,082 rows, idempotent, TEST-01 green 12/12) + reconciliation script + PASS verdict (Task 3, `fb8ba765`, 0 mismatches, 20/20 spot-checks matched). Scope fence verified clean via `git diff --name-only` across all 3 commits. No consumer switched (zero workshop impact, by design). STATE/ROADMAP synced; phase-goal verification and Phase 18 close are next.
-**Resume file:** none — 18-01 complete and self-checked. Next: phase-goal verification for Phase 18, then `/gsd:plan-phase 19` (PROJ-02/PROJ-03, Raw Scan Retirement & Refresh)
+**Last session:** 2026-07-02T17:00:00Z (execute-phase 18 → 18-01 + verify + close)
+**Stopped at:** Phase 18 CLOSED — 18-01 (PROJ-01) complete (`AccFolderPermissionSummary` model+migration `77909b10`, backfill `9d55539c` 22,082 rows idempotent TEST-01 12/12, reconciliation `fb8ba765` 0 mismatches 20/20 spot-checks) and phase-goal verified: gsd-verifier PASSED 6/6 (`18-VERIFICATION.md`) with every gate independently re-run against the live DB. Scope fence clean; no consumer switched (zero workshop impact, by design). STATE/ROADMAP/REQUIREMENTS synced.
+**Resume file:** none — Phase 18 complete + verified. Next: `/gsd:plan-phase 19` (PROJ-02/PROJ-03, Raw Scan Retirement & Refresh — the final v2.2 phase)
