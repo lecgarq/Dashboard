@@ -29,7 +29,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 - [x] **PROJ-01**: an `AccFolderPermissionSummary` Prisma model + migration is added; a backfill script populates it from `AccFolderPermission`; a reconciliation script proves the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) before any consumer is switched. — Complete 2026-07-02 (`77909b10`/`9d55539c`/`fb8ba765`; reconciliation PASS 22,082==22,082, 0 mismatches, 20/20 spot-checks)
 - [x] **PROJ-02**: the `includePermissionSummary` path and its terrain consumers read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded. TEST-01 (OOM aggregate guard) and the terrain golden masters still pass; `/access-analysis` + `/template-mty` render identically.
-- [ ] **PROJ-03**: a refresh mechanism keeps `AccFolderPermissionSummary` current — wired into the existing ingest cron (`dc-daily-ingest.cjs` path) or an explicit rebuild step — and the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`.
+- [x] **PROJ-03**: a refresh mechanism keeps `AccFolderPermissionSummary` current — wired into the existing ingest cron (`dc-daily-ingest.cjs` path) or an explicit rebuild step — and the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`.
 
 ## Future Requirements
 
@@ -62,8 +62,8 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 | SPLIT-03 | REF-01 | Phase 17 | Complete (2026-07-02, b6084f5f) |
 | SPLIT-04 | REF-01 | Phase 17 | Complete (2026-07-02, e0bb6e66/da2f230b, test-basis parity) |
 | PROJ-01 | REF-03 | Phase 18 | Complete (2026-07-02, 77909b10/9d55539c/fb8ba765) |
-| PROJ-02 | REF-03 | Phase 19 | Pending |
-| PROJ-03 | REF-03 | Phase 19 | Pending |
+| PROJ-02 | REF-03 | Phase 19 | Complete (2026-07-02, 9dbe606b/08e78f9c) |
+| PROJ-03 | REF-03 | Phase 19 | Complete (2026-07-02, e34ec7e7; phase-level owner visual parity checkpoint SC#3 still pending) |
 
 **Coverage:**
 
@@ -73,4 +73,4 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-02 — 18-01 shipped: PROJ-01 complete (6/8). Phase 18 CLOSED (1/1, phase-goal verifier PASSED 6/6, `18-VERIFICATION.md`). Phase 19 (PROJ-02/03) remains — final v2.2 phase.*
+*Last updated: 2026-07-02 — 19-02 Task 1 shipped: PROJ-03 complete (8/8 requirements). PROJ-02 (9dbe606b/08e78f9c) and PROJ-03 (e34ec7e7) both landed; Phase 19's phase-level owner visual parity checkpoint (SC#3, Task 2 of 19-02) is still PENDING — the phase and v2.2 milestone are not yet closed.*

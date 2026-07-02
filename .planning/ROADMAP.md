@@ -158,7 +158,7 @@ Plans:
 - [x] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically (completed 2026-07-01)
 - [x] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically (completed 2026-07-02, test-basis parity — no live mount)
 - [x] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet — COMPLETE 2026-07-02 (reconciliation PASS; phase-goal verifier PASSED 6/6, `18-VERIFICATION.md`)
-- [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md
+- [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md (19-01 PROJ-02 done 2026-07-02; 19-02 PROJ-03 Task 1 done, Task 2 owner visual parity checkpoint PENDING)
 
 ## Phase Details
 
@@ -253,12 +253,12 @@ Plans:
   4. A refresh mechanism is wired into the `dc-daily-ingest.cjs` cron path or documented as an explicit rebuild step; the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`
   5. `npx tsc --noEmit` exits clean after all consumer and cron/refresh changes
 
-**Plans**: 1/2 plans executed
+**Plans**: 1/2 plans complete (19-02 Task 1 of 2 done; Task 2 owner visual parity checkpoint PENDING)
 
 Plans:
 
 - [x] 19-01-PLAN.md — PROJ-02 (wave 1, autonomous): switch the `includePermissionSummary` aggregate in `getCachedAccDcBulkUsers` to read `AccFolderPermissionSummary` (byte-identical Map); hard-guard the `includePermissionContexts:true` raw scan to throw unless `ACC_ALLOW_RAW_PERMISSION_SCAN=1`; update the 3 summary/contexts tests; TEST-02 terrain golden masters stay byte-identical (terrain scoped OUT — it needs per-folder tier the rollup lacks; evidence in plan). Gates: tsc + npm test + `verify-folder-perm-summary.cjs` PASS.
-- [ ] 19-02-PLAN.md — PROJ-03 (wave 2, depends_on 19-01, checkpoint): wire a non-fatal refresh (reuse `scripts/backfill-folder-perm-summary.cjs`) into the `dc-daily-ingest.cjs` success branch, ordered before `build-instance-features.ts`; document the ≤1-ingest-cycle staleness bound + folder-crawl caveat + manual fallback in `.planning/codebase/INTEGRATIONS.md`; owner visual parity on `/access-analysis` + `/template-mty` after a fresh :3000 rebuild.
+- [ ] 19-02-PLAN.md — PROJ-03 (wave 2, depends_on 19-01, checkpoint): wire a non-fatal refresh (reuse `scripts/backfill-folder-perm-summary.cjs`) into the `dc-daily-ingest.cjs` success branch, ordered before `build-instance-features.ts`; document the ≤1-ingest-cycle staleness bound + folder-crawl caveat + manual fallback in `.planning/codebase/INTEGRATIONS.md`; owner visual parity on `/access-analysis` + `/template-mty` after a fresh :3000 rebuild. **Task 1 DONE (commit `e34ec7e7`); Task 2 (checkpoint:human-verify, gate=blocking) PENDING — awaiting owner rebuild + visual sign-off.**
 
 **Boundary note (planner, evidence-backed):** SC#1's "terrain files read from `AccFolderPermissionSummary`" is a conflation — the terrain views read PER-FOLDER tier via `folderPermQuery.ts`, whereas the projection is a per-`(projectId,roleId)` rollup with no per-folder detail. Forcing terrain onto the projection would lose granularity and break TEST-02. PROJ-02 therefore switches only the summary aggregate the projection genuinely mirrors; terrain stays on `folderPermQuery.ts`. A per-folder terrain projection is a future-milestone seed, not Phase 19.
 
@@ -280,4 +280,4 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 16. folderTerrain Monolith Split | 2/2 | Complete    | 2026-07-01 |
 | 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
-| 19. Raw Scan Retirement & Refresh | 1/2 | In Progress|  |
+| 19. Raw Scan Retirement & Refresh | 1/2 | In Progress (checkpoint pending) | - |
