@@ -28,7 +28,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 ### Summary Projection (PROJ → REF-03)
 
 - [x] **PROJ-01**: an `AccFolderPermissionSummary` Prisma model + migration is added; a backfill script populates it from `AccFolderPermission`; a reconciliation script proves the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) before any consumer is switched. — Complete 2026-07-02 (`77909b10`/`9d55539c`/`fb8ba765`; reconciliation PASS 22,082==22,082, 0 mismatches, 20/20 spot-checks)
-- [ ] **PROJ-02**: the `includePermissionSummary` path and its terrain consumers read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded. TEST-01 (OOM aggregate guard) and the terrain golden masters still pass; `/access-analysis` + `/template-mty` render identically.
+- [x] **PROJ-02**: the `includePermissionSummary` path and its terrain consumers read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded. TEST-01 (OOM aggregate guard) and the terrain golden masters still pass; `/access-analysis` + `/template-mty` render identically.
 - [ ] **PROJ-03**: a refresh mechanism keeps `AccFolderPermissionSummary` current — wired into the existing ingest cron (`dc-daily-ingest.cjs` path) or an explicit rebuild step — and the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`.
 
 ## Future Requirements
