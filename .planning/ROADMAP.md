@@ -156,7 +156,7 @@ Plans:
 
 - [x] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical — COMPLETE 2026-07-01
 - [x] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically (completed 2026-07-01)
-- [ ] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically
+- [x] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically (completed 2026-07-02, test-basis parity — no live mount)
 - [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet
 - [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md
 
@@ -214,12 +214,12 @@ Plans:
   4. `npx tsc --noEmit` exits clean after the split
   5. `/users/access-analysis` renders identically to pre-phase (owner visual check); `/users/spatial-graph` is not touched
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans complete — parity accepted on the byte-identical-DOM-golden-test basis (no live route mounts the surface; owner visual review remains open)
 
 Plans:
 
 - [x] 17-01-PLAN.md — SPLIT-03 (wave 1, autonomous): add `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm READY path (getDuckDbClient resolves + runGraphAnalyticsQueries returns `ready` → DuckDB-Wasm badge + Mosaic panels); keep the fallback pin byte-identical; commit green baseline BEFORE any split — COMPLETE 2026-07-02 (commit b6084f5f)
-- [ ] 17-02-PLAN.md — SPLIT-04 (wave 2, depends_on 17-01): split `HybridAnalyticsSurface.tsx` (1,328 lines) into `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsTransforms.ts` (pure) + presentational view/drilldown/panels + thin shell; both pinning tests byte-identical, every file ≤ ~400 lines, tsc clean, repo-map boundary check, owner visual parity (VERIFY route/flag)
+- [x] 17-02-PLAN.md — SPLIT-04 (wave 2, depends_on 17-01): split `HybridAnalyticsSurface.tsx` (1,328 lines) into `useHybridAnalytics.ts` (DuckDB-client hook, 311L) + `hybridAnalyticsTransforms.ts` (pure, 229L) + presentational view/drilldown/panels (`hybridAnalyticsPanels.tsx`, `HybridAnalyticsView.tsx`, `HybridAnalyticsPostureSection.tsx`, `HybridAnalyticsRankingsSection.tsx`, `HybridAnalyticsDrilldown.tsx`) + thin shell (196L, still exports zero-arg `HybridAnalyticsSurface()`); both pinning tests byte-identical + green (4/4), every file ≤ ~400 lines, tsc clean, repo-map boundary check passed — COMPLETE 2026-07-02 (commits `e0bb6e66`/`da2f230b`). Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) because no live route mounts the surface (`/users/access-analysis` redirects to `/users/spatial-graph`); owner visual sign-off did NOT occur and remains open for later review.
 
 ### Phase 18: AccFolderPermissionSummary Foundation
 
@@ -276,6 +276,6 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
 | 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
 | 16. folderTerrain Monolith Split | 2/2 | Complete    | 2026-07-01 |
-| 17. HybridAnalyticsSurface Split | 1/2 | In progress | - |
+| 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
 | 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |

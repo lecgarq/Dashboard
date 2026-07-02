@@ -5,16 +5,16 @@ milestone_name: Structural Refactors
 current_phase: 17
 current_phase_name: HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04)
 status: in-progress
-stopped_at: "Phase 17 Plan 17-01 (SPLIT-03) COMPLETE. HybridAnalyticsSurface.mainQuery.test.tsx added, pinning the DuckDB-Wasm READY branch (badge + Mosaic panels) and the runGraphAnalyticsQueries call contract; HybridAnalyticsSurface.fallback.test.tsx byte-identical; both green together (4/4); tsc clean (commit b6084f5f). SPLIT-03 green baseline gate met. Next = 17-02-PLAN.md (SPLIT-04 split), depends_on 17-01."
-last_updated: "2026-07-02T09:35:00Z"
+stopped_at: "Phase 17 Plan 17-02 (SPLIT-04) COMPLETE. HybridAnalyticsSurface.tsx (1,328 lines) split into hybridAnalyticsTransforms.ts (pure, 229L) + useHybridAnalytics.ts (DuckDB-client hook, 311L) + hybridAnalyticsPanels.tsx (74L) + HybridAnalyticsView.tsx (40L) + HybridAnalyticsPostureSection.tsx (217L) + HybridAnalyticsRankingsSection.tsx (325L) + HybridAnalyticsDrilldown.tsx (212L); shell reduced to 196L, still exports zero-arg HybridAnalyticsSurface(). Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed (commits e0bb6e66, da2f230b). Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) — no live route mounts the surface, so owner visual sign-off did NOT occur and remains open for later review. Phase 17 now 2/2 COMPLETE. Next = Phase 18 (18-01-PLAN.md, PROJ-01, depends_on Phase 15 — unblocked)."
+last_updated: "2026-07-02T10:20:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "17-01 (SPLIT-03) executed: added HybridAnalyticsSurface.mainQuery.test.tsx pinning the DuckDB-Wasm main query path; fallback pin untouched; both tests green (4/4); tsc 0; explicit-path commit b6084f5f. ROADMAP + STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter)."
+last_activity_desc: "17-02 (SPLIT-04) executed: split HybridAnalyticsSurface.tsx into hook/transform/view/drilldown/panels modules across 2 tasks; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; explicit-path commits e0bb6e66 + da2f230b. Checkpoint resolved on test-basis (no live mount exists) per plan how-to-verify step 3 — NOT owner-visual-approved. Phase 17 CLOSED (2/2). ROADMAP + STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter)."
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 4
-  percent: 40
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 17 of 19 — HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04). IN PROGRESS — 17-01 (SPLIT-03) complete; 17-02 (SPLIT-04) next, depends_on 17-01.
-- **Plan:** 17-01 (SPLIT-03) shipped `b6084f5f` — `HybridAnalyticsSurface.mainQuery.test.tsx` pins the DuckDB-Wasm READY branch (badge + Mosaic panels) and the `runGraphAnalyticsQueries` call contract; `HybridAnalyticsSurface.fallback.test.tsx` byte-identical; both green together (4/4); tsc 0. Phase 16 CLOSED. 16-01 (SPLIT-01) shipped `3cfd3734` + `71df53db`; 16-02 (SPLIT-02) shipped `0dbae11f` + `40126798` + `224519a4`; both owner-approved (visual parity on /access-analysis + /template-mty against fresh :3000 build 224519a4). Phase-goal verifier PASSED 12/12 (`16-VERIFICATION.md`). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 17 in progress (1/2 plans). v2.2: 2 of 5 phases complete (4/8 plans). Milestone NOT complete — rest of Phase 17, then Phases 18, 19 remain.
-- **Last activity:** 2026-07-02 — 17-01 (SPLIT-03) executed: main-query characterization test added and committed, green baseline established BEFORE any split (SPLIT-03 gate met). ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
+- **Phase:** 17 of 19 — HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04). COMPLETE (2/2 plans). Next is Phase 18.
+- **Plan:** 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b` — `HybridAnalyticsSurface.tsx` (1,328 lines) split into `hybridAnalyticsTransforms.ts` (pure, 229L) + `useHybridAnalytics.ts` (DuckDB-client hook, 311L) + `hybridAnalyticsPanels.tsx` (74L) + `HybridAnalyticsView.tsx` (40L) + `HybridAnalyticsPostureSection.tsx` (217L) + `HybridAnalyticsRankingsSection.tsx` (325L) + `HybridAnalyticsDrilldown.tsx` (212L); shell reduced to 196L, still exports zero-arg `HybridAnalyticsSurface()`. Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed. **Parity basis:** accepted on the byte-identical-DOM-golden-test basis (no live route mounts the surface today) — owner visual sign-off did NOT occur and remains open for later review. 17-01 (SPLIT-03) shipped `b6084f5f` — `HybridAnalyticsSurface.mainQuery.test.tsx` pins the DuckDB-Wasm READY branch. Phase 16 CLOSED. 16-01 (SPLIT-01) shipped `3cfd3734` + `71df53db`; 16-02 (SPLIT-02) shipped `0dbae11f` + `40126798` + `224519a4`; both owner-approved (visual parity on /access-analysis + /template-mty against fresh :3000 build 224519a4). Phase-goal verifier PASSED 12/12 (`16-VERIFICATION.md`). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
+- **Status:** Phase 17 CLOSED (2/2 plans). v2.2: 3 of 5 phases complete (5/8 plans). Milestone NOT complete — Phases 18, 19 remain.
+- **Last activity:** 2026-07-02 — 17-02 (SPLIT-04) executed: HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown/panels modules; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; explicit-path commits. Checkpoint resolved on the plan-sanctioned test basis (no live mount exists), NOT owner-visual-approved. ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
 
-Progress: [####░░░░░░] 40% — v2.2: 2 of 5 phases complete (4/8 plans; Phase 17: 1/2, SPLIT-03 done)
+Progress: [######░░░░] 63% — v2.2: 3 of 5 phases complete (5/8 plans; Phase 17 CLOSED)
 
 **Roadmap (Phases 15–19):**
 
@@ -42,7 +42,7 @@ Progress: [####░░░░░░] 40% — v2.2: 2 of 5 phases complete (4/8 pla
 |---|-------|------|-------|
 | 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
-| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 1/2 — SPLIT-03 done (`b6084f5f`), SPLIT-04 next |
+| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 2/2 ✅ (test-basis parity — no live mount; owner review open) |
 | 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 0/1 |
 | 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 0/2 |
 
@@ -89,7 +89,9 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 - **QUERY-01/REF-02 shipped (2026-07-01, commit a4d923ca).** `lib/server/folderPermQuery.ts` owns the shared base `AccFolderPermission` join. Both terrain loaders (`templateFolderTerrain.ts` all-folders; `folderPermissionTerrainView.ts` l2Only) consume it via `loadFolderPermRows(projectId, { l2Only? })`. Plain tagged-template `db.$queryRaw` (no Prisma.sql) keeps TEST-02/TEST-03 byte-identical. Phase 16 splits and Phase 18 projection build on this shared owner.
 
-- **REF-01 access-analysis splits shipped (2026-07-01, Phase 16).** `folderTerrain.ts` → `folderTerrainModel`/`folderTerrainLayout`/`folderTerrainScene`/`folderTerrainCamera` + thin barrel (SPLIT-01). `FolderPermissionTerrain.tsx` → `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure) + `TerrainStage`/`TerrainControls` (presentational) + thin shell (SPLIT-02). All 9 files ≤ ~400 lines; pinning tests byte-identical; owner visual parity confirmed. The remaining monolith is `HybridAnalyticsSurface.tsx` (Phase 17, SPLIT-03/04).
+- **REF-01 access-analysis splits shipped (2026-07-01, Phase 16).** `folderTerrain.ts` → `folderTerrainModel`/`folderTerrainLayout`/`folderTerrainScene`/`folderTerrainCamera` + thin barrel (SPLIT-01). `FolderPermissionTerrain.tsx` → `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure) + `TerrainStage`/`TerrainControls` (presentational) + thin shell (SPLIT-02). All 9 files ≤ ~400 lines; pinning tests byte-identical; owner visual parity confirmed.
+
+- **SPLIT-04 shipped (2026-07-02, Phase 17, commits `e0bb6e66`/`da2f230b`).** `HybridAnalyticsSurface.tsx` (1,328 lines) → `hybridAnalyticsTransforms.ts` (pure) + `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsPanels.tsx` + `HybridAnalyticsView.tsx`/`HybridAnalyticsPostureSection.tsx`/`HybridAnalyticsRankingsSection.tsx` (presentational, 3-way split to honor ~400L) + `HybridAnalyticsDrilldown.tsx` + a 196-line thin shell still exporting zero-arg `HybridAnalyticsSurface()`. Both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed. **This closes all three REF-01 monolith splits.** Parity was accepted on the byte-identical-DOM-golden-test basis only — `/users/access-analysis` currently redirects to `/users/spatial-graph` and no production code mounts the surface, so there was no live route to visually verify. Owner visual sign-off did NOT occur and remains open for later review if/when the surface gets a live mount.
 
 - **Behavior-preserving refactors only.** REF-01/REF-02/REF-03 must keep their
   characterization tests (TEST-02 `folderPermissionTerrainView.test.ts`, TEST-03
@@ -100,9 +102,9 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
   REF-01 splits so both `/template-mty` and `/access-analysis` consume one owned query;
   REF-03 (summary projection) builds on the centralised query.
 
-- **`HybridAnalyticsSurface.tsx` pin is thin** — only `HybridAnalyticsSurface.fallback.test.tsx`
-  (fallback path). Widen its characterization net (main DuckDB-Wasm path) BEFORE splitting.
-  This is Phase 17's SPLIT-03 gate.
+- **`HybridAnalyticsSurface.tsx` pin was thin, now widened** — SPLIT-03 (17-01, `b6084f5f`)
+  added `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm main path BEFORE
+  the SPLIT-04 split (17-02) executed. Phase 17 is now closed.
 
 - **REF-03 is the risk carrier** — it adds a Prisma migration + backfill on the live
   `AccFolderPermission` table (~6M rows). Reconcile projection-vs-live-aggregate parity
@@ -128,8 +130,15 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ### Blockers/Concerns
 
-- None blocking v2.2. Risks tracked above (REF-03 migration/backfill/refresh;
-  thin `HybridAnalyticsSurface` pin — widen it first in Phase 17 SPLIT-03).
+- None blocking v2.2. Risks tracked above (REF-03 migration/backfill/refresh).
+
+- **Open (non-blocking):** owner visual sign-off on the HybridAnalyticsSurface split (17-02,
+  SPLIT-04) has not occurred. `/users/access-analysis` currently redirects to
+  `/users/spatial-graph` and no production code mounts the surface (the
+  `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` flag appears only in a test file), so there was nothing to
+  visually eyeball at execution time. Parity was accepted on the byte-identical DOM-golden-test
+  basis (plan how-to-verify step 3) instead. Revisit if/when the surface gets a live, unflagged
+  mount.
 
 - **Resolved 2026-07-01 (16-02 Task 1):** the 2 pre-existing `FolderPermissionTerrain.test.tsx`
   failures were root-caused and fixed — folder-label over-pruning at default zoom (restored the
@@ -145,26 +154,29 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-17-01 (SPLIT-03) is COMPLETE — the DuckDB-Wasm main query path is now pinned
-(`HybridAnalyticsSurface.mainQuery.test.tsx`, commit `b6084f5f`), green baseline established
-BEFORE any split. **Next: `/gsd:execute-phase 17`** to run 17-02-PLAN.md (SPLIT-04, depends_on 17-01).
+Phase 17 (SPLIT-03 + SPLIT-04) is COMPLETE — all three REF-01 monolith splits are now shipped.
+**Next: `/gsd:plan-phase 18`** (or `/gsd:execute-phase 18` if already planned) to run PROJ-01
+(`AccFolderPermissionSummary` Prisma model + migration + backfill + reconciliation script).
+Phase 18 depends on Phase 15 (shipped `a4d923ca`), not Phase 17, and is unblocked.
 
-- **17-02 (SPLIT-04):** Split the 1,328-line `HybridAnalyticsSurface.tsx` into a DuckDB-client
-  data-hook + pure transform + thin view (each ≤ ~400 lines). Gate: both characterization tests
-  (`HybridAnalyticsSurface.mainQuery.test.tsx` + `HybridAnalyticsSurface.fallback.test.tsx`)
-  byte-identical and green, tsc 0, `/users/access-analysis` renders identically, repo-map
-  boundary check, `/users/spatial-graph` not touched, owner visual parity.
+- **18-01 (PROJ-01):** Add `AccFolderPermissionSummary` Prisma model + migration + backfill
+  script + reconciliation script proving projection parity with the live
+  `includePermissionSummary` GROUP BY aggregate. No consumer switched yet — zero behavior change.
+  TEST-01 (OOM aggregate guard) must pass throughout the backfill run.
 
 Guardrails carried forward: byte-identical characterization tests (no test edits), ~400-line
 ceiling per file, explicit-path commits with `git diff --cached --name-only` proof,
 `npx tsc --noEmit` before any rebuild, no new WebGL on data surfaces, zinc theme untouched,
 `/users/spatial-graph` not touched.
 
+Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split is still
+pending (test-basis-only acceptance) — see Blockers/Concerns above.
+
 ---
-*Last updated: 2026-07-02 — 17-01 (SPLIT-03) shipped (`b6084f5f`): DuckDB-Wasm main query path pinned, fallback pin byte-identical, tsc 0. v2.2: 2 of 5 phases done, 4/8 plans (Phase 17: 1/2). Next: /gsd:execute-phase 17 (17-02, SPLIT-04).*
+*Last updated: 2026-07-02 — 17-02 (SPLIT-04) shipped (`e0bb6e66`/`da2f230b`): HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown modules, both pinning tests byte-identical (4/4), tsc 0, repo-map boundary check passed. Parity on test-basis only (no live mount; owner review open). Phase 17 CLOSED (2/2). v2.2: 3 of 5 phases done, 5/8 plans. Next: Phase 18 (PROJ-01, unblocked — depends on Phase 15).*
 
 ## Session
 
-**Last session:** 2026-07-02T09:35:00Z (execute-phase 17 → 17-01)
-**Stopped at:** 17-01 (SPLIT-03) complete — main-query characterization test green and committed (`b6084f5f`); SPLIT-03 gate met; STATE/ROADMAP synced
-**Resume file:** `.planning/phases/17-hybridanalyticssurface-split/17-02-PLAN.md` → `/gsd:execute-phase 17`
+**Last session:** 2026-07-02T10:20:00Z (execute-phase 17 → 17-02)
+**Stopped at:** 17-02 (SPLIT-04) complete — HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown/panels modules; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; commits `e0bb6e66`/`da2f230b`. Checkpoint resolved on test-basis parity (no live mount) per plan how-to-verify step 3 — NOT owner-visual-approved. Phase 17 CLOSED (2/2). STATE/ROADMAP/REQUIREMENTS synced.
+**Resume file:** none — Phase 17 complete. Next: `/gsd:plan-phase 18` (PROJ-01, `AccFolderPermissionSummary` Foundation, depends on Phase 15, unblocked)
