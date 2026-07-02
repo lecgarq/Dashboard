@@ -4,7 +4,7 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 18
 current_phase_name: AccFolderPermissionSummary Foundation (PROJ-01)
-status: ready-to-plan
+status: ready-to-execute
 stopped_at: "Phase 17 (SPLIT-03 + SPLIT-04) COMPLETE + goal-verified. HybridAnalyticsSurface.tsx (1,328 lines) split into hybridAnalyticsTransforms.ts (pure, 229L) + useHybridAnalytics.ts (DuckDB-client hook, 311L) + hybridAnalyticsPanels.tsx (74L) + HybridAnalyticsView.tsx (40L) + HybridAnalyticsPostureSection.tsx (217L) + HybridAnalyticsRankingsSection.tsx (325L) + HybridAnalyticsDrilldown.tsx (212L); shell reduced to 196L, still exports zero-arg HybridAnalyticsSurface(). Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed (commits e0bb6e66, da2f230b). 17-VERIFICATION.md PASSED (9/9 must-haves) — verified inline after gsd-verifier crashed twice on a transient 'Connection closed mid-response' API error. Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) — no live route mounts the surface, so owner visual sign-off did NOT occur and remains open for later review. Phase 17 CLOSED (2/2). Next = /gsd:plan-phase 18 (PROJ-01, depends_on Phase 15 — unblocked; not yet planned)."
 last_updated: "2026-07-02T10:20:00Z"
 last_activity: 2026-07-02
@@ -154,10 +154,12 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 17 (SPLIT-03 + SPLIT-04) is COMPLETE — all three REF-01 monolith splits are now shipped.
-**Next: `/gsd:plan-phase 18`** (or `/gsd:execute-phase 18` if already planned) to run PROJ-01
-(`AccFolderPermissionSummary` Prisma model + migration + backfill + reconciliation script).
-Phase 18 depends on Phase 15 (shipped `a4d923ca`), not Phase 17, and is unblocked.
+Phase 18 is PLANNED and plan-checked (2026-07-02). `18-01-PLAN.md` committed `aecf603c`;
+gsd-plan-checker returned VERIFICATION PASSED (column mirror exact vs `acc-hot-cache.ts:304-317`,
+pgvector migration fallback present, OOM-safe SQL-side backfill, reconciliation durable, scope
+fence clean). **Next: `/gsd:execute-phase 18`** to run PROJ-01 (`AccFolderPermissionSummary`
+Prisma model + migration + backfill + reconciliation script). Phase 18 depends on Phase 15
+(shipped `a4d923ca`), not Phase 17, and is unblocked.
 
 - **18-01 (PROJ-01):** Add `AccFolderPermissionSummary` Prisma model + migration + backfill
   script + reconciliation script proving projection parity with the live
