@@ -108,16 +108,12 @@ describe("ACC hot cache", () => {
     expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps permission-context snapshots separate from the lean DC bulk-users snapshot", async () => {
+  it("hard-guards includePermissionContexts: throws instead of scanning AccFolderPermission", async () => {
     const db = makeDcDb();
-
-    const lean = await getCachedAccDcBulkUsers(db);
-    const withContexts = await getCachedAccDcBulkUsers(db, { includePermissionContexts: true });
-
-    expect(lean[0].permissionContexts).toEqual([]);
-    expect(withContexts[0].permissionContexts).toHaveLength(1);
-    expect(db.accFolderPermission.findMany).toHaveBeenCalledTimes(1);
-    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
+    await expect(
+      getCachedAccDcBulkUsers(db, { includePermissionContexts: true }),
+    ).rejects.toThrow(/hard-guarded/);
+    expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
   });
 
   it("leanProjects variant empties per-project roles[]/modules[] but keeps name/status and a separate cache key", async () => {

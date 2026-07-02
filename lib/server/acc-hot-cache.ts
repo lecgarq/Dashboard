@@ -280,15 +280,21 @@ export async function getCachedAccDcBulkUsers(
         | Map<string, { folderCount: number; totalBytes: number; permTypes: string[] }>
         | undefined;
       if (needsFolderPerms) {
-        // WARNING (DB-04): the includePermissionContexts:true branch below materialises the
-        // FULL AccFolderPermission table (~6M+ rows) into Node heap via a findMany scan.
-        // This re-opens the OOM window that the live GROUP BY aggregate in the else-branch
-        // was added to close (2026-06 access-analysis OOM fix; PROJ-02 now switches the
-        // else-branch to the materialised projection). Only enable this path when raw
-        // folder-level grants are strictly required (e.g. WS2 edge-feed / per-folder ACL).
-        // VERIFY: no active non-test caller enables includePermissionContexts:true
-        // (grep confirms only test files reference this flag).
+        // Hard-guard (PROJ-02): the includePermissionContexts:true branch below materialises
+        // the FULL AccFolderPermission table (~6M+ rows) into Node heap via a findMany scan —
+        // the exact OOM window the summary-projection switch above was added to close. No
+        // production caller enables it (grep confirms only test files reference this flag).
+        // It throws by default; set ACC_ALLOW_RAW_PERMISSION_SCAN=1 to deliberately re-enable
+        // it for the WS2 edge-feed / per-folder-ACL path.
         if (includePermissionContexts) {
+          if (process.env.ACC_ALLOW_RAW_PERMISSION_SCAN !== "1") {
+            throw new Error(
+              "includePermissionContexts:true is hard-guarded (PROJ-02): it materialises the full " +
+              "AccFolderPermission table (~6M rows) into Node heap and re-opens the OOM window TEST-01 guards. " +
+              "No production caller enables it. To deliberately re-enable the WS2 edge-feed / per-folder-ACL " +
+              "path, set ACC_ALLOW_RAW_PERMISSION_SCAN=1.",
+            );
+          }
           rawFolderPermissions = await db.accFolderPermission.findMany({
             where: { folder: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } } },
             select: {
