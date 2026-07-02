@@ -218,7 +218,7 @@ Plans:
 
 Plans:
 
-- [ ] 17-01-PLAN.md — SPLIT-03 (wave 1, autonomous): add `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm READY path (getDuckDbClient resolves + runGraphAnalyticsQueries returns `ready` → DuckDB-Wasm badge + Mosaic panels); keep the fallback pin byte-identical; commit green baseline BEFORE any split
+- [x] 17-01-PLAN.md — SPLIT-03 (wave 1, autonomous): add `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm READY path (getDuckDbClient resolves + runGraphAnalyticsQueries returns `ready` → DuckDB-Wasm badge + Mosaic panels); keep the fallback pin byte-identical; commit green baseline BEFORE any split — COMPLETE 2026-07-02 (commit b6084f5f)
 - [ ] 17-02-PLAN.md — SPLIT-04 (wave 2, depends_on 17-01): split `HybridAnalyticsSurface.tsx` (1,328 lines) into `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsTransforms.ts` (pure) + presentational view/drilldown/panels + thin shell; both pinning tests byte-identical, every file ≤ ~400 lines, tsc clean, repo-map boundary check, owner visual parity (VERIFY route/flag)
 
 ### Phase 18: AccFolderPermissionSummary Foundation
@@ -276,6 +276,6 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
 | 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
 | 16. folderTerrain Monolith Split | 2/2 | Complete    | 2026-07-01 |
-| 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
+| 17. HybridAnalyticsSurface Split | 1/2 | In progress | - |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
 | 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |

@@ -4,16 +4,16 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 17
 current_phase_name: HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04)
-status: ready-to-plan
-stopped_at: "Phase 16 COMPLETE + owner-approved. Both 16-01 (SPLIT-01, folderTerrain.ts) and 16-02 (SPLIT-02, FolderPermissionTerrain.tsx) shipped and verified — owner confirmed visual + interaction parity on /access-analysis + /template-mty against a FRESH :3000 rebuild (commit 224519a4; deploy = tsc 0 -> npm run build exit 0 -> LECG Dashboard Local restart). gsd-verifier PASSED 12/12 (16-VERIFICATION.md). Next = plan Phase 17 (HybridAnalyticsSurface split; plans TBD)."
-last_updated: "2026-07-01T23:50:00Z"
-last_activity: 2026-07-01
-last_activity_desc: "Phase 16 CLOSED — 16-02 SPLIT-02 executed + owner-approved; :3000 rebuilt and restarted; gsd-verifier PASSED 12/12. ROADMAP/REQUIREMENTS/STATE/SUMMARY statuses synced manually (gsd-tools phase-complete mangled STATE frontmatter — milestone/status/progress — repaired here). Next: /gsd:plan-phase 17."
+status: in-progress
+stopped_at: "Phase 17 Plan 17-01 (SPLIT-03) COMPLETE. HybridAnalyticsSurface.mainQuery.test.tsx added, pinning the DuckDB-Wasm READY branch (badge + Mosaic panels) and the runGraphAnalyticsQueries call contract; HybridAnalyticsSurface.fallback.test.tsx byte-identical; both green together (4/4); tsc clean (commit b6084f5f). SPLIT-03 green baseline gate met. Next = 17-02-PLAN.md (SPLIT-04 split), depends_on 17-01."
+last_updated: "2026-07-02T09:35:00Z"
+last_activity: 2026-07-02
+last_activity_desc: "17-01 (SPLIT-03) executed: added HybridAnalyticsSurface.mainQuery.test.tsx pinning the DuckDB-Wasm main query path; fallback pin untouched; both tests green (4/4); tsc 0; explicit-path commit b6084f5f. ROADMAP + STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter)."
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 3
+  completed_plans: 4
   percent: 40
 ---
 
@@ -29,12 +29,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 17 of 19 — HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04). NOT STARTED — plans TBD (needs `/gsd:plan-phase 17`).
-- **Plan:** Phase 16 CLOSED. 16-01 (SPLIT-01) shipped `3cfd3734` + `71df53db`; 16-02 (SPLIT-02) shipped `0dbae11f` + `40126798` + `224519a4`; both owner-approved (visual parity on /access-analysis + /template-mty against fresh :3000 build 224519a4). Phase-goal verifier PASSED 12/12 (`16-VERIFICATION.md`). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 16 complete + verified + owner-approved. v2.2: 2 of 5 phases complete (3/8 plans). Milestone NOT complete — Phases 17, 18, 19 remain.
-- **Last activity:** 2026-07-01 — Phase 16 closed (16-02 executed + owner-approved; :3000 rebuilt/restarted; verifier 12/12). Tracking files repaired after gsd-tools `phase complete` corrupted STATE frontmatter.
+- **Phase:** 17 of 19 — HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04). IN PROGRESS — 17-01 (SPLIT-03) complete; 17-02 (SPLIT-04) next, depends_on 17-01.
+- **Plan:** 17-01 (SPLIT-03) shipped `b6084f5f` — `HybridAnalyticsSurface.mainQuery.test.tsx` pins the DuckDB-Wasm READY branch (badge + Mosaic panels) and the `runGraphAnalyticsQueries` call contract; `HybridAnalyticsSurface.fallback.test.tsx` byte-identical; both green together (4/4); tsc 0. Phase 16 CLOSED. 16-01 (SPLIT-01) shipped `3cfd3734` + `71df53db`; 16-02 (SPLIT-02) shipped `0dbae11f` + `40126798` + `224519a4`; both owner-approved (visual parity on /access-analysis + /template-mty against fresh :3000 build 224519a4). Phase-goal verifier PASSED 12/12 (`16-VERIFICATION.md`). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
+- **Status:** Phase 17 in progress (1/2 plans). v2.2: 2 of 5 phases complete (4/8 plans). Milestone NOT complete — rest of Phase 17, then Phases 18, 19 remain.
+- **Last activity:** 2026-07-02 — 17-01 (SPLIT-03) executed: main-query characterization test added and committed, green baseline established BEFORE any split (SPLIT-03 gate met). ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
 
-Progress: [####░░░░░░] 40% — v2.2: 2 of 5 phases complete (3/8 plans; Phase 16 done 2/2, owner-approved)
+Progress: [####░░░░░░] 40% — v2.2: 2 of 5 phases complete (4/8 plans; Phase 17: 1/2, SPLIT-03 done)
 
 **Roadmap (Phases 15–19):**
 
@@ -42,7 +42,7 @@ Progress: [####░░░░░░] 40% — v2.2: 2 of 5 phases complete (3/8 pla
 |---|-------|------|-------|
 | 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
-| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 0/2 — plans TBD |
+| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 1/2 — SPLIT-03 done (`b6084f5f`), SPLIT-04 next |
 | 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 0/1 |
 | 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 0/2 |
 
@@ -145,17 +145,15 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 16 is CLOSED — both plans shipped, verified (12/12), and owner-approved on a fresh
-`:3000` build. The remaining REF-01 monolith is `HybridAnalyticsSurface.tsx`.
-**Next: `/gsd:plan-phase 17`** (HybridAnalyticsSurface Split — plans are TBD; `/clear` first —
-fresh context window). Then `/gsd:execute-phase 17`.
+17-01 (SPLIT-03) is COMPLETE — the DuckDB-Wasm main query path is now pinned
+(`HybridAnalyticsSurface.mainQuery.test.tsx`, commit `b6084f5f`), green baseline established
+BEFORE any split. **Next: `/gsd:execute-phase 17`** to run 17-02-PLAN.md (SPLIT-04, depends_on 17-01).
 
-- **Phase 17 (SPLIT-03, SPLIT-04):** SPLIT-03 first widens the `HybridAnalyticsSurface.tsx`
-  characterization net to pin the **main DuckDB-Wasm query path** (today only
-  `HybridAnalyticsSurface.fallback.test.tsx` covers the fallback), green BEFORE any split.
-  Then SPLIT-04 splits the 1,328-line file into a DuckDB-client data-hook + pure transform +
-  thin view (each ≤ ~400 lines). Gate: all characterization tests byte-identical, tsc 0,
-  `/users/access-analysis` renders identically, `/users/spatial-graph` not touched.
+- **17-02 (SPLIT-04):** Split the 1,328-line `HybridAnalyticsSurface.tsx` into a DuckDB-client
+  data-hook + pure transform + thin view (each ≤ ~400 lines). Gate: both characterization tests
+  (`HybridAnalyticsSurface.mainQuery.test.tsx` + `HybridAnalyticsSurface.fallback.test.tsx`)
+  byte-identical and green, tsc 0, `/users/access-analysis` renders identically, repo-map
+  boundary check, `/users/spatial-graph` not touched, owner visual parity.
 
 Guardrails carried forward: byte-identical characterization tests (no test edits), ~400-line
 ceiling per file, explicit-path commits with `git diff --cached --name-only` proof,
@@ -163,10 +161,10 @@ ceiling per file, explicit-path commits with `git diff --cached --name-only` pro
 `/users/spatial-graph` not touched.
 
 ---
-*Last updated: 2026-07-01 — Phase 16 CLOSED (16-01 + 16-02 shipped, verifier 12/12, owner-approved on rebuilt :3000). STATE repaired after gsd-tools phase-complete corruption. v2.2: 2 of 5 phases done, 3/8 plans. Next: /gsd:plan-phase 17.*
+*Last updated: 2026-07-02 — 17-01 (SPLIT-03) shipped (`b6084f5f`): DuckDB-Wasm main query path pinned, fallback pin byte-identical, tsc 0. v2.2: 2 of 5 phases done, 4/8 plans (Phase 17: 1/2). Next: /gsd:execute-phase 17 (17-02, SPLIT-04).*
 
 ## Session
 
-**Last session:** 2026-07-01T23:50:00Z (execute-phase 16 → 16-02 + phase close)
-**Stopped at:** Phase 16 complete + owner-approved (rebuilt :3000, verifier PASSED 12/12); STATE/ROADMAP/REQUIREMENTS synced
-**Resume file:** `.planning/ROADMAP.md` (Phase 17 details) → `/gsd:plan-phase 17`
+**Last session:** 2026-07-02T09:35:00Z (execute-phase 17 → 17-01)
+**Stopped at:** 17-01 (SPLIT-03) complete — main-query characterization test green and committed (`b6084f5f`); SPLIT-03 gate met; STATE/ROADMAP synced
+**Resume file:** `.planning/phases/17-hybridanalyticssurface-split/17-02-PLAN.md` → `/gsd:execute-phase 17`
