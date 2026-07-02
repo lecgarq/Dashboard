@@ -253,12 +253,14 @@ Plans:
   4. A refresh mechanism is wired into the `dc-daily-ingest.cjs` cron path or documented as an explicit rebuild step; the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`
   5. `npx tsc --noEmit` exits clean after all consumer and cron/refresh changes
 
-**Plans**: TBD
+**Plans**: 2 plans (wave 1 → wave 2)
 
 Plans:
 
-- [ ] 19-01: PROJ-02 — switch `includePermissionSummary` consumers to read from `AccFolderPermissionSummary`; retire or hard-guard `includePermissionContexts:true`; verify TEST-01 + TEST-02 golden masters + visual check on `/access-analysis` + `/template-mty`
-- [ ] 19-02: PROJ-03 — wire refresh into `dc-daily-ingest.cjs` or document explicit rebuild step; add staleness-bound entry to `.planning/codebase/INTEGRATIONS.md`
+- [ ] 19-01-PLAN.md — PROJ-02 (wave 1, autonomous): switch the `includePermissionSummary` aggregate in `getCachedAccDcBulkUsers` to read `AccFolderPermissionSummary` (byte-identical Map); hard-guard the `includePermissionContexts:true` raw scan to throw unless `ACC_ALLOW_RAW_PERMISSION_SCAN=1`; update the 3 summary/contexts tests; TEST-02 terrain golden masters stay byte-identical (terrain scoped OUT — it needs per-folder tier the rollup lacks; evidence in plan). Gates: tsc + npm test + `verify-folder-perm-summary.cjs` PASS.
+- [ ] 19-02-PLAN.md — PROJ-03 (wave 2, depends_on 19-01, checkpoint): wire a non-fatal refresh (reuse `scripts/backfill-folder-perm-summary.cjs`) into the `dc-daily-ingest.cjs` success branch, ordered before `build-instance-features.ts`; document the ≤1-ingest-cycle staleness bound + folder-crawl caveat + manual fallback in `.planning/codebase/INTEGRATIONS.md`; owner visual parity on `/access-analysis` + `/template-mty` after a fresh :3000 rebuild.
+
+**Boundary note (planner, evidence-backed):** SC#1's "terrain files read from `AccFolderPermissionSummary`" is a conflation — the terrain views read PER-FOLDER tier via `folderPermQuery.ts`, whereas the projection is a per-`(projectId,roleId)` rollup with no per-folder detail. Forcing terrain onto the projection would lose granularity and break TEST-02. PROJ-02 therefore switches only the summary aggregate the projection genuinely mirrors; terrain stays on `folderPermQuery.ts`. A per-folder terrain projection is a future-milestone seed, not Phase 19.
 
 ## Progress
 
