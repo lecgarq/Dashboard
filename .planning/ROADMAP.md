@@ -214,12 +214,12 @@ Plans:
   4. `npx tsc --noEmit` exits clean after the split
   5. `/users/access-analysis` renders identically to pre-phase (owner visual check); `/users/spatial-graph` is not touched
 
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 
-- [ ] 17-01: SPLIT-03 — write/expand characterization test pinning the DuckDB-Wasm main query path of `HybridAnalyticsSurface.tsx`; commit + confirm `npm test` green before any file is split
-- [ ] 17-02: SPLIT-04 — split `HybridAnalyticsSurface.tsx` into DuckDB-client hook + pure transform + thin view; verify all characterization tests byte-identical, no file > ~400 lines, tsc clean, `/users/access-analysis` visual check
+- [ ] 17-01-PLAN.md — SPLIT-03 (wave 1, autonomous): add `HybridAnalyticsSurface.mainQuery.test.tsx` pinning the DuckDB-Wasm READY path (getDuckDbClient resolves + runGraphAnalyticsQueries returns `ready` → DuckDB-Wasm badge + Mosaic panels); keep the fallback pin byte-identical; commit green baseline BEFORE any split
+- [ ] 17-02-PLAN.md — SPLIT-04 (wave 2, depends_on 17-01): split `HybridAnalyticsSurface.tsx` (1,328 lines) into `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsTransforms.ts` (pure) + presentational view/drilldown/panels + thin shell; both pinning tests byte-identical, every file ≤ ~400 lines, tsc clean, repo-map boundary check, owner visual parity (VERIFY route/flag)
 
 ### Phase 18: AccFolderPermissionSummary Foundation
 
