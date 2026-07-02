@@ -27,7 +27,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Summary Projection (PROJ → REF-03)
 
-- [ ] **PROJ-01**: an `AccFolderPermissionSummary` Prisma model + migration is added; a backfill script populates it from `AccFolderPermission`; a reconciliation script proves the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) before any consumer is switched.
+- [x] **PROJ-01**: an `AccFolderPermissionSummary` Prisma model + migration is added; a backfill script populates it from `AccFolderPermission`; a reconciliation script proves the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) before any consumer is switched. — Complete 2026-07-02 (`77909b10`/`9d55539c`/`fb8ba765`; reconciliation PASS 22,082==22,082, 0 mismatches, 20/20 spot-checks)
 - [ ] **PROJ-02**: the `includePermissionSummary` path and its terrain consumers read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded. TEST-01 (OOM aggregate guard) and the terrain golden masters still pass; `/access-analysis` + `/template-mty` render identically.
 - [ ] **PROJ-03**: a refresh mechanism keeps `AccFolderPermissionSummary` current — wired into the existing ingest cron (`dc-daily-ingest.cjs` path) or an explicit rebuild step — and the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`.
 
@@ -61,7 +61,7 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 | SPLIT-02 | REF-01 | Phase 16 | Complete (2026-07-01, 0dbae11f/40126798/224519a4) |
 | SPLIT-03 | REF-01 | Phase 17 | Complete (2026-07-02, b6084f5f) |
 | SPLIT-04 | REF-01 | Phase 17 | Complete (2026-07-02, e0bb6e66/da2f230b, test-basis parity) |
-| PROJ-01 | REF-03 | Phase 18 | Pending |
+| PROJ-01 | REF-03 | Phase 18 | Complete (2026-07-02, 77909b10/9d55539c/fb8ba765) |
 | PROJ-02 | REF-03 | Phase 19 | Pending |
 | PROJ-03 | REF-03 | Phase 19 | Pending |
 
@@ -73,4 +73,4 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-02 — 17-02 shipped: SPLIT-04 complete (5/8). Phase 17 CLOSED (2/2). Phases 18–19 (PROJ-01/02/03) pending.*
+*Last updated: 2026-07-02 — 18-01 shipped: PROJ-01 complete (6/8). Phase 18 plan executed (1/1), phase-goal verification pending. Phase 19 (PROJ-02/03) remains.*

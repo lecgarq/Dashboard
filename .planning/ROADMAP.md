@@ -157,7 +157,7 @@ Plans:
 - [x] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical — COMPLETE 2026-07-01
 - [x] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically (completed 2026-07-01)
 - [x] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically (completed 2026-07-02, test-basis parity — no live mount)
-- [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet
+- [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet (18-01 plan executed 2026-07-02, reconciliation PASS; phase-goal verification/close pending)
 - [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md
 
 ## Phase Details
@@ -234,11 +234,11 @@ Plans:
   4. No consumer of `includePermissionSummary` or `includePermissionContexts` is changed in this phase — zero behavior change to `/access-analysis` or `/template-mty`
   5. `npx tsc --noEmit` exits clean after the model and script additions
 
-**Plans**: 1 plan
+**Plans**: 1/1 plan complete — reconciliation PASS (22,082 == 22,082 rows, 0 mismatches, 20/20 spot-checks); phase-goal verification pending
 
 Plans:
 
-- [ ] 18-01-PLAN.md — PROJ-01: add `AccFolderPermissionSummary` Prisma model + migration (pgvector-safe raw + `migrate resolve` fallback), server-side `INSERT...SELECT...GROUP BY` backfill (`folderCrawlStatus IN ('ok','partial')`, OOM-safe, TEST-01 green), and a reconciliation script proving projection == live aggregate (row counts + 0 mismatches + spot-checked keys) recorded in `18-RECONCILIATION.md`; no consumer switched; tsc clean (wave 1)
+- [x] 18-01-PLAN.md — PROJ-01: add `AccFolderPermissionSummary` Prisma model + migration (pgvector-safe raw + `migrate resolve` fallback), server-side `INSERT...SELECT...GROUP BY` backfill (`folderCrawlStatus IN ('ok','partial')`, OOM-safe, TEST-01 green), and a reconciliation script proving projection == live aggregate (row counts + 0 mismatches + spot-checked keys) recorded in `18-RECONCILIATION.md`; no consumer switched; tsc clean — COMPLETE 2026-07-02 (commits `77909b10`/`9d55539c`/`fb8ba765`) (wave 1)
 
 ### Phase 19: Raw Scan Retirement & Refresh
 
@@ -277,5 +277,5 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
 | 16. folderTerrain Monolith Split | 2/2 | Complete    | 2026-07-01 |
 | 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
-| 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
+| 18. AccFolderPermissionSummary Foundation | 1/1 | Plans executed (reconciliation PASS; verification pending) | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |

@@ -4,17 +4,17 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 18
 current_phase_name: AccFolderPermissionSummary Foundation (PROJ-01)
-status: ready-to-execute
-stopped_at: "Phase 17 (SPLIT-03 + SPLIT-04) COMPLETE + goal-verified. HybridAnalyticsSurface.tsx (1,328 lines) split into hybridAnalyticsTransforms.ts (pure, 229L) + useHybridAnalytics.ts (DuckDB-client hook, 311L) + hybridAnalyticsPanels.tsx (74L) + HybridAnalyticsView.tsx (40L) + HybridAnalyticsPostureSection.tsx (217L) + HybridAnalyticsRankingsSection.tsx (325L) + HybridAnalyticsDrilldown.tsx (212L); shell reduced to 196L, still exports zero-arg HybridAnalyticsSurface(). Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed (commits e0bb6e66, da2f230b). 17-VERIFICATION.md PASSED (9/9 must-haves) — verified inline after gsd-verifier crashed twice on a transient 'Connection closed mid-response' API error. Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) — no live route mounts the surface, so owner visual sign-off did NOT occur and remains open for later review. Phase 17 CLOSED (2/2). Next = /gsd:plan-phase 18 (PROJ-01, depends_on Phase 15 — unblocked; not yet planned)."
-last_updated: "2026-07-02T10:20:00Z"
+status: plan-complete
+stopped_at: "18-01 (PROJ-01) executed: AccFolderPermissionSummary Prisma model + migration (raw-SQL + migrate resolve fallback, pgvector shadow-DB blocked migrate dev as predicted) + server-side backfill (22,082 rows, idempotent, TEST-01 12/12 green) + reconciliation script (PASS: live=22,082 == projection=22,082, 0 mismatches, 20/20 spot-checks matched, verdict in 18-RECONCILIATION.md). Commits 77909b10/9d55539c/fb8ba765. Scope fence clean (schema+migration+2 scripts+.planning only; acc-hot-cache.ts and terrain loaders untouched). No consumer switched — zero workshop impact. Next = phase-goal verification then Phase 19 (PROJ-02/PROJ-03, Raw Scan Retirement)."
+last_updated: "2026-07-02T16:45:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "17-02 (SPLIT-04) executed: split HybridAnalyticsSurface.tsx into hook/transform/view/drilldown/panels modules across 2 tasks; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; explicit-path commits e0bb6e66 + da2f230b. Checkpoint resolved on test-basis (no live mount exists) per plan how-to-verify step 3 — NOT owner-visual-approved. Phase 17 CLOSED (2/2). ROADMAP + STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter)."
+last_activity_desc: "18-01 (PROJ-01) executed: AccFolderPermissionSummary model+migration (Task 1, 77909b10), server-side backfill script (Task 2, 9d55539c, 22,082 rows idempotent, TEST-01 green 12/12), reconciliation script + PASS verdict (Task 3, fb8ba765, 0 mismatches / 20 spot-checks). Scope fence verified clean via git diff --name-only across all 3 commits. tsc --noEmit exit 0 throughout. No consumer switched (zero workshop impact, by design — Phase 19 switches consumers)."
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 68
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 17 of 19 — HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04). COMPLETE (2/2 plans). Next is Phase 18.
-- **Plan:** 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b` — `HybridAnalyticsSurface.tsx` (1,328 lines) split into `hybridAnalyticsTransforms.ts` (pure, 229L) + `useHybridAnalytics.ts` (DuckDB-client hook, 311L) + `hybridAnalyticsPanels.tsx` (74L) + `HybridAnalyticsView.tsx` (40L) + `HybridAnalyticsPostureSection.tsx` (217L) + `HybridAnalyticsRankingsSection.tsx` (325L) + `HybridAnalyticsDrilldown.tsx` (212L); shell reduced to 196L, still exports zero-arg `HybridAnalyticsSurface()`. Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed. **Parity basis:** accepted on the byte-identical-DOM-golden-test basis (no live route mounts the surface today) — owner visual sign-off did NOT occur and remains open for later review. 17-01 (SPLIT-03) shipped `b6084f5f` — `HybridAnalyticsSurface.mainQuery.test.tsx` pins the DuckDB-Wasm READY branch. Phase 16 CLOSED. 16-01 (SPLIT-01) shipped `3cfd3734` + `71df53db`; 16-02 (SPLIT-02) shipped `0dbae11f` + `40126798` + `224519a4`; both owner-approved (visual parity on /access-analysis + /template-mty against fresh :3000 build 224519a4). Phase-goal verifier PASSED 12/12 (`16-VERIFICATION.md`). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 17 CLOSED (2/2 plans). v2.2: 3 of 5 phases complete (5/8 plans). Milestone NOT complete — Phases 18, 19 remain.
-- **Last activity:** 2026-07-02 — 17-02 (SPLIT-04) executed: HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown/panels modules; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; explicit-path commits. Checkpoint resolved on the plan-sanctioned test basis (no live mount exists), NOT owner-visual-approved. ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
+- **Phase:** 18 of 19 — AccFolderPermissionSummary Foundation (PROJ-01). Plan 18-01 executed (1/1 plans); phase-goal verification not yet run.
+- **Plan:** 18-01 (PROJ-01) shipped `77909b10` (model + migration) + `9d55539c` (server-side backfill) + `fb8ba765` (reconciliation script + PASS verdict). `AccFolderPermissionSummary` model added to `prisma/schema.prisma` mirroring the live `includePermissionSummary` GROUP BY aggregate (`acc-hot-cache.ts:304-317`) row-for-row. `prisma migrate dev` failed on the pgvector shadow-DB step exactly as predicted; applied via raw SQL + `prisma migrate resolve` fallback (Phase 09 DB-01 precedent). Backfill populated 22,082 rows entirely server-side (`INSERT...SELECT...GROUP BY`, no `findMany` scan) — idempotent (re-run produced the identical count), TEST-01 (OOM guard) stayed green 12/12. Reconciliation script proved parity against the live DB: 22,082 == 22,082 rows, 0 full-outer-join mismatches, 20/20 spot-checked keys matched — verdict PASS recorded in `18-RECONCILIATION.md`. No consumer switched (zero workshop impact, by design). 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b`; 17-01 (SPLIT-03) shipped `b6084f5f`. Phase 16 CLOSED (16-01 `3cfd3734`+`71df53db`; 16-02 `0dbae11f`+`40126798`+`224519a4`, owner-approved). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
+- **Status:** Phase 18 plan 18-01 executed (1/1 plans). v2.2: 3 of 5 phases complete (6/8 plans). Milestone NOT complete — Phase 18 needs phase-goal verification/close, Phase 19 remains.
+- **Last activity:** 2026-07-02 — 18-01 (PROJ-01) executed: `AccFolderPermissionSummary` model+migration+backfill+reconciliation, all 3 tasks committed by explicit path, scope fence verified clean (schema+migration+2 scripts+.planning only). tsc 0 throughout; TEST-01 green 12/12; reconciliation PASS (0 mismatches). ROADMAP/STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter).
 
-Progress: [######░░░░] 63% — v2.2: 3 of 5 phases complete (5/8 plans; Phase 17 CLOSED)
+Progress: [######▒░░░] 68% — v2.2: 3 of 5 phases complete (6/8 plans; Phase 18 plan 18-01 executed, verification pending)
 
 **Roadmap (Phases 15–19):**
 
@@ -43,7 +43,7 @@ Progress: [######░░░░] 63% — v2.2: 3 of 5 phases complete (5/8 plans; 
 | 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
 | 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 2/2 ✅ (test-basis parity — no live mount; owner review open) |
-| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 0/1 |
+| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 1/1 ✅ (reconciliation PASS; phase-goal verification pending) |
 | 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 0/2 |
 
 ## Status (data baseline — still current)
@@ -90,6 +90,18 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 - **QUERY-01/REF-02 shipped (2026-07-01, commit a4d923ca).** `lib/server/folderPermQuery.ts` owns the shared base `AccFolderPermission` join. Both terrain loaders (`templateFolderTerrain.ts` all-folders; `folderPermissionTerrainView.ts` l2Only) consume it via `loadFolderPermRows(projectId, { l2Only? })`. Plain tagged-template `db.$queryRaw` (no Prisma.sql) keeps TEST-02/TEST-03 byte-identical. Phase 16 splits and Phase 18 projection build on this shared owner.
 
 - **REF-01 access-analysis splits shipped (2026-07-01, Phase 16).** `folderTerrain.ts` → `folderTerrainModel`/`folderTerrainLayout`/`folderTerrainScene`/`folderTerrainCamera` + thin barrel (SPLIT-01). `FolderPermissionTerrain.tsx` → `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure) + `TerrainStage`/`TerrainControls` (presentational) + thin shell (SPLIT-02). All 9 files ≤ ~400 lines; pinning tests byte-identical; owner visual parity confirmed.
+
+- **PROJ-01 shipped (2026-07-02, Phase 18, commits `77909b10`/`9d55539c`/`fb8ba765`).**
+  `AccFolderPermissionSummary` Prisma model + migration + server-side backfill +
+  reconciliation script landed. Migration applied via the raw-SQL +
+  `prisma migrate resolve` fallback (pgvector shadow-DB blocks `migrate dev` on this
+  DB, confirmed again). Backfill: 22,082 rows, idempotent, entirely server-side
+  (`INSERT...SELECT...GROUP BY`, zero Node-side row scan) — TEST-01 stayed green
+  12/12 throughout. Reconciliation: live aggregate == projection (22,082 == 22,082),
+  0 full-outer-join mismatches, 20/20 spot-checked keys matched — PASS verdict in
+  `18-RECONCILIATION.md`. No consumer switched yet; Phase 19 (PROJ-02/PROJ-03) owns
+  switching `/access-analysis`/`/template-mty` consumers onto this projection and
+  retiring the `includePermissionContexts` raw scan.
 
 - **SPLIT-04 shipped (2026-07-02, Phase 17, commits `e0bb6e66`/`da2f230b`).** `HybridAnalyticsSurface.tsx` (1,328 lines) → `hybridAnalyticsTransforms.ts` (pure) + `useHybridAnalytics.ts` (DuckDB-client hook) + `hybridAnalyticsPanels.tsx` + `HybridAnalyticsView.tsx`/`HybridAnalyticsPostureSection.tsx`/`HybridAnalyticsRankingsSection.tsx` (presentational, 3-way split to honor ~400L) + `HybridAnalyticsDrilldown.tsx` + a 196-line thin shell still exporting zero-arg `HybridAnalyticsSurface()`. Both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed. **This closes all three REF-01 monolith splits.** Parity was accepted on the byte-identical-DOM-golden-test basis only — `/users/access-analysis` currently redirects to `/users/spatial-graph` and no production code mounts the surface, so there was no live route to visually verify. Owner visual sign-off did NOT occur and remains open for later review if/when the surface gets a live mount.
 
@@ -154,17 +166,18 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 18 is PLANNED and plan-checked (2026-07-02). `18-01-PLAN.md` committed `aecf603c`;
-gsd-plan-checker returned VERIFICATION PASSED (column mirror exact vs `acc-hot-cache.ts:304-317`,
-pgvector migration fallback present, OOM-safe SQL-side backfill, reconciliation durable, scope
-fence clean). **Next: `/gsd:execute-phase 18`** to run PROJ-01 (`AccFolderPermissionSummary`
-Prisma model + migration + backfill + reconciliation script). Phase 18 depends on Phase 15
-(shipped `a4d923ca`), not Phase 17, and is unblocked.
+Phase 18 plan 18-01 (PROJ-01) is EXECUTED (2026-07-02), all 3 tasks committed and
+self-checked. **Next:** run Phase 18's phase-goal verification (`/gsd:verify-work` or the
+phase-goal verifier), then close Phase 18 and proceed to `/gsd:plan-phase 19` (PROJ-02/
+PROJ-03, Raw Scan Retirement & Refresh — switches `/access-analysis`/`/template-mty`
+consumers onto `AccFolderPermissionSummary` and retires the `includePermissionContexts`
+raw scan, now that reconciliation has proven parity).
 
-- **18-01 (PROJ-01):** Add `AccFolderPermissionSummary` Prisma model + migration + backfill
-  script + reconciliation script proving projection parity with the live
-  `includePermissionSummary` GROUP BY aggregate. No consumer switched yet — zero behavior change.
-  TEST-01 (OOM aggregate guard) must pass throughout the backfill run.
+- **18-01 (PROJ-01) — DONE:** `AccFolderPermissionSummary` Prisma model + migration +
+  backfill script + reconciliation script, proving projection parity with the live
+  `includePermissionSummary` GROUP BY aggregate (0 mismatches, 20/20 spot-checks). No
+  consumer switched yet — zero behavior change. TEST-01 (OOM aggregate guard) passed
+  throughout the backfill run (12/12). See `18-01-SUMMARY.md` and `18-RECONCILIATION.md`.
 
 Guardrails carried forward: byte-identical characterization tests (no test edits), ~400-line
 ceiling per file, explicit-path commits with `git diff --cached --name-only` proof,
@@ -175,10 +188,10 @@ Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split 
 pending (test-basis-only acceptance) — see Blockers/Concerns above.
 
 ---
-*Last updated: 2026-07-02 — 17-02 (SPLIT-04) shipped (`e0bb6e66`/`da2f230b`): HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown modules, both pinning tests byte-identical (4/4), tsc 0, repo-map boundary check passed. Parity on test-basis only (no live mount; owner review open). Phase 17 CLOSED (2/2). v2.2: 3 of 5 phases done, 5/8 plans. Next: Phase 18 (PROJ-01, unblocked — depends on Phase 15).*
+*Last updated: 2026-07-02 — 18-01 (PROJ-01) executed (`77909b10`/`9d55539c`/`fb8ba765`): AccFolderPermissionSummary model+migration (raw-SQL+migrate-resolve fallback)+server-side backfill (22,082 rows, idempotent)+reconciliation script (PASS: 0 mismatches, 20/20 spot-checks). TEST-01 green 12/12 throughout; tsc 0; scope fence clean. No consumer switched — zero workshop impact. v2.2: 3 of 5 phases done, 6/8 plans. Next: Phase 18 verification/close, then Phase 19 (PROJ-02/PROJ-03).*
 
 ## Session
 
-**Last session:** 2026-07-02T10:20:00Z (execute-phase 17 → 17-02)
-**Stopped at:** 17-02 (SPLIT-04) complete — HybridAnalyticsSurface.tsx split into hook/transform/view/drilldown/panels modules; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; commits `e0bb6e66`/`da2f230b`. Checkpoint resolved on test-basis parity (no live mount) per plan how-to-verify step 3 — NOT owner-visual-approved. Phase 17 CLOSED (2/2). STATE/ROADMAP/REQUIREMENTS synced.
-**Resume file:** none — Phase 17 complete. Next: `/gsd:plan-phase 18` (PROJ-01, `AccFolderPermissionSummary` Foundation, depends on Phase 15, unblocked)
+**Last session:** 2026-07-02T16:45:00Z (execute-phase 18 → 18-01)
+**Stopped at:** 18-01 (PROJ-01) complete — `AccFolderPermissionSummary` model + migration (Task 1, `77909b10`) + server-side backfill (Task 2, `9d55539c`, 22,082 rows, idempotent, TEST-01 green 12/12) + reconciliation script + PASS verdict (Task 3, `fb8ba765`, 0 mismatches, 20/20 spot-checks matched). Scope fence verified clean via `git diff --name-only` across all 3 commits. No consumer switched (zero workshop impact, by design). STATE/ROADMAP synced; phase-goal verification and Phase 18 close are next.
+**Resume file:** none — 18-01 complete and self-checked. Next: phase-goal verification for Phase 18, then `/gsd:plan-phase 19` (PROJ-02/PROJ-03, Raw Scan Retirement & Refresh)
