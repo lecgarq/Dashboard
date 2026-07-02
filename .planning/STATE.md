@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Structural Refactors
-current_phase: 17
-current_phase_name: HybridAnalyticsSurface Split (SPLIT-03, SPLIT-04)
-status: in-progress
-stopped_at: "Phase 17 Plan 17-02 (SPLIT-04) COMPLETE. HybridAnalyticsSurface.tsx (1,328 lines) split into hybridAnalyticsTransforms.ts (pure, 229L) + useHybridAnalytics.ts (DuckDB-client hook, 311L) + hybridAnalyticsPanels.tsx (74L) + HybridAnalyticsView.tsx (40L) + HybridAnalyticsPostureSection.tsx (217L) + HybridAnalyticsRankingsSection.tsx (325L) + HybridAnalyticsDrilldown.tsx (212L); shell reduced to 196L, still exports zero-arg HybridAnalyticsSurface(). Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed (commits e0bb6e66, da2f230b). Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) — no live route mounts the surface, so owner visual sign-off did NOT occur and remains open for later review. Phase 17 now 2/2 COMPLETE. Next = Phase 18 (18-01-PLAN.md, PROJ-01, depends_on Phase 15 — unblocked)."
+current_phase: 18
+current_phase_name: AccFolderPermissionSummary Foundation (PROJ-01)
+status: ready-to-plan
+stopped_at: "Phase 17 (SPLIT-03 + SPLIT-04) COMPLETE + goal-verified. HybridAnalyticsSurface.tsx (1,328 lines) split into hybridAnalyticsTransforms.ts (pure, 229L) + useHybridAnalytics.ts (DuckDB-client hook, 311L) + hybridAnalyticsPanels.tsx (74L) + HybridAnalyticsView.tsx (40L) + HybridAnalyticsPostureSection.tsx (217L) + HybridAnalyticsRankingsSection.tsx (325L) + HybridAnalyticsDrilldown.tsx (212L); shell reduced to 196L, still exports zero-arg HybridAnalyticsSurface(). Both pinning tests byte-identical + green (4/4); tsc 0; repo-map boundary check passed (commits e0bb6e66, da2f230b). 17-VERIFICATION.md PASSED (9/9 must-haves) — verified inline after gsd-verifier crashed twice on a transient 'Connection closed mid-response' API error. Parity accepted on the byte-identical-DOM-golden-test basis (how-to-verify step 3) — no live route mounts the surface, so owner visual sign-off did NOT occur and remains open for later review. Phase 17 CLOSED (2/2). Next = /gsd:plan-phase 18 (PROJ-01, depends_on Phase 15 — unblocked; not yet planned)."
 last_updated: "2026-07-02T10:20:00Z"
 last_activity: 2026-07-02
 last_activity_desc: "17-02 (SPLIT-04) executed: split HybridAnalyticsSurface.tsx into hook/transform/view/drilldown/panels modules across 2 tasks; both pinning tests byte-identical (4/4 green); tsc 0; repo-map boundary check passed; explicit-path commits e0bb6e66 + da2f230b. Checkpoint resolved on test-basis (no live mount exists) per plan how-to-verify step 3 — NOT owner-visual-approved. Phase 17 CLOSED (2/2). ROADMAP + STATE synced manually (gsd-tools STATE writes have historically corrupted this repo's frontmatter)."
