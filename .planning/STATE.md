@@ -4,17 +4,17 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 19
 current_phase_name: Raw Scan Retirement & Refresh (PROJ-02/PROJ-03)
-status: in-progress
-stopped_at: "Phase 19 plan 19-02 (PROJ-03) Task 1 COMPLETE, Task 2 PENDING. Task 1: dc-daily-ingest.cjs success branch now refreshes AccFolderPermissionSummary (non-fatal execSync of scripts/backfill-folder-perm-summary.cjs) as the FIRST step, before the person-graph rebuild and build-instance-features.ts (commit e34ec7e7). .planning/codebase/INTEGRATIONS.md documents the <=1-ingest-cycle staleness bound + folder-crawl caveat + manual fallback. Verified: node --check clean, backfill re-run (22,082 rows, within 904x107 bound), verify-folder-perm-summary.cjs VERDICT PASS (0 mismatches, 20/20 spot-checks), npx tsc --noEmit clean, full npm test 2256 passed/1 skipped (302 files) — identical to 19-01 baseline. Scope fence clean (git diff --cached --name-only showed only the 2 plan files; no deletions). Task 2 (checkpoint:human-verify, gate=blocking — owner :3000 rebuild + visual parity on /access-analysis + /template-mty) was deliberately NOT attempted — awaiting a fresh agent/owner turn to resume. This is the final gate of the final plan of the final v2.2 phase."
-last_updated: "2026-07-02T22:05:00Z"
+status: milestone-ready-to-close
+stopped_at: "Phase 19 CLOSED (2/2 plans) — v2.2 milestone FUNCTIONALLY COMPLETE, pending formal close (/gsd:complete-milestone). 19-02 (PROJ-03) Task 2 (owner visual parity checkpoint, gate=blocking) APPROVED 2026-07-02 (commit a92ffe0d): a fresh :3000 rebuild ran with the owner's go — Task Scheduler 'LECG Dashboard Local' stopped + port freed, npx tsc --noEmit 0, npm run build (next build --webpack) 0 with full route manifest, task restarted (State=Running, :3000 listening), /api/health 200, workshop routes (/access-analysis /template-mty /users/access-analysis /forma-proposal /users) 307 auth-redirect (no 500s), owner confirmed both pages render identically. gsd-verifier PASSED 10/10 (19-VERIFICATION.md) with every gate independently re-run (fresh tsc 0; 42 targeted tests + 12 terrain golden-master tests green; fresh verify-folder-perm-summary.cjs PASS 22,082==22,082/0 mismatches; terrain confirmed untouched via git log; scope fence clean). All 8/8 v2.2 requirements complete."
+last_updated: "2026-07-02T23:45:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "execute-phase 19 plan 19-02 (PROJ-03) Task 1 executed and committed (e34ec7e7): cron refresh wiring + INTEGRATIONS.md staleness-bound doc. All automated gates green (tsc, full npm test, backfill re-run, reconciliation PASS). Task 2 (owner visual parity checkpoint, gate=blocking) STOPPED per plan — auto_advance is off and this checkpoint type cannot be auto-approved. REQUIREMENTS.md PROJ-02/PROJ-03 traceability table corrected to Complete (19-01 had left it stale at Pending)."
+last_activity_desc: "execute-phase 19 CLOSED: 19-01 (PROJ-02, 9dbe606b/08e78f9c) consumer switch + hard-guard, 19-02 (PROJ-03, e34ec7e7) cron refresh + staleness doc, owner visual parity checkpoint APPROVED (a92ffe0d) after a fresh :3000 rebuild driven with owner consent, then gsd-verifier PASSED 10/10 (19-VERIFICATION.md). Phase 19 complete (2/2 plans); v2.2 milestone functionally done (5/5 phases, 9/9 plans, 8/8 requirements). Next: /gsd:complete-milestone to formally close v2.2."
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.2 Structural Refactors — REF-01/REF-02/REF-03, all behavior-preserving behind v2.1's characterization tests. Phase 16 (REF-01 access-analysis monolith splits) is now complete; Phase 17 (HybridAnalyticsSurface split) is next.
+**Current focus:** v2.2 Structural Refactors — REF-01/REF-02/REF-03, all behavior-preserving behind v2.1's characterization tests. **All 5 phases (15–19) complete; v2.2 functionally done, pending formal milestone close.**
 
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 18 of 19 — AccFolderPermissionSummary Foundation (PROJ-01). COMPLETE + goal-verified 6/6 (1/1 plans). Next is Phase 19.
+- **Phase:** 19 of 19 — Raw Scan Retirement & Refresh (PROJ-02/PROJ-03). COMPLETE + goal-verified 10/10 (2/2 plans; owner visual parity APPROVED). This is the FINAL v2.2 phase — its completion finishes the milestone's execution.
 - **Plan:** 19-02 (PROJ-03) Task 1 shipped `e34ec7e7` (cron refresh wiring: `dc-daily-ingest.cjs` success branch now refreshes `AccFolderPermissionSummary` first, before the person-graph rebuild and `build-instance-features.ts`; `.planning/codebase/INTEGRATIONS.md` documents the staleness bound). Task 2 (owner visual parity checkpoint, `gate="blocking"`) PENDING. 19-01 (PROJ-02) shipped `9dbe606b` (consumer switch: `includePermissionSummary` else-branch now reads `db.accFolderPermissionSummary.findMany` instead of the live `$queryRaw` GROUP BY) + `08e78f9c` (hard-guard: `includePermissionContexts:true` throws by default, escape hatch `ACC_ALLOW_RAW_PERMISSION_SCAN=1` documented in `.env.example`). `lib/acc/dcUserAssembly.ts` untouched — Map contents identical, derived dims unchanged. 18-01 (PROJ-01) shipped `77909b10` (model + migration) + `9d55539c` (server-side backfill) + `fb8ba765` (reconciliation script + PASS verdict). 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b`; 17-01 (SPLIT-03) shipped `b6084f5f`. Phase 16 CLOSED (16-01 `3cfd3734`+`71df53db`; 16-02 `0dbae11f`+`40126798`+`224519a4`, owner-approved). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 19 IN PROGRESS (1/2 plans; 19-02 Task 1 of 2 done). 19-02 (PROJ-03) Task 2 — owner `:3000` rebuild + visual parity checkpoint on `/access-analysis` + `/template-mty` — remains; this is the last gate of the last plan of v2.2. v2.2: 4 of 5 phases complete, 7/9 plans (Phase 18 CLOSED 1/1; Phase 19 1/2, checkpoint pending).
+- **Status:** Phase 19 CLOSED (2/2 plans; gsd-verifier PASSED 10/10, `19-VERIFICATION.md`; owner visual parity on `/access-analysis` + `/template-mty` APPROVED 2026-07-02 after a fresh `:3000` rebuild). v2.2: **5 of 5 phases complete, 9/9 plans, 8/8 requirements** — milestone functionally complete, awaiting formal close (`/gsd:complete-milestone`).
 - **Last activity:** 2026-07-02 — 19-02 (PROJ-03) Task 1 executed and committed by explicit path (`e34ec7e7`): non-fatal refresh block inserted as the first step of `dc-daily-ingest.cjs`'s success branch (invokes `node scripts/backfill-folder-perm-summary.cjs` verbatim), `.planning/codebase/INTEGRATIONS.md` staleness-bound doc added. All automated gates green: `node --check`, backfill re-run (22,082 rows, within bound), `verify-folder-perm-summary.cjs` VERDICT PASS, `npx tsc --noEmit` clean, full `npm test` 2256/1-skipped (identical to 19-01 baseline). Task 2 (`checkpoint:human-verify`, `gate="blocking"`) deliberately STOPPED — requires owner-performed `:3000` rebuild + visual check, cannot be auto-approved or automated. REQUIREMENTS.md traceability table corrected (PROJ-02/PROJ-03 were left stale at "Pending" by 19-01; now "Complete").
 
-Progress: [#######▒░░] 78% — v2.2: 4 of 5 phases complete, 7/9 plans (Phase 19 in progress, 1/2 — checkpoint pending)
+Progress: [##########] 100% — v2.2: 5 of 5 phases complete, 9/9 plans (Phase 19 CLOSED, goal-verified 10/10, owner-approved)
 
 **Roadmap (Phases 15–19):**
 
@@ -44,7 +44,7 @@ Progress: [#######▒░░] 78% — v2.2: 4 of 5 phases complete, 7/9 plans (Ph
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
 | 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 2/2 ✅ (test-basis parity — no live mount; owner review open) |
 | 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 1/1 ✅ (reconciliation PASS; goal-verified 6/6) |
-| 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 1/2 (checkpoint pending) |
+| 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 2/2 ✅ (goal-verified 10/10; owner visual parity approved) |
 
 ## Status (data baseline — still current)
 
@@ -103,7 +103,10 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
   `verify-folder-perm-summary.cjs` VERDICT PASS (0 mismatches, 20/20 spot-checks),
   `npx tsc --noEmit` clean, full `npm test` 2256/1-skipped (identical to 19-01 baseline).
   **Task 2 (owner `:3000` rebuild + visual parity on `/access-analysis` + `/template-mty`,
-  the phase-close SC#3 gate) is PENDING** — this is the last open item in v2.2.
+  the phase-close SC#3 gate) APPROVED 2026-07-02 (commit `a92ffe0d`)** — a fresh rebuild ran
+  with owner consent (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health`
+  200, workshop routes 307, no 500s) and the owner confirmed identical render. Phase 19 CLOSED;
+  gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`). This was the last open item in v2.2.
 
 - **PROJ-02 shipped (2026-07-02, Phase 19 plan 19-01, commits `9dbe606b`/`08e78f9c`).**
   `getCachedAccDcBulkUsers`'s `includePermissionSummary` else-branch switched from the live
@@ -192,20 +195,18 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-19-02 (PROJ-03) Task 1 is DONE (2026-07-02): the cron refresh wiring + staleness-bound
-documentation shipped (`e34ec7e7`), all automated gates green (node --check, backfill re-run,
-`verify-folder-perm-summary.cjs` PASS, tsc clean, full npm test 2256/1-skipped). **Next: Task 2
-of 19-02** — a `checkpoint:human-verify` (`gate="blocking"`) that requires the OWNER to:
-1. Stop the app on `:3000` (Task Scheduler "LECG Dashboard" stop).
-2. `npm run build`.
-3. Restart on `:3000`.
-4. Visit `/access-analysis` and `/template-mty` and confirm both render IDENTICALLY to
-   before the phase (expected: zero visible change — this is an internal data-source swap +
-   cron wiring, not a UI change).
-5. Type "approved" (or describe any visible diff) as the resume signal.
+Phase 19 (PROJ-02/PROJ-03) is COMPLETE + goal-verified (2026-07-02). Both plans shipped, the
+owner visual parity checkpoint is APPROVED after a fresh `:3000` rebuild, and gsd-verifier
+PASSED 10/10 (`19-VERIFICATION.md`). **v2.2 is functionally complete: 5/5 phases, 9/9 plans,
+8/8 requirements.**
 
-This is the last gate of the last plan of the last phase of v2.2 — completing it closes the
-phase and the milestone.
+**Next: `/gsd:complete-milestone`** to formally close v2.2 (milestone-close bookkeeping —
+MILESTONES.md entry, PROJECT.md Active→Validated promotion, config.json reset for the next
+milestone, ROADMAP v-next seeds). Note the `.planning/` mid-migration caveat still applies:
+`MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/` are deleted in the working tree, so v2.2 close
+follows the same "safe logical close" pattern as v2.1 (evolve PROJECT/STATE/REQUIREMENTS in
+place; do not resurrect deleted archival files unless the owner asks). All work remains on the
+`feat/access-analysis-redesign` branch (no merge/deploy beyond the local `:3000` rebuild).
 
 - **18-01 (PROJ-01) — DONE + VERIFIED:** `AccFolderPermissionSummary` Prisma model + migration
   + backfill script + reconciliation script, proving projection parity with the live
@@ -229,10 +230,10 @@ Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split 
 pending (test-basis-only acceptance) — see Blockers/Concerns above.
 
 ---
-*Last updated: 2026-07-02 — execute-phase 19 plan 19-02 (PROJ-03) Task 1 COMPLETE: cron refresh wiring (`e34ec7e7`) — `dc-daily-ingest.cjs` success branch refreshes `AccFolderPermissionSummary` first, before the person-graph rebuild and `build-instance-features.ts`; `.planning/codebase/INTEGRATIONS.md` documents the `<=1-ingest-cycle` staleness bound. tsc 0; full npm test 2256/1-skipped green (identical to 19-01 baseline); backfill re-run 22,082 rows within bound; `verify-folder-perm-summary.cjs` VERDICT PASS (0 mismatches, 20/20 spot-checks). Scope fence clean — only the 2 plan files staged. Task 2 (owner `:3000` rebuild + visual parity checkpoint, `gate="blocking"`) STOPPED — cannot be automated or auto-approved. v2.2: 4 of 5 phases done, 7/9 plans (Phase 19 checkpoint pending). Next: resume 19-02 Task 2 with the owner.*
+*Last updated: 2026-07-02 — execute-phase 19 CLOSED. 19-01 (PROJ-02, `9dbe606b`/`08e78f9c`): consumer switch to `AccFolderPermissionSummary` + hard-guard of the raw scan. 19-02 (PROJ-03, `e34ec7e7`): cron refresh + staleness doc. Owner visual parity checkpoint APPROVED (`a92ffe0d`) after a fresh `:3000` rebuild driven with owner consent (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health` 200, workshop routes 307, no 500s). gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`), every gate independently re-run. v2.2: 5/5 phases, 9/9 plans, 8/8 requirements — functionally complete. Next: `/gsd:complete-milestone` to formally close v2.2.*
 
 ## Session
 
-**Last session:** 2026-07-02T22:05:00Z (execute-phase 19 → 19-02 Task 1 executed, Task 2 checkpoint reached)
-**Stopped at:** 19-02 (PROJ-03) Task 1 complete — cron refresh wiring + staleness-bound doc committed by explicit path (`e34ec7e7`). All automated gates re-run: node --check clean, backfill re-run (22,082 rows within bound), `verify-folder-perm-summary.cjs` VERDICT PASS, tsc 0, full npm test 2256/1-skipped. Scope fence clean (`git diff --cached --name-only` showed only `scripts/dc-daily-ingest.cjs` + `.planning/codebase/INTEGRATIONS.md`). Task 2 is a `checkpoint:human-verify` (`gate="blocking"`) requiring an owner-performed `:3000` rebuild + visual parity check on `/access-analysis` + `/template-mty` — deliberately NOT attempted (auto_advance is off; this checkpoint type cannot be auto-approved). REQUIREMENTS.md traceability table corrected (PROJ-02/PROJ-03 were stale at "Pending" from 19-01; now "Complete", with PROJ-03's phase-level SC#3 owner sign-off noted as still pending).
-**Resume file:** `19-02-SUMMARY.md`. Next: `19-02-PLAN.md` Task 2 (owner visual parity checkpoint — the final v2.2 acceptance gate). See the Checkpoint block returned by this execution for the exact resume steps.
+**Last session:** 2026-07-02 (execute-phase 19 → both plans executed, owner visual parity checkpoint approved, phase goal-verified 10/10, Phase 19 CLOSED)
+**Stopped at:** Phase 19 CLOSED — v2.2 functionally complete (5/5 phases, 9/9 plans, 8/8 requirements). 19-01 (PROJ-02) consumer switch + hard-guard (`9dbe606b`/`08e78f9c`); 19-02 (PROJ-03) cron refresh + staleness doc (`e34ec7e7`); owner visual parity checkpoint APPROVED (`a92ffe0d`) after a fresh `:3000` rebuild (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health` 200, workshop routes 307, no 500s, owner confirmed identical render); gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`). ROADMAP/STATE/REQUIREMENTS synced by explicit-path edits (gsd-tools `phase complete` NOT used — it corrupts this repo's STATE frontmatter).
+**Resume file:** none — Phase 19 complete + verified. Next: `/gsd:complete-milestone` to formally close v2.2 (safe-logical-close pattern; `.planning/` archival files remain deleted in the working tree per the mid-migration caveat).
