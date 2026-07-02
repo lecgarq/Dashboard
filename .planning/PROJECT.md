@@ -15,26 +15,35 @@ about its coverage.
 
 ## Current State
 
-**Shipped:** v2.1 Concerns Hardening — closed 2026-07-01 (6 phases, 14 plans;
-Phases 09–14). Closed the `.planning/codebase/CONCERNS.md` debt map: DB/config
-hardening (`roleId` index, ssl fossil removed, heap/pool docs, raw-scan guardrail),
-layering & boundary fixes (Prisma-out-of-Server-Action, classifier extraction,
-lib→app / app→server audits), data-truthfulness labels on the workshop pages,
-integration-health observability, type-safety & lean-payload guards, and
-characterization tests that make the deferred monolith/query refactors safe. All
-20 v2.1 requirements complete + verified. Tagged `v2.1` (local).
+**Shipped:** v2.2 Structural Refactors — functionally complete 2026-07-02 (5 phases,
+9 plans; Phases 15–19). Executed the deferred structural refactors safely behind v2.1's
+characterization tests, with **zero change to what the workshop pages show**: REF-02
+(shared `lib/server/folderPermQuery.ts` extraction, consumed by `/template-mty` +
+`/access-analysis`), REF-01 (split all three access-analysis monoliths —
+`folderTerrain.ts`, `FolderPermissionTerrain.tsx`, `HybridAnalyticsSurface.tsx` — into
+data-hook / transform / thin-view modules, each ≤ ~400 lines), and REF-03 (materialised
+`AccFolderPermissionSummary` projection + consumer switch off the live raw scan + hard-guard
+of the ~6M-row `includePermissionContexts` path + ingest-cron refresh). All 8 v2.2
+requirements complete; every phase goal-verified (Phase 19: gsd-verifier 10/10); owner
+visual parity on `/access-analysis` + `/template-mty` approved after a fresh `:3000` rebuild.
+Tagged `v2.2` (local, consistent with `v1.0`/`v2.0`/`v2.1`).
 
-**Close method:** "safe logical close" — tag + PROJECT/STATE evolution with
-requirements kept in place. Full archival (MILESTONES.md / RETROSPECTIVE.md /
-`milestones/v2.1-*`) was intentionally deferred because `.planning/` is mid-migration
-(see Context). Deploy = rebuild on `:3000` (not a branch merge); a full-tree rebuild
-for this milestone was deferred (test+comment-only final phase, branch carries
-unrelated WIP).
+**Prior:** v2.1 Concerns Hardening — closed 2026-07-01 (6 phases, 14 plans, Phases 09–14;
+all 20 requirements verified). Closed the `.planning/codebase/CONCERNS.md` debt map and
+shipped the characterization tests (TEST-01/02/03) that made the v2.2 refactors safe.
+Tagged `v2.1`.
 
-**Current focus:** v2.2 Structural Refactors — executing the deferred refactors now
-safe behind v2.1's characterization tests. Phase numbering continues at Phase 15.
+**Close method:** "safe logical close" — tag + PROJECT/STATE evolution with requirements
+kept in place. Full physical archival (MILESTONES.md / RETROSPECTIVE.md / `milestones/v2.x-*`)
+remains intentionally deferred while `.planning/` is mid-migration (see Context): v1.0/v2.0
+history lives only in git HEAD, so resurrecting the archive directory is a separate migration
+task, not part of this close. Deploy = rebuild on `:3000` (not a branch merge); v2.2's final
+phase WAS rebuilt on `:3000` (owner-consented) to verify parity.
 
-## Current Milestone: v2.2 Structural Refactors
+**Current focus:** planning the next milestone. Deferred candidates carried in Active below:
+SVC-01, the `/users/spatial-graph` concerns milestone, and the DC-01/DC-02 external-data unlocks.
+
+## Shipped Milestone: v2.2 Structural Refactors — ✅ SHIPPED 2026-07-02
 
 **Goal:** Restructure the access-analysis hot paths behind v2.1's golden-master tests —
 split the three monoliths, centralise the shared `AccFolderPermission` query, and retire
@@ -74,20 +83,14 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 - ✓ **Integration health & observability** (OBS-01–OBS-03) — v2.1
 - ✓ **Type-safety & lean-payload guards** (TYPE-01, TYPE-02) — v2.1
 - ✓ **Test coverage & characterization** (TEST-01, TEST-02, TEST-03) — v2.1
+- ✓ **Shared query extraction** (REF-02 / QUERY-01) — v2.2 (`lib/server/folderPermQuery.ts` owns the base `AccFolderPermission` join; TEST-03 byte-identical)
+- ✓ **Access-analysis monolith splits** (REF-01 / SPLIT-01–04) — v2.2 (all 3 monoliths → data-hook / transform / thin-view, each ≤ ~400 lines; TEST-02 byte-identical)
+- ✓ **AccFolderPermissionSummary projection + raw-scan retirement + refresh** (REF-03 / PROJ-01–03) — v2.2 (projection reconciled 0-mismatch; summary consumer switched; raw scan hard-guarded; ingest-cron refresh, ≤1-cycle staleness)
 
 ### Active
 
-<!-- REF-01/REF-02/REF-03 are the committed v2.2 scope (see Current Milestone above + REQUIREMENTS.md). SVC-01, spatial-graph, DC-01/02 remain deferred candidates for a later milestone. -->
+<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. SVC-01, spatial-graph, DC-01/02 remain deferred candidates for the next milestone. -->
 
-- [ ] **REF-01** (v2.2) — split the three access-analysis monoliths
-  (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`, `HybridAnalyticsSurface.tsx`)
-  into data-hook / transform / thin-view modules; now safe behind the v2.1
-  characterization tests (TEST-02).
-- [ ] **REF-02** (v2.2) — extract `lib/server/folderPermQuery.ts` (shared
-  `AccFolderPermission` join used by `/template-mty` + `/access-analysis`); pinned by
-  the v2.1 shared-query contract test (TEST-03).
-- [ ] **REF-03** (v2.2) — materialise an `AccFolderPermissionSummary` projection to retire
-  the raw 5M-row permission scan path.
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
@@ -96,6 +99,11 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 - [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
   APS Account Admin provisioning; wire per-project roles/modules once the DC CSV
   `activity_in_module` / `total_activity` join lands.
+- [ ] **Per-folder terrain projection** (seed from v2.2 Phase 19) — the
+  `AccFolderPermissionSummary` projection is a per-`(projectId,roleId)` rollup, so the
+  terrain views (which need per-folder tier) correctly stayed on `folderPermQuery.ts`'s
+  raw `$queryRaw`. A separate per-folder materialised projection could retire that scan
+  too — a distinct model + backfill, only if terrain read cost becomes a concern.
 
 ### Out of Scope
 
@@ -119,10 +127,13 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
   the full v2.1 archival is a pending bookkeeping task.
 - Data extraction used a free ACCDS member-accessible web-session crawl (no Data
   Connector quota) plus a folder crawl; census in `.planning/STATE.md`.
-- Known local test debt: 2 pre-existing failing tests in
-  `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` are
-  uncommitted branch WIP unrelated to v2.1 — a full `npm test` is not 100% green until
-  that WIP is resolved.
+- **v2.2 shipped 2026-07-02**, tagged `v2.2` (local). The 2 pre-existing
+  `FolderPermissionTerrain.test.tsx` failures were root-caused and fixed during v2.2
+  Phase 16 (folder-label over-pruning + a `<polygon>`→`<path>` polygon-count miscount,
+  both tracing to `d2d990bf`); `npm test` is now green (2256 passed / 1 skipped, 302 files).
+  The branch `feat/access-analysis-redesign` still carries other pre-existing unrelated WIP
+  (uncommitted `app/...` / repo-map changes) and the `.planning/` migration deletions — left
+  untouched throughout v2.2; all v2.2 commits were made by explicit path.
 
 ## Constraints
 
@@ -144,8 +155,12 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | ✓ Good — REF-01/REF-02 now safe behind TEST-02/TEST-03 |
 | Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | ✓ Good — no rework needed |
 | Close v2.1 via "safe logical close" (tag + evolve; no archival, requirements kept in place) | `.planning/` mid-migration deleted MILESTONES.md + `milestones/` in the working tree; full archival would drop v1.0/v2.0 history that lives only in HEAD | — Pending — finish migration, then archive v2.1 |
-| v2.2 = full structural-refactor scope (REF-01 all 3 monoliths + REF-02 + REF-03 DB projection) | The characterization tests shipped in v2.1 exist precisely to make these safe; owner chose the widest slice incl. the summary projection | — Pending |
-| v2.2 fresh-starts `REQUIREMENTS.md` in place (v2.1 record preserved in Validated above + git HEAD) | Consistent with the deferred-archival close; `milestones/` is still deleted mid-migration so re-creating an archive dir would re-open that history question | — Pending |
+| v2.2 = full structural-refactor scope (REF-01 all 3 monoliths + REF-02 + REF-03 DB projection) | The characterization tests shipped in v2.1 exist precisely to make these safe; owner chose the widest slice incl. the summary projection | ✓ Good — all 8 requirements shipped behavior-preserving; every phase goal-verified; workshop pages unchanged |
+| v2.2 keeps `REQUIREMENTS.md` in place (v2.1 + v2.2 record preserved in Validated + git HEAD) | Consistent with the deferred-archival close; `milestones/` is still deleted mid-migration so re-creating an archive dir would re-open that history question | ✓ Good — same safe-logical-close repeated for v2.2 |
+| REF-03 terrain scoped OUT of the projection switch (Phase 19) | `AccFolderPermissionSummary` is a per-`(projectId,roleId)` rollup; terrain needs per-folder tier, which the rollup lacks — forcing it would lose granularity + break TEST-02. Only the summary aggregate matches the projection shape | ✓ Good — terrain stayed on `folderPermQuery.ts`, TEST-02 byte-identical; per-folder projection seeded for later |
+| Hard-guard (not delete) the `includePermissionContexts` raw scan | Preserves the WS2 edge-feed / per-folder-ACL capability behind an explicit `ACC_ALLOW_RAW_PERMISSION_SCAN=1` env escape hatch; throws by default so the ~6M-row OOM window can't silently re-open | ✓ Good — no prod caller enables it; TEST-01 strengthened |
+| Refresh via reusing the backfill script verbatim in the ingest cron | `execSync('node scripts/backfill-folder-perm-summary.cjs')` (non-fatal, server-side) makes the cron and standalone backfill the SAME code path — zero SQL duplication, no drift; bounded ≤1 ingest cycle | ✓ Good — reconciliation PASS post-refresh; staleness documented in INTEGRATIONS.md |
+| Rebuild `:3000` (owner-consented) to verify v2.2 parity, unlike v2.1 | The final phase was a server-side data-source swap → a rebuild is required to see it; owner explicitly approved stopping `:3000` (build 500s a live app per deploy-sequence) | ✓ Good — real owner visual sign-off on `/access-analysis` + `/template-mty` (unlike Phase 17's test-basis-only) |
 
 ---
-*Last updated: 2026-07-01 after starting milestone v2.2 (Structural Refactors) — REF-01/REF-02/REF-03; Phases 15+*
+*Last updated: 2026-07-02 after v2.2 milestone (Structural Refactors) close — REF-01/REF-02/REF-03 shipped, Phases 15–19; safe logical close, tagged `v2.2`.*

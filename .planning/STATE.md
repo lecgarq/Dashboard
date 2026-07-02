@@ -4,8 +4,8 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 19
 current_phase_name: Raw Scan Retirement & Refresh (PROJ-02/PROJ-03)
-status: milestone-ready-to-close
-stopped_at: "Phase 19 CLOSED (2/2 plans) — v2.2 milestone FUNCTIONALLY COMPLETE, pending formal close (/gsd:complete-milestone). 19-02 (PROJ-03) Task 2 (owner visual parity checkpoint, gate=blocking) APPROVED 2026-07-02 (commit a92ffe0d): a fresh :3000 rebuild ran with the owner's go — Task Scheduler 'LECG Dashboard Local' stopped + port freed, npx tsc --noEmit 0, npm run build (next build --webpack) 0 with full route manifest, task restarted (State=Running, :3000 listening), /api/health 200, workshop routes (/access-analysis /template-mty /users/access-analysis /forma-proposal /users) 307 auth-redirect (no 500s), owner confirmed both pages render identically. gsd-verifier PASSED 10/10 (19-VERIFICATION.md) with every gate independently re-run (fresh tsc 0; 42 targeted tests + 12 terrain golden-master tests green; fresh verify-folder-perm-summary.cjs PASS 22,082==22,082/0 mismatches; terrain confirmed untouched via git log; scope fence clean). All 8/8 v2.2 requirements complete."
+status: milestone-shipped
+stopped_at: "v2.2 Structural Refactors SHIPPED + closed 2026-07-02 (safe-logical-close, tagged v2.2). Phase 19 CLOSED (2/2 plans). 19-02 (PROJ-03) Task 2 (owner visual parity checkpoint, gate=blocking) APPROVED 2026-07-02 (commit a92ffe0d): a fresh :3000 rebuild ran with the owner's go — Task Scheduler 'LECG Dashboard Local' stopped + port freed, npx tsc --noEmit 0, npm run build (next build --webpack) 0 with full route manifest, task restarted (State=Running, :3000 listening), /api/health 200, workshop routes (/access-analysis /template-mty /users/access-analysis /forma-proposal /users) 307 auth-redirect (no 500s), owner confirmed both pages render identically. gsd-verifier PASSED 10/10 (19-VERIFICATION.md) with every gate independently re-run (fresh tsc 0; 42 targeted tests + 12 terrain golden-master tests green; fresh verify-folder-perm-summary.cjs PASS 22,082==22,082/0 mismatches; terrain confirmed untouched via git log; scope fence clean). All 8/8 v2.2 requirements complete."
 last_updated: "2026-07-02T23:45:00Z"
 last_activity: 2026-07-02
 last_activity_desc: "execute-phase 19 CLOSED: 19-01 (PROJ-02, 9dbe606b/08e78f9c) consumer switch + hard-guard, 19-02 (PROJ-03, e34ec7e7) cron refresh + staleness doc, owner visual parity checkpoint APPROVED (a92ffe0d) after a fresh :3000 rebuild driven with owner consent, then gsd-verifier PASSED 10/10 (19-VERIFICATION.md). Phase 19 complete (2/2 plans); v2.2 milestone functionally done (5/5 phases, 9/9 plans, 8/8 requirements). Next: /gsd:complete-milestone to formally close v2.2."
@@ -24,7 +24,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.2 Structural Refactors — REF-01/REF-02/REF-03, all behavior-preserving behind v2.1's characterization tests. **All 5 phases (15–19) complete; v2.2 functionally done, pending formal milestone close.**
+**Current focus:** v2.2 Structural Refactors **SHIPPED + closed 2026-07-02** (safe-logical-close, tagged `v2.2`) — REF-01/REF-02/REF-03 all behavior-preserving behind v2.1's characterization tests; 5/5 phases (15–19), 9/9 plans, 8/8 requirements. **Next: planning the next milestone (`/gsd:new-milestone`).**
 
 ## Current Position
 
@@ -195,18 +195,21 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 19 (PROJ-02/PROJ-03) is COMPLETE + goal-verified (2026-07-02). Both plans shipped, the
-owner visual parity checkpoint is APPROVED after a fresh `:3000` rebuild, and gsd-verifier
-PASSED 10/10 (`19-VERIFICATION.md`). **v2.2 is functionally complete: 5/5 phases, 9/9 plans,
-8/8 requirements.**
+v2.2 Structural Refactors is **SHIPPED + closed 2026-07-02** — 5/5 phases (15–19), 9/9 plans,
+8/8 requirements, every phase goal-verified (Phase 19: gsd-verifier 10/10), owner visual parity
+approved on `/access-analysis` + `/template-mty` after a fresh `:3000` rebuild. Closed via the
+**safe-logical-close** pattern (matching v2.1): PROJECT.md evolved (REF-01/02/03 → Validated,
+Key Decisions outcomes recorded), ROADMAP v2.2 marked ✅ shipped, tagged `v2.2` (local, consistent
+with `v1.0`/`v2.0`/`v2.1`). Physical archival (MILESTONES.md / RETROSPECTIVE.md / `milestones/v2.2-*`)
+intentionally DEFERRED — `.planning/` is mid-migration and those files remain deleted in the working
+tree; resurrecting the archive dir would re-open the v1.0/v2.0 history question and is a separate
+migration task (not done unless the owner asks).
 
-**Next: `/gsd:complete-milestone`** to formally close v2.2 (milestone-close bookkeeping —
-MILESTONES.md entry, PROJECT.md Active→Validated promotion, config.json reset for the next
-milestone, ROADMAP v-next seeds). Note the `.planning/` mid-migration caveat still applies:
-`MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/` are deleted in the working tree, so v2.2 close
-follows the same "safe logical close" pattern as v2.1 (evolve PROJECT/STATE/REQUIREMENTS in
-place; do not resurrect deleted archival files unless the owner asks). All work remains on the
-`feat/access-analysis-redesign` branch (no merge/deploy beyond the local `:3000` rebuild).
+**Next: `/gsd:new-milestone`** to start the next cycle (questioning → requirements → roadmap).
+Deferred candidates to consider: SVC-01 (service-override classification), the `/users/spatial-graph`
+concerns milestone, DC-01/DC-02 external-data unlocks, and the per-folder terrain projection seed
+from Phase 19. All work remains on `feat/access-analysis-redesign`; deploy stays local `:3000`
+rebuild (Railway retired). The v2.2 tag was created locally — pushing it to `origin` is the owner's call.
 
 - **18-01 (PROJ-01) — DONE + VERIFIED:** `AccFolderPermissionSummary` Prisma model + migration
   + backfill script + reconciliation script, proving projection parity with the live

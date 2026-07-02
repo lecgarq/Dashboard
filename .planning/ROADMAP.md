@@ -6,7 +6,7 @@
 - ✅ **v2.0 Workshop UI Overhaul** - Phases 01-07 (shipped 2026-06-19)
 - ✅ **Phase 08 — Activity Re-extraction** (interim phase, shipped 2026-06-23)
 - ✅ **v2.1 Concerns Hardening** - Phases 09-14 (shipped 2026-07-01)
-- 🚧 **v2.2 Structural Refactors** - Phases 15-19 (in progress)
+- ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
 
 ---
 
