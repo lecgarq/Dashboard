@@ -10,6 +10,10 @@ import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintVie
 const OTHER_COLOR = "#71717a"; // zinc-500 — the folded "Other" tail
 const isOther = (roleName: string) => roleName.startsWith("Other (");
 
+// ACC role names are third-party data rendered into tooltip HTML via innerHTML
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 /**
  * Permission-footprint-by-role panel (PERM-01): horizontal bars, one per role,
  * sorted by total granted bytes desc — "which roles reach the most data". Bar
@@ -64,7 +68,7 @@ export function PermissionFootprintChart({ rows }: { rows: PermissionFootprintRo
         const p = params as { name: string; value: number };
         const bar = summary.bars.find((b) => b.roleName === p.name);
         if (!bar) return "";
-        return `<div style="font-weight:700;color:${cTitle};margin-bottom:2px">${bar.roleName}</div><div style="color:${cSub}">${formatBytes(bar.totalBytes)} · ${bar.folderCount.toLocaleString()} folders · ${bar.projectCount.toLocaleString()} projects</div>`;
+        return `<div style="font-weight:700;color:${cTitle};margin-bottom:2px">${escapeHtml(bar.roleName)}</div><div style="color:${cSub}">${formatBytes(bar.totalBytes)} · ${bar.folderCount.toLocaleString()} folders · ${bar.projectCount.toLocaleString()} projects</div>`;
       },
     },
     xAxis: {
