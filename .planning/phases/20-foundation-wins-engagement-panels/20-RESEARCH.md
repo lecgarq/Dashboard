@@ -634,7 +634,12 @@ const rows = await db.accDcProjectUser.findMany({
 
 ## Open Questions
 
-1. **ENG-01 data source: Option A (literal `AccProjectMember.lastSignIn`, degenerate-but-honest)
+*All three questions below were resolved during planning (2026-07-03). Resolutions are
+recorded inline and traced in the PLAN.md files.*
+
+1. **(RESOLVED — Option B, orchestrator decision, recorded in 20-02-PLAN.md as a documented
+   deviation with honest DC-coverage scope label.)**
+   **ENG-01 data source: Option A (literal `AccProjectMember.lastSignIn`, degenerate-but-honest)
    vs. Option B (`AccDcUser.lastSignIn` via `AccDcProjectUser`, real distribution, narrower
    DC-only project coverage) vs. Option C (ship both with a caption)?**
    - What we know: A is spec-literal but produces a single-bucket chart; B/C are
@@ -649,7 +654,8 @@ const rows = await db.accDcProjectUser.findMany({
      preference for staying spec-literal — record whichever choice is made explicitly in
      PLAN.md's task list, not as an implicit substitution.
 
-2. **ISSUE-01: extend `coordinationByProjectView.ts`'s `CoordinationByProjectData` in place,
+2. **(RESOLVED — extend in place, per recommendation; adopted in 20-03-PLAN.md.)**
+   **ISSUE-01: extend `coordinationByProjectView.ts`'s `CoordinationByProjectData` in place,
    or a standalone `issueFetchCoverageView.ts`?**
    - What we know: extending in place reuses the exact same latest-run row already being
      fetched, keeps `mainCharts.tsx`'s entry count at 8, and both `AccIssueFetchRun` reads
@@ -662,7 +668,9 @@ const rows = await db.accDcProjectUser.findMany({
      module later if the funnel/type work makes `coordinationByProjectView.ts` unwieldy —
      that's a Phase 21/22 concern, not a Phase 20 blocker.
 
-3. **Does ENG-01's "same onSliceClick/activeSlice convention as Activity by role" mean local
+3. **(RESOLVED — local component state only, per recommendation; adopted in 20-02/20-05 plans.
+   No `SliceFilters`/`applySliceFilters` extension.)**
+   **Does ENG-01's "same onSliceClick/activeSlice convention as Activity by role" mean local
    component state (recommended) or an actual extension of the shared `SliceFilters`
    cross-filter bus?**
    - What we know: CONTEXT.md's "Cross-filter scope" section only describes these 3 panels
