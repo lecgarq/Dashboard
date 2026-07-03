@@ -130,3 +130,13 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 All 6 created files found on disk; all 3 referenced commit hashes (`c2ed73b7`, `1feb22f2`, `504d5095`) found in `git log --oneline --all`.
+
+## Addendum: Final metadata commit
+
+The final `docs(20-04): complete ingest freshness panel plan` commit (`8aa5f68a`) also
+swept in `.planning/phases/20-foundation-wins-engagement-panels/20-02-SUMMARY.md` —
+a second instance of the same shared-working-tree staging race documented above
+(`gsd-tools query commit` internally globs/adds paths without a commit-time pathspec
+restriction). The swept file is a complete, well-formed SUMMARY for the concurrently-
+executing 20-02 plan (verified: full frontmatter + body present, not a partial write) —
+no data loss, only commit-message misattribution, consistent with the Task 1 deviation.
