@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans)
-- **Plan:** 20-05 complete (wiring + verification; owner-approved live)
-- **Status:** Phase 20 complete + verified (VERIFICATION passed). Next: route owner UAT feedback (6 new-scope items → proposed Phase 20.1 IA redesign) or plan Phase 21.
-- **Last activity:** 2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04 complete, all unmounted; 20.1-05/06/07 remain).
+- **Plan:** 20.1-04 complete (FolderPermissionTerrain externalSelectedIds/hidePickers + deriveTerrainSelection; 20.1-05 will mount it in the Compare tab)
+- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 1 (of the 6-tab IA redesign) executing in parallel. Next: remaining 20.1 plans (05 shell/tab-IA split, 06 integration/mount, 07 scroll-jump fix + owner UAT re-check).
+- **Last activity:** 2026-07-03 — Phase 20.1 wave 1: 20.1-01 (ENG-01 activity-recency), 20.1-02 (PERM-01 permission-level reframe), 20.1-03 (UAT-6 folder-activity-by-company), 20.1-04 (terrain externalSelectedIds/hidePickers) all complete, unmounted. See STATE.md frontmatter `last_activity_desc` and individual 20.1-0N-SUMMARY.md files for details.
 
 ## Status (data baseline — still current)
 
