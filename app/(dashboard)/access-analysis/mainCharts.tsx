@@ -19,6 +19,9 @@ import { loadProjectCoverage } from "@/lib/server/projectCoverageView";
 import { loadTerrainProjects } from "@/lib/server/folderPermissionTerrainView";
 import { loadActivityTimeline } from "@/lib/server/activityTimelineView";
 import { loadDcCoverage } from "@/lib/server/dcCoverageView";
+import { loadPermissionFootprint } from "@/lib/server/permissionFootprintView";
+import { loadSignInRecency } from "@/lib/server/signInRecencyView";
+import { loadIngestFreshness } from "@/lib/server/ingestFreshnessView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import { loadProjectClashes } from "./coordinationActions";
 import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
@@ -27,17 +30,37 @@ import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
 export async function MainCharts() {
-  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timeline, dcCoverage] =
-    await Promise.all([
-      loadInstanceView(),
-      loadModuleActivity(),
-      loadActivityByActor(),
-      loadCoordinationByProject(),
-      loadProjectCoverage(),
-      loadTerrainProjects(),
-      loadActivityTimeline(),
-      loadDcCoverage(),
-    ]);
+  // Fan-out: 11 entries (8 pre-Phase-20 + 3 new Phase 20 loaders). ISSUE-01 adds
+  // nothing here — it rides the existing loadCoordinationByProject() call (see
+  // lib/server/coordinationByProjectView.ts's additive issueCoverage field,
+  // plan 20-03's consolidation decision). Stays under the ~12-entry fan-out
+  // warning threshold (PITFALLS.md Pitfall 4) while keeping the load flat and
+  // parallel — no waterfall.
+  const [
+    view,
+    moduleRows,
+    activityActorRows,
+    coordinationData,
+    coverage,
+    terrainProjects,
+    timeline,
+    dcCoverage,
+    permissionFootprintRows,
+    signInRecencyRows,
+    ingestFreshness,
+  ] = await Promise.all([
+    loadInstanceView(),
+    loadModuleActivity(),
+    loadActivityByActor(),
+    loadCoordinationByProject(),
+    loadProjectCoverage(),
+    loadTerrainProjects(),
+    loadActivityTimeline(),
+    loadDcCoverage(),
+    loadPermissionFootprint(),
+    loadSignInRecency(),
+    loadIngestFreshness(),
+  ]);
 
   // Slim per-membership rows for client-side filtering.
   const rows: ProjectRoleRow[] = view.map((v) => ({
@@ -75,6 +98,9 @@ export async function MainCharts() {
       loadOverview={loadOverviewTerrain}
       loadFolderActivityProjects={loadFolderActivityProjectsAction}
       loadFolderActivityTree={loadFolderActivityTreeAction}
+      permissionFootprintRows={permissionFootprintRows}
+      signInRecencyRows={signInRecencyRows}
+      ingestFreshness={ingestFreshness}
     />
   );
 }

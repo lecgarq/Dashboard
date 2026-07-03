@@ -53,6 +53,17 @@ vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
   loadTerrainProjects: vi.fn(async () => []),
   loadFolderPermissionTerrain: vi.fn(async () => null),
 }));
+// Phase 20 loaders (plan 20-05 wiring) — mocked so this route test doesn't hit
+// the real Prisma db (it only mocks loader modules, never @/server/db directly).
+vi.mock("@/lib/server/permissionFootprintView", () => ({
+  loadPermissionFootprint: vi.fn(async () => []),
+}));
+vi.mock("@/lib/server/signInRecencyView", () => ({
+  loadSignInRecency: vi.fn(async () => []),
+}));
+vi.mock("@/lib/server/ingestFreshnessView", () => ({
+  loadIngestFreshness: vi.fn(async () => null),
+}));
 // Server actions ("use server") — mocked so the route test doesn't pull auth/db wiring.
 vi.mock("./coordinationActions", () => ({
   loadProjectClashes: vi.fn(async () => []),
