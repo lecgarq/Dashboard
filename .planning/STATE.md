@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
+current_phase: 20
+current_phase_name: COMPLETE, 5/5 plans
 status: verifying
-stopped_at: Phase 20.1 context gathered (defaults auto-applied, owner AFK - review CONTEXT.md)
-last_updated: "2026-07-03T17:08:55.295Z"
-last_activity: "2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete."
+stopped_at: "20.1-01 executed: ENG-01 activity-recency loader/transform/chart built unmounted, 22 tests green"
+last_updated: "2026-07-03T22:16:41.386Z"
+last_activity: 2026-07-03
+last_activity_desc: "Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete."
 progress:
-  total_phases: 13
+  total_phases: 16
   completed_phases: 12
-  total_plans: 27
-  completed_plans: 27
+  total_plans: 34
+  completed_plans: 31
+  percent: 75
 ---
 
 # Project State
@@ -160,10 +164,13 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20]: PERM-01 (20-01): permissionFootprintView loader converts AccFolderPermissionSummary.totalBytes (BigInt) to Number at the server boundary only (Pitfall 2); resolves project names via buildProjectNameMap/resolveProjectName (AccProject-over-AccDcProject) and role names via AccRole, falling back to "Unknown role"/"Unknown project". New formatBytes() helper (B/KB/MB/GB/TB, 1024-based) -- the milestone's one genuinely new formatting helper. summarizePermissionFootprint aggregates top-10 + "Other (N roles)" by totalBytes desc, with a per-role project drill map. PermissionFootprintChart uses local drill state (RolesPieChart.tsx's toggleDrill pattern), not the shared sliceFilters bus. Deviation: fixed a BigInt-literal (`n`-suffix) TS2737 error caught by tsc --noEmit -- switched to BigInt() constructor per the standing ES2017-target convention. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx (after the role-related charts, before Model Coordination).
 
 - [Phase 20]: 20-05 (wiring + verification, PLAN COMPLETE): all 4 panels mounted at their CONTEXT.md-locked positions in AccessAnalysisCharts.tsx behind optional props, picker-only selection filtering (filterRowsBySelection, mirrors the moduleSummary pattern, no sliceFilters extension); mainCharts.tsx Promise.all fan-out grew 8→11 (flat/parallel, ISSUE-01 rides the existing loadCoordinationByProject call, adds nothing new). Owner live-verified on :3100 (Turbopack dev server) and gave functional approval ("Is good but") -- no BigInt serialization error observed, all 4 panels render correctly -- conditioned on 7 verbatim change-request items, 6 of which are new product scope explicitly deferred to a follow-up phase (see 20-05-SUMMARY.md "UAT Feedback / Follow-ups" for the full list: ENG-01 semantic pivot to activity recency, permission-footprint reframe to permission-volume-by-level, terrain/Compare-tab UX consolidation, role-click scroll-jump bug, new folder-activity-by-company graph, /access-analysis tabbed-IA redesign). Item 1 (raw project-GUID leaking into the FilterBanner/ProjectPicker) was fixed in-phase: coordinationByProjectView.ts's rows now merge AccDcProject via buildProjectNameMap/resolveProjectName (pre-existing bug since commit f8f98e5f0, exposed by this plan's wiring review) -- any id in neither AccProject nor AccDcProject now renders "Unknown project", never a bare GUID. `npm test` full suite: 2329 passed / 12 failed (pre-existing, unrelated `UsersDirectoryClient.integration.test.tsx` test-isolation issue, confirmed passes in isolation, logged to deferred-items.md) / 1 skipped. Dev server on :3100 (PID from prior session) killed cleanly; production :3000 Task Scheduler service untouched throughout.
+- [Phase 20.1]: PERM-01 (20.1-02): permissionLevelView.ts owns its own bounded $queryRaw GROUP BY over AccFolderPermission+AccFolder (not routed through folderPermQuery.ts, which forbids single-use additions); permType passed verbatim (no PermTier remapping); PermissionLevelChart built unmounted, stacked-bar top-10+Other by role x level, sequential red->sky color ramp; 20.1-06 mounts it replacing PermissionFootprintChart. DEVIATION (process, not code): shared git index race with concurrent wave-1 executors (no worktree isolation) caused 2 of 3 commits to include other plans' files (20.1-01 activityRecency*, 20.1-04 FolderPermissionTerrain.test.tsx additions) -- verified complete/correct, no data loss, no forbidden files touched; documented in 20.1-02-SUMMARY.md.
+- [Phase 20.1]: 20.1-01 (ENG-01 activity-recency pivot): sourced recency from AccActivityAccds only (not the accds+DC-backfill union activityByActorView.ts uses); population mirrors signInRecencyView.ts's 22,835-row AccDcProjectUser population so Never active honestly dominates (~33.2% accds-covered). Loader/transform/chart built unmounted; 20.1-06 mounts it and removes DormantSignInChart.
+- [Phase ?]: Terrain deriveTerrainSelection() populates selected with best-known candidates even in single/overview fallback branches, so a manual ModeToggle switch to compare keeps using externally-derived candidates (20.1-04).
 
 ### Blockers/Concerns
 
-- None blocking. Phase 20 shipped clean. Risk for the rest of v2.3 is concentrated and isolated
+- blocking. Phase 20 shipped clean. Risk for the rest of v2.3 is concentrated and isolated
   in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above and
   sequenced deliberately after the lower-risk Phase 20/21 work.
 
@@ -184,6 +191,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   migration deletions in the working tree. **Commit by explicit path only** (never `-A`/`.`);
   check `git diff --cached --name-only` before every commit. `.planning/config.json` is
   pre-existing WIP (research→false, tsc-only build_command) — leave it out of doc commits.
+
+- Wave-1 20.1 parallel executors share one working directory/branch (not isolated worktrees) -- observed an index race where a concurrent executor's plain 'git commit' captured this plan's already-staged Task 1 files (content verified correct, commit 0e05cca5, also flagged independently by 20.1-02's own summary). Confirm worktree isolation for future waves.
 
 ## Next Action
 
@@ -216,9 +225,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T17:08:55.292Z
-**Stopped at:** Phase 20.1 context gathered (defaults auto-applied, owner AFK - review CONTEXT.md)
-**Resume file:** .planning/phases/20.1-access-analysis-ia-redesign-panel-semantics/20.1-CONTEXT.md
+**Last session:** 2026-07-03T22:16:37.733Z
+**Stopped at:** 20.1-01 executed: ENG-01 activity-recency loader/transform/chart built unmounted, 22 tests green
+**Resume file:** .planning/phases/20.1-access-analysis-ia-redesign-panel-semantics/20.1-01-SUMMARY.md
 
 ## Performance Metrics
 
@@ -229,3 +238,6 @@ of v2.3 scope.
 | Phase 20 P02 | 55min | 3 tasks | 6 files |
 | Phase 20 P03 | 35min | 3 tasks | 6 files |
 | Phase 20 P01 | 20min | 3 tasks | 6 files |
+| Phase 20.1 P02 | 20min | 3 tasks | 7 files |
+| Phase 20.1 P01 | 20min | 3 tasks | 7 files |
+| Phase 20.1 P04 | 6min | 2 tasks | 2 files |

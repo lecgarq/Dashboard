@@ -330,13 +330,14 @@ Plans:
 **Goal:** `/access-analysis` is reorganized into 6 themed storytelling tabs (Overview · Roles · Users · Companies · Projects · Compare) behind ONE global project picker/FilterBanner, with the owner's Phase-20 UAT semantics delivered: activity-recency-by-role replaces sign-in recency, permission-volume-by-level replaces the byte footprint, the terrain folds into the Compare tab driven by the main search bar, a new folder-activity-by-company graph lands in the Companies tab, and the role-click scroll-jump is reproduced-then-fixed. Ph21-22 issue charts inherit an obvious home (Projects tab).
 **Requirements**: UAT-2, UAT-3, UAT-4, UAT-5, UAT-6, UAT-7 (the six verbatim owner-UAT items from `20-05-SUMMARY.md` "UAT Feedback / Follow-ups"; no formal REQ-IDs — inserted urgent phase)
 **Depends on:** Phase 20
-**Plans:** 7 plans
+**Plans:** 3/7 plans executed
 
 Plans:
-- [ ] 20.1-01-PLAN.md — UAT-2 ENG-01 pivot: activityRecencyView loader + bands transform + role-stacked chart (unmounted)
-- [ ] 20.1-02-PLAN.md — UAT-3 PERM-01 reframe: permissionLevelView GROUP BY (verbatim permType) + top-10 stacked transform + chart (unmounted)
+
+- [x] 20.1-01-PLAN.md — UAT-2 ENG-01 pivot: activityRecencyView loader + bands transform + role-stacked chart (unmounted)
+- [x] 20.1-02-PLAN.md — UAT-3 PERM-01 reframe: permissionLevelView GROUP BY (verbatim permType) + top-10 stacked transform + chart (unmounted)
 - [ ] 20.1-03-PLAN.md — UAT-6 Folder activity by company: bounded two-pass loader (headline + lazy per-company folder drill) + chart (unmounted)
-- [ ] 20.1-04-PLAN.md — UAT-4 terrain externalSelectedIds/hidePickers props with 0/1/2+ mode derivation (backward-compatible)
+- [x] 20.1-04-PLAN.md — UAT-4 terrain externalSelectedIds/hidePickers props with 0/1/2+ mode derivation (backward-compatible)
 - [ ] 20.1-05-PLAN.md — UAT-7/UAT-4 tab IA: shell split into 6 tab panels, global picker pinned above tab strip, terrain in Compare tab, 33-test migration
 - [ ] 20.1-06-PLAN.md — Integration: mount the 3 new panels lazily per tab, remove sign-in/footprint panels + dead loaders, mainCharts fan-out 11→9
 - [ ] 20.1-07-PLAN.md — UAT-5 scroll-jump browser repro → minimal fix → Playwright regression pin + owner UAT re-check checkpoint (all six items)
