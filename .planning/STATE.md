@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: "20.1"
-current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 1 of 7 plans)"
+current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 2 of 7 plans: 20.1-05 done)"
 status: verifying
-stopped_at: "Wave 1 of Phase 20.1 executing in parallel: 20.1-01/02/03/04 built (unmounted); 20.1-04 added FolderPermissionTerrain externalSelectedIds/hidePickers + deriveTerrainSelection derivation, 24/24 terrain-component tests green"
-last_updated: "2026-07-03T22:17:23.542Z"
+stopped_at: "20.1-05 executed: /access-analysis split into 6-tab IA shell (Overview/Roles/Users/Companies/Projects/Compare), terrain relocated into Compare tab driven by the global picker; 20.1-06/07 remain"
+last_updated: "2026-07-03T22:34:33.000Z"
 last_activity: 2026-07-03
-last_activity_desc: "Phase 20.1 wave 1 in progress (parallel executors, no worktree isolation): 20.1-01 (ENG-01 activity-recency), 20.1-02 (PERM-01 permission-level reframe), 20.1-03 (UAT-6 folder-activity-by-company), and 20.1-04 (terrain externalSelectedIds/hidePickers + deriveTerrainSelection) all complete, all unmounted; 20.1-05/06/07 remain. Shared-git-index race caused cross-plan test-file commit-attribution mixing between 20.1-02 and 20.1-04 -- verified byte-identical/no data loss via `git show`, documented in both SUMMARY files."
+last_activity_desc: "Phase 20.1 wave 2: 20.1-05 (tab-IA shell split + terrain-in-Compare mount, UAT-7/UAT-4) complete. AccessAnalysisCharts.tsx (722L) split into a thin shell + SectionHeaders.tsx + 6 *TabPanel components; TerrainReveal deleted (Compare tab's TabsContent unmount replaces its expand-gate); 33 existing + 6 new tests migrated to tab-aware queries (Radix Tabs.Trigger activates on mouseDown, not click); page.test.tsx roles-donut route test fixed for the new tab location. Full access-analysis module scope green (51 files/432 tests). See 20.1-05-SUMMARY.md for full detail."
 progress:
   total_phases: 16
   completed_phases: 12
   total_plans: 34
-  completed_plans: 31
-  percent: 75
+  completed_plans: 32
+  percent: 94
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04 complete, all unmounted; 20.1-05/06/07 remain).
-- **Plan:** 20.1-04 complete (FolderPermissionTerrain externalSelectedIds/hidePickers + deriveTerrainSelection; 20.1-05 will mount it in the Compare tab)
-- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 1 (of the 6-tab IA redesign) executing in parallel. Next: remaining 20.1 plans (05 shell/tab-IA split, 06 integration/mount, 07 scroll-jump fix + owner UAT re-check).
-- **Last activity:** 2026-07-03 — Phase 20.1 wave 1: 20.1-01 (ENG-01 activity-recency), 20.1-02 (PERM-01 permission-level reframe), 20.1-03 (UAT-6 folder-activity-by-company), 20.1-04 (terrain externalSelectedIds/hidePickers) all complete, unmounted. See STATE.md frontmatter `last_activity_desc` and individual 20.1-0N-SUMMARY.md files for details.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04/05 complete; 20.1-06/07 remain).
+- **Plan:** 20.1-05 complete (tab-IA shell split + terrain-in-Compare mount, UAT-7/UAT-4; 20.1-06 will swap in the ENG-01/PERM-01/UAT-6 panels)
+- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 2 (20.1-05, depends_on 20.1-04) complete. Next: 20.1-06 (panel-semantic swaps into the new tab shell), then 20.1-07 (scroll-jump fix + owner UAT re-check).
+- **Last activity:** 2026-07-03 — Phase 20.1 wave 2: 20.1-05 (tab-IA shell split + terrain-in-Compare mount) complete. `/access-analysis` reorganized into 6 themed tabs (Overview/Roles/Users/Companies/Projects/Compare); `AccessAnalysisCharts.tsx` split into a thin shell + `SectionHeaders.tsx` + 6 `*TabPanel` components; `TerrainReveal` deleted (Compare tab's `TabsContent` unmount replaces its expand-gate); full test suite migrated + green (51 files/432 tests). See STATE.md frontmatter `last_activity_desc` and `20.1-05-SUMMARY.md` for details.
 
 ## Status (data baseline — still current)
 
@@ -169,6 +169,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20.1]: UAT-4 (20.1-04): FolderPermissionTerrain gains `externalSelectedIds`/`hidePickers` props (unmounted -- 20.1-05 wires the Compare tab to them); `deriveTerrainSelection()` pure helper implements the locked 0/1/2+ overview/single/compare derivation, and populates `selected` with best-known candidates even in the single/overview fallback branches so a later manual ModeToggle switch to compare mode keeps using externally-derived candidates. Prop absence is byte-identical to prior behavior (13 pre-existing component tests pass unmodified) + 11 new tests added. DEVIATION (process, not code, same shared-git-index race documented in 20.1-02-SUMMARY.md): Task 2's uncommitted test-file edit was absorbed into concurrent commit `5211d984` (20.1-02's own commit) rather than a dedicated commit -- verified byte-identical to intended content via `git show`, no data loss, all gates green against current HEAD; documented in 20.1-04-SUMMARY.md.
 - [Phase 20.1]: 20.1-03: summarizeFolderActivityByCompany ranks UNKNOWN_COMPANY like any other slice (not pinned) -- differs from collapseCompanySlices' pinning convention, but preserves losslessness (its count survives inside the collapsed Other bucket)
 - [Phase 20.1]: 20.1-03: FolderActivityByCompanyChart is the new 'Folder activity by company' graph (UAT-6), built as a two-pass bounded design (10,566-row headline aggregate + lazy per-company folder drill capped at 1,000 emails / 1,500 project ids) -- never materializes the 190,049-row company x folder cross-product. Built UNMOUNTED; plan 20.1-06 mounts it in the Companies tab.
+- [Phase 20.1]: 20.1-05 (tab-IA shell split, UAT-7/UAT-4): AccessAnalysisCharts.tsx (722L) split into a thin shell (state + picker/FilterBanner + Tabs root, ~452L) + SectionHeaders.tsx + 6 presentational *TabPanel siblings (Overview/Roles/Users/Companies/Projects/Compare); all 11 pre-existing panels relocated intact with zero semantic changes. Compare tab mounts FolderPermissionTerrain with externalSelectedIds/hidePickers (20.1-04 props); TerrainReveal deleted, Radix TabsContent's unmount-by-default is the new lazy-mount gate. mainCharts.tsx untouched (11-entry Promise.all fan-out unchanged until 20.1-06). RECORDED ASSUMPTION surfaced for 20.1-07 owner checkpoint: the global picker defaults to ALL projects selected, so Compare's first paint derives compare-mode over the top-6-staffed intersection, not the all-folders overview -- that only shows once the user actively clears the selection. DEVIATION: Radix Tabs.Trigger activates on onMouseDown not onClick (verified in @radix-ui/react-tabs source) -- test suite (33 migrated + 6 new cases) uses fireEvent.mouseDown; @testing-library/user-event is NOT installed (no-new-deps), so the plan's suggested userEvent.click pattern was swapped for the repo's existing fireEvent convention. page.test.tsx's roles-donut route test also fixed (broken by the shell rewrite, same mouseDown pattern). Full access-analysis module scope green: 51 files / 432 tests.
 
 ### Blockers/Concerns
 
@@ -227,8 +228,8 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T22:17:23.533Z
-**Stopped at:** Plan 20.1-03 executed: FolderActivityByCompanyChart (UAT-6) + loaders/actions/transform, built unmounted, all tests green
+**Last session:** 2026-07-03T22:34:33.000Z
+**Stopped at:** Plan 20.1-05 executed: /access-analysis split into 6-tab IA shell (Overview/Roles/Users/Companies/Projects/Compare); terrain relocated into Compare tab driven by the global picker; TerrainReveal deleted; full test suite migrated + green
 **Resume file:** None
 
 ## Performance Metrics
@@ -244,3 +245,4 @@ of v2.3 scope.
 | Phase 20.1 P01 | 20min | 3 tasks | 7 files |
 | Phase 20.1 P04 | 6min | 2 tasks | 2 files |
 | Phase 20.1 P03 | 25min | 3 tasks | 7 files |
+| Phase 20.1 P05 | 12min | 3 tasks | 11 files |
