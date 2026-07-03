@@ -5,10 +5,10 @@ milestone_name: Concerns Hardening
 current_phase: 20
 current_phase_name: not yet planned
 status: planning
-stopped_at: Completed 20-03-PLAN.md (ISSUE-01 issue-fetch coverage donut, not yet mounted)
-last_updated: "2026-07-03T15:45:00.000Z"
+stopped_at: Completed 20-01-PLAN.md (PERM-01 permission footprint by role, not yet mounted)
+last_updated: "2026-07-03T15:47:00.000Z"
 last_activity: 2026-07-03
-last_activity_desc: "Executed 20-03-PLAN.md (ISSUE-01): additive issueCoverage on coordinationByProjectView.ts, summarizeIssueCoverage pure transform, IssueFetchCoverageDonut client component — 4 honest buckets (ok/zero_issues/forbidden/error), per-bucket drill, in-progress caption. Not yet mounted; plan 20-05 places it above Model Coordination."
+last_activity_desc: "Executed 20-01-PLAN.md (PERM-01): permissionFootprintView loader (BigInt->Number conversion), formatBytes + summarizePermissionFootprint pure transforms, PermissionFootprintChart client component with per-role project drill. Not yet mounted; plan 20-05 places it after the role-related charts, before Model Coordination."
 progress:
   total_phases: 15
   completed_phases: 11
@@ -157,6 +157,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 - [Phase 20]: ENG-01 (20-02): dormant-user recency sourced from AccDcUser.lastSignIn joined via AccDcProjectUser -- NOT AccProjectMember.lastSignIn (100% NULL across 14,566 rows, dead field; AccDcProjectUser.lastSignIn equally dead 22,835/22,835). Option B deviation, pre-authorized by the orchestrator, documented in 20-02-PLAN.md objective + 20-02-SUMMARY.md. Coverage narrows to DC-covered projects (~550/1,153) -- DormantSignInChart requires a live dcCoverage prop for its scope caption, never hardcoded. Band boundaries: <30d=[0,29], 30-90d=[30,90], 90-365d=[91,365], >365d=[366+]. Null lastSignIn always lands in an explicit "Never signed in" bucket (verified lossless: sum(band counts) === rows.length). Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx.
 
+- [Phase 20]: PERM-01 (20-01): permissionFootprintView loader converts AccFolderPermissionSummary.totalBytes (BigInt) to Number at the server boundary only (Pitfall 2); resolves project names via buildProjectNameMap/resolveProjectName (AccProject-over-AccDcProject) and role names via AccRole, falling back to "Unknown role"/"Unknown project". New formatBytes() helper (B/KB/MB/GB/TB, 1024-based) -- the milestone's one genuinely new formatting helper. summarizePermissionFootprint aggregates top-10 + "Other (N roles)" by totalBytes desc, with a per-role project drill map. PermissionFootprintChart uses local drill state (RolesPieChart.tsx's toggleDrill pattern), not the shared sliceFilters bus. Deviation: fixed a BigInt-literal (`n`-suffix) TS2737 error caught by tsc --noEmit -- switched to BigInt() constructor per the standing ES2017-target convention. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx (after the role-related charts, before Model Coordination).
+
 ### Blockers/Concerns
 
 - None blocking v2.3 Phase 20. Risk is concentrated and isolated in Phase 22 (ISSUE-04's
@@ -212,3 +214,4 @@ of v2.3 scope.
 | Phase 20 P04 | 5min | 3 tasks | 6 files |
 | Phase 20 P02 | 55min | 3 tasks | 6 files |
 | Phase 20 P03 | 35min | 3 tasks | 6 files |
+| Phase 20 P01 | 20min | 3 tasks | 6 files |
