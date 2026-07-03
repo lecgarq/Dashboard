@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
+current_phase: 20
+current_phase_name: not yet planned
 status: planning
-stopped_at: Phase 20 context gathered
-last_updated: "2026-07-02T23:49:13.110Z"
-last_activity: "2026-07-02 — Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending")."
+stopped_at: Completed 20-04-PLAN.md (PIPE-01 ingest freshness panel, not yet mounted)
+last_updated: "2026-07-03T15:27:59.102Z"
+last_activity: 2026-07-02
+last_activity_desc: "Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending")."
 progress:
-  total_phases: 12
+  total_phases: 15
   completed_phases: 11
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 27
+  completed_plans: 25
+  percent: 73
 ---
 
 # Project State
@@ -147,6 +151,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   inspect and repair STATE frontmatter (milestone/status/current_phase/progress) manually
   after running it**, including during v2.3 phase closes.
 
+- [Phase 20]: PIPE-01 (20-04): ingestFreshnessView loader has no TTL cache (unlike sibling loaders) since CONTEXT.md requires a static per-page-load read; status treated as an open string (unrecognized values map to neutral tone + raw label); 36h stale threshold, strictly-greater-than boundary. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx.
+
 ### Blockers/Concerns
 
 - None blocking v2.3 Phase 20. Risk is concentrated and isolated in Phase 22 (ISSUE-04's
@@ -191,6 +197,12 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-02T23:49:13.106Z
-**Stopped at:** Phase 20 context gathered
-**Resume file:** .planning/phases/20-foundation-wins-engagement-panels/20-CONTEXT.md
+**Last session:** 2026-07-03T15:27:52.357Z
+**Stopped at:** Completed 20-04-PLAN.md (PIPE-01 ingest freshness panel, not yet mounted)
+**Resume file:** None
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Notes |
+|-------|------|----------|-------|
+| Phase 20 P04 | 5min | 3 tasks | 6 files |

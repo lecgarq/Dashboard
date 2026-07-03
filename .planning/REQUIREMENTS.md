@@ -36,7 +36,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Pipeline Health (PIPE)
 
-- [ ] **PIPE-01**: User can see a compact, visually secondary ingest-freshness panel (latest `AccDcIngestRun`: started/ended, status, duration, projects processed) with throughput measured from `AccActivity` row counts by time window — never from `rowsByModule` (known always-zero telemetry gap). No live polling (static per-page-load read).
+- [x] **PIPE-01**: User can see a compact, visually secondary ingest-freshness panel (latest `AccDcIngestRun`: started/ended, status, duration, projects processed) with throughput measured from `AccActivity` row counts by time window — never from `rowsByModule` (known always-zero telemetry gap). No live polling (static per-page-load read).
 
 ## Future Requirements
 
@@ -85,9 +85,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ISSUE-05 | Phase 22 | Pending |
 | PERM-01 | Phase 20 | Pending |
 | ENG-01 | Phase 20 | Pending |
-| PIPE-01 | Phase 20 | Pending |
+| PIPE-01 | Phase 20 | Complete |
 
 **Coverage:**
+
 - v2.3 requirements: 8 total
 - Mapped to phases: 8 (100%)
 - Unmapped: 0
