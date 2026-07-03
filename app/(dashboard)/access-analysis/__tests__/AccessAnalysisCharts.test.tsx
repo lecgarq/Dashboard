@@ -13,6 +13,9 @@ vi.mock("echarts-for-react", () => ({
 import { AccessAnalysisCharts } from "../components/AccessAnalysisCharts";
 import type { ProjectRoleRow } from "../projectFilter";
 import type { ModuleActivityRow } from "../moduleCounts";
+import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintView";
+import type { SignInRecencyRow } from "@/lib/server/signInRecencyView";
+import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 
 const roleRows: ProjectRoleRow[] = [
   { projectId: "p1", projectName: "Tower A", roles: ["Member"] },
@@ -314,5 +317,112 @@ describe("AccessAnalysisCharts — 'No activity' footers (replaces the Dormant p
     const footer = getByTestId("no-activity-roles");
     expect(footer.textContent).toContain("No activity");
     expect(footer.textContent).toContain("Ghost");
+  });
+});
+
+// Phase 20 panels (20-05 mount): PermissionFootprintChart, DormantSignInChart,
+// IssueFetchCoverageDonut, IngestFreshnessPanel — each behind an optional prop.
+const permissionFootprintRows: PermissionFootprintRow[] = [
+  { projectId: "p1", projectName: "Tower A", roleId: "r1", roleName: "Project Admin", folderCount: 10, totalBytes: 5_000_000 },
+];
+const signInRecencyRows: SignInRecencyRow[] = [
+  { projectId: "p1", name: "Ana", company: "LECG", lastSignIn: null },
+];
+const coordinationDataWithCoverage: CoordinationByProjectData = {
+  rows: [],
+  accessibleProjects: 1,
+  forbiddenProjects: 0,
+  latestRunAt: "2026-07-01T00:00:00.000Z",
+  coordinationCount: 0,
+  issueCoverage: {
+    runStatus: "done",
+    runStartedAt: "2026-07-01T00:00:00.000Z",
+    runFinishedAt: "2026-07-01T00:05:00.000Z",
+    projects: [{ projectId: "p1", projectName: "Tower A", status: "ok", issueCount: 3 }],
+  },
+};
+
+describe("AccessAnalysisCharts — Phase 20 panels (PERM-01/ENG-01/ISSUE-01/PIPE-01)", () => {
+  it("hides all four new panels when their props are omitted (no crash, no new sections)", () => {
+    const { queryByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />,
+    );
+    expect(queryByText("Dormant users")).toBeNull();
+    expect(queryByText("Permission footprint by role")).toBeNull();
+    expect(queryByText("Issue data coverage")).toBeNull();
+    expect(queryByText(/No Data Connector ingest runs recorded/)).toBeNull();
+  });
+
+  it("mounts Permission footprint by role after Role distribution when rows are supplied", () => {
+    const { getByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        permissionFootprintRows={permissionFootprintRows}
+      />,
+    );
+    expect(getByText("Permission footprint by role")).toBeTruthy();
+    expect(getByText("Project Admin")).toBeTruthy();
+  });
+
+  it("mounts Dormant users in the donut grid when sign-in recency rows are supplied", () => {
+    const { getByText, getByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        signInRecencyRows={signInRecencyRows}
+      />,
+    );
+    expect(getByText("Dormant users")).toBeTruthy();
+    expect(getByTestId("dormant-headline")).toBeTruthy();
+  });
+
+  it("mounts Issue data coverage above Model Coordination when coordinationData.issueCoverage is present", () => {
+    const { getByText, getByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        coordinationData={coordinationDataWithCoverage}
+      />,
+    );
+    expect(getByText("Issue data coverage")).toBeTruthy();
+    expect(getByTestId("issue-coverage-legend")).toBeTruthy();
+  });
+
+  it("mounts the muted ingest-freshness strip at the bottom when ingestFreshness is supplied", () => {
+    const { getByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        ingestFreshness={{
+          id: "run1",
+          startedAt: "2026-07-01T00:00:00.000Z",
+          endedAt: "2026-07-01T00:10:00.000Z",
+          status: "success",
+          projectsProcessed: 550,
+          activityRowCount: 1086,
+        }}
+      />,
+    );
+    expect(getByText(/Account-wide/)).toBeTruthy();
+  });
+
+  it("filters the three project-keyed panels by the project picker selection", () => {
+    const twoProjectPermissionRows: PermissionFootprintRow[] = [
+      ...permissionFootprintRows,
+      { projectId: "p2", projectName: "Tower B", roleId: "r2", roleName: "Viewer", folderCount: 2, totalBytes: 1_000 },
+    ];
+    const { getByTestId, getByRole } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        permissionFootprintRows={twoProjectPermissionRows}
+      />,
+    );
+    expect(getByTestId("permission-footprint-legend").textContent).toContain("Viewer");
+    fireEvent.focus(getByTestId("project-search"));
+    fireEvent.click(getByRole("checkbox", { name: /tower b/i })); // untick p2 (Viewer's only project)
+    expect(getByTestId("permission-footprint-legend").textContent).not.toContain("Viewer");
+    expect(getByTestId("permission-footprint-legend").textContent).toContain("Project Admin");
   });
 });

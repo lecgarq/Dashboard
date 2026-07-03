@@ -15,6 +15,10 @@ import { TerrainReveal } from "./TerrainReveal";
 import { FolderActivityReveal } from "./FolderActivityReveal";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
 import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
+import { PermissionFootprintChart } from "./PermissionFootprintChart";
+import { DormantSignInChart } from "./DormantSignInChart";
+import { IssueFetchCoverageDonut } from "./IssueFetchCoverageDonut";
+import { IngestFreshnessPanel } from "./IngestFreshnessPanel";
 import { activityCoverageCounts } from "../coverageCounts";
 import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
@@ -44,6 +48,9 @@ import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
 import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
 import type { FolderActivityRow } from "../folderActivityCounts";
+import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintView";
+import type { SignInRecencyRow } from "@/lib/server/signInRecencyView";
+import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -80,6 +87,9 @@ export function AccessAnalysisCharts({
   loadOverview,
   loadFolderActivityProjects,
   loadFolderActivityTree,
+  permissionFootprintRows,
+  signInRecencyRows,
+  ingestFreshness,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
@@ -105,6 +115,12 @@ export function AccessAnalysisCharts({
   loadOverview?: () => Promise<FolderTerrainData | null>;
   loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
   loadFolderActivityTree?: (projectId: string) => Promise<FolderActivityRow[]>;
+  /** PERM-01: permission-reach-by-role rows. Project-picker filtered. When omitted, that panel is hidden. */
+  permissionFootprintRows?: PermissionFootprintRow[];
+  /** ENG-01: per-membership sign-in recency rows. Project-picker filtered. When omitted, that panel is hidden. */
+  signInRecencyRows?: SignInRecencyRow[];
+  /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
+  ingestFreshness?: IngestFreshness | null;
 }) {
   const options = useMemo(
     () => projectOptions([...roleRows, ...moduleRows, ...(timelineRows ?? []), ...(coordinationData?.rows ?? [])]),
@@ -207,6 +223,22 @@ export function AccessAnalysisCharts({
   );
   const coordSummary = useMemo(
     () => summarizeCoordination(filterRowsBySelection(coordinationData?.rows ?? [], selected)),
+    [coordinationData, selected],
+  );
+
+  // Phase 20 panels — picker-only filtering (locked decision: no sliceFilters
+  // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
+  // and deliberately NOT filtered.
+  const filteredPermissionFootprintRows = useMemo(
+    () => filterRowsBySelection(permissionFootprintRows ?? [], selected),
+    [permissionFootprintRows, selected],
+  );
+  const filteredSignInRecencyRows = useMemo(
+    () => filterRowsBySelection(signInRecencyRows ?? [], selected),
+    [signInRecencyRows, selected],
+  );
+  const filteredIssueCoverageProjects = useMemo(
+    () => filterRowsBySelection(coordinationData?.issueCoverage?.projects ?? [], selected),
     [coordinationData, selected],
   );
 
@@ -369,6 +401,17 @@ export function AccessAnalysisCharts({
           />
         </PremiumSurface></Reveal>
 
+        {/* Dormant users (ENG-01) — engagement neighborhood, right after Role distribution. */}
+        {signInRecencyRows ? (
+          <Reveal><PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Dormant users"
+              subtitle="Project memberships by sign-in recency. Click a band to see who."
+            />
+            <DormantSignInChart rows={filteredSignInRecencyRows} dcCoverage={dcCoverage} />
+          </PremiumSurface></Reveal>
+        ) : null}
+
         {/* Users by company — membership (not activity-derived → no coverage badge) */}
         <Reveal><PremiumSurface
           variant="base"
@@ -497,6 +540,41 @@ export function AccessAnalysisCharts({
 
       </div>
 
+      {/* Permission footprint by role (PERM-01) — full-width, access-domain slot
+          between the donut grid and Model Coordination. */}
+      {permissionFootprintRows ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Permission footprint by role"
+              subtitle="Folder access granted per role, sized by total bytes reachable (from the materialized permission summary). Click a role to see its projects."
+            />
+            <PermissionFootprintChart rows={filteredPermissionFootprintRows} />
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
+      {/* Issue data coverage (ISSUE-01) — trust precedes metric: sits directly
+          above Model Coordination. */}
+      {coordinationData?.issueCoverage ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Issue data coverage"
+              subtitle="How much of the issue data can we see into? Every project checked by the latest fetch, honestly bucketed."
+            />
+            <IssueFetchCoverageDonut
+              coverage={{
+                runStatus: coordinationData.issueCoverage.runStatus,
+                runStartedAt: coordinationData.issueCoverage.runStartedAt,
+                runFinishedAt: coordinationData.issueCoverage.runFinishedAt,
+              }}
+              projects={filteredIssueCoverageProjects}
+            />
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
       {/* Model Coordination — full-width, not in the donut grid */}
       {coordinationData ? (
         <Reveal>
@@ -515,6 +593,10 @@ export function AccessAnalysisCharts({
           </PremiumSurface>
         </Reveal>
       ) : null}
+
+      {/* Ingest freshness (PIPE-01) — muted ops-metadata strip, very bottom,
+          account-wide (NOT project-filtered). */}
+      {ingestFreshness !== undefined && <IngestFreshnessPanel freshness={ingestFreshness} />}
 
       {profileEmail && (
         <AuthorProfileDrawer email={profileEmail} onClose={() => setProfileEmail(null)} />
