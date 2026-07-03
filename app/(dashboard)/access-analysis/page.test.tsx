@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 
 vi.mock("@/lib/server/accessInstanceView", () => ({
   loadInstanceView: vi.fn(async () => ([
@@ -103,7 +103,13 @@ import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrai
 describe("AccessAnalysisRoute (roles donut)", () => {
   it("buckets single role, Multiple roles, and Unknown, and reports the role count", async () => {
     const ui = await MainCharts();
-    const { getAllByTestId, getByText } = render(ui);
+    const { getAllByTestId, getByText, getByRole } = render(ui);
+    // 20.1-05: /access-analysis is now a 6-tab shell — the modules section lives
+    // on the default Overview tab (no click needed); the roles donut lives on
+    // the Roles tab (Radix `TabsContent` unmounts inactive tabs, so it must be
+    // activated first). Trigger activates on `onMouseDown`, not `onClick`.
+    expect(getByText(/Activity by module/)).toBeTruthy();
+    fireEvent.mouseDown(getByRole("tab", { name: /roles/i }), { button: 0 });
     // Two donuts now render an echart (roles + companies). Pick the roles donut
     // by its subtext, which names "roles" ("N roles · M user–project memberships").
     const el = getAllByTestId("echart").find((c) =>
@@ -117,8 +123,6 @@ describe("AccessAnalysisRoute (roles donut)", () => {
     expect(names).toContain("Unknown");
     // Distinct roles seen anywhere = Admin, Member = 2.
     expect(el.getAttribute("data-subtexts")).toContain("2 roles");
-    // The modules section is wired in below the roles donut.
-    expect(getByText(/Activity by module/)).toBeTruthy();
   });
 
   it("does NOT call loadFolderPermissionTerrain during initial render (terrain is lazy)", async () => {
