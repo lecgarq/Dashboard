@@ -74,3 +74,24 @@ destructive git operation on other agents' commits.
   state/roadmap/requirements mutation, not after — those commands and their
   eventual final `commit` call race with sibling agents' own final commits
   on the same shared STATE/ROADMAP/REQUIREMENTS files.
+
+## From 20-05 continuation (Task 3 resume, gap-fix gate run)
+
+- `npm test` (full suite) reports 12 failures, all in
+  `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`
+  (`TypeError: Cannot read properties of undefined (reading 'useQuery')` at
+  `useUsersDirectoryData.ts:110`, `trpc.accDcGraph.dataVersion.useQuery`).
+  Confirmed NOT caused by this plan's gap fix (`lib/server/
+  coordinationByProjectView.ts` + its test): re-ran the same file in isolation
+  (`npx vitest run ".../UsersDirectoryClient.integration.test.tsx"`) and all 12
+  passed cleanly — this is a test-isolation/mock-pollution issue that only
+  surfaces when run inside the full suite, in a completely unrelated domain
+  (users directory / accDcGraph router) with zero file overlap with
+  `coordinationByProjectView.ts`. The test file itself also carries a
+  pre-existing uncommitted 6-line WIP diff (`git log` shows its last real
+  commit was `69e423ad`, phase 04) that predates this session and was not
+  touched here. Out of scope for 20-05 per the Scope Boundary rule — left
+  unfixed. Targeted gates for this plan's actual changed files (
+  `coordinationByProjectView.ts`/`.test.ts`, `AccessAnalysisCharts.tsx`,
+  `mainCharts.tsx`) all pass: `npx tsc --noEmit` 0 errors, targeted vitest
+  38/38 + 8/8 green, `node scripts/repo-map/check.cjs` clean.

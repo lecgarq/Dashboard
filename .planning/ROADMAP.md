@@ -293,7 +293,7 @@ server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterizati
 
 ## Phases
 
-- [ ] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk
+- [x] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk (completed 2026-07-03)
 - [ ] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill
 - [ ] **Phase 22: Issue Type Resolution** - APS issue-type/subtype metadata backfill + local lookup table, then an issues-by-type breakdown chart
 - [ ] **Phase 23: Workshop Curation & Milestone Close** - Panel count/grouping review across all new + existing surfaces, full gate sequence, rebuild + owner parity check
@@ -313,7 +313,7 @@ server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterizati
   4. User can see dormant users bucketed by `AccProjectMember.lastSignIn` recency bands (<30d / 30–90d / 90–365d / >365d), with an explicit, labeled "Never signed in" bucket for `null` values verified against at least one real project with a never-signed-in member — not silently dropped.
   5. All four panels render inside the zinc theme via `@/components/ui/EChart` with theme-resolved colors; `npx tsc --noEmit` passes; `mainCharts.tsx`'s `Promise.all` fan-out is reviewed for the +4 new entries (consolidated per data domain where sensible, not four independent top-level additions) and `/access-analysis` load time is spot-checked before/after.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 
@@ -321,7 +321,7 @@ Plans:
 - [x] 20-02-PLAN.md — ENG-01: dormant users by sign-in recency (**documented deviation**: `AccDcUser.lastSignIn` via `AccDcProjectUser` — the roadmap-named `AccProjectMember.lastSignIn` is live-verified 100% NULL/dead; DC-coverage scope label required)
 - [x] 20-03-PLAN.md — ISSUE-01: issue-fetch coverage donut (extends `coordinationByProjectView.ts` in place with additive `issueCoverage`; 4 honest buckets, per-bucket project drill)
 - [x] 20-04-PLAN.md — PIPE-01: ingest freshness strip (latest `AccDcIngestRun` + live `AccActivity` count by `ingestRunId`; open-string status badges; ~36h stale flag; account-wide)
-- [ ] 20-05-PLAN.md — Wiring + verification: mount 4 panels at locked positions, `mainCharts.tsx` fan-out 8→11, full gates + live-page-load checkpoint (BigInt, Never bucket, load-time spot-check)
+- [x] 20-05-PLAN.md — Wiring + verification: mount 4 panels at locked positions, `mainCharts.tsx` fan-out 8→11, full gates + live-page-load checkpoint (BigInt, Never bucket, load-time spot-check)
 
 **UI hint**: yes
 
@@ -396,7 +396,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 17. HybridAnalyticsSurface Split | 2/2 | Complete (test-basis parity) | 2026-07-02 |
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
-| 20. Foundation Wins & Engagement Panels | 4/5 | In Progress|  |
+| 20. Foundation Wins & Engagement Panels | 5/5 | Complete   | 2026-07-03 |
 | 21. Issue Funnel — Status & Time | 0/TBD | Not started | - |
 | 22. Issue Type Resolution | 0/TBD | Not started | - |
 | 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |

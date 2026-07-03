@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: 20
-current_phase_name: not yet planned
-status: planning
-stopped_at: Completed 20-01-PLAN.md (PERM-01 permission footprint by role, not yet mounted)
-last_updated: "2026-07-03T15:47:00.000Z"
+current_phase_name: Foundation Wins & Engagement Panels
+status: phase-complete
+stopped_at: Completed 20-05-PLAN.md (all 4 Phase 20 panels wired + owner-approved live; project-picker GUID gap fixed)
+last_updated: "2026-07-03T16:15:37.065Z"
 last_activity: 2026-07-03
-last_activity_desc: "Executed 20-01-PLAN.md (PERM-01): permissionFootprintView loader (BigInt->Number conversion), formatBytes + summarizePermissionFootprint pure transforms, PermissionFootprintChart client component with per-role project drill. Not yet mounted; plan 20-05 places it after the role-related charts, before Model Coordination."
+last_activity_desc: "Executed 20-05-PLAN.md: wired PermissionFootprintChart/DormantSignInChart/IssueFetchCoverageDonut/IngestFreshnessPanel into /access-analysis (mainCharts.tsx fan-out 8→11); owner live-verified with functional approval ('Is good but') + 7 UAT feedback items routed to a follow-up phase; fixed an in-phase project-picker raw-GUID gap in coordinationByProjectView.ts (merges AccDcProject names, honest 'Unknown project' floor). Phase 20 (PERM-01/ENG-01/ISSUE-01/PIPE-01) complete, 5/5 plans."
 progress:
   total_phases: 15
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 27
-  completed_plans: 26
-  percent: 73
+  completed_plans: 27
+  percent: 80
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (not yet planned)
-- **Plan:** — (none yet; next step is `/gsd:plan-phase 20`)
-- **Status:** Ready to plan phase 20
-- **Last activity:** 2026-07-02 — Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending").
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans)
+- **Plan:** 20-05 complete (wiring + verification; owner-approved live)
+- **Status:** Phase 20 complete. Next: `/gsd:plan-phase 21` (Issue Funnel — Status & Time), OR a discuss-phase pass to scope the 6 owner UAT follow-up items from 20-05 into a new phase first (see 20-05-SUMMARY.md "UAT Feedback / Follow-ups").
+- **Last activity:** 2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete.
 
 ## Status (data baseline — still current)
 
@@ -159,11 +159,20 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 - [Phase 20]: PERM-01 (20-01): permissionFootprintView loader converts AccFolderPermissionSummary.totalBytes (BigInt) to Number at the server boundary only (Pitfall 2); resolves project names via buildProjectNameMap/resolveProjectName (AccProject-over-AccDcProject) and role names via AccRole, falling back to "Unknown role"/"Unknown project". New formatBytes() helper (B/KB/MB/GB/TB, 1024-based) -- the milestone's one genuinely new formatting helper. summarizePermissionFootprint aggregates top-10 + "Other (N roles)" by totalBytes desc, with a per-role project drill map. PermissionFootprintChart uses local drill state (RolesPieChart.tsx's toggleDrill pattern), not the shared sliceFilters bus. Deviation: fixed a BigInt-literal (`n`-suffix) TS2737 error caught by tsc --noEmit -- switched to BigInt() constructor per the standing ES2017-target convention. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx (after the role-related charts, before Model Coordination).
 
+- [Phase 20]: 20-05 (wiring + verification, PLAN COMPLETE): all 4 panels mounted at their CONTEXT.md-locked positions in AccessAnalysisCharts.tsx behind optional props, picker-only selection filtering (filterRowsBySelection, mirrors the moduleSummary pattern, no sliceFilters extension); mainCharts.tsx Promise.all fan-out grew 8→11 (flat/parallel, ISSUE-01 rides the existing loadCoordinationByProject call, adds nothing new). Owner live-verified on :3100 (Turbopack dev server) and gave functional approval ("Is good but") -- no BigInt serialization error observed, all 4 panels render correctly -- conditioned on 7 verbatim change-request items, 6 of which are new product scope explicitly deferred to a follow-up phase (see 20-05-SUMMARY.md "UAT Feedback / Follow-ups" for the full list: ENG-01 semantic pivot to activity recency, permission-footprint reframe to permission-volume-by-level, terrain/Compare-tab UX consolidation, role-click scroll-jump bug, new folder-activity-by-company graph, /access-analysis tabbed-IA redesign). Item 1 (raw project-GUID leaking into the FilterBanner/ProjectPicker) was fixed in-phase: coordinationByProjectView.ts's rows now merge AccDcProject via buildProjectNameMap/resolveProjectName (pre-existing bug since commit f8f98e5f0, exposed by this plan's wiring review) -- any id in neither AccProject nor AccDcProject now renders "Unknown project", never a bare GUID. `npm test` full suite: 2329 passed / 12 failed (pre-existing, unrelated `UsersDirectoryClient.integration.test.tsx` test-isolation issue, confirmed passes in isolation, logged to deferred-items.md) / 1 skipped. Dev server on :3100 (PID from prior session) killed cleanly; production :3000 Task Scheduler service untouched throughout.
+
 ### Blockers/Concerns
 
-- None blocking v2.3 Phase 20. Risk is concentrated and isolated in Phase 22 (ISSUE-04's
-  external APS call + new Prisma migration) — tracked above and sequenced deliberately after
-  the lower-risk Phase 20/21 work.
+- None blocking. Phase 20 shipped clean. Risk for the rest of v2.3 is concentrated and isolated
+  in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above and
+  sequenced deliberately after the lower-risk Phase 20/21 work.
+
+- **Deferred (non-blocking, new since 20-05):** 6 owner UAT follow-up items from the Phase 20
+  live checkpoint are new product scope, not yet a planned phase — see 20-05-SUMMARY.md "UAT
+  Feedback / Follow-ups" for the full verbatim list (ENG-01 semantic pivot, permission-footprint
+  reframe, terrain/Compare-tab consolidation, role-click scroll-jump bug, folder-activity-by-
+  company graph, /access-analysis tabbed-IA redesign). Recommend scoping via discuss-phase
+  before planning further v2.3 phases, since some of these may reshape Phase 21-23's own scope.
 
 - **Open (non-blocking, carried from v2.2):** owner visual sign-off on the Phase 17
   HybridAnalyticsSurface split (SPLIT-04) has not occurred — `/users/access-analysis`
@@ -178,9 +187,13 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 ## Next Action
 
-Roadmap created for milestone **v2.3 New Graphs** (`.planning/ROADMAP.md` updated in place;
-`.planning/REQUIREMENTS.md` traceability filled 8/8). Next: `/gsd:plan-phase 20` (Foundation
-Wins & Engagement Panels: ISSUE-01, PERM-01, ENG-01, PIPE-01).
+**Phase 20 (Foundation Wins & Engagement Panels) is COMPLETE** — 5/5 plans, all 4 requirements
+(PERM-01, ENG-01, ISSUE-01, PIPE-01) shipped and owner-approved live on `/access-analysis`.
+Next: either `/gsd:plan-phase 21` (Issue Funnel — Status & Time), or first run a discuss-phase
+pass to scope the 6 deferred owner UAT feedback items from 20-05 into a properly-prioritized
+follow-up phase (recommended, since several are panel-semantic pivots and a page-level IA
+redesign, not small tweaks) — see `.planning/phases/20-foundation-wins-engagement-panels/
+20-05-SUMMARY.md` "UAT Feedback / Follow-ups" for the full verbatim list.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
@@ -203,14 +216,15 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T15:45:00.000Z
-**Stopped at:** Completed 20-03-PLAN.md (ISSUE-01 issue-fetch coverage donut, not yet mounted)
+**Last session:** 2026-07-03T16:15:37.065Z
+**Stopped at:** Completed 20-05-PLAN.md (Phase 20 COMPLETE — all 4 panels wired + owner-approved live; project-picker GUID gap fixed)
 **Resume file:** None
 
 ## Performance Metrics
 
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
+| Phase 20 P05 | ~35min | 3 tasks + 1 gap-fix | 6 files |
 | Phase 20 P04 | 5min | 3 tasks | 6 files |
 | Phase 20 P02 | 55min | 3 tasks | 6 files |
 | Phase 20 P03 | 35min | 3 tasks | 6 files |
