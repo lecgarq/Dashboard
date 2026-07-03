@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, fireEvent, within } from "@testing-library/react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -10,11 +10,53 @@ vi.mock("echarts-for-react", () => ({
   },
 }));
 
+// UsersTabPanel's activity-recency detail table (20.1-06) uses the shared
+// DataTable (@tanstack/react-virtual). jsdom has no scroll geometry so the
+// real virtualizer returns 0 items by default — mock it to render every row,
+// same pattern as components/ui/__tests__/DataTable.test.tsx and
+// template-mty/__tests__/TemplateMembersTable.test.tsx.
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: (opts: { count: number }) => {
+    const count = opts.count ?? 0;
+    const items = Array.from({ length: count }, (_, i) => ({
+      key: i,
+      index: i,
+      start: i * 72,
+      end: (i + 1) * 72,
+      lane: 0,
+      size: 72,
+    }));
+    return {
+      getVirtualItems: () => items,
+      getTotalSize: () => count * 72,
+      measureElement: vi.fn(),
+      options: { scrollMargin: 0 },
+    };
+  },
+}));
+
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal("ResizeObserver", ResizeObserverStub);
+
+beforeAll(() => {
+  if (!HTMLElement.prototype.scrollIntoView) {
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+  }
+  if (typeof window !== "undefined" && !window.scrollTo) {
+    window.scrollTo = vi.fn() as typeof window.scrollTo;
+  }
+});
+
 import { AccessAnalysisCharts } from "../components/AccessAnalysisCharts";
 import type { ProjectRoleRow } from "../projectFilter";
 import type { ModuleActivityRow } from "../moduleCounts";
-import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintView";
-import type { SignInRecencyRow } from "@/lib/server/signInRecencyView";
+import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
+import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
+import type { FolderActivityActorRow } from "@/lib/server/folderActivityByCompanyView";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { TerrainProjectOption, FolderTerrainData } from "../folderTerrain";
 
@@ -360,14 +402,20 @@ describe("AccessAnalysisCharts — 'No activity' footers (replaces the Dormant p
   });
 });
 
-// Phase 20 panels (20-05 mount): PermissionFootprintChart, DormantSignInChart,
-// IssueFetchCoverageDonut, IngestFreshnessPanel — each behind an optional prop.
-// 20.1-05 relocated these into Roles/Users/Projects/Overview tabs respectively.
-const permissionFootprintRows: PermissionFootprintRow[] = [
-  { projectId: "p1", projectName: "Tower A", roleId: "r1", roleName: "Project Admin", folderCount: 10, totalBytes: 5_000_000 },
+// Phase 20 panels (20-05 mount): IssueFetchCoverageDonut, IngestFreshnessPanel —
+// each behind an optional prop, relocated into Projects/Overview tabs by 20.1-05.
+// The Roles-tab byte-footprint panel and Users-tab sign-in-recency panel were
+// replaced by the PERM-01/ENG-01 panel-semantic pivots below (20.1-06).
+const permissionLevelRows: PermissionLevelRow[] = [
+  { projectId: "p1", projectName: "Tower A", roleId: "r1", roleName: "Project Admin", permType: "Full Controller", folderCount: 10 },
+  { projectId: "p2", projectName: "Tower B", roleId: "r2", roleName: "Viewer", permType: "View Only", folderCount: 2 },
 ];
-const signInRecencyRows: SignInRecencyRow[] = [
-  { projectId: "p1", name: "Ana", company: "LECG", lastSignIn: null },
+const activityRecencyRows: ActivityRecencyRow[] = [
+  { projectId: "p1", email: "ana@x.com", name: "Ana", company: "LECG", roles: ["Member"], lastActivityAt: null },
+  { projectId: "p2", email: "bob@x.com", name: "Bob", company: "Acme", roles: ["Designer"], lastActivityAt: "2026-01-01T00:00:00.000Z" },
+];
+const folderScopedActivityRows: FolderActivityActorRow[] = [
+  { projectId: "p1", userEmail: "ana@x.com", userName: "Ana", count: 5 },
 ];
 const coordinationDataWithCoverage: CoordinationByProjectData = {
   rows: [],
@@ -383,45 +431,24 @@ const coordinationDataWithCoverage: CoordinationByProjectData = {
   },
 };
 
-describe("AccessAnalysisCharts — Phase 20 panels (PERM-01/ENG-01/ISSUE-01/PIPE-01)", () => {
-  it("hides all four new panels when their props are omitted (no crash, no new sections)", () => {
-    const { queryByText, getByRole } = render(
+describe("AccessAnalysisCharts — Phase 20 panels (ISSUE-01/PIPE-01)", () => {
+  it("hides the panels gated by a missing lazy-loader prop (no crash, no new sections)", async () => {
+    const { queryByText, findByText, getByRole } = render(
       <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />,
     );
     openTab(getByRole, /users/i);
-    expect(queryByText("Dormant users")).toBeNull();
+    expect(queryByText("Activity recency detail")).toBeNull();
     openTab(getByRole, /roles/i);
-    expect(queryByText("Permission footprint by role")).toBeNull();
+    expect(queryByText("Permission volume by level")).toBeNull();
+    expect(queryByText("Activity recency by role")).toBeNull();
+    openTab(getByRole, /companies/i);
+    expect(queryByText("Folder activity by company")).toBeNull();
     openTab(getByRole, /projects/i);
     expect(queryByText("Issue data coverage")).toBeNull();
     openTab(getByRole, /^overview$/i);
     expect(queryByText(/No Data Connector ingest runs recorded/)).toBeNull();
-  });
-
-  it("mounts Permission footprint by role after Role distribution when rows are supplied", () => {
-    const { getByText, getByRole } = render(
-      <AccessAnalysisCharts
-        roleRows={roleRows}
-        moduleRows={moduleRows}
-        permissionFootprintRows={permissionFootprintRows}
-      />,
-    );
-    openTab(getByRole, /roles/i);
-    expect(getByText("Permission footprint by role")).toBeTruthy();
-    expect(getByText("Project Admin")).toBeTruthy();
-  });
-
-  it("mounts Dormant users on the Users tab when sign-in recency rows are supplied", () => {
-    const { getByText, getByTestId, getByRole } = render(
-      <AccessAnalysisCharts
-        roleRows={roleRows}
-        moduleRows={moduleRows}
-        signInRecencyRows={signInRecencyRows}
-      />,
-    );
-    openTab(getByRole, /users/i);
-    expect(getByText("Dormant users")).toBeTruthy();
-    expect(getByTestId("dormant-headline")).toBeTruthy();
+    // Confirms the "no crash" assertion isn't racing an unresolved effect.
+    await findByText("Activity by module");
   });
 
   it("mounts Issue data coverage above Model Coordination on the Projects tab when coordinationData.issueCoverage is present", () => {
@@ -455,25 +482,161 @@ describe("AccessAnalysisCharts — Phase 20 panels (PERM-01/ENG-01/ISSUE-01/PIPE
     // Overview is the default tab — no click needed.
     expect(getByText(/Account-wide/)).toBeTruthy();
   });
+});
 
-  it("filters the three project-keyed panels by the project picker selection", () => {
-    const twoProjectPermissionRows: PermissionFootprintRow[] = [
-      ...permissionFootprintRows,
-      { projectId: "p2", projectName: "Tower B", roleId: "r2", roleName: "Viewer", folderCount: 2, totalBytes: 1_000 },
-    ];
-    const { getByTestId, getByRole } = render(
+// 20.1-06: PERM-01 reframe (Permission volume by level) + ENG-01 pivot (Activity
+// recency by role + the Users-tab detail table) + UAT-6 (Folder activity by
+// company) — all three ride lazy per-tab `load*` function props (fetched by the
+// shell on first Roles/Users/Companies tab activation), NOT eager data props.
+describe("AccessAnalysisCharts — 20.1-06 panel-semantic swaps (PERM-01/ENG-01/UAT-6)", () => {
+  it("mounts Permission volume by level and Activity recency by role after the donut grid when their loaders are supplied", async () => {
+    const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const { getByRole, findByText, getAllByTestId } = render(
       <AccessAnalysisCharts
         roleRows={roleRows}
         moduleRows={moduleRows}
-        permissionFootprintRows={twoProjectPermissionRows}
+        loadPermissionLevel={loadPermissionLevel}
+        loadActivityRecency={loadActivityRecency}
       />,
     );
     openTab(getByRole, /roles/i);
-    expect(getByTestId("permission-footprint-legend").textContent).toContain("Viewer");
+    await findByText("Permission volume by level");
+    expect(await findByText("Activity recency by role")).toBeTruthy();
+    // Both charts rendered (not their empty state) — 2 non-empty EChart nodes.
+    expect(getAllByTestId("echart").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("mounts the per-membership activity-recency detail table on the Users tab when its loader is supplied", async () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const { getByRole, findByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadActivityRecency={loadActivityRecency}
+      />,
+    );
+    openTab(getByRole, /users/i);
+    await findByText("Activity recency detail");
+    expect(await findByText("Ana")).toBeTruthy();
+    expect(await findByText("Bob")).toBeTruthy();
+  });
+
+  it("mounts Folder activity by company after the two existing company donuts when its loaders are supplied", async () => {
+    const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
+    const loadCompanyFolderBreakdown = vi.fn(async () => []);
+    const { getByRole, findByText, getByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadFolderScopedActivity={loadFolderScopedActivity}
+        loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
+      />,
+    );
+    openTab(getByRole, /companies/i);
+    await findByText("Folder activity by company");
+    // No membershipRows supplied → every activity row falls into Unknown company (honest, not dropped).
+    expect(getByTestId("folder-activity-by-company-legend").textContent).toContain("Unknown company");
+  });
+
+  it("filters Activity recency by role by the project picker selection", async () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const { getByTestId, getByRole, findByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadActivityRecency={loadActivityRecency}
+      />,
+    );
+    openTab(getByRole, /roles/i);
+    const headline = await findByTestId("activity-recency-headline");
+    expect(headline.textContent).toContain("2");
     fireEvent.focus(getByTestId("project-search"));
-    fireEvent.click(getByRole("checkbox", { name: /tower b/i })); // untick p2 (Viewer's only project)
-    expect(getByTestId("permission-footprint-legend").textContent).not.toContain("Viewer");
-    expect(getByTestId("permission-footprint-legend").textContent).toContain("Project Admin");
+    fireEvent.click(getByRole("checkbox", { name: /tower b/i })); // untick p2 (Bob's only project)
+    expect(getByTestId("activity-recency-headline").textContent).toContain("1");
+  });
+
+  it("does not call any of the three lazy loaders on initial (Overview) render", () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
+    const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
+    const loadCompanyFolderBreakdown = vi.fn(async () => []);
+    render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadActivityRecency={loadActivityRecency}
+        loadPermissionLevel={loadPermissionLevel}
+        loadFolderScopedActivity={loadFolderScopedActivity}
+        loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
+      />,
+    );
+    expect(loadActivityRecency).not.toHaveBeenCalled();
+    expect(loadPermissionLevel).not.toHaveBeenCalled();
+    expect(loadFolderScopedActivity).not.toHaveBeenCalled();
+  });
+
+  it("fetches activity-recency + permission-level exactly once on first Roles-tab activation, and caches on revisit", async () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
+    const { getByRole, findByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadActivityRecency={loadActivityRecency}
+        loadPermissionLevel={loadPermissionLevel}
+      />,
+    );
+    openTab(getByRole, /roles/i);
+    await findByText("Permission volume by level");
+    await findByText("Activity recency by role");
+    expect(loadActivityRecency).toHaveBeenCalledTimes(1);
+    expect(loadPermissionLevel).toHaveBeenCalledTimes(1);
+
+    // Revisit: Overview then back to Roles — cached, no refetch.
+    openTab(getByRole, /^overview$/i);
+    openTab(getByRole, /roles/i);
+    expect(loadActivityRecency).toHaveBeenCalledTimes(1);
+    expect(loadPermissionLevel).toHaveBeenCalledTimes(1);
+  });
+
+  it("shares the activity-recency fetch across the Roles and Users tabs (fetched once, visible on both)", async () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const { getByRole, findByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadActivityRecency={loadActivityRecency}
+      />,
+    );
+    openTab(getByRole, /users/i);
+    await findByText("Activity recency detail");
+    expect(loadActivityRecency).toHaveBeenCalledTimes(1);
+
+    // Roles tab reads the SAME cached rows — no second fetch.
+    openTab(getByRole, /roles/i);
+    await findByText("Activity recency by role");
+    expect(loadActivityRecency).toHaveBeenCalledTimes(1);
+  });
+
+  it("fetches folder-scoped activity exactly once on first Companies-tab activation, and caches on revisit", async () => {
+    const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
+    const loadCompanyFolderBreakdown = vi.fn(async () => []);
+    const { getByRole, findByText } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        loadFolderScopedActivity={loadFolderScopedActivity}
+        loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
+      />,
+    );
+    openTab(getByRole, /companies/i);
+    await findByText("Folder activity by company");
+    expect(loadFolderScopedActivity).toHaveBeenCalledTimes(1);
+
+    openTab(getByRole, /^overview$/i);
+    openTab(getByRole, /companies/i);
+    expect(loadFolderScopedActivity).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -558,21 +721,27 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     expect(queryByText(/Pick projects to compare/i)).toBeNull();
   });
 
-  it("panel-inventory guard: every one of the 11 pre-existing panels is reachable inside its assigned tab", () => {
+  it("panel-inventory guard: every one of the 14 panels (post-20.1-06) is reachable inside its assigned tab", async () => {
     const terrainProjects: TerrainProjectOption[] = [
       { id: "p1", name: "Tower A", office: "MTY", folderCount: 2, permCount: 3, userRoleCount: 3 },
     ];
     const loadTerrain = vi.fn(async (): Promise<FolderTerrainData | null> => null);
     const loadOverview = vi.fn(async (): Promise<FolderTerrainData | null> => null);
-    const { getByText, getByRole } = render(
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => activityRecencyRows);
+    const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
+    const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
+    const loadCompanyFolderBreakdown = vi.fn(async () => []);
+    const { getByText, getByRole, findByText } = render(
       <AccessAnalysisCharts
         roleRows={roleRows}
         moduleRows={moduleRows}
         timelineRows={[]}
         activityActorRows={activityActorRows}
         membershipRows={membershipRows}
-        permissionFootprintRows={permissionFootprintRows}
-        signInRecencyRows={signInRecencyRows}
+        loadActivityRecency={loadActivityRecency}
+        loadPermissionLevel={loadPermissionLevel}
+        loadFolderScopedActivity={loadFolderScopedActivity}
+        loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
         coordinationData={coordinationDataWithCoverage}
         ingestFreshness={{
           id: "run1",
@@ -594,20 +763,23 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     expect(getByText("Activity by module")).toBeTruthy();
     expect(getByText(/Account-wide/)).toBeTruthy();
 
-    // Roles: Role distribution, Activity by role, Permission footprint by role.
+    // Roles: Role distribution, Activity by role, Permission volume by level
+    // (PERM-01), Activity recency by role (ENG-01).
     openTab(getByRole, /roles/i);
     expect(getByText("Role distribution")).toBeTruthy();
     expect(getByText("Activity by role")).toBeTruthy();
-    expect(getByText("Permission footprint by role")).toBeTruthy();
+    await findByText("Permission volume by level");
+    expect(getByText("Activity recency by role")).toBeTruthy();
 
-    // Users: Dormant users.
+    // Users: Activity recency detail (ENG-01 user-level cut).
     openTab(getByRole, /users/i);
-    expect(getByText("Dormant users")).toBeTruthy();
+    await findByText("Activity recency detail");
 
-    // Companies: Users by company, Activity by company.
+    // Companies: Users by company, Activity by company, Folder activity by company (UAT-6).
     openTab(getByRole, /companies/i);
     expect(getByText("Users by company")).toBeTruthy();
     expect(getByText("Activity by company")).toBeTruthy();
+    await findByText("Folder activity by company");
 
     // Projects: Issue data coverage, Model Coordination.
     openTab(getByRole, /projects/i);
