@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Concerns Hardening
-current_phase: 20
-current_phase_name: Foundation Wins & Engagement Panels
-status: phase-complete
-stopped_at: Completed 20-05-PLAN.md (all 4 Phase 20 panels wired + owner-approved live; project-picker GUID gap fixed)
-last_updated: "2026-07-03T16:15:37.065Z"
-last_activity: 2026-07-03
-last_activity_desc: "Executed 20-05-PLAN.md: wired PermissionFootprintChart/DormantSignInChart/IssueFetchCoverageDonut/IngestFreshnessPanel into /access-analysis (mainCharts.tsx fan-out 8→11); owner live-verified with functional approval ('Is good but') + 7 UAT feedback items routed to a follow-up phase; fixed an in-phase project-picker raw-GUID gap in coordinationByProjectView.ts (merges AccDcProject names, honest 'Unknown project' floor). Phase 20 (PERM-01/ENG-01/ISSUE-01/PIPE-01) complete, 5/5 plans."
+milestone: v2.3
+milestone_name: New Graphs
+status: in_progress
+stopped_at: Completed 20-05-PLAN.md (Phase 20 COMPLETE — all 4 panels wired + owner-approved live; project-picker GUID gap fixed)
+last_updated: "2026-07-03T16:23:43.324Z"
+last_activity: "2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete."
 progress:
-  total_phases: 15
+  total_phases: 12
   completed_phases: 12
   total_plans: 27
   completed_plans: 27
-  percent: 80
 ---
 
 # Project State
@@ -24,14 +20,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` (+ `/template-mty` where a genuine fit exists) from existing-but-unvisualized Prisma data. Roadmap created; ready to plan Phase 20.
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` (+ `/template-mty` where a genuine fit exists) from existing-but-unvisualized Prisma data. Phase 20 complete (2026-07-03); Phases 21-23 remain.
 
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans)
 - **Plan:** 20-05 complete (wiring + verification; owner-approved live)
-- **Status:** Phase 20 complete. Next: `/gsd:plan-phase 21` (Issue Funnel — Status & Time), OR a discuss-phase pass to scope the 6 owner UAT follow-up items from 20-05 into a new phase first (see 20-05-SUMMARY.md "UAT Feedback / Follow-ups").
+- **Status:** Phase 20 complete + verified (VERIFICATION passed). Next: route owner UAT feedback (6 new-scope items → proposed Phase 20.1 IA redesign) or plan Phase 21.
 - **Last activity:** 2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete.
 
 ## Status (data baseline — still current)
