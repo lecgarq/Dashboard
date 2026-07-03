@@ -55,4 +55,22 @@ destructive git operation on other agents' commits.
   are NOT introduced by any 20-03 file — `tsc --noEmit` output filtered for
   `coordinationByProjectView`/`issueFetchCoverageCounts`/
   `IssueFetchCoverageDonut` shows zero errors. Left untouched — out of scope
-  for 20-03; owned by 20-01.
+  for 20-03; owned by 20-01. (Note: 20-01's own execution independently fixed
+  this via `BigInt()` constructor per its STATE.md decision entry.)
+
+## From 20-02 execution (post-SUMMARY note)
+
+- The staging-index race recurred at the *final metadata-commit* stage, not
+  just at task-commit stage: `20-02-SUMMARY.md` was `git add`ed and left
+  staged while this agent ran `gsd-tools query state.*`/`roadmap.*`/
+  `requirements.*` commands; a concurrently-running sibling agent's own
+  `docs(20-04): complete ingest freshness panel plan` commit (`8aa5f68a`)
+  swept it in alongside their own `20-04-SUMMARY.md` and the shared
+  STATE/ROADMAP/REQUIREMENTS diffs. No content lost or corrupted — verified
+  `20-02-SUMMARY.md` is present, complete, and correctly attributed to plan
+  20-02 in that commit's tree — but the commit message names only 20-04.
+  Lesson for future phase-20-style parallel waves: commit (or at minimum
+  `git add`) the plan SUMMARY.md immediately before running any `gsd-tools`
+  state/roadmap/requirements mutation, not after — those commands and their
+  eventual final `commit` call race with sibling agents' own final commits
+  on the same shared STATE/ROADMAP/REQUIREMENTS files.
