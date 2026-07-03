@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: "20.1"
-current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 2 of 7 plans: 20.1-05 done)"
+current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 3 of 7 plans: 20.1-06 done)"
 status: verifying
-stopped_at: "20.1-05 executed: /access-analysis split into 6-tab IA shell (Overview/Roles/Users/Companies/Projects/Compare), terrain relocated into Compare tab driven by the global picker; 20.1-06/07 remain"
-last_updated: "2026-07-03T22:34:33.000Z"
+stopped_at: "Completed 20.1-06-PLAN.md: panel-semantic swaps mounted (Roles/Users/Companies tabs), mainCharts.tsx fan-out trimmed 11->9, superseded panels + dead loaders deleted"
+last_updated: "2026-07-03T23:00:07.457Z"
 last_activity: 2026-07-03
-last_activity_desc: "Phase 20.1 wave 2: 20.1-05 (tab-IA shell split + terrain-in-Compare mount, UAT-7/UAT-4) complete. AccessAnalysisCharts.tsx (722L) split into a thin shell + SectionHeaders.tsx + 6 *TabPanel components; TerrainReveal deleted (Compare tab's TabsContent unmount replaces its expand-gate); 33 existing + 6 new tests migrated to tab-aware queries (Radix Tabs.Trigger activates on mouseDown, not click); page.test.tsx roles-donut route test fixed for the new tab location. Full access-analysis module scope green (51 files/432 tests). See 20.1-05-SUMMARY.md for full detail."
+last_activity_desc: "Phase 20.1 wave 3: 20.1-06 (panel-semantic swaps mount) complete. Roles tab gets Permission volume by level (PERM-01) + Activity recency by role (ENG-01); Users tab gets a per-membership activity-recency detail table; Companies tab gets Folder activity by company (UAT-6). `mainCharts.tsx`'s eager `Promise.all` fan-out trimmed 11→9 — the 3 new loaders ride lazy fetch-once-per-tab-activation effects instead. Superseded panels + dead loaders deleted (DormantSignInChart, PermissionFootprintChart, signInRecencyView, permissionFootprintView). Full test suite: 2386 passed/1 skipped/0 failed. See STATE.md frontmatter `last_activity_desc` and `20.1-06-SUMMARY.md` for details."
 progress:
   total_phases: 16
   completed_phases: 12
   total_plans: 34
-  completed_plans: 32
-  percent: 94
+  completed_plans: 33
+  percent: 97
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04/05 complete; 20.1-06/07 remain).
-- **Plan:** 20.1-05 complete (tab-IA shell split + terrain-in-Compare mount, UAT-7/UAT-4; 20.1-06 will swap in the ENG-01/PERM-01/UAT-6 panels)
-- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 2 (20.1-05, depends_on 20.1-04) complete. Next: 20.1-06 (panel-semantic swaps into the new tab shell), then 20.1-07 (scroll-jump fix + owner UAT re-check).
-- **Last activity:** 2026-07-03 — Phase 20.1 wave 2: 20.1-05 (tab-IA shell split + terrain-in-Compare mount) complete. `/access-analysis` reorganized into 6 themed tabs (Overview/Roles/Users/Companies/Projects/Compare); `AccessAnalysisCharts.tsx` split into a thin shell + `SectionHeaders.tsx` + 6 `*TabPanel` components; `TerrainReveal` deleted (Compare tab's `TabsContent` unmount replaces its expand-gate); full test suite migrated + green (51 files/432 tests). See STATE.md frontmatter `last_activity_desc` and `20.1-05-SUMMARY.md` for details.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04/05/06 complete; 20.1-07 remains).
+- **Plan:** 20.1-06 complete (panel-semantic swaps mount, UAT-2/UAT-3/UAT-6/UAT-7; 20.1-07 will fix the role-click scroll-jump bug and re-check all six UAT items live with the owner)
+- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 3 (20.1-06, depends_on 20.1-01/02/03/05) complete. Next: 20.1-07 (scroll-jump fix + owner UAT re-check) — the final plan in this phase.
+- **Last activity:** 2026-07-03 — Phase 20.1 wave 3: 20.1-06 (panel-semantic swaps mount) complete. Roles tab gets Permission volume by level (PERM-01) + Activity recency by role (ENG-01); Users tab gets a per-membership activity-recency detail table; Companies tab gets Folder activity by company (UAT-6). `mainCharts.tsx`'s eager `Promise.all` fan-out trimmed 11→9 — the 3 new loaders ride lazy fetch-once-per-tab-activation effects instead. Superseded panels + dead loaders deleted (DormantSignInChart, PermissionFootprintChart, signInRecencyView, permissionFootprintView). Full test suite: 2386 passed/1 skipped/0 failed. See STATE.md frontmatter `last_activity_desc` and `20.1-06-SUMMARY.md` for details.
 
 ## Status (data baseline — still current)
 
@@ -170,6 +170,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20.1]: 20.1-03: summarizeFolderActivityByCompany ranks UNKNOWN_COMPANY like any other slice (not pinned) -- differs from collapseCompanySlices' pinning convention, but preserves losslessness (its count survives inside the collapsed Other bucket)
 - [Phase 20.1]: 20.1-03: FolderActivityByCompanyChart is the new 'Folder activity by company' graph (UAT-6), built as a two-pass bounded design (10,566-row headline aggregate + lazy per-company folder drill capped at 1,000 emails / 1,500 project ids) -- never materializes the 190,049-row company x folder cross-product. Built UNMOUNTED; plan 20.1-06 mounts it in the Companies tab.
 - [Phase 20.1]: 20.1-05 (tab-IA shell split, UAT-7/UAT-4): AccessAnalysisCharts.tsx (722L) split into a thin shell (state + picker/FilterBanner + Tabs root, ~452L) + SectionHeaders.tsx + 6 presentational *TabPanel siblings (Overview/Roles/Users/Companies/Projects/Compare); all 11 pre-existing panels relocated intact with zero semantic changes. Compare tab mounts FolderPermissionTerrain with externalSelectedIds/hidePickers (20.1-04 props); TerrainReveal deleted, Radix TabsContent's unmount-by-default is the new lazy-mount gate. mainCharts.tsx untouched (11-entry Promise.all fan-out unchanged until 20.1-06). RECORDED ASSUMPTION surfaced for 20.1-07 owner checkpoint: the global picker defaults to ALL projects selected, so Compare's first paint derives compare-mode over the top-6-staffed intersection, not the all-folders overview -- that only shows once the user actively clears the selection. DEVIATION: Radix Tabs.Trigger activates on onMouseDown not onClick (verified in @radix-ui/react-tabs source) -- test suite (33 migrated + 6 new cases) uses fireEvent.mouseDown; @testing-library/user-event is NOT installed (no-new-deps), so the plan's suggested userEvent.click pattern was swapped for the repo's existing fireEvent convention. page.test.tsx's roles-donut route test also fixed (broken by the shell rewrite, same mouseDown pattern). Full access-analysis module scope green: 51 files / 432 tests.
+- [Phase 20.1]: 20.1-06 (panel-semantic swaps mount, UAT-2/3/6/7): PermissionLevelChart + ActivityRecencyChart mounted on Roles tab replacing PermissionFootprintChart; new per-membership activity-recency detail DataTable on Users tab replacing DormantSignInChart; FolderActivityByCompanyChart mounted on Companies tab (UAT-6). mainCharts.tsx eager Promise.all trimmed 11->9 (STATE.md fan-out review resolved); the 3 new loaders (activityRecency/permissionLevel/folderScopedActivity) ride lazy fetch-once-per-page-load effects gated by ref flags (not a rows-null check, to avoid infinite refetch on a no-session null result) keyed to first Roles/Users/Companies tab activation. Deleted DormantSignInChart/PermissionFootprintChart/signInRecencyView/permissionFootprintView + their tests (zero remaining importers, grep-verified); formatBytes retained per locked decision. npm test full suite: 2386 passed/1 skipped/0 failed (the previously-known 12 UsersDirectoryClient.integration failures did not reproduce this run).
 
 ### Blockers/Concerns
 
@@ -201,11 +202,14 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 **Phase 20 (Foundation Wins & Engagement Panels) is COMPLETE** — 5/5 plans, all 4 requirements
 (PERM-01, ENG-01, ISSUE-01, PIPE-01) shipped and owner-approved live on `/access-analysis`.
-Next: either `/gsd:plan-phase 21` (Issue Funnel — Status & Time), or first run a discuss-phase
-pass to scope the 6 deferred owner UAT feedback items from 20-05 into a properly-prioritized
-follow-up phase (recommended, since several are panel-semantic pivots and a page-level IA
-redesign, not small tweaks) — see `.planning/phases/20-foundation-wins-engagement-panels/
-20-05-SUMMARY.md` "UAT Feedback / Follow-ups" for the full verbatim list.
+
+**Phase 20.1 (Access-Analysis IA Redesign & Panel Semantics) is IN PROGRESS — 6/7 plans complete**
+(20.1-01 through 20.1-06). 20.1-06 mounted all three panel-semantic pivots (PERM-01 reframe,
+ENG-01 pivot, UAT-6 new company graph) into the 6-tab IA behind lazy per-tab loaders; see
+`20.1-06-SUMMARY.md`. **Next: `/gsd:plan-phase` continuation to execute 20.1-07** — the final
+plan in this phase (role-click scroll-jump fix + owner UAT re-check against all six verbatim
+items on a live `:3000`/`:3100` render). After 20.1-07, either `/gsd:plan-phase 21` (Issue
+Funnel — Status & Time) or a discuss-phase pass for any newly-surfaced follow-ups.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
@@ -228,8 +232,8 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T22:34:33.000Z
-**Stopped at:** Plan 20.1-05 executed: /access-analysis split into 6-tab IA shell (Overview/Roles/Users/Companies/Projects/Compare); terrain relocated into Compare tab driven by the global picker; TerrainReveal deleted; full test suite migrated + green
+**Last session:** 2026-07-03T23:00:07.448Z
+**Stopped at:** Completed 20.1-06-PLAN.md: panel-semantic swaps mounted (Roles/Users/Companies tabs), mainCharts.tsx fan-out trimmed 11->9, superseded panels + dead loaders deleted
 **Resume file:** None
 
 ## Performance Metrics
@@ -246,3 +250,4 @@ of v2.3 scope.
 | Phase 20.1 P04 | 6min | 2 tasks | 2 files |
 | Phase 20.1 P03 | 25min | 3 tasks | 7 files |
 | Phase 20.1 P05 | 12min | 3 tasks | 11 files |
+| Phase 20.1 P06 | 22min | 3 tasks | 9 files |
