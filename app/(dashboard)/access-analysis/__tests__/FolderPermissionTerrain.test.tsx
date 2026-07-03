@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
-import { FolderPermissionTerrain } from "../components/FolderPermissionTerrain";
+import { FolderPermissionTerrain, deriveTerrainSelection } from "../components/FolderPermissionTerrain";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
 
 const data: FolderTerrainData = {
@@ -209,5 +209,152 @@ describe("FolderPermissionTerrain", () => {
     const polys = terrain(container).querySelectorAll("polygon");
     fireEvent.click(polys[polys.length - 1]);
     expect(getByText(/configured in 470 projects/)).toBeTruthy();
+  });
+});
+
+// 20.1-04: externalSelectedIds / hidePickers — the terrain driven by the
+// page's global project picker (owner UAT item 4). All tests below are
+// ADDITIVE; the suite above characterizes the unchanged default behavior.
+
+describe("deriveTerrainSelection", () => {
+  it("returns overview for 0 external ids", () => {
+    expect(deriveTerrainSelection([], ["p1", "p2"])).toEqual({ mode: "overview", singleId: "", selected: [] });
+  });
+
+  it("returns single mode on that id for 1 external id", () => {
+    expect(deriveTerrainSelection(["p2"], ["p1", "p2", "p3"])).toEqual({ mode: "single", singleId: "p2", selected: ["p2"] });
+  });
+
+  it("returns compare mode with the top-staffed-ordered intersection for 5 ids all present", () => {
+    const topStaffed = ["p5", "p4", "p3", "p2", "p1"]; // userRoleCount-desc order
+    const result = deriveTerrainSelection(["p1", "p2", "p3", "p4", "p5"], topStaffed);
+    expect(result.mode).toBe("compare");
+    expect(result.singleId).toBe("p5");
+    expect(result.selected).toEqual(["p5", "p4", "p3", "p2", "p1"]);
+  });
+
+  it("caps the compare selection at 6 for 10 external ids", () => {
+    const topStaffed = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    const external = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    const result = deriveTerrainSelection(external, topStaffed);
+    expect(result.mode).toBe("compare");
+    expect(result.selected).toEqual(topStaffed.slice(0, 6));
+  });
+
+  it("falls back to single when only 1 of 2 external ids is in topStaffed", () => {
+    const result = deriveTerrainSelection(["p1", "pX"], ["p1", "p9"]);
+    expect(result).toEqual({ mode: "single", singleId: "p1", selected: ["p1"] });
+  });
+
+  it("falls back to overview when external ids are fully disjoint from topStaffed", () => {
+    const result = deriveTerrainSelection(["pX", "pY"], ["p1", "p2"]);
+    expect(result).toEqual({ mode: "overview", singleId: "", selected: [] });
+  });
+});
+
+describe("FolderPermissionTerrain — externalSelectedIds / hidePickers", () => {
+  // Wider fixture (3 projects, distinct userRoleCount) to exercise the
+  // top-staffed intersection with a set larger than the 2-project default fixture.
+  const projects3: TerrainProjectOption[] = [
+    { id: "p1", name: "Demo Project", office: "MTY", folderCount: 2, permCount: 3, userRoleCount: 5 },
+    { id: "p2", name: "Project Two", office: "MTY", folderCount: 2, permCount: 1, userRoleCount: 4 },
+    { id: "p3", name: "Project Three", office: "MTY", folderCount: 1, permCount: 1, userRoleCount: 3 },
+  ];
+
+  it("hides pickers and loads the overview when externally driven with an empty selection", async () => {
+    const loadOverview = vi.fn(async () => null);
+    const { container } = render(
+      <FolderPermissionTerrain
+        projects={projects}
+        initial={data}
+        loadTerrain={vi.fn(async () => null)}
+        loadOverview={loadOverview}
+        externalSelectedIds={[]}
+        hidePickers
+      />,
+    );
+    expect(container.querySelector("select")).toBeNull();
+    expect(container.textContent).not.toMatch(/Pick projects to compare/);
+    await vi.waitFor(() => expect(loadOverview).toHaveBeenCalled());
+  });
+
+  it("drives single mode from one external id, hides the ProjectSelect, and loads exactly that project", async () => {
+    const loadTerrain = vi.fn(async (id: string) => (id === "p2" ? data2 : null));
+    const { container } = render(
+      <FolderPermissionTerrain
+        projects={projects}
+        initial={null}
+        loadTerrain={loadTerrain}
+        externalSelectedIds={["p2"]}
+        hidePickers
+      />,
+    );
+    expect(container.querySelector("select")).toBeNull();
+    await vi.waitFor(() => expect(loadTerrain).toHaveBeenCalledWith("p2"));
+    expect(loadTerrain).toHaveBeenCalledTimes(1);
+  });
+
+  it("drives compare mode from 3 external ids using only the top-staffed intersection (capped at 6)", async () => {
+    const loadTerrain = vi.fn(async (id: string) => {
+      if (id === "p1") return data;
+      if (id === "p2") return data2;
+      return null;
+    });
+    const { container } = render(
+      <FolderPermissionTerrain
+        projects={projects3}
+        initial={null}
+        loadTerrain={loadTerrain}
+        externalSelectedIds={["p1", "p2", "pX"]}
+        hidePickers
+      />,
+    );
+    expect(container.textContent).not.toMatch(/Pick projects to compare/);
+    await vi.waitFor(() => expect(loadTerrain).toHaveBeenCalledWith("p1"));
+    await vi.waitFor(() => expect(loadTerrain).toHaveBeenCalledWith("p2"));
+    expect(loadTerrain).not.toHaveBeenCalledWith("pX");
+    expect(loadTerrain).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-syncs mode when externalSelectedIds changes after mount", async () => {
+    const loadOverview = vi.fn(async () => null);
+    const loadTerrain = vi.fn(async (id: string) => (id === "p1" ? data : null));
+    const { rerender, getByText, queryByText } = render(
+      <FolderPermissionTerrain
+        projects={projects}
+        initial={data}
+        loadTerrain={loadTerrain}
+        loadOverview={loadOverview}
+        externalSelectedIds={["p1"]}
+        hidePickers
+      />,
+    );
+    expect(queryByText("All projects · account-wide standard")).toBeNull();
+
+    rerender(
+      <FolderPermissionTerrain
+        projects={projects}
+        initial={data}
+        loadTerrain={loadTerrain}
+        loadOverview={loadOverview}
+        externalSelectedIds={[]}
+        hidePickers
+      />,
+    );
+    expect(getByText("All projects · account-wide standard")).toBeTruthy();
+    await vi.waitFor(() => expect(loadOverview).toHaveBeenCalled());
+  });
+
+  it("regression guard: renders pickers exactly as before when externalSelectedIds/hidePickers are absent", () => {
+    const { container, getByText } = render(
+      <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
+    );
+    // Default (unchanged) behavior: ProjectSelect (<select>) renders in single mode.
+    expect(container.querySelector("select")).toBeTruthy();
+    fireEvent.click(getByText("Compare"));
+    // ProjectMultiSelect (a <button>, not <select>) renders with its existing
+    // default `topStaffed.slice(0, 6)` selection — unaffected by this plan.
+    expect(container.querySelector("select")).toBeNull();
+    expect(getByText("Demo Project, Project Two")).toBeTruthy();
   });
 });
