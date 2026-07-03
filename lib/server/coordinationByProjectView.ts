@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
 import type { CoordinationRow } from "@/lib/acc/coordinationCounts";
+import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 /** Raw per-project issue-fetch coverage row for the latest AccIssueFetchRun. */
 export interface IssueCoverageProjectRow {
@@ -41,13 +42,14 @@ export async function loadCoordinationByProject(
 ): Promise<CoordinationByProjectData> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.data;
 
-  const [groups, projects, run] = await Promise.all([
+  const [groups, projects, dcProjects, run] = await Promise.all([
     db.accIssue.groupBy({
       by: ["projectId", "status"],
       where: CORE,
       _count: { id: true },
     }),
     db.accProject.findMany({ select: { id: true, name: true } }),
+    db.accDcProject.findMany({ select: { id: true, name: true } }),
     db.accIssueFetchRun.findFirst({
       orderBy: { startedAt: "desc" },
       select: {
@@ -62,10 +64,14 @@ export async function loadCoordinationByProject(
     }),
   ]);
 
-  const nameById = new Map(projects.map((p) => [p.id, p.name]));
+  // Merge AccProject (authoritative live superset) with AccDcProject (DC subset) so
+  // coordination-only projects resolve a real name instead of leaking the raw GUID
+  // into the FilterBanner/ProjectPicker universe (owner UAT feedback, 20-05 gap fix).
+  // Any id absent from both sources renders "Unknown project" — never a bare id.
+  const nameById = buildProjectNameMap(projects, dcProjects);
   const rows: CoordinationRow[] = groups.map((g) => ({
     projectId: g.projectId,
-    projectName: nameById.get(g.projectId) ?? g.projectId,
+    projectName: resolveProjectName(nameById, g.projectId),
     status: g.status ?? "unknown",
     count: g._count.id,
   }));

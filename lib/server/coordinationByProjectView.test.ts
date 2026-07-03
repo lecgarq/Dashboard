@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 const mocks = vi.hoisted(() => ({
   groupBy: vi.fn(),
   findProjects: vi.fn(),
+  findDcProjects: vi.fn(),
   findRun: vi.fn(),
   findFetchResults: vi.fn(),
 }));
@@ -13,6 +14,7 @@ vi.mock("@/server/db", () => ({
   db: {
     accIssue: { groupBy: mocks.groupBy },
     accProject: { findMany: mocks.findProjects },
+    accDcProject: { findMany: mocks.findDcProjects },
     accIssueFetchRun: { findFirst: mocks.findRun },
     accIssueProjectFetchResult: { findMany: mocks.findFetchResults },
   },
@@ -27,6 +29,7 @@ describe("loadCoordinationByProject", () => {
       { projectId: "p1", status: "open", _count: { id: 7 } },
     ]);
     mocks.findProjects.mockResolvedValue([{ id: "p1", name: "Project One" }]);
+    mocks.findDcProjects.mockResolvedValue([]);
     mocks.findRun.mockResolvedValue({
       id: "run1",
       status: "done",
@@ -56,6 +59,44 @@ describe("loadCoordinationByProject", () => {
     const data = await loadCoordinationByProject(true);
     expect(data.latestRunAt).toBe("2026-06-08T17:35:12.992Z");
     expect(data.coordinationCount).toBe(1661);
+  });
+
+  describe("project name resolution (20-05 gap fix — no raw GUID leakage into the picker)", () => {
+    it("falls back to AccDcProject when a coordination project has no AccProject name", async () => {
+      mocks.groupBy.mockResolvedValue([
+        { projectId: "p1", status: "open", _count: { id: 7 } },
+        { projectId: "dc-only", status: "open", _count: { id: 3 } },
+      ]);
+      mocks.findProjects.mockResolvedValue([{ id: "p1", name: "Project One" }]);
+      mocks.findDcProjects.mockResolvedValue([{ id: "dc-only", name: "DC Only Project" }]);
+
+      const data = await loadCoordinationByProject(true);
+      const dcRow = data.rows.find((r) => r.projectId === "dc-only");
+      expect(dcRow?.projectName).toBe("DC Only Project");
+    });
+
+    it("renders 'Unknown project' — never the raw GUID — when no name source has the id", async () => {
+      mocks.groupBy.mockResolvedValue([
+        { projectId: "nameless-id", status: "open", _count: { id: 1 } },
+      ]);
+      mocks.findProjects.mockResolvedValue([]);
+      mocks.findDcProjects.mockResolvedValue([]);
+
+      const data = await loadCoordinationByProject(true);
+      expect(data.rows[0].projectName).toBe("Unknown project");
+      expect(data.rows[0].projectName).not.toBe("nameless-id");
+    });
+
+    it("prefers AccProject over AccDcProject when both have the same id", async () => {
+      mocks.groupBy.mockResolvedValue([
+        { projectId: "p1", status: "open", _count: { id: 7 } },
+      ]);
+      mocks.findProjects.mockResolvedValue([{ id: "p1", name: "Live Name" }]);
+      mocks.findDcProjects.mockResolvedValue([{ id: "p1", name: "Stale DC Name" }]);
+
+      const data = await loadCoordinationByProject(true);
+      expect(data.rows[0].projectName).toBe("Live Name");
+    });
   });
 
   describe("issueCoverage (ISSUE-01, additive)", () => {
