@@ -8,7 +8,7 @@ describe("assemblePermissionFootprint", () => {
 
   it("converts totalBytes from BigInt to a plain number and stays JSON-serializable", () => {
     const rows = assemblePermissionFootprint(
-      [{ projectId: "p1", roleId: "r1", folderCount: 12, totalBytes: 2_963_471_918_056n }],
+      [{ projectId: "p1", roleId: "r1", folderCount: 12, totalBytes: BigInt(2_963_471_918_056) }],
       projects,
       dcProjects,
       roles,
@@ -21,7 +21,7 @@ describe("assemblePermissionFootprint", () => {
 
   it("falls back to 'Unknown role' for a roleId absent from AccRole", () => {
     const rows = assemblePermissionFootprint(
-      [{ projectId: "p1", roleId: "missing-role", folderCount: 3, totalBytes: 1024n }],
+      [{ projectId: "p1", roleId: "missing-role", folderCount: 3, totalBytes: BigInt(1024) }],
       projects,
       dcProjects,
       roles,
@@ -32,9 +32,9 @@ describe("assemblePermissionFootprint", () => {
   it("resolves project names via AccProject-over-AccDcProject precedence, falling back to 'Unknown project'", () => {
     const rows = assemblePermissionFootprint(
       [
-        { projectId: "p1", roleId: "r1", folderCount: 1, totalBytes: 1n },
-        { projectId: "p2", roleId: "r1", folderCount: 1, totalBytes: 1n },
-        { projectId: "missing-project", roleId: "r1", folderCount: 1, totalBytes: 1n },
+        { projectId: "p1", roleId: "r1", folderCount: 1, totalBytes: BigInt(1) },
+        { projectId: "p2", roleId: "r1", folderCount: 1, totalBytes: BigInt(1) },
+        { projectId: "missing-project", roleId: "r1", folderCount: 1, totalBytes: BigInt(1) },
       ],
       projects,
       dcProjects,
