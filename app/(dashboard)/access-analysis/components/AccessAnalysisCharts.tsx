@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { StatStrip, type Stat } from "@/components/ui/stat-tile";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -33,9 +33,10 @@ import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
 import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
 import type { FolderActivityRow } from "../folderActivityCounts";
-import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintView";
-import type { SignInRecencyRow } from "@/lib/server/signInRecencyView";
 import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
+import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
+import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
+import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -58,10 +59,20 @@ const AuthorProfileDrawer = dynamic(
  * FilterBanner stay pinned ABOVE a 6-tab Radix `<Tabs>` root
  * (Overview · Roles · Users · Companies · Projects · Compare); every tab
  * (including Compare's terrain) reads the same `selected`/`sliceFilters`
- * state. Tab content is plain `defaultValue` client state — no
- * useRouter/useSearchParams — so switching tabs never resets scroll position
- * or selection (research Pitfall 5). Panel JSX itself now lives in the six
- * sibling *TabPanel components; this file owns state + wiring only.
+ * state. Tab content is controlled client state (`value`/`onValueChange`) —
+ * no useRouter/useSearchParams — so switching tabs never resets scroll
+ * position or selection (research Pitfall 5). Panel JSX itself now lives in
+ * the six sibling *TabPanel components; this file owns state + wiring only.
+ *
+ * 20.1-06 panel-semantic swaps: the tab value is now controlled (not
+ * `defaultValue`) so an effect can fetch the three ENG-01/PERM-01/UAT-6
+ * loaders lazily on first Roles/Users/Companies tab activation — never
+ * eagerly in mainCharts.tsx's Promise.all (fan-out stays at 9). Each loader
+ * fires at most once per page load (a ref flag, not a null-check, gates the
+ * fetch — a no-session `null` result must not cause an infinite refetch loop
+ * every time the tab is revisited); the resulting rows (`T[] | null`) are
+ * passed straight to the panels, which already render an honest empty state
+ * for zero rows.
  */
 export function AccessAnalysisCharts({
   roleRows,
@@ -82,8 +93,10 @@ export function AccessAnalysisCharts({
   loadOverview,
   loadFolderActivityProjects,
   loadFolderActivityTree,
-  permissionFootprintRows,
-  signInRecencyRows,
+  loadActivityRecency,
+  loadPermissionLevel,
+  loadFolderScopedActivity,
+  loadCompanyFolderBreakdown,
   ingestFreshness,
 }: {
   roleRows: ProjectRoleRow[];
@@ -110,10 +123,14 @@ export function AccessAnalysisCharts({
   loadOverview?: () => Promise<FolderTerrainData | null>;
   loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
   loadFolderActivityTree?: (projectId: string) => Promise<FolderActivityRow[]>;
-  /** PERM-01: permission-reach-by-role rows. Project-picker filtered. When omitted, that panel is hidden. */
-  permissionFootprintRows?: PermissionFootprintRow[];
-  /** ENG-01: per-membership sign-in recency rows. Project-picker filtered. When omitted, that panel is hidden. */
-  signInRecencyRows?: SignInRecencyRow[];
+  /** ENG-01 pivot: lazy per-tab fetch (Roles + Users tabs), fired at most once. Presence gates both panels. */
+  loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
+  /** PERM-01 reframe: lazy per-tab fetch (Roles tab), fired at most once. Presence gates the panel. */
+  loadPermissionLevel?: () => Promise<PermissionLevelRow[] | null>;
+  /** UAT-6: lazy per-tab fetch (Companies tab), fired at most once. Presence gates the panel. */
+  loadFolderScopedActivity?: () => Promise<FolderActivityActorRow[] | null>;
+  /** UAT-6: lazy per-company folder drill, fired on click (never eager, never cached account-wide). */
+  loadCompanyFolderBreakdown?: (emails: string[], projectIds: string[]) => Promise<CompanyFolderSlice[] | null>;
   /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
   ingestFreshness?: IngestFreshness | null;
 }) {
@@ -221,16 +238,64 @@ export function AccessAnalysisCharts({
     [coordinationData, selected],
   );
 
-  // Phase 20 panels — picker-only filtering (locked decision: no sliceFilters
+  // 20.1-06: controlled tab value so an effect can drive lazy per-tab fetches
+  // (Pitfall 5 still respected — plain useState, no useRouter/useSearchParams).
+  const [tab, setTab] = useState("overview");
+
+  // Lazy-fetched ENG-01/PERM-01/UAT-6 slices. `null` = not-yet-resolved OR a
+  // no-session loader result (both cases: the panel below renders its own
+  // honest empty state — never a fake chart). Ref flags (not the `rows ===
+  // null` check the data itself would give) gate each fetch to fire AT MOST
+  // ONCE per page load, so a no-session `null` result never re-triggers on
+  // every tab revisit.
+  const [activityRecencyRows, setActivityRecencyRows] = useState<ActivityRecencyRow[] | null>(null);
+  const [activityRecencyLoading, setActivityRecencyLoading] = useState(false);
+  const activityRecencyFetchedRef = useRef(false);
+  const [permissionLevelRows, setPermissionLevelRows] = useState<PermissionLevelRow[] | null>(null);
+  const [permissionLevelLoading, setPermissionLevelLoading] = useState(false);
+  const permissionLevelFetchedRef = useRef(false);
+  const [folderScopedActivityRows, setFolderScopedActivityRows] = useState<FolderActivityActorRow[] | null>(null);
+  const [folderScopedActivityLoading, setFolderScopedActivityLoading] = useState(false);
+  const folderScopedActivityFetchedRef = useRef(false);
+
+  useEffect(() => {
+    if ((tab === "roles" || tab === "users") && loadActivityRecency && !activityRecencyFetchedRef.current) {
+      activityRecencyFetchedRef.current = true;
+      setActivityRecencyLoading(true);
+      void loadActivityRecency()
+        .then((rows) => setActivityRecencyRows(rows))
+        .finally(() => setActivityRecencyLoading(false));
+    }
+    if (tab === "roles" && loadPermissionLevel && !permissionLevelFetchedRef.current) {
+      permissionLevelFetchedRef.current = true;
+      setPermissionLevelLoading(true);
+      void loadPermissionLevel()
+        .then((rows) => setPermissionLevelRows(rows))
+        .finally(() => setPermissionLevelLoading(false));
+    }
+    if (tab === "companies" && loadFolderScopedActivity && !folderScopedActivityFetchedRef.current) {
+      folderScopedActivityFetchedRef.current = true;
+      setFolderScopedActivityLoading(true);
+      void loadFolderScopedActivity()
+        .then((rows) => setFolderScopedActivityRows(rows))
+        .finally(() => setFolderScopedActivityLoading(false));
+    }
+  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity]);
+
+  // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
   // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
   // and deliberately NOT filtered.
-  const filteredPermissionFootprintRows = useMemo(
-    () => filterRowsBySelection(permissionFootprintRows ?? [], selected),
-    [permissionFootprintRows, selected],
+  const filteredActivityRecencyRows = useMemo(
+    () => filterRowsBySelection(activityRecencyRows ?? [], selected),
+    [activityRecencyRows, selected],
   );
-  const filteredSignInRecencyRows = useMemo(
-    () => filterRowsBySelection(signInRecencyRows ?? [], selected),
-    [signInRecencyRows, selected],
+  const filteredPermissionLevelRows = useMemo(
+    () => filterRowsBySelection(permissionLevelRows ?? [], selected),
+    [permissionLevelRows, selected],
+  );
+  const filteredFolderScopedActivityRows = useMemo(
+    () => filterRowsBySelection(folderScopedActivityRows ?? [], selected),
+    [folderScopedActivityRows, selected],
   );
   const filteredIssueCoverageProjects = useMemo(
     () => filterRowsBySelection(coordinationData?.issueCoverage?.projects ?? [], selected),
@@ -326,11 +391,12 @@ export function AccessAnalysisCharts({
         />
       )}
 
-      {/* 20.1-05: 6 themed tabs for storytelling (UAT item 7). Uncontrolled
-          Radix state (defaultValue) — no URL params (Pitfall 5). Every tab
-          reads the SAME selected/sliceFilters state above; switching tabs
-          never resets the picker or filters. */}
-      <Tabs defaultValue="overview" className="gap-6">
+      {/* 20.1-05/06: 6 themed tabs for storytelling (UAT item 7). Controlled
+          Radix state (value/onValueChange, plain useState) — no URL params
+          (Pitfall 5) — so 20.1-06's lazy-fetch effect can key off the active
+          tab. Every tab reads the SAME selected/sliceFilters state above;
+          switching tabs never resets the picker or filters. */}
+      <Tabs value={tab} onValueChange={setTab} className="gap-6">
         <TabsList variant="line" className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
@@ -365,8 +431,13 @@ export function AccessAnalysisCharts({
             dormantRoles={dormantRoles}
             covCovered={covCovered}
             covTotal={covTotal}
-            permissionFootprintRows={permissionFootprintRows}
-            filteredPermissionFootprintRows={filteredPermissionFootprintRows}
+            loadPermissionLevel={loadPermissionLevel}
+            permissionLevelLoading={permissionLevelLoading}
+            filteredPermissionLevelRows={filteredPermissionLevelRows}
+            loadActivityRecency={loadActivityRecency}
+            activityRecencyLoading={activityRecencyLoading}
+            filteredActivityRecencyRows={filteredActivityRecencyRows}
+            dataFloor={dataFloor}
             selected={selected}
             membershipRows={membershipRows}
             loadFolderActivityProjects={loadFolderActivityProjects}
@@ -376,9 +447,12 @@ export function AccessAnalysisCharts({
 
         <TabsContent value="users">
           <UsersTabPanel
-            signInRecencyRows={signInRecencyRows}
-            filteredSignInRecencyRows={filteredSignInRecencyRows}
-            dcCoverage={dcCoverage}
+            loadActivityRecency={loadActivityRecency}
+            activityRecencyLoading={activityRecencyLoading}
+            filteredActivityRecencyRows={filteredActivityRecencyRows}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            dataFloor={dataFloor}
           />
         </TabsContent>
 
@@ -394,6 +468,12 @@ export function AccessAnalysisCharts({
             dormantCompanies={dormantCompanies}
             covCovered={covCovered}
             covTotal={covTotal}
+            loadFolderScopedActivity={loadFolderScopedActivity}
+            folderScopedActivityLoading={folderScopedActivityLoading}
+            filteredFolderScopedActivityRows={filteredFolderScopedActivityRows}
+            membershipRows={membershipRows}
+            selected={selected}
+            loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
           />
         </TabsContent>
 
