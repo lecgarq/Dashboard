@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
-current_phase: 20
-current_phase_name: COMPLETE, 5/5 plans
+current_phase: "20.1"
+current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 1 of 7 plans)"
 status: verifying
-stopped_at: "Plan 20.1-03 executed: FolderActivityByCompanyChart (UAT-6) + loaders/actions/transform, built unmounted, all tests green"
+stopped_at: "Wave 1 of Phase 20.1 executing in parallel: 20.1-01/02/03/04 built (unmounted); 20.1-04 added FolderPermissionTerrain externalSelectedIds/hidePickers + deriveTerrainSelection derivation, 24/24 terrain-component tests green"
 last_updated: "2026-07-03T22:17:23.542Z"
 last_activity: 2026-07-03
-last_activity_desc: "Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete."
+last_activity_desc: "Phase 20.1 wave 1 in progress (parallel executors, no worktree isolation): 20.1-01 (ENG-01 activity-recency), 20.1-02 (PERM-01 permission-level reframe), 20.1-03 (UAT-6 folder-activity-by-company), and 20.1-04 (terrain externalSelectedIds/hidePickers + deriveTerrainSelection) all complete, all unmounted; 20.1-05/06/07 remain. Shared-git-index race caused cross-plan test-file commit-attribution mixing between 20.1-02 and 20.1-04 -- verified byte-identical/no data loss via `git show`, documented in both SUMMARY files."
 progress:
   total_phases: 16
   completed_phases: 12
