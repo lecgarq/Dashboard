@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: New Graphs
-status: in_progress
-stopped_at: Completed 20-05-PLAN.md (Phase 20 COMPLETE — all 4 panels wired + owner-approved live; project-picker GUID gap fixed)
-last_updated: "2026-07-03T16:23:43.324Z"
+milestone: v1.0
+milestone_name: Concerns Hardening
+status: verifying
+stopped_at: Phase 20.1 context gathered (defaults auto-applied, owner AFK - review CONTEXT.md)
+last_updated: "2026-07-03T17:08:55.295Z"
 last_activity: "2026-07-03 — Plan 20-05 executed: all 4 Phase 20 panels wired into `/access-analysis` (`mainCharts.tsx` fan-out 8→11); owner live-verified with functional approval ("Is good but") + 7 verbatim UAT feedback items (1 fixed in-phase, 6 routed to a follow-up phase); fixed project-picker raw-GUID leak in `coordinationByProjectView.ts`. Phase 20 (PERM-01, ENG-01, ISSUE-01, PIPE-01) is complete."
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 12
   total_plans: 27
   completed_plans: 27
@@ -76,6 +76,10 @@ All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unifie
 | `AccProjectMember`, `AccDcIngestRun`, `AccIssueFetchRun`/`AccIssueProjectFetchResult` exact row counts | `VERIFY:` not independently re-counted this pass | `.planning/research/ARCHITECTURE.md` (reasoned estimates: tens of thousands / 72 / small-per-run — all well below `AccActivityAccds` scale) |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 20.1 inserted after Phase 20: Access-Analysis IA Redesign & Panel Semantics (URGENT)
 
 ### Decisions
 
@@ -212,9 +216,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T16:15:37.065Z
-**Stopped at:** Completed 20-05-PLAN.md (Phase 20 COMPLETE — all 4 panels wired + owner-approved live; project-picker GUID gap fixed)
-**Resume file:** None
+**Last session:** 2026-07-03T17:08:55.292Z
+**Stopped at:** Phase 20.1 context gathered (defaults auto-applied, owner AFK - review CONTEXT.md)
+**Resume file:** .planning/phases/20.1-access-analysis-ia-redesign-panel-semantics/20.1-CONTEXT.md
 
 ## Performance Metrics
 
