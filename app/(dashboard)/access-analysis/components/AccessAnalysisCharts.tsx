@@ -1,24 +1,15 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Reveal } from "@/components/ui/animated-list";
 import { StatStrip, type Stat } from "@/components/ui/stat-tile";
-import { PremiumSurface } from "@/components/ui/PremiumSurface";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProjectPicker } from "./ProjectPicker";
-import { RolesPieChart } from "./RolesPieChart";
-import { ModulesPieChart } from "./ModulesPieChart";
-import { ActivityByRolePieChart } from "./ActivityByRolePieChart";
-import { CompaniesPieChart } from "./CompaniesPieChart";
-import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
-import { CoordinationByProject } from "./CoordinationByProject";
-import { TerrainReveal } from "./TerrainReveal";
-import { FolderActivityReveal } from "./FolderActivityReveal";
-import { ActivityTimelineChart } from "./ActivityTimelineChart";
-import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
-import { PermissionFootprintChart } from "./PermissionFootprintChart";
-import { DormantSignInChart } from "./DormantSignInChart";
-import { IssueFetchCoverageDonut } from "./IssueFetchCoverageDonut";
-import { IngestFreshnessPanel } from "./IngestFreshnessPanel";
+import { OverviewTabPanel } from "./OverviewTabPanel";
+import { RolesTabPanel } from "./RolesTabPanel";
+import { UsersTabPanel } from "./UsersTabPanel";
+import { CompaniesTabPanel } from "./CompaniesTabPanel";
+import { ProjectsTabPanel } from "./ProjectsTabPanel";
+import { CompareTabPanel } from "./CompareTabPanel";
 import { activityCoverageCounts } from "../coverageCounts";
 import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
@@ -32,12 +23,6 @@ import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectR
 import { FilterBanner } from "./FilterBanner";
 import { PeopleDrillList } from "./PeopleDrillList";
 import { DrillSheet } from "@/components/ui/DrillSheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { groupProjectOptions } from "../projectGroups";
 import type { DrillPerson } from "../roleCounts";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
@@ -67,6 +52,16 @@ const AuthorProfileDrawer = dynamic(
  * bucket has activity but no membership — so neither donut hides a project the
  * other knows about. Coordination rows are also included so MC-only projects
  * are selectable.
+ *
+ * 20.1-05 tab-IA redesign (UAT item 7 — "current layout is all over the
+ * place"): this is now a thin shell. Shared state, the project picker, and the
+ * FilterBanner stay pinned ABOVE a 6-tab Radix `<Tabs>` root
+ * (Overview · Roles · Users · Companies · Projects · Compare); every tab
+ * (including Compare's terrain) reads the same `selected`/`sliceFilters`
+ * state. Tab content is plain `defaultValue` client state — no
+ * useRouter/useSearchParams — so switching tabs never resets scroll position
+ * or selection (research Pitfall 5). Panel JSX itself now lives in the six
+ * sibling *TabPanel components; this file owns state + wiring only.
  */
 export function AccessAnalysisCharts({
   roleRows,
@@ -331,272 +326,98 @@ export function AccessAnalysisCharts({
         />
       )}
 
-      {/* Activity over time — full-width, activity-derived → coverage badge */}
-      {timelineRows ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Activity over time"
-              subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <ActivityTimelineChart
-              summary={timelineSummary}
-              dataFloor={dataFloor}
-              floorByProject={floorByProject}
-            />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
+      {/* 20.1-05: 6 themed tabs for storytelling (UAT item 7). Uncontrolled
+          Radix state (defaultValue) — no URL params (Pitfall 5). Every tab
+          reads the SAME selected/sliceFilters state above; switching tabs
+          never resets the picker or filters. */}
+      <Tabs defaultValue="overview" className="gap-6">
+        <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="companies">Companies</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
+        </TabsList>
 
-      {/* Terrain — full-width, collapsed by default (ACC-03) */}
-      {terrainProjects && terrainProjects.length > 0 && loadTerrain && loadOverview && (
-        <Reveal>
-          <TerrainReveal
-            projects={terrainProjects}
+        <TabsContent value="overview">
+          <OverviewTabPanel
+            timelineRows={timelineRows}
+            timelineSummary={timelineSummary}
+            dataFloor={dataFloor}
+            floorByProject={floorByProject}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            moduleSummary={moduleSummary}
+            ingestFreshness={ingestFreshness}
+          />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolesTabPanel
+            roleSummary={roleSummary}
+            sliceFilters={sliceFilters}
+            toggleSliceFilter={toggleSliceFilter}
+            setProfileEmail={setProfileEmail}
+            setPeopleSheet={setPeopleSheet}
+            activityActorRows={activityActorRows}
+            activityByRoleSummary={activityByRoleSummary}
+            dormantRoles={dormantRoles}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            permissionFootprintRows={permissionFootprintRows}
+            filteredPermissionFootprintRows={filteredPermissionFootprintRows}
+            selected={selected}
+            membershipRows={membershipRows}
+            loadFolderActivityProjects={loadFolderActivityProjects}
+            loadFolderActivityTree={loadFolderActivityTree}
+          />
+        </TabsContent>
+
+        <TabsContent value="users">
+          <UsersTabPanel
+            signInRecencyRows={signInRecencyRows}
+            filteredSignInRecencyRows={filteredSignInRecencyRows}
+            dcCoverage={dcCoverage}
+          />
+        </TabsContent>
+
+        <TabsContent value="companies">
+          <CompaniesTabPanel
+            companySummary={companySummary}
+            sliceFilters={sliceFilters}
+            toggleSliceFilter={toggleSliceFilter}
+            setProfileEmail={setProfileEmail}
+            setPeopleSheet={setPeopleSheet}
+            activityActorRows={activityActorRows}
+            activityByCompanySummary={activityByCompanySummary}
+            dormantCompanies={dormantCompanies}
+            covCovered={covCovered}
+            covTotal={covTotal}
+          />
+        </TabsContent>
+
+        <TabsContent value="projects">
+          <ProjectsTabPanel
+            coordinationData={coordinationData}
+            filteredIssueCoverageProjects={filteredIssueCoverageProjects}
+            coordSummary={coordSummary}
+            coverageMap={coverageMap}
+            mtySet={mtySet}
+            loadClashes={loadClashes}
+            setProfileEmail={setProfileEmail}
+          />
+        </TabsContent>
+
+        <TabsContent value="compare">
+          <CompareTabPanel
+            terrainProjects={terrainProjects}
             loadTerrain={loadTerrain}
             loadOverview={loadOverview}
+            selected={selected}
           />
-        </Reveal>
-      )}
-
-      {/* Folder Activity by Role — full-width, collapsed by default (lazy load) */}
-      {loadFolderActivityProjects && loadFolderActivityTree && (
-        <Reveal>
-          <FolderActivityReveal
-            selectedProjectIds={[...selected]}
-            memberships={membershipRows ?? []}
-            loadProjects={loadFolderActivityProjects}
-            loadTree={loadFolderActivityTree}
-            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-          />
-        </Reveal>
-      )}
-
-      {/* ACC-02: Denser 2-up donut grid for membership and activity donuts.
-          lg:grid-cols-2 keeps two columns on wide screens; stacks to 1-up below `lg`.
-          Timeline and terrain stay full-width (above). */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-        {/* Role distribution — membership (not activity-derived → no coverage badge) */}
-        <Reveal><PremiumSurface
-          variant="base"
-          glow={!!sliceFilters.role}
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeaderWithPeople
-            title="Role distribution"
-            subtitle="Roles held across all project memberships."
-            people={[...roleSummary.usersByRole.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Role distribution — people", people })}
-            testId="view-people-role"
-          />
-          <RolesPieChart
-            data={roleSummary.slices}
-            distinctRoles={roleSummary.distinctRoles}
-            usersByRole={roleSummary.usersByRole}
-            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-            onSliceClick={(val) => toggleSliceFilter("role", val)}
-            activeSlice={sliceFilters.role}
-          />
-        </PremiumSurface></Reveal>
-
-        {/* Dormant users (ENG-01) — engagement neighborhood, right after Role distribution. */}
-        {signInRecencyRows ? (
-          <Reveal><PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Dormant users"
-              subtitle="Project memberships by sign-in recency. Click a band to see who."
-            />
-            <DormantSignInChart rows={filteredSignInRecencyRows} dcCoverage={dcCoverage} />
-          </PremiumSurface></Reveal>
-        ) : null}
-
-        {/* Users by company — membership (not activity-derived → no coverage badge) */}
-        <Reveal><PremiumSurface
-          variant="base"
-          glow={!!sliceFilters.company}
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeaderWithPeople
-            title="Users by company"
-            subtitle="Project memberships grouped by each member's company."
-            people={[...companySummary.usersByCompany.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Users by company — people", people })}
-            testId="view-people-company"
-          />
-          <CompaniesPieChart
-            data={companySummary.slices}
-            distinctCompanies={companySummary.distinctCompanies}
-            usersByCompany={companySummary.usersByCompany}
-            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-            onSliceClick={(val) => toggleSliceFilter("company", val)}
-            activeSlice={sliceFilters.company}
-          />
-        </PremiumSurface></Reveal>
-
-        {/* Activity by role — activity-derived → coverage badge */}
-        {activityActorRows ? (
-          <Reveal><PremiumSurface
-            variant="base"
-            glow={!!sliceFilters.role}
-            className="flex flex-col gap-3 p-5 overflow-hidden"
-          >
-            <SectionHeaderWithPeople
-              title="Activity by role"
-              subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
-              people={[...activityByRoleSummary.usersByRole.values()].flat()}
-              onViewPeople={(people) => setPeopleSheet({ title: "Activity by role — people", people })}
-              testId="view-people-activity-role"
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <ActivityByRolePieChart
-              summary={activityByRoleSummary}
-              dormant={dormantRoles}
-              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-              onSliceClick={(val) => toggleSliceFilter("role", val)}
-              activeSlice={sliceFilters.role}
-            />
-          </PremiumSurface></Reveal>
-        ) : null}
-
-        {/* Activity by company — activity-derived → coverage badge */}
-        {activityActorRows ? (
-          <Reveal><PremiumSurface
-            variant="base"
-            glow={!!sliceFilters.company}
-            className="flex flex-col gap-3 p-5 overflow-hidden"
-          >
-            <SectionHeaderWithPeople
-              title="Activity by company"
-              subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
-              people={[...activityByCompanySummary.usersByCompany.values()].flat()}
-              onViewPeople={(people) => setPeopleSheet({ title: "Activity by company — people", people })}
-              testId="view-people-activity-company"
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <CompaniesActivityPieChart
-              summary={activityByCompanySummary}
-              dormant={dormantCompanies}
-              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-              onSliceClick={(val) => toggleSliceFilter("company", val)}
-              activeSlice={sliceFilters.company}
-            />
-          </PremiumSurface></Reveal>
-        ) : null}
-
-        {/* Activity by module — activity-derived → coverage badge + TRUTH-03 ⓘ caveat */}
-        <Reveal className="lg:col-span-2"><PremiumSurface
-          variant="base"
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeader
-            title="Activity by module"
-            subtitle="Total actions recorded in each ACC module."
-            badge={
-              <>
-                {/* TRUTH-03: hover/focus-only ⓘ tooltip — candid classification caveat.
-                    TooltipProvider is NOT mounted globally in this tree → wrap locally. */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="About module classification"
-                        className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <svg
-                          aria-hidden
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3.5 w-3.5"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M12 16v-4M12 8h.01" />
-                        </svg>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      data-testid="module-caveat"
-                      className="max-w-xs text-xs"
-                    >
-                      Classification is derived from each activity&apos;s{" "}
-                      <code className="font-mono">rawAction</code>. Autodesk&apos;s own{" "}
-                      <code className="font-mono">service</code> product attribution is
-                      not yet reconciled — the two disagree on ~40.7% of rows.
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <ActivityCoverageBadge covered={covCovered} total={covTotal} />
-              </>
-            }
-          />
-          <ModulesPieChart summary={moduleSummary} />
-        </PremiumSurface></Reveal>
-
-      </div>
-
-      {/* Permission footprint by role (PERM-01) — full-width, access-domain slot
-          between the donut grid and Model Coordination. */}
-      {permissionFootprintRows ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Permission footprint by role"
-              subtitle="Folder access granted per role, sized by total bytes reachable (from the materialized permission summary). Click a role to see its projects."
-            />
-            <PermissionFootprintChart rows={filteredPermissionFootprintRows} />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
-
-      {/* Issue data coverage (ISSUE-01) — trust precedes metric: sits directly
-          above Model Coordination. */}
-      {coordinationData?.issueCoverage ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Issue data coverage"
-              subtitle="How much of the issue data can we see into? Every project checked by the latest fetch, honestly bucketed."
-            />
-            <IssueFetchCoverageDonut
-              coverage={{
-                runStatus: coordinationData.issueCoverage.runStatus,
-                runStartedAt: coordinationData.issueCoverage.runStartedAt,
-                runFinishedAt: coordinationData.issueCoverage.runFinishedAt,
-              }}
-              projects={filteredIssueCoverageProjects}
-            />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
-
-      {/* Model Coordination — full-width, not in the donut grid */}
-      {coordinationData ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader title="Model Coordination" subtitle="Coordination-classified issues, by project." />
-            <CoordinationByProject
-              summary={coordSummary}
-              accessibleProjects={coordinationData.accessibleProjects}
-              forbiddenProjects={coordinationData.forbiddenProjects}
-              latestRunAt={coordinationData.latestRunAt}
-              coverage={coverageMap}
-              mtyIds={mtySet}
-              loadClashes={loadClashes}
-              onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
-            />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
-
-      {/* Ingest freshness (PIPE-01) — muted ops-metadata strip, very bottom,
-          account-wide (NOT project-filtered). */}
-      {ingestFreshness !== undefined && <IngestFreshnessPanel freshness={ingestFreshness} />}
+        </TabsContent>
+      </Tabs>
 
       {profileEmail && (
         <AuthorProfileDrawer email={profileEmail} onClose={() => setProfileEmail(null)} />
@@ -626,97 +447,6 @@ export function AccessAnalysisCharts({
           </div>
         )}
       </DrillSheet>
-    </div>
-  );
-}
-
-/**
- * Consistent section heading: a readable title with a one-line plain-English
- * subtitle and an optional inline badge (e.g. ActivityCoverageBadge for NA-01).
- */
-function SectionHeader({
-  title,
-  subtitle,
-  badge,
-}: {
-  title: string;
-  subtitle: string;
-  badge?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-          {badge}
-        </div>
-        <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Section heading variant for filterable panels that also carry a "View N people →"
- * affordance (INT-02). The affordance opens the shared people sheet — clicking a
- * slice does NOT open it (locked CONTEXT decision).
- */
-function SectionHeaderWithPeople({
-  title,
-  subtitle,
-  people,
-  onViewPeople,
-  testId,
-  badge,
-}: {
-  title: string;
-  subtitle: string;
-  /** All people in the current filtered view (from in-memory summary). */
-  people: DrillPerson[];
-  /** Opens the people sheet with the supplied list. Called only by this button. */
-  onViewPeople: (people: DrillPerson[]) => void;
-  testId: string;
-  /** Optional inline badge (e.g. ActivityCoverageBadge for activity-derived panels). */
-  badge?: React.ReactNode;
-}) {
-  // Deduplicate by email so cross-role/company duplication doesn't inflate count.
-  const uniquePeople = useMemo(() => {
-    const seen = new Set<string>();
-    return people.filter((p) => {
-      if (seen.has(p.email)) return false;
-      seen.add(p.email);
-      return true;
-    });
-  }, [people]);
-
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-            {badge}
-          </div>
-          <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
-        </div>
-      </div>
-      {uniquePeople.length > 0 && (
-        <button
-          type="button"
-          data-testid={testId}
-          onClick={() => onViewPeople(uniquePeople)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary shadow-sm transition hover:bg-primary/20"
-        >
-          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          View {uniquePeople.length} {uniquePeople.length === 1 ? "person" : "people"}
-        </button>
-      )}
     </div>
   );
 }
