@@ -20,7 +20,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Issue Analytics (ISSUE)
 
-- [ ] **ISSUE-01**: User can see per-project issue-fetch coverage (`ok` / `zero_issues` / `forbidden` / `error` from `AccIssueProjectFetchResult.status`) as a donut that frames trust for the issue metrics rendered beside it (TRUTH convention: coverage precedes the metric).
+- [x] **ISSUE-01**: User can see per-project issue-fetch coverage (`ok` / `zero_issues` / `forbidden` / `error` from `AccIssueProjectFetchResult.status`) as a donut that frames trust for the issue metrics rendered beside it (TRUTH convention: coverage precedes the metric).
 - [ ] **ISSUE-02**: User can see issues over time (histogram/timeline on `AccIssue.createdAt`, full 17,360-issue set — not just the coordination-classified subset), following the existing activity-timeline visual pattern.
 - [ ] **ISSUE-03**: User can see issues by status (8 verified live statuses: open, closed, completed, in_review, draft, pending, not_approved, in_progress) with the existing `onSliceClick`/`activeSlice` cross-filter/drill convention.
 - [ ] **ISSUE-04**: Issue type/subtype GUIDs resolve locally to human-readable names — a new Prisma lookup table populated by a one-time APS issue-types metadata backfill (existing 3-leg auth, `acc-issues-backfill.cjs` pattern; 316 type / 515 subtype GUIDs verified live 2026-07-02). Unresolved IDs render an honest fallback label ("Unknown type"), never a raw GUID.
@@ -28,11 +28,11 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Permission Footprint (PERM)
 
-- [ ] **PERM-01**: User can see permission reach by role — folder count + human-readable bytes per role — charted from the already-materialized `AccFolderPermissionSummary` (22,082 rows, cron-refreshed since Ph18/19; `totalBytes` BigInt converted server-side before the RSC→client boundary).
+- [x] **PERM-01**: User can see permission reach by role — folder count + human-readable bytes per role — charted from the already-materialized `AccFolderPermissionSummary` (22,082 rows, cron-refreshed since Ph18/19; `totalBytes` BigInt converted server-side before the RSC→client boundary).
 
 ### Engagement (ENG)
 
-- [ ] **ENG-01**: User can see dormant users bucketed by `AccProjectMember.lastSignIn` recency bands (e.g. <30d / 30–90d / 90–365d / >365d), with a labeled "never signed in" bucket for `null` values (not silently dropped).
+- [x] **ENG-01**: User can see dormant users bucketed by `AccProjectMember.lastSignIn` recency bands (e.g. <30d / 30–90d / 90–365d / >365d), with a labeled "never signed in" bucket for `null` values (not silently dropped).
 
 ### Pipeline Health (PIPE)
 
@@ -78,13 +78,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ISSUE-01 | Phase 20 | Pending |
+| ISSUE-01 | Phase 20 | Complete |
 | ISSUE-02 | Phase 21 | Pending |
 | ISSUE-03 | Phase 21 | Pending |
 | ISSUE-04 | Phase 22 | Pending |
 | ISSUE-05 | Phase 22 | Pending |
-| PERM-01 | Phase 20 | Pending |
-| ENG-01 | Phase 20 | Pending |
+| PERM-01 | Phase 20 | Complete |
+| ENG-01 | Phase 20 | Complete |
 | PIPE-01 | Phase 20 | Complete |
 
 **Coverage:**

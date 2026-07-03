@@ -5,15 +5,15 @@ milestone_name: Concerns Hardening
 current_phase: 20
 current_phase_name: not yet planned
 status: planning
-stopped_at: Completed 20-04-PLAN.md (PIPE-01 ingest freshness panel, not yet mounted)
-last_updated: "2026-07-03T15:27:59.102Z"
-last_activity: 2026-07-02
-last_activity_desc: "Roadmap created (`.planning/ROADMAP.md` v2.3 section added: Phase 20 Foundation Wins & Engagement Panels → ISSUE-01/PERM-01/ENG-01/PIPE-01; Phase 21 Issue Funnel → ISSUE-02/ISSUE-03; Phase 22 Issue Type Resolution → ISSUE-04/ISSUE-05; Phase 23 Workshop Curation & Milestone Close → no new requirements, milestone-closing gate). `.planning/REQUIREMENTS.md` traceability table filled (8/8 mapped, all "Pending")."
+stopped_at: Completed 20-03-PLAN.md (ISSUE-01 issue-fetch coverage donut, not yet mounted)
+last_updated: "2026-07-03T15:45:00.000Z"
+last_activity: 2026-07-03
+last_activity_desc: "Executed 20-03-PLAN.md (ISSUE-01): additive issueCoverage on coordinationByProjectView.ts, summarizeIssueCoverage pure transform, IssueFetchCoverageDonut client component — 4 honest buckets (ok/zero_issues/forbidden/error), per-bucket drill, in-progress caption. Not yet mounted; plan 20-05 places it above Model Coordination."
 progress:
   total_phases: 15
   completed_phases: 11
   total_plans: 27
-  completed_plans: 25
+  completed_plans: 26
   percent: 73
 ---
 
@@ -153,6 +153,10 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 - [Phase 20]: PIPE-01 (20-04): ingestFreshnessView loader has no TTL cache (unlike sibling loaders) since CONTEXT.md requires a static per-page-load read; status treated as an open string (unrecognized values map to neutral tone + raw label); 36h stale threshold, strictly-greater-than boundary. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx.
 
+- [Phase 20]: ISSUE-01 (20-03): extended `lib/server/coordinationByProjectView.ts` in place (consolidation decision, avoids growing `mainCharts.tsx`'s `Promise.all` fan-out) with an additive `issueCoverage` field — raw per-project rows from `AccIssueProjectFetchResult` for the latest `AccIssueFetchRun`, `null` when no run exists, never a raw GUID as project name. New pure transform `summarizeIssueCoverage` (`app/(dashboard)/access-analysis/issueFetchCoverageCounts.ts`) guarantees all 4 buckets (ok/zero_issues/forbidden/error) always present with zeros kept, plus an honest overflow bucket for any unexpected status string. New `IssueFetchCoverageDonut` component: click-to-drill on every bucket, in-progress caption when the latest run is running/unfinished. Not yet mounted -- plan 20-05 places it directly above Model Coordination ("coverage precedes metric").
+
+- [Phase 20]: ENG-01 (20-02): dormant-user recency sourced from AccDcUser.lastSignIn joined via AccDcProjectUser -- NOT AccProjectMember.lastSignIn (100% NULL across 14,566 rows, dead field; AccDcProjectUser.lastSignIn equally dead 22,835/22,835). Option B deviation, pre-authorized by the orchestrator, documented in 20-02-PLAN.md objective + 20-02-SUMMARY.md. Coverage narrows to DC-covered projects (~550/1,153) -- DormantSignInChart requires a live dcCoverage prop for its scope caption, never hardcoded. Band boundaries: <30d=[0,29], 30-90d=[30,90], 90-365d=[91,365], >365d=[366+]. Null lastSignIn always lands in an explicit "Never signed in" bucket (verified lossless: sum(band counts) === rows.length). Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx.
+
 ### Blockers/Concerns
 
 - None blocking v2.3 Phase 20. Risk is concentrated and isolated in Phase 22 (ISSUE-04's
@@ -197,8 +201,8 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T15:27:52.357Z
-**Stopped at:** Completed 20-04-PLAN.md (PIPE-01 ingest freshness panel, not yet mounted)
+**Last session:** 2026-07-03T15:45:00.000Z
+**Stopped at:** Completed 20-03-PLAN.md (ISSUE-01 issue-fetch coverage donut, not yet mounted)
 **Resume file:** None
 
 ## Performance Metrics
@@ -206,3 +210,5 @@ of v2.3 scope.
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
 | Phase 20 P04 | 5min | 3 tasks | 6 files |
+| Phase 20 P02 | 55min | 3 tasks | 6 files |
+| Phase 20 P03 | 35min | 3 tasks | 6 files |
