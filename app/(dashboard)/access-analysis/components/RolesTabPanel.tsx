@@ -5,7 +5,9 @@ import { SectionHeader, SectionHeaderWithPeople } from "./SectionHeaders";
 import { RolesPieChart } from "./RolesPieChart";
 import { ActivityByRolePieChart } from "./ActivityByRolePieChart";
 import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
-import { PermissionFootprintChart } from "./PermissionFootprintChart";
+import { PermissionLevelChart } from "./PermissionLevelChart";
+import { ActivityRecencyChart } from "./ActivityRecencyChart";
+import { DonutPanelSkeleton } from "./DonutSkeletons";
 import { FolderActivityReveal } from "./FolderActivityReveal";
 import type { RoleSummary } from "../roleCounts";
 import type { RoleActivitySummary, MembershipRolesInput } from "../roleActivityCounts";
@@ -13,15 +15,22 @@ import type { DormantEntity } from "../dormantActivity";
 import type { SliceFilters } from "../projectFilter";
 import type { DrillPerson } from "../roleCounts";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
-import type { PermissionFootprintRow } from "@/lib/server/permissionFootprintView";
+import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
+import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
 import type { FolderActivityRow } from "../folderActivityCounts";
 
 /**
- * Roles tab (locked tab map, interim placements per 20.1-05): Role distribution ·
- * Activity by role (2-up grid) · Permission footprint by role (interim — replaced
- * by the PERM-01 reframe in 20.1-06) · Folder Activity by Role (Claude-discretion,
- * role-scoped so it belongs here rather than Overview/Compare).
+ * Roles tab (locked tab map): Role distribution · Activity by role (2-up grid) ·
+ * Permission volume by level (PERM-01 reframe, 20.1-06 — replaces the interim
+ * byte-sized Permission footprint by role) · Activity recency by role (ENG-01
+ * pivot, 20.1-06 — new) · Folder Activity by Role (Claude-discretion, role-scoped
+ * so it belongs here rather than Overview/Compare).
+ *
+ * The PERM-01/ENG-01 panels are gated by the presence of their lazy `load*`
+ * function props (fetched on first Roles-tab activation by the shell, see
+ * AccessAnalysisCharts.tsx) — while the fetch is in flight, a skeleton renders
+ * (never a blank pane, never a fake chart).
  */
 export function RolesTabPanel({
   roleSummary,
@@ -34,8 +43,13 @@ export function RolesTabPanel({
   dormantRoles,
   covCovered,
   covTotal,
-  permissionFootprintRows,
-  filteredPermissionFootprintRows,
+  loadPermissionLevel,
+  permissionLevelLoading,
+  filteredPermissionLevelRows,
+  loadActivityRecency,
+  activityRecencyLoading,
+  filteredActivityRecencyRows,
+  dataFloor,
   selected,
   membershipRows,
   loadFolderActivityProjects,
@@ -52,9 +66,15 @@ export function RolesTabPanel({
   dormantRoles: DormantEntity[];
   covCovered: number;
   covTotal: number;
-  /** Presence gates the Permission footprint panel. */
-  permissionFootprintRows?: PermissionFootprintRow[];
-  filteredPermissionFootprintRows: PermissionFootprintRow[];
+  /** Presence gates the Permission volume by level panel (PERM-01). */
+  loadPermissionLevel?: () => Promise<PermissionLevelRow[] | null>;
+  permissionLevelLoading: boolean;
+  filteredPermissionLevelRows: PermissionLevelRow[];
+  /** Presence gates the Activity recency by role panel (ENG-01). */
+  loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
+  activityRecencyLoading: boolean;
+  filteredActivityRecencyRows: ActivityRecencyRow[];
+  dataFloor?: string | null;
   selected: Set<string>;
   membershipRows?: MembershipRolesInput[];
   loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
@@ -112,15 +132,44 @@ export function RolesTabPanel({
         ) : null}
       </div>
 
-      {/* Permission footprint by role (PERM-01, interim) — full-width. */}
-      {permissionFootprintRows ? (
+      {/* Permission volume by level (PERM-01 reframe) — full-width. */}
+      {loadPermissionLevel ? (
         <Reveal>
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Permission footprint by role"
-              subtitle="Folder access granted per role, sized by total bytes reachable (from the materialized permission summary). Click a role to see its projects."
-            />
-            <PermissionFootprintChart rows={filteredPermissionFootprintRows} />
+            {permissionLevelLoading ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <>
+                <SectionHeader
+                  title="Permission volume by level"
+                  subtitle="Which role holds the most access at each permission level? Counted per folder grant."
+                />
+                <PermissionLevelChart rows={filteredPermissionLevelRows} />
+              </>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
+      {/* Activity recency by role (ENG-01 pivot) — full-width. */}
+      {loadActivityRecency ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            {activityRecencyLoading ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <>
+                <SectionHeader
+                  title="Activity recency by role"
+                  subtitle="How long ago each membership was last seen active, stacked by role."
+                />
+                <ActivityRecencyChart
+                  rows={filteredActivityRecencyRows}
+                  coverage={{ covered: covCovered, total: covTotal }}
+                  dataFloor={dataFloor}
+                />
+              </>
+            )}
           </PremiumSurface>
         </Reveal>
       ) : null}

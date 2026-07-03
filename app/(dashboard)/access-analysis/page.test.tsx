@@ -53,14 +53,6 @@ vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
   loadTerrainProjects: vi.fn(async () => []),
   loadFolderPermissionTerrain: vi.fn(async () => null),
 }));
-// Phase 20 loaders (plan 20-05 wiring) — mocked so this route test doesn't hit
-// the real Prisma db (it only mocks loader modules, never @/server/db directly).
-vi.mock("@/lib/server/permissionFootprintView", () => ({
-  loadPermissionFootprint: vi.fn(async () => []),
-}));
-vi.mock("@/lib/server/signInRecencyView", () => ({
-  loadSignInRecency: vi.fn(async () => []),
-}));
 vi.mock("@/lib/server/ingestFreshnessView", () => ({
   loadIngestFreshness: vi.fn(async () => null),
 }));
@@ -75,6 +67,19 @@ vi.mock("./folderTerrainActions", () => ({
 vi.mock("./folderActivityActions", () => ({
   loadFolderActivityProjectsAction: vi.fn(async () => []),
   loadFolderActivityTreeAction: vi.fn(async () => []),
+}));
+// 20.1-06 lazy per-tab loaders (ENG-01/PERM-01/UAT-6) — mocked so the Roles-tab
+// activation in the test below (which fires the shell's lazy-fetch effect)
+// doesn't hit real auth/db wiring.
+vi.mock("./activityRecencyActions", () => ({
+  loadActivityRecencyAction: vi.fn(async () => []),
+}));
+vi.mock("./permissionLevelActions", () => ({
+  loadPermissionLevelAction: vi.fn(async () => []),
+}));
+vi.mock("./folderActivityByCompanyActions", () => ({
+  loadFolderScopedActivityAction: vi.fn(async () => []),
+  loadCompanyFolderBreakdownAction: vi.fn(async () => []),
 }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({
