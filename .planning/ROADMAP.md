@@ -294,6 +294,7 @@ server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterizati
 ## Phases
 
 - [x] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk (completed 2026-07-03)
+- [x] **Phase 20.1: Access-Analysis IA Redesign & Panel Semantics (INSERTED)** - 6-tab IA, activity-recency/permission-volume semantic pivots, terrain on global picker, company-folder graph, scroll-jump fix; all six owner UAT items closed (completed 2026-07-04)
 - [ ] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill
 - [ ] **Phase 22: Issue Type Resolution** - APS issue-type/subtype metadata backfill + local lookup table, then an issues-by-type breakdown chart
 - [ ] **Phase 23: Workshop Curation & Milestone Close** - Panel count/grouping review across all new + existing surfaces, full gate sequence, rebuild + owner parity check

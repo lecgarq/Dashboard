@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Concerns Hardening
-current_phase: "20.1"
-current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (COMPLETE, 7/7 plans)"
-status: verifying
-stopped_at: "Completed 20.1-07-PLAN.md: scroll-jump fixed + pinned (UAT-5), owner UAT re-check closed 4 gap items (activity-recency clarity, expand-Other on 2 charts, project-GUID resolution across 3 loaders) -- phase ready for /gsd:verify-work"
-last_updated: "2026-07-04T15:45:00.000Z"
-last_activity: 2026-07-04
-last_activity_desc: "Phase 20.1 wave 4 (FINAL): 20.1-07 complete. Tasks 1-2 (prior session): measured + fixed the role-click scroll-jump (RolesPieChart legend min-height ratchet + drill-list reorder), pinned by tests/e2e/access-analysis-scroll.spec.ts. Task 3 owner UAT re-check response: 'approved but' + 4 itemized gaps, all closed this session: (1) Activity-recency panel subtitles (Roles-tab chart + Users-tab detail table) now state the question they answer instead of just the banding mechanics; (2+3) PermissionLevelChart + FolderActivityByCompanyChart 'Other' buckets now expand in place (reusing RolesPieChart's existing Others-expand pattern, topN->rows.length, no new loader) instead of dead-ending; (4) diagnosed + fixed raw project-GUID leakage into the global picker across THREE loaders (accessInstanceView.ts/moduleActivityView.ts/activityTimelineView.ts), all now resolve via buildProjectNameMap/resolveProjectName (AccProject-over-AccDcProject, 'Unknown project' fallback) matching the pattern coordinationByProjectView.ts/permissionLevelView.ts already used. Full test suite: 2392 passed/1 skipped/0 failed (6 new tests, 0 regressions). tsc clean, repo-map clean. Playwright e2e re-run hit the pre-existing/already-deferred next-dev-webpack-500s infra bug (deferred-items.md) -- not caused by this plan, not fixed here. Phase 20.1 (all 6 owner UAT items across 20.1-05/06/07) is now fully closed and ready for /gsd:verify-work / phase close. See 20.1-07-SUMMARY.md for full detail."
+milestone: v2.3
+milestone_name: New Graphs
+status: in-progress
+stopped_at: "Phase 20.1 COMPLETE + owner-approved (2026-07-04): verification passed, all six UAT items closed. Next: plan Phase 21 (Issue Funnel)"
+last_updated: "2026-07-04T17:42:08.473Z"
+last_activity: "2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items)."
 progress:
-  total_phases: 16
+  total_phases: 13
   completed_phases: 13
-  total_plans: 35
-  completed_plans: 35
-  percent: 100
+  total_plans: 34
+  completed_plans: 34
 ---
 
 # Project State
@@ -31,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**).
 - **Plan:** 20.1-07 complete (scroll-jump fix + Playwright regression pin (UAT-5), owner UAT re-check closed 4 gap-closure items — activity-recency panel clarity, expand-in-place "Other" on 2 charts, project-GUID resolution across 3 loaders). This was the final plan in Phase 20.1.
-- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 4 (20.1-07, depends_on 20.1-06, FINAL plan) complete. Phase 20.1 is ready for `/gsd:verify-work` / phase close. Next: `/gsd:plan-phase 21` (Issue Funnel — Status & Time) or a discuss-phase pass if any newly-surfaced follow-ups remain.
+- **Status:** Milestone complete
 - **Last activity:** 2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items).
 
 ## Status (data baseline — still current)
@@ -220,9 +216,18 @@ Playwright regression spec) and closed 4 owner gap-closure items surfaced at the
 UAT re-check (activity-recency panel clarity, expand-in-place "Other" on Permission-volume-
 by-level + Folder-activity-by-company, and a project-GUID leak into the global picker
 diagnosed across 3 loaders); see `20.1-07-SUMMARY.md`. All 6 owner UAT items across the
-whole phase (20.1-05/06/07) are now closed. **Next: `/gsd:verify-work` / phase close for
-20.1**, then either `/gsd:plan-phase 21` (Issue Funnel — Status & Time) or a discuss-phase
-pass for any newly-surfaced follow-ups.
+whole phase (20.1-05/06/07) are now closed. Verification PASSED (6/7 automated + human
+items resolved) and the owner approved live on a `:3100` webpack production build
+(2026-07-04, isolated `.next-uat-20-1` dist — this also served as the successful pre-deploy
+build preflight; `:3000` untouched). **Next: `/gsd:plan-phase 21` (Issue Funnel — Status &
+Time)**, and deploy the 20.1 changes to `:3000` when the owner wants them live
+(`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
+
+Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
+CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
+boots, identical 496 parse errors), not ~50% intermittent; `next dev --webpack` 500s
+repo-wide. Production `next build --webpack` is unaffected (proven 2026-07-04). E2e specs
+that need a dev server are blocked until that infra item is picked up.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
