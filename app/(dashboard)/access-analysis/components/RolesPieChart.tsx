@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
@@ -96,6 +96,22 @@ export function RolesPieChart({
   const [topN, setTopN] = useState(DEFAULT_TOP);
   const [expanded, setExpanded] = useState(false);
   const [drill, setDrill] = useState<string | null>(null);
+
+  // UAT-5 fix: clicking a role cross-filters the WHOLE dashboard, which
+  // narrows this SAME donut's own `data` prop down to only co-held roles --
+  // a self-inflicted legend collapse (e.g. 11 rows -> 2 rows) in the exact
+  // panel the user just clicked. Measured live (tests/e2e/
+  // access-analysis-scroll.spec.ts) as a large, disorienting page-scroll
+  // jump. Ratchet a min-height from the tallest height this legend has ever
+  // rendered so a later filter can still show FEWER rows without shrinking
+  // the panel itself -- nothing above/around the click point moves.
+  const legendRef = useRef<HTMLUListElement>(null);
+  const [legendMinHeight, setLegendMinHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = legendRef.current;
+    if (!el) return;
+    setLegendMinHeight((prev) => Math.max(prev, el.scrollHeight));
+  });
 
   if (data.length === 0) {
     return (
@@ -267,25 +283,18 @@ export function RolesPieChart({
         <span className="text-muted-foreground">of {singleCount} roles</span>
       </div>
 
-      {/* Drill-down: the people behind the selected role — above the legend. */}
-      {drill && drillSlice && (
-        <PeopleDrillList
-          testId="role-drilldown"
-          title={drill}
-          color={colorFor(drill)}
-          people={drillUsers}
-          total={drillSlice.value}
-          unitNoun="members"
-          onUserClick={onUserClick}
-          onClose={() => setDrill(null)}
-        />
-      )}
-
-      {/* Ranked legend — click a role to drill into the people behind it. */}
+      {/* Ranked legend — click a role to drill into the people behind it.
+          UAT-5 fix: the drill-down list used to render ABOVE this legend,
+          inserting a new block right at/above the row the user just clicked
+          -- a real-browser-measured scroll jump of ~450px (tests/e2e/
+          access-analysis-scroll.spec.ts). Rendering it AFTER the legend
+          instead means a slice click never inserts new content above the
+          user's current scroll position. */}
       <ul
+        ref={legendRef}
         data-testid="role-legend"
         className="mt-3 list-none border-t border-border pt-3"
-        style={{ columnWidth: "248px", columnGap: "1.5rem" }}
+        style={{ columnWidth: "248px", columnGap: "1.5rem", minHeight: legendMinHeight || undefined }}
       >
         {displaySlices.map((s) => {
           const warn = isWarning(s.name);
@@ -336,6 +345,21 @@ export function RolesPieChart({
           );
         })}
       </ul>
+
+      {/* Drill-down: the people behind the selected role — now AFTER the
+          legend (see UAT-5 fix comment above the legend). */}
+      {drill && drillSlice && (
+        <PeopleDrillList
+          testId="role-drilldown"
+          title={drill}
+          color={colorFor(drill)}
+          people={drillUsers}
+          total={drillSlice.value}
+          unitNoun="members"
+          onUserClick={onUserClick}
+          onClose={() => setDrill(null)}
+        />
+      )}
     </div>
   );
 }
