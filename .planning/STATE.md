@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: "20.1"
-current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (IN PROGRESS, wave 3 of 7 plans: 20.1-06 done)"
+current_phase_name: "Access-Analysis IA Redesign & Panel Semantics (COMPLETE, 7/7 plans)"
 status: verifying
-stopped_at: "Completed 20.1-06-PLAN.md: panel-semantic swaps mounted (Roles/Users/Companies tabs), mainCharts.tsx fan-out trimmed 11->9, superseded panels + dead loaders deleted"
-last_updated: "2026-07-03T23:00:07.457Z"
-last_activity: 2026-07-03
-last_activity_desc: "Phase 20.1 wave 3: 20.1-06 (panel-semantic swaps mount) complete. Roles tab gets Permission volume by level (PERM-01) + Activity recency by role (ENG-01); Users tab gets a per-membership activity-recency detail table; Companies tab gets Folder activity by company (UAT-6). `mainCharts.tsx`'s eager `Promise.all` fan-out trimmed 11→9 — the 3 new loaders ride lazy fetch-once-per-tab-activation effects instead. Superseded panels + dead loaders deleted (DormantSignInChart, PermissionFootprintChart, signInRecencyView, permissionFootprintView). Full test suite: 2386 passed/1 skipped/0 failed. See STATE.md frontmatter `last_activity_desc` and `20.1-06-SUMMARY.md` for details."
+stopped_at: "Completed 20.1-07-PLAN.md: scroll-jump fixed + pinned (UAT-5), owner UAT re-check closed 4 gap items (activity-recency clarity, expand-Other on 2 charts, project-GUID resolution across 3 loaders) -- phase ready for /gsd:verify-work"
+last_updated: "2026-07-04T15:45:00.000Z"
+last_activity: 2026-07-04
+last_activity_desc: "Phase 20.1 wave 4 (FINAL): 20.1-07 complete. Tasks 1-2 (prior session): measured + fixed the role-click scroll-jump (RolesPieChart legend min-height ratchet + drill-list reorder), pinned by tests/e2e/access-analysis-scroll.spec.ts. Task 3 owner UAT re-check response: 'approved but' + 4 itemized gaps, all closed this session: (1) Activity-recency panel subtitles (Roles-tab chart + Users-tab detail table) now state the question they answer instead of just the banding mechanics; (2+3) PermissionLevelChart + FolderActivityByCompanyChart 'Other' buckets now expand in place (reusing RolesPieChart's existing Others-expand pattern, topN->rows.length, no new loader) instead of dead-ending; (4) diagnosed + fixed raw project-GUID leakage into the global picker across THREE loaders (accessInstanceView.ts/moduleActivityView.ts/activityTimelineView.ts), all now resolve via buildProjectNameMap/resolveProjectName (AccProject-over-AccDcProject, 'Unknown project' fallback) matching the pattern coordinationByProjectView.ts/permissionLevelView.ts already used. Full test suite: 2392 passed/1 skipped/0 failed (6 new tests, 0 regressions). tsc clean, repo-map clean. Playwright e2e re-run hit the pre-existing/already-deferred next-dev-webpack-500s infra bug (deferred-items.md) -- not caused by this plan, not fixed here. Phase 20.1 (all 6 owner UAT items across 20.1-05/06/07) is now fully closed and ready for /gsd:verify-work / phase close. See 20.1-07-SUMMARY.md for full detail."
 progress:
   total_phases: 16
-  completed_phases: 12
-  total_plans: 34
-  completed_plans: 33
-  percent: 97
+  completed_phases: 13
+  total_plans: 35
+  completed_plans: 35
+  percent: 100
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, IN PROGRESS: 20.1-01/02/03/04/05/06 complete; 20.1-07 remains).
-- **Plan:** 20.1-06 complete (panel-semantic swaps mount, UAT-2/UAT-3/UAT-6/UAT-7; 20.1-07 will fix the role-click scroll-jump bug and re-check all six UAT items live with the owner)
-- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 3 (20.1-06, depends_on 20.1-01/02/03/05) complete. Next: 20.1-07 (scroll-jump fix + owner UAT re-check) — the final plan in this phase.
-- **Last activity:** 2026-07-03 — Phase 20.1 wave 3: 20.1-06 (panel-semantic swaps mount) complete. Roles tab gets Permission volume by level (PERM-01) + Activity recency by role (ENG-01); Users tab gets a per-membership activity-recency detail table; Companies tab gets Folder activity by company (UAT-6). `mainCharts.tsx`'s eager `Promise.all` fan-out trimmed 11→9 — the 3 new loaders ride lazy fetch-once-per-tab-activation effects instead. Superseded panels + dead loaders deleted (DormantSignInChart, PermissionFootprintChart, signInRecencyView, permissionFootprintView). Full test suite: 2386 passed/1 skipped/0 failed. See STATE.md frontmatter `last_activity_desc` and `20.1-06-SUMMARY.md` for details.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**).
+- **Plan:** 20.1-07 complete (scroll-jump fix + Playwright regression pin (UAT-5), owner UAT re-check closed 4 gap-closure items — activity-recency panel clarity, expand-in-place "Other" on 2 charts, project-GUID resolution across 3 loaders). This was the final plan in Phase 20.1.
+- **Status:** Phase 20 complete + verified (VERIFICATION passed). Phase 20.1 wave 4 (20.1-07, depends_on 20.1-06, FINAL plan) complete. Phase 20.1 is ready for `/gsd:verify-work` / phase close. Next: `/gsd:plan-phase 21` (Issue Funnel — Status & Time) or a discuss-phase pass if any newly-surfaced follow-ups remain.
+- **Last activity:** 2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items).
 
 ## Status (data baseline — still current)
 
@@ -171,6 +171,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20.1]: 20.1-03: FolderActivityByCompanyChart is the new 'Folder activity by company' graph (UAT-6), built as a two-pass bounded design (10,566-row headline aggregate + lazy per-company folder drill capped at 1,000 emails / 1,500 project ids) -- never materializes the 190,049-row company x folder cross-product. Built UNMOUNTED; plan 20.1-06 mounts it in the Companies tab.
 - [Phase 20.1]: 20.1-05 (tab-IA shell split, UAT-7/UAT-4): AccessAnalysisCharts.tsx (722L) split into a thin shell (state + picker/FilterBanner + Tabs root, ~452L) + SectionHeaders.tsx + 6 presentational *TabPanel siblings (Overview/Roles/Users/Companies/Projects/Compare); all 11 pre-existing panels relocated intact with zero semantic changes. Compare tab mounts FolderPermissionTerrain with externalSelectedIds/hidePickers (20.1-04 props); TerrainReveal deleted, Radix TabsContent's unmount-by-default is the new lazy-mount gate. mainCharts.tsx untouched (11-entry Promise.all fan-out unchanged until 20.1-06). RECORDED ASSUMPTION surfaced for 20.1-07 owner checkpoint: the global picker defaults to ALL projects selected, so Compare's first paint derives compare-mode over the top-6-staffed intersection, not the all-folders overview -- that only shows once the user actively clears the selection. DEVIATION: Radix Tabs.Trigger activates on onMouseDown not onClick (verified in @radix-ui/react-tabs source) -- test suite (33 migrated + 6 new cases) uses fireEvent.mouseDown; @testing-library/user-event is NOT installed (no-new-deps), so the plan's suggested userEvent.click pattern was swapped for the repo's existing fireEvent convention. page.test.tsx's roles-donut route test also fixed (broken by the shell rewrite, same mouseDown pattern). Full access-analysis module scope green: 51 files / 432 tests.
 - [Phase 20.1]: 20.1-06 (panel-semantic swaps mount, UAT-2/3/6/7): PermissionLevelChart + ActivityRecencyChart mounted on Roles tab replacing PermissionFootprintChart; new per-membership activity-recency detail DataTable on Users tab replacing DormantSignInChart; FolderActivityByCompanyChart mounted on Companies tab (UAT-6). mainCharts.tsx eager Promise.all trimmed 11->9 (STATE.md fan-out review resolved); the 3 new loaders (activityRecency/permissionLevel/folderScopedActivity) ride lazy fetch-once-per-page-load effects gated by ref flags (not a rows-null check, to avoid infinite refetch on a no-session null result) keyed to first Roles/Users/Companies tab activation. Deleted DormantSignInChart/PermissionFootprintChart/signInRecencyView/permissionFootprintView + their tests (zero remaining importers, grep-verified); formatBytes retained per locked decision. npm test full suite: 2386 passed/1 skipped/0 failed (the previously-known 12 UsersDirectoryClient.integration failures did not reproduce this run).
+- [Phase 20.1]: 20.1-07 (FINAL plan, UAT-5 + owner gap-closure, COMPLETE): Tasks 1-2 (prior session) measured a real ~384px scroll jump (self-inflicted legend cross-filter collapse + drill-list mounting above it) via a live-browser Playwright spec (jsdom can't reproduce -- IntersectionObserver stubbed), fixed with a `legendMinHeight` ratchet (never shrinks) + reordering the drill-down list to render AFTER the legend. Task 3 owner UAT re-check response ("approved but...") surfaced 4 gap-closure items, all closed: (1) Activity-recency panel subtitles (Roles-tab `ActivityRecencyChart` + Users-tab "Activity recency detail" table) rewritten to state the underlying question (who's actually working vs. holding unused access) instead of just the banding mechanics -- copy-only; (2+3) `PermissionLevelChart`/`FolderActivityByCompanyChart` "Other" buckets now expand in place (local `expanded` state re-invokes the same `summarize*(rows, topN)` with `topN=rows.length`, zero new loader/fetch -- reuses `RolesPieChart`'s pre-existing Others-expand pattern) instead of dead-ending, with a collapse-back link that rank-checks whether an in-flight drill survives the collapse; (4) diagnosed the project-GUID leak in the global picker to THREE loaders feeding `projectOptions()` (`accessInstanceView.ts` roleRows -- first-priority source, `moduleActivityView.ts` moduleRows, `activityTimelineView.ts` timelineRows), each querying only `AccDcProject` and falling back to the raw `projectId` string -- all three now use `buildProjectNameMap`/`resolveProjectName` (AccProject-over-AccDcProject, "Unknown project" fallback), matching `coordinationByProjectView.ts`/`permissionLevelView.ts`'s pre-existing correct pattern. `accessInstanceView.ts`'s `RawDc` gained an optional `liveProjects` field (backward-compatible with existing DC-only test fixtures). Playwright re-run hit the pre-existing/already-deferred `next dev --webpack` 500s-every-request infra bug (`deferred-items.md`) -- confirmed unrelated to this plan's changes via direct `curl`, not fixed (out of scope, already recommended for a future infra phase). npm test full suite: 2392 passed/1 skipped/0 failed (6 new tests, 0 regressions vs. the 2386 baseline). Dev server on :3100 restarted clean with `--turbopack` (the working option) for the owner's ongoing quick re-check; production :3000 untouched throughout. Phase 20.1 (all 6 owner UAT items across 20.1-05/06/07) is now fully closed.
 
 ### Blockers/Concerns
 
@@ -178,12 +179,22 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above and
   sequenced deliberately after the lower-risk Phase 20/21 work.
 
-- **Deferred (non-blocking, new since 20-05):** 6 owner UAT follow-up items from the Phase 20
-  live checkpoint are new product scope, not yet a planned phase — see 20-05-SUMMARY.md "UAT
-  Feedback / Follow-ups" for the full verbatim list (ENG-01 semantic pivot, permission-footprint
-  reframe, terrain/Compare-tab consolidation, role-click scroll-jump bug, folder-activity-by-
-  company graph, /access-analysis tabbed-IA redesign). Recommend scoping via discuss-phase
-  before planning further v2.3 phases, since some of these may reshape Phase 21-23's own scope.
+- **Resolved (was "Deferred" from Phase 20 UAT):** all 6 owner UAT follow-up items from the
+  Phase 20 live checkpoint (ENG-01 semantic pivot, permission-footprint reframe, terrain/
+  Compare-tab consolidation, role-click scroll-jump bug, folder-activity-by-company graph,
+  /access-analysis tabbed-IA redesign) plus the 4 Task-3 gap-closure items surfaced at the
+  20.1-07 owner re-check (activity-recency clarity, 2x expand-Other, project-GUID leak) are
+  now ALL closed across 20.1-01 through 20.1-07. Phase 20.1 is ready for `/gsd:verify-work` /
+  phase close.
+
+- **New (non-blocking, from 20.1-07):** the Playwright e2e suite's `webServer.command`
+  (`playwright.config.ts`) hardcodes `next dev --webpack`, which currently 500s on every
+  request on this machine/Next 16.2.6 combination (confirmed live via `curl`, matches
+  `20.1-07`'s own `deferred-items.md` entry recorded during Tasks 1-2). Turbopack
+  (`--turbopack`) is the only working dev-server option right now. Recommend switching
+  `playwright.config.ts`'s `webServer.command` and `package.json`'s `dev:next` script from
+  `--webpack` to `--turbopack` in a future infra-focused phase/plan — out of scope for any
+  v2.3 product phase.
 
 - **Open (non-blocking, carried from v2.2):** owner visual sign-off on the Phase 17
   HybridAnalyticsSurface split (SPLIT-04) has not occurred — `/users/access-analysis`
@@ -203,13 +214,15 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 **Phase 20 (Foundation Wins & Engagement Panels) is COMPLETE** — 5/5 plans, all 4 requirements
 (PERM-01, ENG-01, ISSUE-01, PIPE-01) shipped and owner-approved live on `/access-analysis`.
 
-**Phase 20.1 (Access-Analysis IA Redesign & Panel Semantics) is IN PROGRESS — 6/7 plans complete**
-(20.1-01 through 20.1-06). 20.1-06 mounted all three panel-semantic pivots (PERM-01 reframe,
-ENG-01 pivot, UAT-6 new company graph) into the 6-tab IA behind lazy per-tab loaders; see
-`20.1-06-SUMMARY.md`. **Next: `/gsd:plan-phase` continuation to execute 20.1-07** — the final
-plan in this phase (role-click scroll-jump fix + owner UAT re-check against all six verbatim
-items on a live `:3000`/`:3100` render). After 20.1-07, either `/gsd:plan-phase 21` (Issue
-Funnel — Status & Time) or a discuss-phase pass for any newly-surfaced follow-ups.
+**Phase 20.1 (Access-Analysis IA Redesign & Panel Semantics) is COMPLETE — 7/7 plans**
+(20.1-01 through 20.1-07). 20.1-07 fixed the role-click scroll-jump (UAT-5, pinned by a
+Playwright regression spec) and closed 4 owner gap-closure items surfaced at the Task 3
+UAT re-check (activity-recency panel clarity, expand-in-place "Other" on Permission-volume-
+by-level + Folder-activity-by-company, and a project-GUID leak into the global picker
+diagnosed across 3 loaders); see `20.1-07-SUMMARY.md`. All 6 owner UAT items across the
+whole phase (20.1-05/06/07) are now closed. **Next: `/gsd:verify-work` / phase close for
+20.1**, then either `/gsd:plan-phase 21` (Issue Funnel — Status & Time) or a discuss-phase
+pass for any newly-surfaced follow-ups.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
@@ -232,8 +245,8 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-03T23:00:07.448Z
-**Stopped at:** Completed 20.1-06-PLAN.md: panel-semantic swaps mounted (Roles/Users/Companies tabs), mainCharts.tsx fan-out trimmed 11->9, superseded panels + dead loaders deleted
+**Last session:** 2026-07-04T15:45:00.000Z
+**Stopped at:** Completed 20.1-07-PLAN.md (FINAL plan in Phase 20.1): scroll-jump fixed + pinned, owner UAT re-check closed 4 gap items -- phase ready for /gsd:verify-work
 **Resume file:** None
 
 ## Performance Metrics
@@ -251,3 +264,4 @@ of v2.3 scope.
 | Phase 20.1 P03 | 25min | 3 tasks | 7 files |
 | Phase 20.1 P05 | 12min | 3 tasks | 11 files |
 | Phase 20.1 P06 | 22min | 3 tasks | 9 files |
+| Phase 20.1 P07 | ~55min (continuation) | 3 tasks + 4 gap-fixes | 14 files (+1 prior session) |
