@@ -1,13 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: New Graphs
-status: in-progress
-stopped_at: "Phase 20.1 COMPLETE + owner-approved (2026-07-04): verification passed, all six UAT items closed. Next: plan Phase 21 (Issue Funnel)"
-last_updated: "2026-07-04T17:42:08.473Z"
+milestone: v1.0
+milestone_name: Concerns Hardening
+status: completed
+stopped_at: Phase 21 context gathered
+last_updated: "2026-07-04T18:17:33.629Z"
 last_activity: "2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items)."
 progress:
-  total_phases: 13
+  total_phases: 14
   completed_phases: 13
   total_plans: 34
   completed_plans: 34
@@ -250,9 +250,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-04T15:45:00.000Z
-**Stopped at:** Completed 20.1-07-PLAN.md (FINAL plan in Phase 20.1): scroll-jump fixed + pinned, owner UAT re-check closed 4 gap items -- phase ready for /gsd:verify-work
-**Resume file:** None
+**Last session:** 2026-07-04T18:17:33.625Z
+**Stopped at:** Phase 21 context gathered
+**Resume file:** .planning/phases/21-issue-funnel-status-time/21-CONTEXT.md
 
 ## Performance Metrics
 
