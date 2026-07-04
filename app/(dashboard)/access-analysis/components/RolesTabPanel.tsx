@@ -161,7 +161,7 @@ export function RolesTabPanel({
               <>
                 <SectionHeader
                   title="Activity recency by role"
-                  subtitle="How long ago each membership was last seen active, stacked by role."
+                  subtitle="Which roles are actually doing work right now, vs. holding access they never use? Each membership is bucketed by how long ago it was last active in ACC, stacked by role — a role stacked mostly in “Never active” has permissions with no real engagement behind them."
                 />
                 <ActivityRecencyChart
                   rows={filteredActivityRecencyRows}

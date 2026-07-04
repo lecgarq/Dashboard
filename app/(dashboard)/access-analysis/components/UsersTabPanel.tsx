@@ -131,7 +131,7 @@ export function UsersTabPanel({
             <>
               <SectionHeader
                 title="Activity recency detail"
-                subtitle="Every project membership by activity recency — name, company, role(s), and last recorded activity. Click a column to sort."
+                subtitle="The person-level cut of the Roles-tab activity chart: who is still actually working in ACC, and who has gone quiet? Sorted most-dormant first by default — flags stale access before it becomes a security question. Click a column to re-sort."
               />
 
               <div className="flex flex-wrap items-center gap-2">
