@@ -357,7 +357,13 @@ Plans:
   3. Both charts render an explicit "No issues for this view" empty state for a project with zero issues, rather than a blank or broken chart.
   4. `npm test` stays green including a new aggregate-bound Vitest test for the issue-funnel loader (asserting output row count is bounded by `n_status × n_projects`/`n_months × n_projects`, not raw issue rows); `npx tsc --noEmit` passes.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 21-01-PLAN.md — Server layer: issueFunnelView loader (month + status aggregate cuts, full issue set) + aggregate-bound test + lazy auth-gated action
+- [ ] 21-02-PLAN.md — Pure transforms: summarizeIssueStatus (8 fixed statuses + honest overflow) + deriveIssueCoverageCaption + unit tests
+- [ ] 21-03-PLAN.md — Components: IssueTimelineChart (monthly area line, no YoY) + IssueStatusChart (local-drill donut) + jsdom tests, unmounted
+- [ ] 21-04-PLAN.md — Wiring: lazy fetch-once Projects-tab branch, mount both charts below the coverage donut, full gates + owner live checkpoint
 
 **UI hint**: yes
 
