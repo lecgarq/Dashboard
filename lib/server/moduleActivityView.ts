@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
 import type { ModuleActivityRow } from "@/lib/acc/moduleCountsTypes";
+import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 interface RawRow {
   projectId: string;
@@ -35,7 +36,7 @@ const TTL_MS = 5 * 60 * 1000;
 export async function loadModuleActivity(force = false): Promise<ModuleActivityRow[]> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.rows;
 
-  const [pairs, projects] = await Promise.all([
+  const [pairs, liveProjects, dcProjects] = await Promise.all([
     db.$queryRaw<RawRow[]>`
       WITH astart AS (
         SELECT "projectId", MIN("createdAt") AS s
@@ -62,13 +63,19 @@ export async function loadModuleActivity(force = false): Promise<ModuleActivityR
       ) u
       GROUP BY pid, action
     `,
+    db.accProject.findMany({ select: { id: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
   ]);
-  const nameById = new Map(projects.map((p) => [p.id, p.name]));
+  // Merged AccProject (live superset, wins on conflict) + AccDcProject (DC subset)
+  // name map — same buildProjectNameMap/resolveProjectName precedence used by
+  // permissionLevelView.ts/folderActivityView.ts. A project id absent from BOTH
+  // sources resolves to "Unknown project", never the raw GUID (was: `?? projectId`,
+  // which leaked GUIDs into the global project picker — owner UAT gap-closure item 4).
+  const nameById = buildProjectNameMap(liveProjects, dcProjects);
 
   const rows: ModuleActivityRow[] = pairs.map((p) => {
     const projectId = p.projectId ?? "";
-    const projectName = projectId === "" ? ACCOUNT_LEVEL : nameById.get(projectId) ?? projectId;
+    const projectName = projectId === "" ? ACCOUNT_LEVEL : resolveProjectName(nameById, projectId);
     return { projectId, projectName, rawAction: p.rawAction, count: p.count };
   });
 

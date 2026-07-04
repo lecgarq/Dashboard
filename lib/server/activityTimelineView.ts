@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
 import type { ActivityTimelineRow } from "@/lib/acc/timelineCounts";
+import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 /** Label for the synthetic project that holds account-level (admin) activity. */
 const ACCOUNT_LEVEL = "Account-level";
@@ -64,7 +65,7 @@ export function buildFloors(rawFloors: Array<{ projectId: string | null; floorMo
 export async function loadActivityTimeline(force = false): Promise<ActivityTimelineResult> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.result;
 
-  const [pairs, projects, rawFloors] = await Promise.all([
+  const [pairs, liveProjects, dcProjects, rawFloors] = await Promise.all([
     db.$queryRaw<RawRow[]>`
       WITH astart AS (
         SELECT "projectId", MIN("createdAt") AS s
@@ -95,6 +96,7 @@ export async function loadActivityTimeline(force = false): Promise<ActivityTimel
       ) u
       GROUP BY pid, month
     `,
+    db.accProject.findMany({ select: { id: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
     // Small floor query: per-project earliest activity month for TRUTH-02 labels.
     db.$queryRaw<FloorRaw[]>`
@@ -104,11 +106,16 @@ export async function loadActivityTimeline(force = false): Promise<ActivityTimel
     `,
   ]);
 
-  const nameById = new Map(projects.map((p) => [p.id, p.name]));
+  // Merged AccProject (live superset, wins on conflict) + AccDcProject (DC subset)
+  // name map — same buildProjectNameMap/resolveProjectName precedence used by
+  // permissionLevelView.ts/folderActivityView.ts. A project id absent from BOTH
+  // sources resolves to "Unknown project", never the raw GUID (was: `?? projectId`,
+  // which leaked GUIDs into the global project picker — owner UAT gap-closure item 4).
+  const nameById = buildProjectNameMap(liveProjects, dcProjects);
 
   const rows: ActivityTimelineRow[] = pairs.map((p) => {
     const projectId = p.projectId ?? "";
-    const projectName = projectId === "" ? ACCOUNT_LEVEL : nameById.get(projectId) ?? projectId;
+    const projectName = projectId === "" ? ACCOUNT_LEVEL : resolveProjectName(nameById, projectId);
     return { projectId, projectName, month: p.month, count: p.count };
   });
 

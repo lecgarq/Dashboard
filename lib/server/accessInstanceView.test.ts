@@ -56,3 +56,41 @@ describe("buildInstanceView role resolution", () => {
     expect(inst.roles).toEqual([]);
   });
 });
+
+describe("buildInstanceView project-name resolution (owner UAT gap-closure item 4 — GUID leak)", () => {
+  const base: RawDc = {
+    projectUsers: [{ projectId: "p1", userId: "u1", status: "active", addedOn: null }],
+    users: [{ id: "u1", email: "a@hermosillo.com", name: "A" }],
+    projects: [],
+    products: [],
+    roles: [],
+    roleNames: [],
+    companies: [],
+    companyNames: [],
+  };
+
+  it("resolves a project name present only in the live AccProject superset (was previously DC-only, leaking the raw id)", () => {
+    const [inst] = buildInstanceView({ ...base, projects: [], liveProjects: [{ id: "p1", name: "Tower Live" }] });
+    expect(inst.projectName).toBe("Tower Live");
+  });
+
+  it("prefers the AccProject name over AccDcProject when both sources have the id", () => {
+    const [inst] = buildInstanceView({
+      ...base,
+      projects: [{ id: "p1", name: "Tower DC" }],
+      liveProjects: [{ id: "p1", name: "Tower Live" }],
+    });
+    expect(inst.projectName).toBe("Tower Live");
+  });
+
+  it("falls back to 'Unknown project' — never the raw GUID — when the id is absent from BOTH sources", () => {
+    const [inst] = buildInstanceView({ ...base, projects: [], liveProjects: [] });
+    expect(inst.projectName).toBe("Unknown project");
+    expect(inst.projectName).not.toBe("p1");
+  });
+
+  it("still resolves from AccDcProject alone when liveProjects is omitted (pre-existing DC-only fixtures keep working)", () => {
+    const [inst] = buildInstanceView({ ...base, projects: [{ id: "p1", name: "Tower DC" }] });
+    expect(inst.projectName).toBe("Tower DC");
+  });
+});
