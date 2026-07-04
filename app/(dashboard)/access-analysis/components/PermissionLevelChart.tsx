@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
-import { PERMISSION_LEVEL_ORDER, summarizePermissionLevel } from "../permissionLevelCounts";
+import { DEFAULT_TOP_N, PERMISSION_LEVEL_ORDER, summarizePermissionLevel } from "../permissionLevelCounts";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 
 const isOther = (roleName: string) => roleName.startsWith("Other (");
@@ -55,8 +55,15 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
   const [drill, setDrill] = useState<string | null>(null);
+  // UAT gap-closure item 2: clicking "Other (N roles)" reveals the folded roles as
+  // their own bars instead of being a dead end — same expand-in-place pattern as
+  // RolesPieChart's Others slice (topN -> Infinity, no separate data fetch).
+  const [expanded, setExpanded] = useState(false);
 
-  const summary = useMemo(() => summarizePermissionLevel(rows), [rows]);
+  const summary = useMemo(
+    () => summarizePermissionLevel(rows, expanded ? rows.length : DEFAULT_TOP_N),
+    [rows, expanded],
+  );
   const colorByLevel = useMemo(() => buildLevelColorMap(summary.levels), [summary.levels]);
 
   const cTitle = dark ? "#fafafa" : "#111827";
@@ -75,7 +82,10 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
   }
 
   const toggleDrill = (roleName: string) => {
-    if (isOther(roleName)) return; // no drill entry for the folded tail
+    if (isOther(roleName)) {
+      setExpanded(true); // reveal the folded roles as their own bars — no drill entry for "Other" itself
+      return;
+    }
     setDrill((cur) => (cur === roleName ? null : roleName));
   };
 
@@ -147,7 +157,25 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
       <p className="mt-3 text-xs text-muted-foreground">
         Counts folder-permission grants by level, from the live folder-permission table (View Only
         dominates account-wide).
+        {!expanded && summary.bars.some((b) => isOther(b.roleName)) && " Click “Other” to see the rest."}
       </p>
+
+      {expanded && (
+        <button
+          type="button"
+          onClick={() => {
+            // While expanded, summary.bars is the full sorted list (nothing folded)
+            // — a drilled role beyond the top-N cutoff would fold into "Other" on
+            // collapse and its drilldown would otherwise show stale/empty data.
+            const rank = drill ? summary.bars.findIndex((b) => b.roleName === drill) : -1;
+            if (rank >= DEFAULT_TOP_N) setDrill(null);
+            setExpanded(false);
+          }}
+          className="mt-1 text-xs font-medium text-primary hover:underline"
+        >
+          Showing all {summary.bars.length} roles — collapse to top {DEFAULT_TOP_N}
+        </button>
+      )}
 
       {drill && (
         <div data-testid="permission-level-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">

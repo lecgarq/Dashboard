@@ -104,7 +104,7 @@ describe("FolderActivityByCompanyChart", () => {
     });
   });
 
-  it("collapses companies beyond top-10 into a non-clickable 'Other' bar that never fetches", () => {
+  it("collapses companies beyond top-10 into a clickable 'Other' bar that never fetches on its own", () => {
     const manyRows: FolderActivityActorRow[] = Array.from({ length: 12 }, (_, i) =>
       row({ userEmail: `user${i}@company${i}.com`, userName: `User ${i}`, count: 100 - i }),
     );
@@ -122,9 +122,43 @@ describe("FolderActivityByCompanyChart", () => {
     );
     const legend = getByTestId("folder-activity-by-company-legend");
     const otherButton = within(legend).getByRole("button", { name: /Other \(2 companies\)/ });
-    expect((otherButton as HTMLButtonElement).disabled).toBe(true);
+    // "Other" is enabled (clicking it expands in place), but that expansion never
+    // itself calls the per-company folder-breakdown loader.
+    expect((otherButton as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(otherButton);
     expect(loadFolderBreakdown).not.toHaveBeenCalled();
+  });
+
+  it("expands the folded 'Other' bucket in place — the previously-hidden companies render as their own bars, and collapses back on request (UAT gap-closure item 3)", () => {
+    const manyRows: FolderActivityActorRow[] = Array.from({ length: 12 }, (_, i) =>
+      row({ userEmail: `user${i}@company${i}.com`, userName: `User ${i}`, count: 100 - i }),
+    );
+    const manyMemberships: MembershipCompanyInput[] = Array.from({ length: 12 }, (_, i) =>
+      membership({ email: `user${i}@company${i}.com`, company: `Company ${i}` }),
+    );
+    const { getByTestId, queryByTestId, getByText } = render(
+      <FolderActivityByCompanyChart
+        rows={manyRows}
+        memberships={manyMemberships}
+        selectedProjectIds={["p1"]}
+        loadFolderBreakdown={vi.fn()}
+      />,
+    );
+    let legend = getByTestId("folder-activity-by-company-legend");
+    expect(within(legend).queryByRole("button", { name: /Company 10/ })).toBeNull();
+
+    fireEvent.click(within(legend).getByRole("button", { name: /Other \(2 companies\)/ }));
+
+    legend = getByTestId("folder-activity-by-company-legend");
+    expect(within(legend).getByRole("button", { name: /Company 10/ })).toBeTruthy();
+    expect(within(legend).getByRole("button", { name: /Company 11/ })).toBeTruthy();
+    expect(within(legend).queryByRole("button", { name: /^Other/ })).toBeNull();
+
+    fireEvent.click(getByText(/Showing all 12 companies/));
+    legend = getByTestId("folder-activity-by-company-legend");
+    expect(within(legend).getByRole("button", { name: /Other \(2 companies\)/ })).toBeTruthy();
+    expect(within(legend).queryByRole("button", { name: /Company 10/ })).toBeNull();
+    expect(queryByTestId("folder-activity-by-company-drilldown")).toBeNull();
   });
 
   it("shows the live coverage caption and the Unknown-company note, never hardcoded", () => {

@@ -15,7 +15,10 @@ import {
   type CompanyActivityUser,
 } from "./companyActivityCounts";
 
-const DEFAULT_TOP_N = 10;
+/** Default top-N cutoff before companies fold into "Other (N companies)". Exported so
+ * the chart component can pass it back explicitly when the owner collapses an
+ * expanded view (UAT gap-closure item 3 — "expand the Others" for companies too). */
+export const DEFAULT_TOP_N = 10;
 
 /** One company's aggregated folder-scoped activity (a chart bar). */
 export interface FolderCompanyBar {

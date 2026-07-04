@@ -75,12 +75,29 @@ describe("PermissionLevelChart", () => {
     expect(queryByTestId("permission-level-drilldown")).toBeNull();
   });
 
-  it("does not drill when the 'Other' bar is clicked", () => {
+  it("does not drill when the 'Other' bar is clicked — it expands instead", () => {
     const manyRows: PermissionLevelRow[] = Array.from({ length: 12 }, (_, i) =>
       row({ projectId: `p${i}`, projectName: `Project ${i}`, roleId: `r${i}`, roleName: `Role ${i}`, folderCount: 100 - i }),
     );
     const { getByTestId, queryByTestId } = render(<PermissionLevelChart rows={manyRows} />);
     fireEvent.click(getByTestId("bar-Other (2 roles)"));
     expect(queryByTestId("permission-level-drilldown")).toBeNull();
+  });
+
+  it("expands the folded 'Other' bucket in place — the previously-hidden roles render as their own bars, and collapses back on request (UAT gap-closure item 2)", () => {
+    const manyRows: PermissionLevelRow[] = Array.from({ length: 12 }, (_, i) =>
+      row({ projectId: `p${i}`, projectName: `Project ${i}`, roleId: `r${i}`, roleName: `Role ${i}`, folderCount: 100 - i }),
+    );
+    const { getByTestId, queryByTestId, getByText } = render(<PermissionLevelChart rows={manyRows} />);
+    expect(queryByTestId("bar-Role 10")).toBeNull();
+
+    fireEvent.click(getByTestId("bar-Other (2 roles)"));
+    expect(getByTestId("bar-Role 10")).toBeTruthy();
+    expect(getByTestId("bar-Role 11")).toBeTruthy();
+    expect(queryByTestId("bar-Other (2 roles)")).toBeNull();
+
+    fireEvent.click(getByText(/Showing all 12 roles/));
+    expect(getByTestId("bar-Other (2 roles)")).toBeTruthy();
+    expect(queryByTestId("bar-Role 10")).toBeNull();
   });
 });

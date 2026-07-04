@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import { buildRoleColorMap } from "../roleColors";
-import { summarizeFolderActivityByCompany } from "../folderActivityByCompanyCounts";
+import { DEFAULT_TOP_N, summarizeFolderActivityByCompany } from "../folderActivityByCompanyCounts";
 import type { MembershipCompanyInput } from "../companyActivityCounts";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
 
@@ -47,8 +47,16 @@ export function FolderActivityByCompanyChart({
   const [drill, setDrill] = useState<string | null>(null);
   const [drillCache, setDrillCache] = useState<Record<string, CompanyFolderSlice[]>>({});
   const [loadingCompany, setLoadingCompany] = useState<string | null>(null);
+  // UAT gap-closure item 3: clicking "Other (N companies)" reveals the folded
+  // companies as their own bars/legend rows instead of being a dead end — same
+  // expand-in-place pattern as RolesPieChart's Others slice (topN -> Infinity,
+  // no separate data fetch, no new loader).
+  const [expanded, setExpanded] = useState(false);
 
-  const summary = useMemo(() => summarizeFolderActivityByCompany(rows, memberships), [rows, memberships]);
+  const summary = useMemo(
+    () => summarizeFolderActivityByCompany(rows, memberships, expanded ? rows.length : DEFAULT_TOP_N),
+    [rows, memberships, expanded],
+  );
 
   const colorByCompany = useMemo(
     () => buildRoleColorMap(summary.bars.filter((b) => !isOther(b.company)).map((b) => b.company)),
@@ -72,7 +80,11 @@ export function FolderActivityByCompanyChart({
   }
 
   const toggleDrill = async (bar: { company: string; memberEmails: string[] }) => {
-    if (isOther(bar.company) || bar.memberEmails.length === 0) return; // no drill for the folded tail / empty bucket
+    if (isOther(bar.company)) {
+      setExpanded(true); // reveal the folded companies as their own bars — no drill entry for "Other" itself
+      return;
+    }
+    if (bar.memberEmails.length === 0) return; // no attributable members to drill into
     if (drill === bar.company) {
       setDrill(null);
       return;
@@ -219,7 +231,10 @@ export function FolderActivityByCompanyChart({
       >
         {summary.bars.map((b) => {
           const open = drill === b.company;
-          const noDrill = isOther(b.company) || b.memberEmails.length === 0;
+          const others = isOther(b.company);
+          // "Other" is always clickable (expands the fold); a real company with
+          // no attributable member emails has nothing to drill into.
+          const noDrill = !others && b.memberEmails.length === 0;
           return (
             <li key={b.company} className="mb-1 break-inside-avoid">
               <button
@@ -227,7 +242,11 @@ export function FolderActivityByCompanyChart({
                 aria-expanded={open}
                 disabled={noDrill}
                 onClick={() => void toggleDrill(b)}
-                title={`${b.company} — ${b.count.toLocaleString()} folder-scoped activity events`}
+                title={
+                  others
+                    ? "Show every folded company"
+                    : `${b.company} — ${b.count.toLocaleString()} folder-scoped activity events`
+                }
                 className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors ${
                   noDrill ? "cursor-default text-muted-foreground" : "hover:bg-accent text-foreground/85"
                 } ${open ? "bg-accent text-foreground" : ""}`}
@@ -240,6 +259,23 @@ export function FolderActivityByCompanyChart({
           );
         })}
       </ul>
+
+      {expanded && (
+        <button
+          type="button"
+          onClick={() => {
+            // While expanded, summary.bars is the full sorted list (nothing folded)
+            // — a drilled company beyond the top-N cutoff would fold into "Other"
+            // on collapse and its drilldown would otherwise show stale/empty data.
+            const rank = drill ? summary.bars.findIndex((b) => b.company === drill) : -1;
+            if (rank >= DEFAULT_TOP_N) setDrill(null);
+            setExpanded(false);
+          }}
+          className="mt-2 text-xs font-medium text-primary hover:underline"
+        >
+          Showing all {summary.bars.length} companies — collapse to top {DEFAULT_TOP_N}
+        </button>
+      )}
 
       {coverage && (
         <p data-testid="folder-activity-coverage-caption" className="mt-2 text-[10px] text-muted-foreground">

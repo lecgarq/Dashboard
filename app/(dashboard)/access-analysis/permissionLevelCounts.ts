@@ -8,7 +8,11 @@
  */
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 
-const DEFAULT_TOP_N = 10;
+/** Default top-N cutoff before roles fold into "Other (N roles)". Exported so the
+ * chart component can pass it back explicitly when the owner collapses an
+ * expanded view (UAT gap-closure item 2 — "expand the Others to see the
+ * permission volume as well"). */
+export const DEFAULT_TOP_N = 10;
 
 /**
  * Strongest -> weakest stack/legend order for the 6 live stored `permType`
