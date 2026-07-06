@@ -13,6 +13,8 @@ import { CompareTabPanel } from "./CompareTabPanel";
 import { activityCoverageCounts } from "../coverageCounts";
 import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
+import { summarizeProvisionedModules } from "../provisionedModulesCounts";
+import { summarizeProjectActivity } from "../projectActivityCounts";
 import { summarizeActivityByRole, type MembershipRolesInput } from "../roleActivityCounts";
 import { summarizeCompanies, UNKNOWN_COMPANY } from "../companyCounts";
 import { summarizeActivityByCompany } from "../companyActivityCounts";
@@ -38,6 +40,7 @@ import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
 import type { IssueFunnelData, IssueFunnelStatusRow } from "@/lib/server/issueFunnelView";
+import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -100,6 +103,7 @@ export function AccessAnalysisCharts({
   loadCompanyFolderBreakdown,
   loadIssueFunnel,
   ingestFreshness,
+  provisionedModuleRows,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
@@ -137,10 +141,25 @@ export function AccessAnalysisCharts({
   loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
   /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
   ingestFreshness?: IngestFreshness | null;
+  /** UAT-21.1-01: eager Overview-tab prop (mainCharts.tsx's Promise.all fan-out, 9->10 — Overview is
+   *  never lazy-gated). Presence gates the Provisioned-modules panel. */
+  provisionedModuleRows?: ProvisionedModuleRow[];
 }) {
+  // Union of every source that can name a project — including
+  // `provisionedModuleRows` (AccProjectMember covers all 1,153 live projects;
+  // `roleRows` is DC-scoped) — so a live-membership-only project stays
+  // selectable and default-selected; otherwise `filterRowsBySelection` would
+  // silently drop its grants from the Provisioned-modules panel.
   const options = useMemo(
-    () => projectOptions([...roleRows, ...moduleRows, ...(timelineRows ?? []), ...(coordinationData?.rows ?? [])]),
-    [roleRows, moduleRows, timelineRows, coordinationData],
+    () =>
+      projectOptions([
+        ...roleRows,
+        ...moduleRows,
+        ...(timelineRows ?? []),
+        ...(coordinationData?.rows ?? []),
+        ...(provisionedModuleRows ?? []),
+      ]),
+    [roleRows, moduleRows, timelineRows, coordinationData, provisionedModuleRows],
   );
 
   // Per-project number shown in the picker = membership count (the roles donut's
@@ -215,6 +234,17 @@ export function AccessAnalysisCharts({
   // keep driven by the project picker only (consistent with Terrain + MC out-of-scope boundary).
   const moduleSummary = useMemo(
     () => summarizeModules(filterRowsBySelection(moduleRows, selected)),
+    [moduleRows, selected],
+  );
+  // Overview 2-up row (UAT-21.1-01/03): both picker-only, same convention as
+  // moduleSummary above — driven by `selected` directly, never
+  // `sliceFilteredProjectIds`, no sliceFilters coupling (CONTEXT.md locked).
+  const provisionedModuleSummary = useMemo(
+    () => summarizeProvisionedModules(filterRowsBySelection(provisionedModuleRows ?? [], selected)),
+    [provisionedModuleRows, selected],
+  );
+  const projectActivitySummary = useMemo(
+    () => summarizeProjectActivity(filterRowsBySelection(moduleRows, selected)),
     [moduleRows, selected],
   );
   const activityByRoleSummary = useMemo(
@@ -443,6 +473,8 @@ export function AccessAnalysisCharts({
             covTotal={covTotal}
             moduleSummary={moduleSummary}
             ingestFreshness={ingestFreshness}
+            projectActivitySummary={projectActivitySummary}
+            provisionedModuleSummary={provisionedModuleRows !== undefined ? provisionedModuleSummary : undefined}
           />
         </TabsContent>
 
