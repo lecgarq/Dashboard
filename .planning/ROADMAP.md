@@ -371,16 +371,16 @@ Plans:
 ### Phase 21.1: Overview tab UAT follow-ups (INSERTED)
 
 **Goal:** The 3 owner UAT items from the 21-04 checkpoint land on the `/access-analysis` Overview tab: (1) a provisioned-modules chart (member×project module access grants from `AccProjectMember.products` via `reduceModules` — full live-project coverage, NOT the DC subset), (2) the "Activity by module" attribution bug fixed service-first (`AccActivityAccds.serviceGroup`/`AccActivity.service` win where decisive, verb taxonomy falls back; ⓘ caveat states the live attribution split; quantified before/after evidence for the owner — honest framing: real movement is small, the stale "~966 Model Coordination" figure was already fixed by commit `6164cfae`), and (3) an "Activity share by project" donut (top-10 + Other, click-to-drill module breakdown, Account-level bucket excluded) derived from the already-loaded `loadModuleActivity` rows with zero new loader. Two new panels mount as a 2-up row between "Activity by module" and "Ingest freshness".
-**Requirements**: UAT-21.1-01, UAT-21.1-02, UAT-21.1-03 (the 3 verbatim owner items from `21-04-SUMMARY.md` "UAT Feedback / Follow-ups"; no formal REQ-IDs — inserted urgent phase)
+**Requirements**: UAT-21.1-01 ✅, UAT-21.1-02 ✅, UAT-21.1-03 ✅ — ALL 3 COMPLETE, owner-approved live on `:3100` 2026-07-06 (final verdict: "approved BUT move sheets and friends to the Build module" — applied as gap-closure correction 5; see `21.1-04-SUMMARY.md`). (The 3 verbatim owner items from `21-04-SUMMARY.md` "UAT Feedback / Follow-ups"; no formal REQ-IDs — inserted urgent phase)
 **Depends on:** Phase 21
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 
 - [x] 21.1-01-PLAN.md — UAT-21.1-02 service-first attribution fix: classifyActivity(rawAction, service) narrow override + union SQL preserves serviceGroup/service + ModuleSummary attribution counters + live before/after delta note (wave 1)
 - [x] 21.1-02-PLAN.md — UAT-21.1-01 provisioned modules: AccProjectMember loader (aggregate-bound) + summarizeProvisionedModules + horizontal-bar chart with project drill, unmounted (wave 1)
 - [x] 21.1-03-PLAN.md — UAT-21.1-03 activity share by project: summarizeProjectActivity (top-10+Other, Account-level excluded) + local-drill donut, zero new loader, unmounted (wave 1)
-- [ ] 21.1-04-PLAN.md — Wiring + owner checkpoint: mainCharts fan-out 9→10, picker-only memos, 2-up Overview row, live-split caveat copy, full gates + `:3100` preflight checkpoint (wave 2)
+- [x] 21.1-04-PLAN.md — Wiring + owner checkpoint: mainCharts fan-out 9→10, picker-only memos, 2-up Overview row, live-split caveat copy, full gates + `:3100` preflight checkpoint (wave 2)
 
 ### Phase 22: Issue Type Resolution
 
