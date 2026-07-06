@@ -295,7 +295,7 @@ server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterizati
 
 - [x] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk (completed 2026-07-03)
 - [x] **Phase 20.1: Access-Analysis IA Redesign & Panel Semantics (INSERTED)** - 6-tab IA, activity-recency/permission-volume semantic pivots, terrain on global picker, company-folder graph, scroll-jump fix; all six owner UAT items closed (completed 2026-07-04)
-- [ ] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill
+- [x] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill (completed 2026-07-06)
 - [ ] **Phase 22: Issue Type Resolution** - APS issue-type/subtype metadata backfill + local lookup table, then an issues-by-type breakdown chart
 - [ ] **Phase 23: Workshop Curation & Milestone Close** - Panel count/grouping review across all new + existing surfaces, full gate sequence, rebuild + owner parity check
 
@@ -357,14 +357,14 @@ Plans:
   3. Both charts render an explicit "No issues for this view" empty state for a project with zero issues, rather than a blank or broken chart.
   4. `npm test` stays green including a new aggregate-bound Vitest test for the issue-funnel loader (asserting output row count is bounded by `n_status × n_projects`/`n_months × n_projects`, not raw issue rows); `npx tsc --noEmit` passes.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed — PHASE COMPLETE
 
 Plans:
 
 - [x] 21-01-PLAN.md — Server layer: issueFunnelView loader (month + status aggregate cuts, full issue set) + aggregate-bound test + lazy auth-gated action
 - [x] 21-02-PLAN.md — Pure transforms: summarizeIssueStatus (8 fixed statuses + honest overflow) + deriveIssueCoverageCaption + unit tests
 - [x] 21-03-PLAN.md — Components: IssueTimelineChart (monthly area line, no YoY) + IssueStatusChart (local-drill donut) + jsdom tests, unmounted
-- [ ] 21-04-PLAN.md — Wiring: lazy fetch-once Projects-tab branch, mount both charts below the coverage donut, full gates + owner live checkpoint
+- [x] 21-04-PLAN.md — Wiring: lazy fetch-once Projects-tab branch, mount both charts below the coverage donut, full gates + owner live checkpoint — APPROVED live on :3100 preflight (.next-uat-21)
 
 **UI hint**: yes
 

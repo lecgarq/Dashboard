@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: 21
-current_phase_name: "Issue Funnel — Status & Time, 3/4 plans"
+current_phase_name: "Issue Funnel — Status & Time, COMPLETE (4/4 plans)"
 status: in_progress
-stopped_at: Phase 21 Plan 03 complete
-last_updated: "2026-07-06T15:04:00.000Z"
+stopped_at: Phase 21 complete (4/4 plans); checkpoint approved
+last_updated: "2026-07-06T16:00:00.000Z"
 last_activity: 2026-07-06
-last_activity_desc: "Phase 21 Plan 03 complete: IssueTimelineChart (fc9a008c) + IssueStatusChart (23191885) components, unmounted, 12 new Vitest cases. See 21-03-SUMMARY.md for full detail."
+last_activity_desc: "Phase 21 Plan 04 complete: issue-funnel charts wired + mounted on Projects tab (ec2941f0, b7ebd006); owner checkpoint APPROVED live on :3100 preflight (.next-uat-21). ISSUE-02/ISSUE-03 now Complete. Phase 21 fully shipped. See 21-04-SUMMARY.md for full detail, including 3 Overview-tab UAT follow-up items recorded but out of this plan's scope."
 progress:
   total_phases: 16
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 38
-  completed_plans: 36
-  percent: 95
+  completed_plans: 38
+  percent: 100
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (IN PROGRESS, 2/4 plans).
-- **Plan:** 21-03 complete (chart components: `IssueTimelineChart` — monthly area line cloned from `ActivityTimelineChart` minus YoY/data-floor, plus live coverage caption + honest empty state; `IssueStatusChart` — 8-status donut cloned from `IssueFetchCoverageDonut`'s local-drill pattern, no `onSliceClick`/`activeSlice`/`sliceFilters`, fixed semantic color map + overflow bucket. Both built UNMOUNTED per `21-CONTEXT.md`'s locked decision). 12/12 Vitest cases green, `npx tsc --noEmit` clean. See `21-03-SUMMARY.md`.
-- **Status:** In progress — Phase 21 plan 21-04 remains (lazy fetch-once-per-tab client wiring: mount both charts into `ProjectsTabPanel.tsx` below `IssueFetchCoverageDonut`, full gates + owner live checkpoint). `ISSUE-02`/`ISSUE-03` in REQUIREMENTS.md intentionally left `Pending` until 21-04 — matches the Phase 20 precedent (`ISSUE-01`/`PERM-01`/`ENG-01`/`PIPE-01` were only marked `Complete` at their final wiring plan, not their component-build plan).
-- **Last activity:** 2026-07-06 — Phase 21 Plan 03 complete. See frontmatter `last_activity_desc` and `21-03-SUMMARY.md` for full detail.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**).
+- **Plan:** 21-04 complete (client wiring: `loadIssueFunnelAction` threaded as a function prop through `mainCharts.tsx` (Promise.all fan-out unchanged at 9), 4th lazy fetch-once-per-tab branch added to `AccessAnalysisCharts.tsx`, both charts mounted in `ProjectsTabPanel.tsx` directly below `IssueFetchCoverageDonut`. Full gate sweep: tsc clean, `npm test` 2421 passed/1 skipped/0 failed, scope diff = exactly 4 planned files. Owner checkpoint **APPROVED** live on a `:3100` production-build preflight (`.next-uat-21`, `:3000` untouched)). See `21-04-SUMMARY.md`.
+- **Status:** Phase 21 fully shipped — `ISSUE-02`/`ISSUE-03` now marked `Complete` in REQUIREMENTS.md (this is the wiring plan that made them user-visible, matching the Phase 20 precedent). 3 Overview-tab UAT follow-up items were raised by the owner during the same checkpoint session (module-access-grants chart, activity-by-module data-bug suspicion, activity-share-by-project donut) — recorded in `21-04-SUMMARY.md` and below in Accumulated Context; they are new/deferred scope, not defects in this phase's deliverable, and do not block Phase 22.
+- **Last activity:** 2026-07-06 — Phase 21 Plan 04 complete, Phase 21 fully shipped. See frontmatter `last_activity_desc` and `21-04-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
 
@@ -175,12 +175,22 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 21]: 21-01 (issue funnel server data layer, COMPLETE): loadIssueFunnel() aggregates the full 17,360-row AccIssue set (no isCoordination filter) into a monthly date_trunc timeline cut + status groupBy cut in one Promise.all/5-min-TTL cache, mirroring coordinationByProjectView.ts's shape exactly; null createdAt excluded from the month cut (would corrupt the month key) but still counted in the status cut; null status coalesced to "unknown"; project names resolved via buildProjectNameMap/resolveProjectName (never a raw GUID). issueFunnelActions.ts mirrors activityRecencyActions.ts verbatim (auth-gate + delegate); client wiring deferred to plan 21-04 per CONTEXT.md locked decision to avoid growing mainCharts.tsx's eager Promise.all fan-out. Continuation session: prior executor died on an API error after committing Task 1 (fc66c90b, verified correct) but before Task 2 -- this session verified Task 1 then completed Task 2 (b2d39428) with no rework.
 - [Phase 21]: 21-02 (issue funnel status transforms, COMPLETE): `app/(dashboard)/access-analysis/issueFunnelCounts.ts` clones `issueFetchCoverageCounts.ts`'s fixed-bucket + honest-overflow pattern over the 8 verified live statuses (not 4 coverage buckets); `summarizeIssueStatus` always emits all 8 in fixed order (zeros kept), appends any unexpected status string as its own bucket (never dropped/merged), labels are the raw status string verbatim (no prettifying, no open/closed grouping -- CONTEXT.md locked), per-status drill rows sorted count desc then project name, with a defensive per-(projectId,status) count merge. `deriveIssueCoverageCaption` computes fetched (ok+zero_issues)/total/unavailable from live `IssueCoverageInputRow[]` -- zero hardcoded figures. Built against a LOCAL structural `IssueStatusInputRow` type (not imported from `lib/server/issueFunnelView.ts`) per the plan's wave-1-parallelism note, avoiding any cross-plan file dependency. Unmounted -- plan 21-03 builds the chart component consuming these exports, plan 21-04 wires it in. 7/7 new Vitest cases green, tsc clean, no deviations.
 - [Phase 21]: 21-03 (issue funnel chart components, COMPLETE): `IssueTimelineChart.tsx` clones `ActivityTimelineChart.tsx`'s EChart smooth-area-line/dataZoom/markPoint structure, removing the `deltaByMonth`/YoY tooltip line and `dataFloor`/floor-caption entirely (locked no-YoY decision -- issue history is shorter/spikier than activity data), amber `#f59e0b` accent (distinct from the activity timeline's sky `#38bdf8`) so the two timelines aren't confused across tabs, plus a live `deriveIssueCoverageCaption` subtitle and a coverage-aware empty state (unavailable-vs-genuinely-zero distinction). `IssueStatusChart.tsx` clones `IssueFetchCoverageDonut.tsx`'s local-drill-state donut pattern verbatim (no `onSliceClick`/`activeSlice`/`sliceFilters` -- grep-verified absent), fixed 8-status semantic color map (closed/completed=settled greens, open/in_progress/in_review/pending/not_approved=active warm/blue/violet, draft=neutral zinc) + fuchsia `#e879f9` overflow color for unexpected statuses, ranked legend with all 8 buckets always present (zeros kept) plus appended overflow rows, same live coverage caption convention. Both built UNMOUNTED per `21-CONTEXT.md`'s locked decision -- plan 21-04 mounts them into `ProjectsTabPanel.tsx` below `IssueFetchCoverageDonut`. Deliberately did NOT mark `ISSUE-02`/`ISSUE-03` complete in REQUIREMENTS.md this plan (matches Phase 20 precedent: requirements marked complete only at the wiring plan that makes them user-visible, not the component-build plan). 12/12 new Vitest cases green (5 timeline + 7 status), tsc clean, no deviations.
+- [Phase 21]: 21-04 (client wiring + owner checkpoint, FINAL plan, COMPLETE, Phase 21 SHIPPED): `loadIssueFunnelAction` threaded as a function prop from `mainCharts.tsx` (eager `Promise.all` fan-out unchanged at 9 -- issue-funnel loader rides the lazy per-tab path only); `AccessAnalysisCharts.tsx` gained a 4th lazy fetch-once branch (ref-flag set before the await, mirroring the activityRecency/permissionLevel/folderScopedActivity shape) keyed `tab === "projects"`, plus two picker-only memos (`issueTimelineSummary`/`filteredIssueStatusRows`, using `selected` directly -- locked decision, never `sliceFilteredProjectIds`); `ProjectsTabPanel.tsx` mounts both `IssueTimelineChart`/`IssueStatusChart` as two full-width stacked panels directly between `IssueFetchCoverageDonut` and Model Coordination, gated on prop presence with `DonutPanelSkeleton` while loading (leaves room for Phase 22's issues-by-type chart as a third sibling, zero redesign needed). New pinned Vitest shell test mirrors the existing lazy-fetch-once-per-tab convention. Full gate sweep: tsc clean, `npm test` 2421 passed/1 skipped/0 failed (grew from 2392 baseline, zero regressions), scope diff = exactly the 4 planned files, no new deps, `/users/spatial-graph` untouched. Owner live checkpoint **APPROVED** on a `:3100` webpack production-build preflight (isolated `.next-uat-21` dist, `:3000` never touched) -- verbatim: "Yes I like it." `ISSUE-02`/`ISSUE-03` now marked `Complete` in REQUIREMENTS.md. **3 Overview-tab UAT follow-up items surfaced during the same checkpoint session** (all out of this phase's scope, none require any file this plan touched): (1) new Overview chart -- module access grants per module for selected projects ("provisioned modules"), maps to the already-deferred "provisioned-vs-active module coverage" seed (needs `products` Json -> `ModuleId[]` vocabulary alignment); (2) data-bug suspicion -- "Activity by module" allocation looks wrong, many activities suspected attributed to the wrong module; matches the already-diagnosed known gap that module attribution ignores `AccActivity.service` (~40.7% populated), prior June diagnosis found ~966 Model Coordination activities were likely Build misattribution; (3) new Overview panel -- "Activity share by project" donut (top-N + Other, click-to-drill), additive, existing Top-projects-by-activity chart stays unchanged. See `21-04-SUMMARY.md` "UAT Feedback / Follow-ups" for full detail -- surface these for scoping before/alongside Phase 22 planning, they do not block Phase 22's start.
 
 ### Blockers/Concerns
 
-- blocking. Phase 20 shipped clean. Risk for the rest of v2.3 is concentrated and isolated
-  in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above and
-  sequenced deliberately after the lower-risk Phase 20/21 work.
+- blocking. Phase 20 and Phase 21 shipped clean. Risk for the rest of v2.3 is concentrated and
+  isolated in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above
+  and sequenced deliberately after the lower-risk Phase 20/20.1/21 work.
+
+- **New (non-blocking, from 21-04 owner checkpoint):** 3 Overview-tab UAT follow-up items were
+  raised during the Phase 21 checkpoint session — a new module-access-grants-per-module chart
+  (Overview tab, maps to the already-deferred "provisioned-vs-active module coverage" seed), a
+  data-bug suspicion in the existing "Activity by module" chart (matches the already-known
+  `AccActivity.service` under-population gap / prior Model Coordination misattribution
+  diagnosis from June), and a new "Activity share by project" donut (Overview tab, additive).
+  None touch any Phase 21 file or block Phase 22's start — see `21-04-SUMMARY.md` "UAT
+  Feedback / Follow-ups" for full detail; surface for scoping at the next roadmap discussion.
 
 - **Resolved (was "Deferred" from Phase 20 UAT):** all 6 owner UAT follow-up items from the
   Phase 20 live checkpoint (ENG-01 semantic pivot, permission-footprint reframe, terrain/
@@ -229,21 +239,30 @@ items resolved) and the owner approved live on a `:3100` webpack production buil
 build preflight; `:3000` untouched). Deploy the 20.1 changes to `:3000` when the owner wants
 them live (`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
 
-**Phase 21 (Issue Funnel — Status & Time) is IN PROGRESS — 3/4 plans.** 21-01 (server data
-layer) is complete: `lib/server/issueFunnelView.ts`'s `loadIssueFunnel()` aggregates the full
+**Phase 21 (Issue Funnel — Status & Time) is COMPLETE — 4/4 plans.** 21-01 (server data
+layer): `lib/server/issueFunnelView.ts`'s `loadIssueFunnel()` aggregates the full
 17,360-row `AccIssue` set into a monthly timeline cut + status breakdown cut, both server-side
 aggregates (no `findMany` + JS reduce), plus its aggregate-bound Vitest test and an unwired
 `issueFunnelActions.ts` lazy auth-gated action. See `21-01-SUMMARY.md`. 21-02 (status
-transforms) is complete: `app/(dashboard)/access-analysis/issueFunnelCounts.ts`'s
+transforms): `app/(dashboard)/access-analysis/issueFunnelCounts.ts`'s
 `summarizeIssueStatus`/`deriveIssueCoverageCaption`, cloning Phase 20's fixed-bucket +
 honest-overflow pattern over the 8 verified live statuses, plus 7 new Vitest cases. See
-`21-02-SUMMARY.md`. 21-03 (chart components) is complete: `IssueTimelineChart.tsx` (monthly
+`21-02-SUMMARY.md`. 21-03 (chart components): `IssueTimelineChart.tsx` (monthly
 area line, amber accent, no YoY) + `IssueStatusChart.tsx` (8-status donut, local drill, no
 cross-filter bus), both unmounted, plus 12 new Vitest cases. See `21-03-SUMMARY.md`.
-**Next: `21-04-PLAN.md`** (client wiring: lazy fetch-once Projects-tab mount of both charts
-below `IssueFetchCoverageDonut`, full gates + owner live checkpoint — per `21-CONTEXT.md`'s
-locked decision; this is also the plan that marks `ISSUE-02`/`ISSUE-03` complete in
-REQUIREMENTS.md).
+**21-04 (client wiring + owner checkpoint, FINAL, COMPLETE):** both charts wired via a 4th
+lazy fetch-once-per-tab branch and mounted in `ProjectsTabPanel.tsx` below
+`IssueFetchCoverageDonut`; full gate sweep green (tsc clean, `npm test` 2421 passed/1
+skipped/0 failed); owner checkpoint **APPROVED** live on a `:3100` production-build preflight
+(`.next-uat-21`, `:3000` untouched). `ISSUE-02`/`ISSUE-03` now `Complete` in REQUIREMENTS.md.
+See `21-04-SUMMARY.md`, including 3 Overview-tab UAT follow-up items (out of phase scope,
+recorded for future scoping — do not block Phase 22).
+
+**Next: Phase 22 (Issue Type Resolution — ISSUE-04/ISSUE-05).** No plans exist yet
+(`ROADMAP.md` marks Phase 22 "Plans: TBD") — run `/gsd:discuss-phase` or `/gsd:plan-phase`
+for Phase 22 to begin. Phase 22 carries the milestone's only external-API-call +
+Prisma-migration risk (APS issue-types metadata backfill); ISSUE-04 must land and be
+verified before ISSUE-05 (the chart) is built, per `ROADMAP.md`'s locked sequencing.
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -272,9 +291,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-06T15:04:00.000Z
-**Stopped at:** Phase 21 Plan 03 complete
-**Resume file:** .planning/phases/21-issue-funnel-status-time/21-04-PLAN.md
+**Last session:** 2026-07-06T16:00:00.000Z
+**Stopped at:** Phase 21 complete (4/4 plans); checkpoint approved
+**Resume file:** None — Phase 22 has no PLAN.md yet; run /gsd:discuss-phase or /gsd:plan-phase for Phase 22
 
 ## Performance Metrics
 
@@ -295,3 +314,4 @@ of v2.3 scope.
 | Phase 21 P01 | 10min | 2 tasks | 3 files |
 | Phase 21 P02 | 8min | 2 tasks | 2 files |
 | Phase 21 P03 | ~20min | 2 tasks | 4 files |
+| Phase 21 P04 | ~20min + checkpoint wait | 4 tasks (3 auto + 1 checkpoint) | 4 files |
