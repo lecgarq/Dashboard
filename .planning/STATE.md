@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
-status: completed
-stopped_at: Phase 21 context gathered
-last_updated: "2026-07-04T18:17:33.629Z"
-last_activity: "2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items)."
+current_phase: 21
+current_phase_name: "Issue Funnel — Status & Time, 1/4 plans"
+status: in_progress
+stopped_at: Phase 21 Plan 01 complete
+last_updated: "2026-07-06T14:51:30.693Z"
+last_activity: 2026-07-06
+last_activity_desc: "Phase 21 Plan 01 complete: issueFunnelView.ts loader + test (fc66c90b) + issueFunnelActions.ts (b2d39428). See 21-01-SUMMARY.md for full detail."
 progress:
-  total_phases: 14
+  total_phases: 16
   completed_phases: 13
-  total_plans: 34
-  completed_plans: 34
+  total_plans: 38
+  completed_plans: 35
+  percent: 92
 ---
 
 # Project State
@@ -25,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**).
-- **Plan:** 20.1-07 complete (scroll-jump fix + Playwright regression pin (UAT-5), owner UAT re-check closed 4 gap-closure items — activity-recency panel clarity, expand-in-place "Other" on 2 charts, project-GUID resolution across 3 loaders). This was the final plan in Phase 20.1.
-- **Status:** Milestone complete
-- **Last activity:** 2026-07-04 — Phase 20.1 wave 4 (FINAL): 20.1-07 complete. See frontmatter `last_activity_desc` and `20.1-07-SUMMARY.md` for full detail (scroll-jump fix + 4 owner gap-closure items).
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (IN PROGRESS, 1/4 plans).
+- **Plan:** 21-01 complete (server data layer: `loadIssueFunnel()` aggregate loader for ISSUE-02/03 + aggregate-bound Vitest test + unwired lazy auth-gated `issueFunnelActions.ts`). Continuation session — prior executor died on an API error after committing Task 1; this session verified Task 1 and completed Task 2 with no rework. See `21-01-SUMMARY.md`.
+- **Status:** In progress — Phase 21 plans 21-02/21-03/21-04 remain (chart/transform work + client wiring into `ProjectsTabPanel.tsx`).
+- **Last activity:** 2026-07-06 — Phase 21 Plan 01 complete. See frontmatter `last_activity_desc` and `21-01-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
 
@@ -168,6 +172,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20.1]: 20.1-05 (tab-IA shell split, UAT-7/UAT-4): AccessAnalysisCharts.tsx (722L) split into a thin shell (state + picker/FilterBanner + Tabs root, ~452L) + SectionHeaders.tsx + 6 presentational *TabPanel siblings (Overview/Roles/Users/Companies/Projects/Compare); all 11 pre-existing panels relocated intact with zero semantic changes. Compare tab mounts FolderPermissionTerrain with externalSelectedIds/hidePickers (20.1-04 props); TerrainReveal deleted, Radix TabsContent's unmount-by-default is the new lazy-mount gate. mainCharts.tsx untouched (11-entry Promise.all fan-out unchanged until 20.1-06). RECORDED ASSUMPTION surfaced for 20.1-07 owner checkpoint: the global picker defaults to ALL projects selected, so Compare's first paint derives compare-mode over the top-6-staffed intersection, not the all-folders overview -- that only shows once the user actively clears the selection. DEVIATION: Radix Tabs.Trigger activates on onMouseDown not onClick (verified in @radix-ui/react-tabs source) -- test suite (33 migrated + 6 new cases) uses fireEvent.mouseDown; @testing-library/user-event is NOT installed (no-new-deps), so the plan's suggested userEvent.click pattern was swapped for the repo's existing fireEvent convention. page.test.tsx's roles-donut route test also fixed (broken by the shell rewrite, same mouseDown pattern). Full access-analysis module scope green: 51 files / 432 tests.
 - [Phase 20.1]: 20.1-06 (panel-semantic swaps mount, UAT-2/3/6/7): PermissionLevelChart + ActivityRecencyChart mounted on Roles tab replacing PermissionFootprintChart; new per-membership activity-recency detail DataTable on Users tab replacing DormantSignInChart; FolderActivityByCompanyChart mounted on Companies tab (UAT-6). mainCharts.tsx eager Promise.all trimmed 11->9 (STATE.md fan-out review resolved); the 3 new loaders (activityRecency/permissionLevel/folderScopedActivity) ride lazy fetch-once-per-page-load effects gated by ref flags (not a rows-null check, to avoid infinite refetch on a no-session null result) keyed to first Roles/Users/Companies tab activation. Deleted DormantSignInChart/PermissionFootprintChart/signInRecencyView/permissionFootprintView + their tests (zero remaining importers, grep-verified); formatBytes retained per locked decision. npm test full suite: 2386 passed/1 skipped/0 failed (the previously-known 12 UsersDirectoryClient.integration failures did not reproduce this run).
 - [Phase 20.1]: 20.1-07 (FINAL plan, UAT-5 + owner gap-closure, COMPLETE): Tasks 1-2 (prior session) measured a real ~384px scroll jump (self-inflicted legend cross-filter collapse + drill-list mounting above it) via a live-browser Playwright spec (jsdom can't reproduce -- IntersectionObserver stubbed), fixed with a `legendMinHeight` ratchet (never shrinks) + reordering the drill-down list to render AFTER the legend. Task 3 owner UAT re-check response ("approved but...") surfaced 4 gap-closure items, all closed: (1) Activity-recency panel subtitles (Roles-tab `ActivityRecencyChart` + Users-tab "Activity recency detail" table) rewritten to state the underlying question (who's actually working vs. holding unused access) instead of just the banding mechanics -- copy-only; (2+3) `PermissionLevelChart`/`FolderActivityByCompanyChart` "Other" buckets now expand in place (local `expanded` state re-invokes the same `summarize*(rows, topN)` with `topN=rows.length`, zero new loader/fetch -- reuses `RolesPieChart`'s pre-existing Others-expand pattern) instead of dead-ending, with a collapse-back link that rank-checks whether an in-flight drill survives the collapse; (4) diagnosed the project-GUID leak in the global picker to THREE loaders feeding `projectOptions()` (`accessInstanceView.ts` roleRows -- first-priority source, `moduleActivityView.ts` moduleRows, `activityTimelineView.ts` timelineRows), each querying only `AccDcProject` and falling back to the raw `projectId` string -- all three now use `buildProjectNameMap`/`resolveProjectName` (AccProject-over-AccDcProject, "Unknown project" fallback), matching `coordinationByProjectView.ts`/`permissionLevelView.ts`'s pre-existing correct pattern. `accessInstanceView.ts`'s `RawDc` gained an optional `liveProjects` field (backward-compatible with existing DC-only test fixtures). Playwright re-run hit the pre-existing/already-deferred `next dev --webpack` 500s-every-request infra bug (`deferred-items.md`) -- confirmed unrelated to this plan's changes via direct `curl`, not fixed (out of scope, already recommended for a future infra phase). npm test full suite: 2392 passed/1 skipped/0 failed (6 new tests, 0 regressions vs. the 2386 baseline). Dev server on :3100 restarted clean with `--turbopack` (the working option) for the owner's ongoing quick re-check; production :3000 untouched throughout. Phase 20.1 (all 6 owner UAT items across 20.1-05/06/07) is now fully closed.
+- [Phase 21]: 21-01 (issue funnel server data layer, COMPLETE): loadIssueFunnel() aggregates the full 17,360-row AccIssue set (no isCoordination filter) into a monthly date_trunc timeline cut + status groupBy cut in one Promise.all/5-min-TTL cache, mirroring coordinationByProjectView.ts's shape exactly; null createdAt excluded from the month cut (would corrupt the month key) but still counted in the status cut; null status coalesced to "unknown"; project names resolved via buildProjectNameMap/resolveProjectName (never a raw GUID). issueFunnelActions.ts mirrors activityRecencyActions.ts verbatim (auth-gate + delegate); client wiring deferred to plan 21-04 per CONTEXT.md locked decision to avoid growing mainCharts.tsx's eager Promise.all fan-out. Continuation session: prior executor died on an API error after committing Task 1 (fc66c90b, verified correct) but before Task 2 -- this session verified Task 1 then completed Task 2 (b2d39428) with no rework.
 
 ### Blockers/Concerns
 
@@ -219,9 +224,16 @@ diagnosed across 3 loaders); see `20.1-07-SUMMARY.md`. All 6 owner UAT items acr
 whole phase (20.1-05/06/07) are now closed. Verification PASSED (6/7 automated + human
 items resolved) and the owner approved live on a `:3100` webpack production build
 (2026-07-04, isolated `.next-uat-20-1` dist — this also served as the successful pre-deploy
-build preflight; `:3000` untouched). **Next: `/gsd:plan-phase 21` (Issue Funnel — Status &
-Time)**, and deploy the 20.1 changes to `:3000` when the owner wants them live
-(`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
+build preflight; `:3000` untouched). Deploy the 20.1 changes to `:3000` when the owner wants
+them live (`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
+
+**Phase 21 (Issue Funnel — Status & Time) is IN PROGRESS — 1/4 plans.** 21-01 (server data
+layer) is complete: `lib/server/issueFunnelView.ts`'s `loadIssueFunnel()` aggregates the full
+17,360-row `AccIssue` set into a monthly timeline cut + status breakdown cut, both server-side
+aggregates (no `findMany` + JS reduce), plus its aggregate-bound Vitest test and an unwired
+`issueFunnelActions.ts` lazy auth-gated action. See `21-01-SUMMARY.md`. **Next: `21-02-PLAN.md`**
+(chart/transform work consuming `IssueFunnelMonthRow`/`IssueFunnelStatusRow`; plans 21-02/21-03
+already exist on disk per `21-CONTEXT.md`'s deferred-to-21-04 client-wiring decision).
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -250,9 +262,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-04T18:17:33.625Z
-**Stopped at:** Phase 21 context gathered
-**Resume file:** .planning/phases/21-issue-funnel-status-time/21-CONTEXT.md
+**Last session:** 2026-07-06T14:51:30.683Z
+**Stopped at:** Phase 21 Plan 01 complete
+**Resume file:** .planning/phases/21-issue-funnel-status-time/21-02-PLAN.md
 
 ## Performance Metrics
 
@@ -270,3 +282,4 @@ of v2.3 scope.
 | Phase 20.1 P05 | 12min | 3 tasks | 11 files |
 | Phase 20.1 P06 | 22min | 3 tasks | 9 files |
 | Phase 20.1 P07 | ~55min (continuation) | 3 tasks + 4 gap-fixes | 14 files (+1 prior session) |
+| Phase 21 P01 | 10min | 2 tasks | 3 files |

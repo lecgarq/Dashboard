@@ -357,10 +357,11 @@ Plans:
   3. Both charts render an explicit "No issues for this view" empty state for a project with zero issues, rather than a blank or broken chart.
   4. `npm test` stays green including a new aggregate-bound Vitest test for the issue-funnel loader (asserting output row count is bounded by `n_status × n_projects`/`n_months × n_projects`, not raw issue rows); `npx tsc --noEmit` passes.
 
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
-- [ ] 21-01-PLAN.md — Server layer: issueFunnelView loader (month + status aggregate cuts, full issue set) + aggregate-bound test + lazy auth-gated action
+
+- [x] 21-01-PLAN.md — Server layer: issueFunnelView loader (month + status aggregate cuts, full issue set) + aggregate-bound test + lazy auth-gated action
 - [ ] 21-02-PLAN.md — Pure transforms: summarizeIssueStatus (8 fixed statuses + honest overflow) + deriveIssueCoverageCaption + unit tests
 - [ ] 21-03-PLAN.md — Components: IssueTimelineChart (monthly area line, no YoY) + IssueStatusChart (local-drill donut) + jsdom tests, unmounted
 - [ ] 21-04-PLAN.md — Wiring: lazy fetch-once Projects-tab branch, mount both charts below the coverage donut, full gates + owner live checkpoint
@@ -423,7 +424,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
 | 20. Foundation Wins & Engagement Panels | 5/5 | Complete    | 2026-07-03 |
-| 21. Issue Funnel — Status & Time | 0/TBD | Not started | - |
+| 21. Issue Funnel — Status & Time | 1/4 | In Progress|  |
 | 22. Issue Type Resolution | 0/TBD | Not started | - |
 | 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
 
