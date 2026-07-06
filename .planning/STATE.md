@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
 status: active
-stopped_at: Phase 21 complete (4/4 plans, verification passed); next Phase 22
-last_updated: "2026-07-06T16:23:08.331Z"
+stopped_at: Phase 21.1 context gathered
+last_updated: "2026-07-06T16:31:56.565Z"
 last_activity: 2026-07-06 — Phase 21 Plan 04 complete, Phase 21 fully shipped. See frontmatter `last_activity_desc` and `21-04-SUMMARY.md` for full detail.
 progress:
-  total_phases: 16
+  total_phases: 17
   completed_phases: 14
   total_plans: 38
   completed_plans: 38
@@ -80,6 +80,7 @@ All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unifie
 ### Roadmap Evolution
 
 - Phase 20.1 inserted after Phase 20: Access-Analysis IA Redesign & Panel Semantics (URGENT)
+- Phase 21.1 inserted after Phase 21: Overview tab UAT follow-ups (URGENT)
 
 ### Decisions
 
@@ -287,9 +288,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-06T16:00:00.000Z
-**Stopped at:** Phase 21 complete (4/4 plans); checkpoint approved
-**Resume file:** None — Phase 22 has no PLAN.md yet; run /gsd:discuss-phase or /gsd:plan-phase for Phase 22
+**Last session:** 2026-07-06T16:31:56.560Z
+**Stopped at:** Phase 21.1 context gathered
+**Resume file:** .planning/phases/21.1-overview-tab-uat-follow-ups/21.1-CONTEXT.md
 
 ## Performance Metrics
 

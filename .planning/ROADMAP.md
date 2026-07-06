@@ -368,6 +368,16 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 21.1: Overview tab UAT follow-ups (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 21
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 21.1 to break down)
+
 ### Phase 22: Issue Type Resolution
 
 **Goal**: Issue type/subtype GUIDs resolve locally to human-readable names via a one-time APS issue-types metadata backfill into a new Prisma lookup table, and issues-by-type renders as a top-N + "other" breakdown chart — never a raw GUID. This phase is kept isolated because it is the only v2.3 phase carrying external-API-call + Prisma-migration risk (per ARCHITECTURE.md/PITFALLS.md); ISSUE-04 (backfill + lookup table) must land and be verified before ISSUE-05 (the chart) is built.
