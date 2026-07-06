@@ -37,6 +37,7 @@ import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
+import type { IssueFunnelData, IssueFunnelStatusRow } from "@/lib/server/issueFunnelView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -97,6 +98,7 @@ export function AccessAnalysisCharts({
   loadPermissionLevel,
   loadFolderScopedActivity,
   loadCompanyFolderBreakdown,
+  loadIssueFunnel,
   ingestFreshness,
 }: {
   roleRows: ProjectRoleRow[];
@@ -131,6 +133,8 @@ export function AccessAnalysisCharts({
   loadFolderScopedActivity?: () => Promise<FolderActivityActorRow[] | null>;
   /** UAT-6: lazy per-company folder drill, fired on click (never eager, never cached account-wide). */
   loadCompanyFolderBreakdown?: (emails: string[], projectIds: string[]) => Promise<CompanyFolderSlice[] | null>;
+  /** Phase 21 ISSUE-02/03: lazy per-tab fetch (Projects tab), fired at most once. Presence gates both issue-funnel panels. */
+  loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
   /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
   ingestFreshness?: IngestFreshness | null;
 }) {
@@ -257,6 +261,10 @@ export function AccessAnalysisCharts({
   const [folderScopedActivityRows, setFolderScopedActivityRows] = useState<FolderActivityActorRow[] | null>(null);
   const [folderScopedActivityLoading, setFolderScopedActivityLoading] = useState(false);
   const folderScopedActivityFetchedRef = useRef(false);
+  // Phase 21 ISSUE-02/03: same ref-flag lazy fetch-once pattern, keyed to the Projects tab.
+  const [issueFunnelData, setIssueFunnelData] = useState<IssueFunnelData | null>(null);
+  const [issueFunnelLoading, setIssueFunnelLoading] = useState(false);
+  const issueFunnelFetchedRef = useRef(false);
 
   useEffect(() => {
     if ((tab === "roles" || tab === "users") && loadActivityRecency && !activityRecencyFetchedRef.current) {
@@ -280,7 +288,15 @@ export function AccessAnalysisCharts({
         .then((rows) => setFolderScopedActivityRows(rows))
         .finally(() => setFolderScopedActivityLoading(false));
     }
-  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity]);
+    if (tab === "projects" && loadIssueFunnel && !issueFunnelFetchedRef.current) {
+      // Ref set BEFORE the await so a no-session `null` result never refetches.
+      issueFunnelFetchedRef.current = true;
+      setIssueFunnelLoading(true);
+      void loadIssueFunnel()
+        .then((data) => setIssueFunnelData(data))
+        .finally(() => setIssueFunnelLoading(false));
+    }
+  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel]);
 
   // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
   // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
@@ -300,6 +316,17 @@ export function AccessAnalysisCharts({
   const filteredIssueCoverageProjects = useMemo(
     () => filterRowsBySelection(coordinationData?.issueCoverage?.projects ?? [], selected),
     [coordinationData, selected],
+  );
+  // Phase 21 ISSUE-02/03: picker-only filtering (locked decision) — deliberately
+  // `selected`, NOT `sliceFilteredProjectIds`, unlike the Overview timeline two
+  // memos above, which does narrow by sliceFilters. No cross-filter bus wiring here.
+  const issueTimelineSummary = useMemo(
+    () => summarizeActivityTimeline(issueFunnelData?.monthRows ?? [], selected),
+    [issueFunnelData, selected],
+  );
+  const filteredIssueStatusRows: IssueFunnelStatusRow[] = useMemo(
+    () => filterRowsBySelection(issueFunnelData?.statusRows ?? [], selected),
+    [issueFunnelData, selected],
   );
 
   // Dormant = entities with members in the current selection but 0 activity there,
@@ -486,6 +513,10 @@ export function AccessAnalysisCharts({
             mtySet={mtySet}
             loadClashes={loadClashes}
             setProfileEmail={setProfileEmail}
+            loadIssueFunnel={loadIssueFunnel}
+            issueFunnelLoading={issueFunnelLoading}
+            issueTimelineSummary={issueTimelineSummary}
+            filteredIssueStatusRows={filteredIssueStatusRows}
           />
         </TabsContent>
 

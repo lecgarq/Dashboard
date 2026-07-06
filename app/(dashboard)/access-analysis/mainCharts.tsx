@@ -27,6 +27,7 @@ import { loadFolderActivityProjectsAction, loadFolderActivityTreeAction } from "
 import { loadActivityRecencyAction } from "./activityRecencyActions";
 import { loadPermissionLevelAction } from "./permissionLevelActions";
 import { loadFolderScopedActivityAction, loadCompanyFolderBreakdownAction } from "./folderActivityByCompanyActions";
+import { loadIssueFunnelAction } from "./issueFunnelActions";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
@@ -43,7 +44,8 @@ export async function MainCharts() {
   // call (see lib/server/coordinationByProjectView.ts's additive issueCoverage
   // field, plan 20-03's consolidation decision). Stays well under the
   // ~12-entry fan-out warning threshold (PITFALLS.md Pitfall 4) while keeping
-  // the load flat and parallel — no waterfall.
+  // the load flat and parallel — no waterfall. Phase 21's issue-funnel loader
+  // (ISSUE-02/03) also rides the lazy per-tab path, not this eager fan-out.
   const [
     view,
     moduleRows,
@@ -106,6 +108,7 @@ export async function MainCharts() {
       loadPermissionLevel={loadPermissionLevelAction}
       loadFolderScopedActivity={loadFolderScopedActivityAction}
       loadCompanyFolderBreakdown={loadCompanyFolderBreakdownAction}
+      loadIssueFunnel={loadIssueFunnelAction}
       ingestFreshness={ingestFreshness}
     />
   );
