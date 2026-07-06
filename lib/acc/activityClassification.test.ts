@@ -192,32 +192,42 @@ describe("activityClassification (BND-02 pin test)", () => {
   /**
    * Owner-delegated mapping review (21.1-04 checkpoint, 2026-07-06): 4 taxonomy
    * corrections applied after the owner audited all live (rawAction, service)
-   * combos. See activityClassification.ts's EXTRA_ACTIONS / MODULE_OVERRIDES /
-   * SERVICE_TO_MODULE comments for the full rationale.
+   * combos, plus a 5th OWNER-DIRECTED correction from the final-look verdict
+   * ("approved BUT move sheets and friends to the Build module"): the whole
+   * Sheets cluster (sheet verbs + version-set family + the sheets service
+   * rescue target) routes to Build. See activityClassification.ts's
+   * EXTRA_ACTIONS / MODULE_OVERRIDES / SERVICE_TO_MODULE comments.
    */
   describe("owner-delegated mapping review (21.1-04 checkpoint)", () => {
-    it("sheets rescue: an unmapped sheets-service action lands in designCollaboration, not dataManagement", () => {
+    it("sheets rescue: an unmapped sheets-service action lands in build (owner-directed), not dataManagement", () => {
       const result = classifyActivity("view-sheet-public-link", "sheets");
-      expect(result.moduleId).toBe("designCollaboration");
+      expect(result.moduleId).toBe("build");
       expect(result.attributedBy).toBe("service");
     });
 
-    it("sheets rescue: create-public-link-for-sheets + sheets service -> designCollaboration", () => {
+    it("sheets rescue: create-public-link-for-sheets + sheets service -> build", () => {
       const result = classifyActivity("create-public-link-for-sheets", "sheets");
-      expect(result.moduleId).toBe("designCollaboration");
+      expect(result.moduleId).toBe("build");
     });
 
-    it("sheets verb family already agrees with the designCollaboration rescue target", () => {
-      expect(classifyActivity("view-sheet").moduleId).toBe("designCollaboration");
-      expect(classifyActivity("publish-sheet").moduleId).toBe("designCollaboration");
+    it("sheet verb cluster routes to build (owner-directed: Sheets is an ACC Build tool)", () => {
+      expect(classifyActivity("view-sheet").moduleId).toBe("build");
+      expect(classifyActivity("publish-sheet").moduleId).toBe("build");
+      expect(classifyActivity("export-sheet").moduleId).toBe("build");
+      expect(classifyActivity("delete-sheet").moduleId).toBe("build");
+      expect(classifyActivity("print-sheet").moduleId).toBe("build");
+      expect(classifyActivity("shared-with-recipients-for-sheets").moduleId).toBe("build");
     });
 
-    it("publish/version-set workflow unified to designCollaboration", () => {
+    it("version-set family follows the Sheets tool to build; publish-entity STAYS designCollaboration", () => {
+      expect(classifyActivity("create-version-set").moduleId).toBe("build");
+      expect(classifyActivity("add-version-to-set").moduleId).toBe("build");
+      expect(classifyActivity("rename-version-set").moduleId).toBe("build");
+      expect(classifyActivity("update-version-set").moduleId).toBe("build");
+      // publish-entity is the docs-tagged Revit model publish (Design Collaboration
+      // workflow), NOT a Sheets action — pinned so the sheets-cluster move never drags it.
       expect(classifyActivity("publish-entity").moduleId).toBe("designCollaboration");
-      expect(classifyActivity("create-version-set").moduleId).toBe("designCollaboration");
-      expect(classifyActivity("add-version-to-set").moduleId).toBe("designCollaboration");
-      expect(classifyActivity("rename-version-set").moduleId).toBe("designCollaboration");
-      expect(classifyActivity("update-version-set").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("send-entity-to-project").moduleId).toBe("designCollaboration");
     });
 
     it("restore-version and create-set are NOT moved (Docs file-versioning/Sets features stay dataManagement)", () => {

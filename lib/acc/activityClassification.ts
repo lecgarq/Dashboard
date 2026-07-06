@@ -22,7 +22,7 @@
  *    Preconstruction) form a dedicated "Admin Actions" module. Preconstruction is
  *    KEPT (empty) for future takeoff/cost activity; AutoSpecs / Design likewise.
  *  - EXTRA_ACTIONS covers the handful of DB actions absent from the excel:
- *    `add-version-to-set` -> Design Collaboration (version-set publishing family);
+ *    `add-version-to-set` -> Build (Sheets version-set family, owner-directed);
  *    `create-set` / `calibrate-entity` -> Data Management; `create-project` /
  *    `add-member` / `setting-update` -> Admin Actions; `add-folder-naming-standard`
  *    -> Datum (naming-standard family). See EXTRA_ACTIONS' own comment for the
@@ -98,9 +98,10 @@ const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
  * { module, label, category }. Researched 2026-06-05 (see file header).
  *
  * Owner-delegated mapping review (21.1-04 checkpoint, 2026-07-06): the version-set
- * publishing family (`add-version-to-set` here; `publish-entity`/`create-version-set`/
- * `rename-version-set`/`update-version-set` are catalog actions, see MODULE_OVERRIDES
- * below) moved dataManagement -> designCollaboration to unify with `publish-sheet`.
+ * family (`add-version-to-set` here; `create-version-set`/`rename-version-set`/
+ * `update-version-set` are catalog actions, see MODULE_OVERRIDES below) moved to
+ * Build with the rest of the Sheets cluster (owner-directed final-look verdict:
+ * Sheets is an ACC Build tool, so its version-set features follow the tool).
  * `restore-version` and `create-set` are Docs file-versioning/Sets features and were
  * deliberately NOT moved. `add-folder-naming-standard` is a DB action absent from the
  * excel catalog (was Unmapped, rescued to Data Management via the `docs` umbrella);
@@ -108,7 +109,7 @@ const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
  * `add-attribute-to-naming-standard`.
  */
 const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; category: string }>> = {
-  "add-version-to-set": { module: DESIGN_COLLABORATION_ID, label: "Add Version to Set", category: CAT.contentChange },
+  "add-version-to-set": { module: BUILD_ID, label: "Add Version to Set", category: CAT.contentChange },
   "create-set": { module: DATA_MANAGEMENT_ID, label: "Create Set", category: CAT.contentChange },
   "calibrate-entity": { module: DATA_MANAGEMENT_ID, label: "Calibrate Entity", category: CAT.contentChange },
   "create-project": { module: ADMIN_ACTIONS_ID, label: "Create Project", category: CAT.workflowChange },
@@ -123,10 +124,16 @@ const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; ca
  * Checked BEFORE the ADMIN_ACTION_IDS (Preconstruction -> Admin Actions) routing,
  * so it can pull a Preconstruction-tagged action (`notify-final-members`) out of
  * Admin Actions into a different module.
- *  - `publish-entity` / `create-version-set` / `rename-version-set` /
- *    `update-version-set`: catalog maps these to dataManagement, but every other
- *    version-set/publish verb (`publish-sheet`, `add-version-to-set`) is Design
- *    Collaboration -- unify the whole publishing workflow there.
+ *  - Sheets cluster -> Build (OWNER-DIRECTED, final-look verdict 2026-07-06:
+ *    "approved BUT move sheets and friends to the Build module"): the sheet verbs
+ *    (`view-sheet`, `publish-sheet`, `export-sheet`, `delete-sheet`, `print-sheet`,
+ *    `shared-with-recipients-for-sheets`) and the version-set family
+ *    (`create-version-set`, `rename-version-set`, `update-version-set`; plus
+ *    `add-version-to-set` in EXTRA_ACTIONS) are ACC Sheets tool features — Sheets
+ *    lives in ACC Build, so the whole cluster follows the tool.
+ *  - `publish-entity` STAYS Design Collaboration: it is the docs-tagged Revit
+ *    model publish (Design Collaboration's publish workflow), not a Sheets action.
+ *    `send-entity-to-project` likewise stays Design Collaboration via the catalog.
  *  - `notify-final-members`: catalog files this under Preconstruction (->
  *    Admin Actions), but it's a Docs review-workflow step; its siblings
  *    (`notify-reviewers`, `submit-review`, `claim-review-task`) are Data
@@ -134,9 +141,15 @@ const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; ca
  */
 const MODULE_OVERRIDES: Readonly<Record<string, string>> = {
   "publish-entity": DESIGN_COLLABORATION_ID,
-  "create-version-set": DESIGN_COLLABORATION_ID,
-  "rename-version-set": DESIGN_COLLABORATION_ID,
-  "update-version-set": DESIGN_COLLABORATION_ID,
+  "view-sheet": BUILD_ID,
+  "publish-sheet": BUILD_ID,
+  "export-sheet": BUILD_ID,
+  "delete-sheet": BUILD_ID,
+  "print-sheet": BUILD_ID,
+  "shared-with-recipients-for-sheets": BUILD_ID,
+  "create-version-set": BUILD_ID,
+  "rename-version-set": BUILD_ID,
+  "update-version-set": BUILD_ID,
   "notify-final-members": DATA_MANAGEMENT_ID,
 };
 
@@ -177,12 +190,12 @@ export function donutModules(): Array<{ id: string; label: string }> {
  *    are a deliberate permission-verb override to Admin Actions, not a bug) -- so
  *    an umbrella service NEVER overrides a verb result that already resolved to
  *    a real module; it only rescues an otherwise-Unmapped verb result. `sheets`
- *    rescues to Design Collaboration (owner-delegated mapping review, 21.1-04
- *    checkpoint, 2026-07-06): every verb-mapped sheets action already resolves
- *    there (view-sheet, publish-sheet, export-sheet, delete-sheet, print-sheet,
- *    shared-with-recipients-for-sheets), so the rescue path for unmapped sheets
- *    actions (view-sheet-public-link, create-public-link-for-sheets) must land
- *    in the same module, not Data Management.
+ *    rescues to Build (owner-directed final-look verdict, 21.1-04 checkpoint,
+ *    2026-07-06: the whole Sheets cluster belongs to ACC Build): every verb-mapped
+ *    sheets action resolves there via MODULE_OVERRIDES (view-sheet, publish-sheet,
+ *    export-sheet, delete-sheet, print-sheet, shared-with-recipients-for-sheets),
+ *    so the rescue path for unmapped sheets actions (view-sheet-public-link,
+ *    create-public-link-for-sheets) must land in the same module.
  */
 const SERVICE_TO_MODULE: Readonly<Record<string, string>> = {
   issues: BUILD_ID,
@@ -190,7 +203,7 @@ const SERVICE_TO_MODULE: Readonly<Record<string, string>> = {
   rfis: BUILD_ID,
   admin: ADMIN_ACTIONS_ID,
   docs: DATA_MANAGEMENT_ID,
-  sheets: DESIGN_COLLABORATION_ID,
+  sheets: BUILD_ID,
   bridge: DATA_MANAGEMENT_ID,
 };
 /** Umbrella services never override an already-mapped verb result (only rescue Unmapped). */

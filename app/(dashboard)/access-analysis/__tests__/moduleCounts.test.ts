@@ -133,20 +133,20 @@ describe("summarizeModules", () => {
   });
 
   it("maps the previously-unmapped catalog gaps (Sheets sets, calibration, admin) — no Unmapped left", () => {
-    // add-version-to-set moved to Design Collaboration in the owner-delegated mapping
-    // review (21.1-04 checkpoint), unifying the version-set publishing family with
-    // publish-sheet -- it no longer lands in Data Management.
+    // add-version-to-set routes to Build per the owner-directed Sheets-cluster move
+    // (21.1-04 final-look verdict): Sheets version-sets are ACC Build tool features,
+    // so they follow the tool -- no longer Data Management.
     const s = summarizeModules([
-      mk("p1", "add-version-to-set", 889), // -> Design Collaboration
+      mk("p1", "add-version-to-set", 889), // -> Build (Sheets cluster)
       mk("p1", "calibrate-entity", 37), // -> Data Management
       mk("p1", "create-project", 6), // -> Admin Actions
       mk("p1", "setting_update", 1), // normalizes to setting-update -> Admin Actions
     ]);
     expect(s.slices.some((x) => x.id === UNMAPPED_MODULE)).toBe(false);
     expect(s.slices.find((x) => x.id === "dataManagement")?.value).toBe(37);
-    expect(s.slices.find((x) => x.id === "designCollaboration")?.value).toBe(889);
+    expect(s.slices.find((x) => x.id === "build")?.value).toBe(889);
     expect(s.slices.find((x) => x.id === "adminActions")?.value).toBe(7);
-    const avt = s.typesByModule.get("designCollaboration")!.find((t) => t.raw === "add-version-to-set");
+    const avt = s.typesByModule.get("build")!.find((t) => t.raw === "add-version-to-set");
     expect(avt?.label).toBe("Add Version to Set");
     expect(avt?.category).toBe("Content changes");
   });
