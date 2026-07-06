@@ -22,9 +22,11 @@
  *    Preconstruction) form a dedicated "Admin Actions" module. Preconstruction is
  *    KEPT (empty) for future takeoff/cost activity; AutoSpecs / Design likewise.
  *  - EXTRA_ACTIONS covers the handful of DB actions absent from the excel:
- *    Sheets version-set + Docs calibration -> Data Management (service=docs, and
- *    `create-version-set` is already Data Management); create-project / add-member
- *    / setting-update -> Admin Actions.
+ *    `add-version-to-set` -> Design Collaboration (version-set publishing family);
+ *    `create-set` / `calibrate-entity` -> Data Management; `create-project` /
+ *    `add-member` / `setting-update` -> Admin Actions; `add-folder-naming-standard`
+ *    -> Datum (naming-standard family). See EXTRA_ACTIONS' own comment for the
+ *    2026-07-06 owner-delegated mapping review that moved several of these.
  *
  * Two axes of "category": the MODULE (which ACC product) and the action CATEGORY
  * (read / content change / workflow / access / delete) from the excel groupId.
@@ -37,6 +39,8 @@ const ADMIN_ACTIONS_LABEL = "Admin Actions";
 const MODEL_COORDINATION_ID = "modelCoordination";
 const DATA_MANAGEMENT_ID = "dataManagement";
 const BUILD_ID = "build";
+const DESIGN_COLLABORATION_ID = "designCollaboration";
+const DATUM_ID = "datum";
 
 /** Bucket id for any raw action with no mapping at all. Not a real module. */
 export const UNMAPPED_MODULE = "unmapped";
@@ -92,14 +96,48 @@ const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
 /**
  * DB actions absent from the excel catalog. Keyed by normalized id ->
  * { module, label, category }. Researched 2026-06-05 (see file header).
+ *
+ * Owner-delegated mapping review (21.1-04 checkpoint, 2026-07-06): the version-set
+ * publishing family (`add-version-to-set` here; `publish-entity`/`create-version-set`/
+ * `rename-version-set`/`update-version-set` are catalog actions, see MODULE_OVERRIDES
+ * below) moved dataManagement -> designCollaboration to unify with `publish-sheet`.
+ * `restore-version` and `create-set` are Docs file-versioning/Sets features and were
+ * deliberately NOT moved. `add-folder-naming-standard` is a DB action absent from the
+ * excel catalog (was Unmapped, rescued to Data Management via the `docs` umbrella);
+ * given an explicit Datum mapping to unify with `apply-naming-standard` /
+ * `add-attribute-to-naming-standard`.
  */
 const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; category: string }>> = {
-  "add-version-to-set": { module: DATA_MANAGEMENT_ID, label: "Add Version to Set", category: CAT.contentChange },
+  "add-version-to-set": { module: DESIGN_COLLABORATION_ID, label: "Add Version to Set", category: CAT.contentChange },
   "create-set": { module: DATA_MANAGEMENT_ID, label: "Create Set", category: CAT.contentChange },
   "calibrate-entity": { module: DATA_MANAGEMENT_ID, label: "Calibrate Entity", category: CAT.contentChange },
   "create-project": { module: ADMIN_ACTIONS_ID, label: "Create Project", category: CAT.workflowChange },
   "add-member": { module: ADMIN_ACTIONS_ID, label: "Add Member", category: CAT.accessChange },
   "setting-update": { module: ADMIN_ACTIONS_ID, label: "Setting Update", category: CAT.workflowChange },
+  "add-folder-naming-standard": { module: DATUM_ID, label: "Add Folder Naming Standard", category: CAT.contentChange },
+};
+
+/**
+ * Module reassignments for catalog actions whose excel-derived `moduleId` the
+ * owner-delegated mapping review (21.1-04 checkpoint, 2026-07-06) corrected.
+ * Checked BEFORE the ADMIN_ACTION_IDS (Preconstruction -> Admin Actions) routing,
+ * so it can pull a Preconstruction-tagged action (`notify-final-members`) out of
+ * Admin Actions into a different module.
+ *  - `publish-entity` / `create-version-set` / `rename-version-set` /
+ *    `update-version-set`: catalog maps these to dataManagement, but every other
+ *    version-set/publish verb (`publish-sheet`, `add-version-to-set`) is Design
+ *    Collaboration -- unify the whole publishing workflow there.
+ *  - `notify-final-members`: catalog files this under Preconstruction (->
+ *    Admin Actions), but it's a Docs review-workflow step; its siblings
+ *    (`notify-reviewers`, `submit-review`, `claim-review-task`) are Data
+ *    Management, so route it there too.
+ */
+const MODULE_OVERRIDES: Readonly<Record<string, string>> = {
+  "publish-entity": DESIGN_COLLABORATION_ID,
+  "create-version-set": DESIGN_COLLABORATION_ID,
+  "rename-version-set": DESIGN_COLLABORATION_ID,
+  "update-version-set": DESIGN_COLLABORATION_ID,
+  "notify-final-members": DATA_MANAGEMENT_ID,
 };
 
 /**
@@ -133,12 +171,18 @@ export function donutModules(): Array<{ id: string; label: string }> {
  * this is a NARROW override, never a full replacement of the verb taxonomy below).
  *  - decisive: issues/submittals/rfis -> Build, admin -> Admin Actions. These
  *    values are unambiguous about which module they mean.
- *  - umbrella: docs/sheets/bridge -> Data Management. These are coarse buckets
- *    that our verb taxonomy already refines into Design Collaboration / Datum /
- *    Admin Actions in specific cases (e.g. ~8,107 docs-serviceGroup rows are a
- *    deliberate permission-verb override to Admin Actions, not a bug) -- so an
- *    umbrella service NEVER overrides a verb result that already resolved to a
- *    real module; it only rescues an otherwise-Unmapped verb result.
+ *  - umbrella: docs/sheets/bridge -> their rescue-target module. These are coarse
+ *    buckets that our verb taxonomy already refines into Design Collaboration /
+ *    Datum / Admin Actions in specific cases (e.g. ~8,107 docs-serviceGroup rows
+ *    are a deliberate permission-verb override to Admin Actions, not a bug) -- so
+ *    an umbrella service NEVER overrides a verb result that already resolved to
+ *    a real module; it only rescues an otherwise-Unmapped verb result. `sheets`
+ *    rescues to Design Collaboration (owner-delegated mapping review, 21.1-04
+ *    checkpoint, 2026-07-06): every verb-mapped sheets action already resolves
+ *    there (view-sheet, publish-sheet, export-sheet, delete-sheet, print-sheet,
+ *    shared-with-recipients-for-sheets), so the rescue path for unmapped sheets
+ *    actions (view-sheet-public-link, create-public-link-for-sheets) must land
+ *    in the same module, not Data Management.
  */
 const SERVICE_TO_MODULE: Readonly<Record<string, string>> = {
   issues: BUILD_ID,
@@ -146,7 +190,7 @@ const SERVICE_TO_MODULE: Readonly<Record<string, string>> = {
   rfis: BUILD_ID,
   admin: ADMIN_ACTIONS_ID,
   docs: DATA_MANAGEMENT_ID,
-  sheets: DATA_MANAGEMENT_ID,
+  sheets: DESIGN_COLLABORATION_ID,
   bridge: DATA_MANAGEMENT_ID,
 };
 /** Umbrella services never override an already-mapped verb result (only rescue Unmapped). */
@@ -179,7 +223,8 @@ export function classifyActivity(
       if (!action) {
         verbResult = { moduleId: UNMAPPED_MODULE, label: rawAction, category: CAT.unknown };
       } else {
-        let moduleId = ADMIN_ACTION_IDS.has(action.id) ? ADMIN_ACTIONS_ID : action.moduleId;
+        let moduleId = MODULE_OVERRIDES[action.id]
+          ?? (ADMIN_ACTION_IDS.has(action.id) ? ADMIN_ACTIONS_ID : action.moduleId);
         if (moduleId === MODEL_COORDINATION_ID) moduleId = DATA_MANAGEMENT_ID;
         const category = CATEGORY_OVERRIDES[action.id] ?? CAT[action.groupId] ?? CAT.unknown;
         verbResult = { moduleId, label: action.label, category };

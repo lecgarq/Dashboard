@@ -117,28 +117,36 @@ describe("summarizeModules", () => {
   });
 
   it("groups admin/permission actions into Admin Actions, leaving Preconstruction empty", () => {
+    // notify-final-members is a Preconstruction catalog action, but the owner-delegated
+    // mapping review (21.1-04 checkpoint) routes it to Data Management (Docs review-workflow
+    // sibling of notify-reviewers/submit-review/claim-review-task), not Admin Actions.
     const s = summarizeModules([
       mk("p1", "assign-member", 8),
       mk("p1", "assign-permission", 3),
       mk("p1", "notify-final-members", 1),
     ]);
-    expect(s.slices.find((x) => x.id === "adminActions")).toEqual({ id: "adminActions", name: "Admin Actions", value: 12 });
+    expect(s.slices.find((x) => x.id === "adminActions")).toEqual({ id: "adminActions", name: "Admin Actions", value: 11 });
+    expect(s.slices.find((x) => x.id === "dataManagement")).toEqual({ id: "dataManagement", name: "Data Management", value: 1 });
     expect(s.slices.some((x) => x.id === "preconstruction")).toBe(false);
     expect(s.zeroModules.some((m) => m.id === "preconstruction")).toBe(true);
     expect(s.zeroModules.some((m) => m.id === "adminActions")).toBe(false);
   });
 
   it("maps the previously-unmapped catalog gaps (Sheets sets, calibration, admin) — no Unmapped left", () => {
+    // add-version-to-set moved to Design Collaboration in the owner-delegated mapping
+    // review (21.1-04 checkpoint), unifying the version-set publishing family with
+    // publish-sheet -- it no longer lands in Data Management.
     const s = summarizeModules([
-      mk("p1", "add-version-to-set", 889), // -> Data Management
+      mk("p1", "add-version-to-set", 889), // -> Design Collaboration
       mk("p1", "calibrate-entity", 37), // -> Data Management
       mk("p1", "create-project", 6), // -> Admin Actions
       mk("p1", "setting_update", 1), // normalizes to setting-update -> Admin Actions
     ]);
     expect(s.slices.some((x) => x.id === UNMAPPED_MODULE)).toBe(false);
-    expect(s.slices.find((x) => x.id === "dataManagement")?.value).toBe(926);
+    expect(s.slices.find((x) => x.id === "dataManagement")?.value).toBe(37);
+    expect(s.slices.find((x) => x.id === "designCollaboration")?.value).toBe(889);
     expect(s.slices.find((x) => x.id === "adminActions")?.value).toBe(7);
-    const avt = s.typesByModule.get("dataManagement")!.find((t) => t.raw === "add-version-to-set");
+    const avt = s.typesByModule.get("designCollaboration")!.find((t) => t.raw === "add-version-to-set");
     expect(avt?.label).toBe("Add Version to Set");
     expect(avt?.category).toBe("Content changes");
   });

@@ -188,4 +188,61 @@ describe("activityClassification (BND-02 pin test)", () => {
       expect(withSpacing).toEqual(canonical);
     });
   });
+
+  /**
+   * Owner-delegated mapping review (21.1-04 checkpoint, 2026-07-06): 4 taxonomy
+   * corrections applied after the owner audited all live (rawAction, service)
+   * combos. See activityClassification.ts's EXTRA_ACTIONS / MODULE_OVERRIDES /
+   * SERVICE_TO_MODULE comments for the full rationale.
+   */
+  describe("owner-delegated mapping review (21.1-04 checkpoint)", () => {
+    it("sheets rescue: an unmapped sheets-service action lands in designCollaboration, not dataManagement", () => {
+      const result = classifyActivity("view-sheet-public-link", "sheets");
+      expect(result.moduleId).toBe("designCollaboration");
+      expect(result.attributedBy).toBe("service");
+    });
+
+    it("sheets rescue: create-public-link-for-sheets + sheets service -> designCollaboration", () => {
+      const result = classifyActivity("create-public-link-for-sheets", "sheets");
+      expect(result.moduleId).toBe("designCollaboration");
+    });
+
+    it("sheets verb family already agrees with the designCollaboration rescue target", () => {
+      expect(classifyActivity("view-sheet").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("publish-sheet").moduleId).toBe("designCollaboration");
+    });
+
+    it("publish/version-set workflow unified to designCollaboration", () => {
+      expect(classifyActivity("publish-entity").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("create-version-set").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("add-version-to-set").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("rename-version-set").moduleId).toBe("designCollaboration");
+      expect(classifyActivity("update-version-set").moduleId).toBe("designCollaboration");
+    });
+
+    it("restore-version and create-set are NOT moved (Docs file-versioning/Sets features stay dataManagement)", () => {
+      expect(classifyActivity("restore-version").moduleId).toBe("dataManagement");
+      expect(classifyActivity("create-set").moduleId).toBe("dataManagement");
+    });
+
+    it("notify-final-members moves from adminActions to dataManagement, alongside its review-workflow siblings", () => {
+      const result = classifyActivity("notify-final-members");
+      expect(result.moduleId).toBe("dataManagement");
+      expect(classifyActivity("notify-reviewers").moduleId).toBe("dataManagement");
+      expect(classifyActivity("submit-review").moduleId).toBe("dataManagement");
+      expect(classifyActivity("claim-review-task").moduleId).toBe("dataManagement");
+    });
+
+    it("add-folder-naming-standard is mapped to datum, unified with its naming-standard siblings", () => {
+      const result = classifyActivity("add-folder-naming-standard");
+      expect(result).toEqual({
+        moduleId: "datum",
+        label: "Add Folder Naming Standard",
+        category: "Content changes",
+        attributedBy: "verb",
+      });
+      expect(classifyActivity("apply-naming-standard").moduleId).toBe("datum");
+      expect(classifyActivity("add-attribute-to-naming-standard").moduleId).toBe("datum");
+    });
+  });
 });
