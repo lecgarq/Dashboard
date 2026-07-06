@@ -59,6 +59,7 @@ import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { FolderActivityActorRow } from "@/lib/server/folderActivityByCompanyView";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { TerrainProjectOption, FolderTerrainData } from "../folderTerrain";
+import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
 
 // 20.1-05: /access-analysis is now a 6-tab shell (Overview · Roles · Users ·
 // Companies · Projects · Compare) — Radix `TabsContent` unmounts INACTIVE tabs
@@ -833,5 +834,45 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     // Compare: the folder permission terrain.
     openTab(getByRole, /compare/i);
     expect(getByText("Folder permission terrain")).toBeTruthy();
+  });
+});
+
+// Phase 21.1-04: Overview 2-up row (UAT-21.1-01/03) — Activity share by
+// project + Provisioned modules, both picker-only, each gated independently
+// on its own summary prop's presence.
+const provisionedModuleRows: ProvisionedModuleRow[] = [
+  { projectId: "p1", projectName: "Tower A", moduleId: "dataManagement", count: 3 },
+  { projectId: "p2", projectName: "Tower B", moduleId: "build", count: 2 },
+  // p3 exists ONLY in provisionedModuleRows — not in roleRows/moduleRows/timelineRows/coordinationData —
+  // pins the options-union fix (AccProjectMember covers all live projects; roleRows is DC-scoped).
+  { projectId: "p3", projectName: "Tower C", moduleId: "build", count: 1 },
+];
+
+describe("AccessAnalysisCharts — Overview 2-up row (UAT-21.1-01/03)", () => {
+  it("renders both new section titles on the Overview tab when provisionedModuleRows + moduleRows are supplied", () => {
+    const { getByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} provisionedModuleRows={provisionedModuleRows} />,
+    );
+    // Overview is the default tab — no click needed.
+    expect(getByText("Activity share by project")).toBeTruthy();
+    expect(getByText("Provisioned modules")).toBeTruthy();
+  });
+
+  it("hides the Provisioned modules panel when provisionedModuleRows is omitted (presence gating pinned)", () => {
+    const { queryByText, getByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />,
+    );
+    expect(queryByText("Provisioned modules")).toBeNull();
+    // moduleRows is a required prop, so the activity-share panel still renders.
+    expect(getByText("Activity share by project")).toBeTruthy();
+  });
+
+  it("includes a project present ONLY in provisionedModuleRows in the picker options (options-union pin)", () => {
+    const { getByTestId, getAllByRole } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} provisionedModuleRows={provisionedModuleRows} />,
+    );
+    fireEvent.focus(getByTestId("project-search"));
+    const boxes = getAllByRole("checkbox", { name: /tower c/i });
+    expect(boxes).toHaveLength(1);
   });
 });

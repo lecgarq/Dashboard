@@ -56,6 +56,12 @@ vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
 vi.mock("@/lib/server/ingestFreshnessView", () => ({
   loadIngestFreshness: vi.fn(async () => null),
 }));
+// UAT-21.1-01 (21.1-04): loadProvisionedModules joined mainCharts.tsx's eager
+// Promise.all (fan-out 9 -> 10) -- mocked so this route test (which awaits the
+// real MainCharts() RSC directly) doesn't hit real Prisma/db wiring.
+vi.mock("@/lib/server/provisionedModulesView", () => ({
+  loadProvisionedModules: vi.fn(async () => []),
+}));
 // Server actions ("use server") — mocked so the route test doesn't pull auth/db wiring.
 vi.mock("./coordinationActions", () => ({
   loadProjectClashes: vi.fn(async () => []),
