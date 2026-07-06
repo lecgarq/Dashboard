@@ -19,7 +19,7 @@ function groupByCategory(types: ActivityType[]): Array<[string, ActivityType[]]>
 
 // One stable color per module id — the donut is about *which module*, so colors
 // are fixed (not rotated like role names). Reads well on light + dark cards.
-const MODULE_COLORS: Record<string, string> = {
+export const MODULE_COLORS: Record<string, string> = {
   dataManagement: "#6366f1", // indigo
   build: "#f59e0b", // amber
   designCollaboration: "#34d399", // emerald
