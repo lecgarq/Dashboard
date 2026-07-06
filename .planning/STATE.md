@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
 status: active
-stopped_at: Phase 21.1 COMPLETE (4/4 plans, owner-approved live; all 3 UAT items shipped)
-last_updated: "2026-07-06T22:30:00Z"
-last_activity: 2026-07-06 — Phase 21.1 Plan 04 complete, PHASE 21.1 COMPLETE (Overview 2-up row + live-split caveat wired; owner checkpoint approved after a 5-correction owner-delegated module-attribution taxonomy review incl. the owner-directed Sheets-cluster→Build move). See `21.1-04-SUMMARY.md` for full detail.
+stopped_at: Phase 21.1 COMPLETE (21.1-04 owner checkpoint approved; all 3 UAT items live; 5-correction taxonomy review closed)
+last_updated: "2026-07-06T22:15:36.870Z"
+last_activity: 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
 progress:
   total_phases: 17
   completed_phases: 15
-  total_plans: 40
-  completed_plans: 40
+  total_plans: 42
+  completed_plans: 42
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**).
 - **Plan:** 21.1-04 complete, PHASE 21.1 COMPLETE (all 3 UAT items live on the Overview tab: 2-up row [Activity share by project | Provisioned modules] + live service/verb-split ⓘ caveat; owner checkpoint APPROVED on a `:3100` production preflight after a 5-correction owner-delegated module-attribution taxonomy review — final verdict verbatim: "approved BUT move sheets and friends to the Build module", applied. `npm test` 2477 passed/1 skipped/0 failed, tsc clean). See `21.1-04-SUMMARY.md`.
-- **Status:** v2.3 milestone in progress (Phases 20/20.1/21/21.1 complete; Phase 22 next)
+- **Status:** Milestone complete
 - **Last activity:** 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
