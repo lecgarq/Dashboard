@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: 21
-current_phase_name: "Issue Funnel — Status & Time, 2/4 plans"
+current_phase_name: "Issue Funnel — Status & Time, 3/4 plans"
 status: in_progress
-stopped_at: Phase 21 Plan 02 complete
-last_updated: "2026-07-06T14:57:00.000Z"
+stopped_at: Phase 21 Plan 03 complete
+last_updated: "2026-07-06T15:04:00.000Z"
 last_activity: 2026-07-06
-last_activity_desc: "Phase 21 Plan 02 complete: issueFunnelCounts.ts pure transforms (c0b599cd) + Vitest test (a705e4bb). See 21-02-SUMMARY.md for full detail."
+last_activity_desc: "Phase 21 Plan 03 complete: IssueTimelineChart (fc9a008c) + IssueStatusChart (23191885) components, unmounted, 12 new Vitest cases. See 21-03-SUMMARY.md for full detail."
 progress:
   total_phases: 16
   completed_phases: 13
   total_plans: 38
-  completed_plans: 35
-  percent: 92
+  completed_plans: 36
+  percent: 95
 ---
 
 # Project State
@@ -30,9 +30,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (IN PROGRESS, 2/4 plans).
-- **Plan:** 21-02 complete (pure transforms: `summarizeIssueStatus` — 8 fixed live statuses, zeros kept, honest overflow bucket for unexpected status strings, per-project drill sort — and `deriveIssueCoverageCaption` — fetched/total/unavailable derived from live `IssueCoverageInputRow[]`, no hardcoded figures. Cloned from Phase 20's `issueFetchCoverageCounts.ts` fixed-bucket pattern). 7/7 Vitest cases green, `npx tsc --noEmit` clean. See `21-02-SUMMARY.md`.
-- **Status:** In progress — Phase 21 plans 21-03/21-04 remain (chart component consuming this plan's transforms + client wiring into the access-analysis tab panels).
-- **Last activity:** 2026-07-06 — Phase 21 Plan 02 complete. See frontmatter `last_activity_desc` and `21-02-SUMMARY.md` for full detail.
+- **Plan:** 21-03 complete (chart components: `IssueTimelineChart` — monthly area line cloned from `ActivityTimelineChart` minus YoY/data-floor, plus live coverage caption + honest empty state; `IssueStatusChart` — 8-status donut cloned from `IssueFetchCoverageDonut`'s local-drill pattern, no `onSliceClick`/`activeSlice`/`sliceFilters`, fixed semantic color map + overflow bucket. Both built UNMOUNTED per `21-CONTEXT.md`'s locked decision). 12/12 Vitest cases green, `npx tsc --noEmit` clean. See `21-03-SUMMARY.md`.
+- **Status:** In progress — Phase 21 plan 21-04 remains (lazy fetch-once-per-tab client wiring: mount both charts into `ProjectsTabPanel.tsx` below `IssueFetchCoverageDonut`, full gates + owner live checkpoint). `ISSUE-02`/`ISSUE-03` in REQUIREMENTS.md intentionally left `Pending` until 21-04 — matches the Phase 20 precedent (`ISSUE-01`/`PERM-01`/`ENG-01`/`PIPE-01` were only marked `Complete` at their final wiring plan, not their component-build plan).
+- **Last activity:** 2026-07-06 — Phase 21 Plan 03 complete. See frontmatter `last_activity_desc` and `21-03-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
 
@@ -174,6 +174,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 20.1]: 20.1-07 (FINAL plan, UAT-5 + owner gap-closure, COMPLETE): Tasks 1-2 (prior session) measured a real ~384px scroll jump (self-inflicted legend cross-filter collapse + drill-list mounting above it) via a live-browser Playwright spec (jsdom can't reproduce -- IntersectionObserver stubbed), fixed with a `legendMinHeight` ratchet (never shrinks) + reordering the drill-down list to render AFTER the legend. Task 3 owner UAT re-check response ("approved but...") surfaced 4 gap-closure items, all closed: (1) Activity-recency panel subtitles (Roles-tab `ActivityRecencyChart` + Users-tab "Activity recency detail" table) rewritten to state the underlying question (who's actually working vs. holding unused access) instead of just the banding mechanics -- copy-only; (2+3) `PermissionLevelChart`/`FolderActivityByCompanyChart` "Other" buckets now expand in place (local `expanded` state re-invokes the same `summarize*(rows, topN)` with `topN=rows.length`, zero new loader/fetch -- reuses `RolesPieChart`'s pre-existing Others-expand pattern) instead of dead-ending, with a collapse-back link that rank-checks whether an in-flight drill survives the collapse; (4) diagnosed the project-GUID leak in the global picker to THREE loaders feeding `projectOptions()` (`accessInstanceView.ts` roleRows -- first-priority source, `moduleActivityView.ts` moduleRows, `activityTimelineView.ts` timelineRows), each querying only `AccDcProject` and falling back to the raw `projectId` string -- all three now use `buildProjectNameMap`/`resolveProjectName` (AccProject-over-AccDcProject, "Unknown project" fallback), matching `coordinationByProjectView.ts`/`permissionLevelView.ts`'s pre-existing correct pattern. `accessInstanceView.ts`'s `RawDc` gained an optional `liveProjects` field (backward-compatible with existing DC-only test fixtures). Playwright re-run hit the pre-existing/already-deferred `next dev --webpack` 500s-every-request infra bug (`deferred-items.md`) -- confirmed unrelated to this plan's changes via direct `curl`, not fixed (out of scope, already recommended for a future infra phase). npm test full suite: 2392 passed/1 skipped/0 failed (6 new tests, 0 regressions vs. the 2386 baseline). Dev server on :3100 restarted clean with `--turbopack` (the working option) for the owner's ongoing quick re-check; production :3000 untouched throughout. Phase 20.1 (all 6 owner UAT items across 20.1-05/06/07) is now fully closed.
 - [Phase 21]: 21-01 (issue funnel server data layer, COMPLETE): loadIssueFunnel() aggregates the full 17,360-row AccIssue set (no isCoordination filter) into a monthly date_trunc timeline cut + status groupBy cut in one Promise.all/5-min-TTL cache, mirroring coordinationByProjectView.ts's shape exactly; null createdAt excluded from the month cut (would corrupt the month key) but still counted in the status cut; null status coalesced to "unknown"; project names resolved via buildProjectNameMap/resolveProjectName (never a raw GUID). issueFunnelActions.ts mirrors activityRecencyActions.ts verbatim (auth-gate + delegate); client wiring deferred to plan 21-04 per CONTEXT.md locked decision to avoid growing mainCharts.tsx's eager Promise.all fan-out. Continuation session: prior executor died on an API error after committing Task 1 (fc66c90b, verified correct) but before Task 2 -- this session verified Task 1 then completed Task 2 (b2d39428) with no rework.
 - [Phase 21]: 21-02 (issue funnel status transforms, COMPLETE): `app/(dashboard)/access-analysis/issueFunnelCounts.ts` clones `issueFetchCoverageCounts.ts`'s fixed-bucket + honest-overflow pattern over the 8 verified live statuses (not 4 coverage buckets); `summarizeIssueStatus` always emits all 8 in fixed order (zeros kept), appends any unexpected status string as its own bucket (never dropped/merged), labels are the raw status string verbatim (no prettifying, no open/closed grouping -- CONTEXT.md locked), per-status drill rows sorted count desc then project name, with a defensive per-(projectId,status) count merge. `deriveIssueCoverageCaption` computes fetched (ok+zero_issues)/total/unavailable from live `IssueCoverageInputRow[]` -- zero hardcoded figures. Built against a LOCAL structural `IssueStatusInputRow` type (not imported from `lib/server/issueFunnelView.ts`) per the plan's wave-1-parallelism note, avoiding any cross-plan file dependency. Unmounted -- plan 21-03 builds the chart component consuming these exports, plan 21-04 wires it in. 7/7 new Vitest cases green, tsc clean, no deviations.
+- [Phase 21]: 21-03 (issue funnel chart components, COMPLETE): `IssueTimelineChart.tsx` clones `ActivityTimelineChart.tsx`'s EChart smooth-area-line/dataZoom/markPoint structure, removing the `deltaByMonth`/YoY tooltip line and `dataFloor`/floor-caption entirely (locked no-YoY decision -- issue history is shorter/spikier than activity data), amber `#f59e0b` accent (distinct from the activity timeline's sky `#38bdf8`) so the two timelines aren't confused across tabs, plus a live `deriveIssueCoverageCaption` subtitle and a coverage-aware empty state (unavailable-vs-genuinely-zero distinction). `IssueStatusChart.tsx` clones `IssueFetchCoverageDonut.tsx`'s local-drill-state donut pattern verbatim (no `onSliceClick`/`activeSlice`/`sliceFilters` -- grep-verified absent), fixed 8-status semantic color map (closed/completed=settled greens, open/in_progress/in_review/pending/not_approved=active warm/blue/violet, draft=neutral zinc) + fuchsia `#e879f9` overflow color for unexpected statuses, ranked legend with all 8 buckets always present (zeros kept) plus appended overflow rows, same live coverage caption convention. Both built UNMOUNTED per `21-CONTEXT.md`'s locked decision -- plan 21-04 mounts them into `ProjectsTabPanel.tsx` below `IssueFetchCoverageDonut`. Deliberately did NOT mark `ISSUE-02`/`ISSUE-03` complete in REQUIREMENTS.md this plan (matches Phase 20 precedent: requirements marked complete only at the wiring plan that makes them user-visible, not the component-build plan). 12/12 new Vitest cases green (5 timeline + 7 status), tsc clean, no deviations.
 
 ### Blockers/Concerns
 
@@ -228,7 +229,7 @@ items resolved) and the owner approved live on a `:3100` webpack production buil
 build preflight; `:3000` untouched). Deploy the 20.1 changes to `:3000` when the owner wants
 them live (`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
 
-**Phase 21 (Issue Funnel — Status & Time) is IN PROGRESS — 2/4 plans.** 21-01 (server data
+**Phase 21 (Issue Funnel — Status & Time) is IN PROGRESS — 3/4 plans.** 21-01 (server data
 layer) is complete: `lib/server/issueFunnelView.ts`'s `loadIssueFunnel()` aggregates the full
 17,360-row `AccIssue` set into a monthly timeline cut + status breakdown cut, both server-side
 aggregates (no `findMany` + JS reduce), plus its aggregate-bound Vitest test and an unwired
@@ -236,8 +237,13 @@ aggregates (no `findMany` + JS reduce), plus its aggregate-bound Vitest test and
 transforms) is complete: `app/(dashboard)/access-analysis/issueFunnelCounts.ts`'s
 `summarizeIssueStatus`/`deriveIssueCoverageCaption`, cloning Phase 20's fixed-bucket +
 honest-overflow pattern over the 8 verified live statuses, plus 7 new Vitest cases. See
-`21-02-SUMMARY.md`. **Next: `21-03-PLAN.md`** (chart component consuming this plan's exports;
-`21-04-PLAN.md` remains for client wiring per `21-CONTEXT.md`'s locked decision).
+`21-02-SUMMARY.md`. 21-03 (chart components) is complete: `IssueTimelineChart.tsx` (monthly
+area line, amber accent, no YoY) + `IssueStatusChart.tsx` (8-status donut, local drill, no
+cross-filter bus), both unmounted, plus 12 new Vitest cases. See `21-03-SUMMARY.md`.
+**Next: `21-04-PLAN.md`** (client wiring: lazy fetch-once Projects-tab mount of both charts
+below `IssueFetchCoverageDonut`, full gates + owner live checkpoint — per `21-CONTEXT.md`'s
+locked decision; this is also the plan that marks `ISSUE-02`/`ISSUE-03` complete in
+REQUIREMENTS.md).
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -266,9 +272,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-06T14:57:00.000Z
-**Stopped at:** Phase 21 Plan 02 complete
-**Resume file:** .planning/phases/21-issue-funnel-status-time/21-03-PLAN.md
+**Last session:** 2026-07-06T15:04:00.000Z
+**Stopped at:** Phase 21 Plan 03 complete
+**Resume file:** .planning/phases/21-issue-funnel-status-time/21-04-PLAN.md
 
 ## Performance Metrics
 
@@ -288,3 +294,4 @@ of v2.3 scope.
 | Phase 20.1 P07 | ~55min (continuation) | 3 tasks + 4 gap-fixes | 14 files (+1 prior session) |
 | Phase 21 P01 | 10min | 2 tasks | 3 files |
 | Phase 21 P02 | 8min | 2 tasks | 2 files |
+| Phase 21 P03 | ~20min | 2 tasks | 4 files |
