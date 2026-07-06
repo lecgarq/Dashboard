@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
 status: active
-stopped_at: Phase 21.1 context gathered
-last_updated: "2026-07-06T16:31:56.565Z"
-last_activity: 2026-07-06 — Phase 21 Plan 04 complete, Phase 21 fully shipped. See frontmatter `last_activity_desc` and `21-04-SUMMARY.md` for full detail.
+stopped_at: Phase 21.1 Plan 01 complete (service-first attribution fix)
+last_updated: "2026-07-06T17:21:59.739Z"
+last_activity: 2026-07-06 — Phase 21.1 Plan 01 complete (service-first module attribution fix, UAT-21.1-02). See `21.1-01-SUMMARY.md` for full detail.
 progress:
   total_phases: 17
   completed_phases: 14
@@ -173,6 +173,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 21]: 21-02 (issue funnel status transforms, COMPLETE): `app/(dashboard)/access-analysis/issueFunnelCounts.ts` clones `issueFetchCoverageCounts.ts`'s fixed-bucket + honest-overflow pattern over the 8 verified live statuses (not 4 coverage buckets); `summarizeIssueStatus` always emits all 8 in fixed order (zeros kept), appends any unexpected status string as its own bucket (never dropped/merged), labels are the raw status string verbatim (no prettifying, no open/closed grouping -- CONTEXT.md locked), per-status drill rows sorted count desc then project name, with a defensive per-(projectId,status) count merge. `deriveIssueCoverageCaption` computes fetched (ok+zero_issues)/total/unavailable from live `IssueCoverageInputRow[]` -- zero hardcoded figures. Built against a LOCAL structural `IssueStatusInputRow` type (not imported from `lib/server/issueFunnelView.ts`) per the plan's wave-1-parallelism note, avoiding any cross-plan file dependency. Unmounted -- plan 21-03 builds the chart component consuming these exports, plan 21-04 wires it in. 7/7 new Vitest cases green, tsc clean, no deviations.
 - [Phase 21]: 21-03 (issue funnel chart components, COMPLETE): `IssueTimelineChart.tsx` clones `ActivityTimelineChart.tsx`'s EChart smooth-area-line/dataZoom/markPoint structure, removing the `deltaByMonth`/YoY tooltip line and `dataFloor`/floor-caption entirely (locked no-YoY decision -- issue history is shorter/spikier than activity data), amber `#f59e0b` accent (distinct from the activity timeline's sky `#38bdf8`) so the two timelines aren't confused across tabs, plus a live `deriveIssueCoverageCaption` subtitle and a coverage-aware empty state (unavailable-vs-genuinely-zero distinction). `IssueStatusChart.tsx` clones `IssueFetchCoverageDonut.tsx`'s local-drill-state donut pattern verbatim (no `onSliceClick`/`activeSlice`/`sliceFilters` -- grep-verified absent), fixed 8-status semantic color map (closed/completed=settled greens, open/in_progress/in_review/pending/not_approved=active warm/blue/violet, draft=neutral zinc) + fuchsia `#e879f9` overflow color for unexpected statuses, ranked legend with all 8 buckets always present (zeros kept) plus appended overflow rows, same live coverage caption convention. Both built UNMOUNTED per `21-CONTEXT.md`'s locked decision -- plan 21-04 mounts them into `ProjectsTabPanel.tsx` below `IssueFetchCoverageDonut`. Deliberately did NOT mark `ISSUE-02`/`ISSUE-03` complete in REQUIREMENTS.md this plan (matches Phase 20 precedent: requirements marked complete only at the wiring plan that makes them user-visible, not the component-build plan). 12/12 new Vitest cases green (5 timeline + 7 status), tsc clean, no deviations.
 - [Phase 21]: 21-04 (client wiring + owner checkpoint, FINAL plan, COMPLETE, Phase 21 SHIPPED): `loadIssueFunnelAction` threaded as a function prop from `mainCharts.tsx` (eager `Promise.all` fan-out unchanged at 9 -- issue-funnel loader rides the lazy per-tab path only); `AccessAnalysisCharts.tsx` gained a 4th lazy fetch-once branch (ref-flag set before the await, mirroring the activityRecency/permissionLevel/folderScopedActivity shape) keyed `tab === "projects"`, plus two picker-only memos (`issueTimelineSummary`/`filteredIssueStatusRows`, using `selected` directly -- locked decision, never `sliceFilteredProjectIds`); `ProjectsTabPanel.tsx` mounts both `IssueTimelineChart`/`IssueStatusChart` as two full-width stacked panels directly between `IssueFetchCoverageDonut` and Model Coordination, gated on prop presence with `DonutPanelSkeleton` while loading (leaves room for Phase 22's issues-by-type chart as a third sibling, zero redesign needed). New pinned Vitest shell test mirrors the existing lazy-fetch-once-per-tab convention. Full gate sweep: tsc clean, `npm test` 2421 passed/1 skipped/0 failed (grew from 2392 baseline, zero regressions), scope diff = exactly the 4 planned files, no new deps, `/users/spatial-graph` untouched. Owner live checkpoint **APPROVED** on a `:3100` webpack production-build preflight (isolated `.next-uat-21` dist, `:3000` never touched) -- verbatim: "Yes I like it." `ISSUE-02`/`ISSUE-03` now marked `Complete` in REQUIREMENTS.md. **3 Overview-tab UAT follow-up items surfaced during the same checkpoint session** (all out of this phase's scope, none require any file this plan touched): (1) new Overview chart -- module access grants per module for selected projects ("provisioned modules"), maps to the already-deferred "provisioned-vs-active module coverage" seed (needs `products` Json -> `ModuleId[]` vocabulary alignment); (2) data-bug suspicion -- "Activity by module" allocation looks wrong, many activities suspected attributed to the wrong module; matches the already-diagnosed known gap that module attribution ignores `AccActivity.service` (~40.7% populated), prior June diagnosis found ~966 Model Coordination activities were likely Build misattribution; (3) new Overview panel -- "Activity share by project" donut (top-N + Other, click-to-drill), additive, existing Top-projects-by-activity chart stays unchanged. See `21-04-SUMMARY.md` "UAT Feedback / Follow-ups" for full detail -- surface these for scoping before/alongside Phase 22 planning, they do not block Phase 22's start.
+- [Phase 21.1]: 21.1-01 (service-first attribution fix, UAT-21.1-02): `classifyActivity(rawAction, service?)` gains an additive `attributedBy: "service"|"verb"` field; `SERVICE_TO_MODULE` is a narrow override -- decisive services (issues/submittals/rfis/admin) override the verb result when they disagree; umbrella services (docs/sheets/bridge) only rescue an Unmapped verb result, never flatten an already-mapped verb refinement (preserves the intentional Design Collaboration/Datum/Admin Actions verb splits). `moduleActivityView.ts`'s union now groups by service/serviceGroup (live row count 7,824, well below OOM-guard scale); `ModuleSummary.attribution {serviceCount, verbCount}` exposes the live split for 21.1-04's caveat copy. Live evidence (`21.1-ATTRIBUTION-DELTA.md`, 2026-07-06): movement is real but tiny -- 207 of 4,722,412 activities (0.0044%), zero Model Coordination involvement, confirming `docs/activity-module-audit.md`'s stale ~966 figure is superseded. Deviation (Rule 1, non-architectural): 2 pre-existing test files (`activityClassification.test.ts`'s toEqual pins, `ModulesPieChart.test.tsx`'s fixtures) updated to include the additive fields TypeScript/Vitest required. `npm test` 2432 passed/1 skipped/0 failed (baseline 2421). Items 1 (provisioned-modules chart) and 3 (activity-share-by-project donut) remain for later plans in this phase.
 
 ### Blockers/Concerns
 
@@ -255,8 +256,20 @@ skipped/0 failed); owner checkpoint **APPROVED** live on a `:3100` production-bu
 See `21-04-SUMMARY.md`, including 3 Overview-tab UAT follow-up items (out of phase scope,
 recorded for future scoping — do not block Phase 22).
 
-**Next: Phase 22 (Issue Type Resolution — ISSUE-04/ISSUE-05).** No plans exist yet
-(`ROADMAP.md` marks Phase 22 "Plans: TBD") — run `/gsd:discuss-phase` or `/gsd:plan-phase`
+**Phase 21.1 (Overview Tab UAT Follow-ups) is IN PROGRESS — 1/4 plans.** Inserted urgent
+phase after Phase 21 (see "Roadmap Evolution" above) to close the 3 owner UAT items from the
+21-04 checkpoint. **21.1-01 (service-first attribution fix, UAT-21.1-02, COMPLETE):**
+`classifyActivity(rawAction, service?)` gains a narrow `SERVICE_TO_MODULE` override +
+`attributedBy` field; `moduleActivityView.ts`'s union preserves `service`/`serviceGroup`;
+`ModuleSummary.attribution` exposes the live service/verb split; `21.1-ATTRIBUTION-DELTA.md`
+is the live before/after evidence (207/4,722,412 moved, 0.0044%, zero Model Coordination
+involvement). See `21.1-01-SUMMARY.md`. **Next: 21.1-02** (provisioned-modules chart,
+`AccProjectMember`-based loader, UAT-21.1-01) and **21.1-03** (activity-share-by-project
+donut, zero new loader, UAT-21.1-03) — both wave 1, can run in parallel; **21.1-04** (wiring +
+owner checkpoint) is wave 2 and depends on all three prior plans.
+
+**Next after Phase 21.1: Phase 22 (Issue Type Resolution — ISSUE-04/ISSUE-05).** No plans exist
+yet (`ROADMAP.md` marks Phase 22 "Plans: TBD") — run `/gsd:discuss-phase` or `/gsd:plan-phase`
 for Phase 22 to begin. Phase 22 carries the milestone's only external-API-call +
 Prisma-migration risk (APS issue-types metadata backfill); ISSUE-04 must land and be
 verified before ISSUE-05 (the chart) is built, per `ROADMAP.md`'s locked sequencing.
@@ -288,9 +301,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-06T16:31:56.560Z
-**Stopped at:** Phase 21.1 context gathered
-**Resume file:** .planning/phases/21.1-overview-tab-uat-follow-ups/21.1-CONTEXT.md
+**Last session:** 2026-07-06T17:21:59.739Z
+**Stopped at:** Phase 21.1 Plan 01 complete (service-first attribution fix, UAT-21.1-02)
+**Resume file:** .planning/phases/21.1-overview-tab-uat-follow-ups/21.1-02-PLAN.md
 
 ## Performance Metrics
 
@@ -312,3 +325,4 @@ of v2.3 scope.
 | Phase 21 P02 | 8min | 2 tasks | 2 files |
 | Phase 21 P03 | ~20min | 2 tasks | 4 files |
 | Phase 21 P04 | ~20min + checkpoint wait | 4 tasks (3 auto + 1 checkpoint) | 4 files |
+| Phase 21.1 P01 | ~15min | 3 tasks | 9 files |
