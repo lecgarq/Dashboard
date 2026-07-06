@@ -424,7 +424,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
 | 20. Foundation Wins & Engagement Panels | 5/5 | Complete    | 2026-07-03 |
-| 21. Issue Funnel — Status & Time | 3/4 | In Progress|  |
+| 21. Issue Funnel — Status & Time | 3/4 | Complete    | 2026-07-06 |
 | 22. Issue Type Resolution | 0/TBD | Not started | - |
 | 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
 

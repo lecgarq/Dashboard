@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: Concerns Hardening
-current_phase: 21
-current_phase_name: "Issue Funnel — Status & Time, COMPLETE (4/4 plans)"
-status: in_progress
-stopped_at: Phase 21 complete (4/4 plans); checkpoint approved
-last_updated: "2026-07-06T16:00:00.000Z"
-last_activity: 2026-07-06
-last_activity_desc: "Phase 21 Plan 04 complete: issue-funnel charts wired + mounted on Projects tab (ec2941f0, b7ebd006); owner checkpoint APPROVED live on :3100 preflight (.next-uat-21). ISSUE-02/ISSUE-03 now Complete. Phase 21 fully shipped. See 21-04-SUMMARY.md for full detail, including 3 Overview-tab UAT follow-up items recorded but out of this plan's scope."
+milestone: v2.3
+milestone_name: New Graphs
+status: active
+stopped_at: Phase 21 complete (4/4 plans, verification passed); next Phase 22
+last_updated: "2026-07-06T16:23:08.331Z"
+last_activity: 2026-07-06 — Phase 21 Plan 04 complete, Phase 21 fully shipped. See frontmatter `last_activity_desc` and `21-04-SUMMARY.md` for full detail.
 progress:
   total_phases: 16
   completed_phases: 14
   total_plans: 38
   completed_plans: 38
-  percent: 100
 ---
 
 # Project State
@@ -31,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**).
 - **Plan:** 21-04 complete (client wiring: `loadIssueFunnelAction` threaded as a function prop through `mainCharts.tsx` (Promise.all fan-out unchanged at 9), 4th lazy fetch-once-per-tab branch added to `AccessAnalysisCharts.tsx`, both charts mounted in `ProjectsTabPanel.tsx` directly below `IssueFetchCoverageDonut`. Full gate sweep: tsc clean, `npm test` 2421 passed/1 skipped/0 failed, scope diff = exactly 4 planned files. Owner checkpoint **APPROVED** live on a `:3100` production-build preflight (`.next-uat-21`, `:3000` untouched)). See `21-04-SUMMARY.md`.
-- **Status:** Phase 21 fully shipped — `ISSUE-02`/`ISSUE-03` now marked `Complete` in REQUIREMENTS.md (this is the wiring plan that made them user-visible, matching the Phase 20 precedent). 3 Overview-tab UAT follow-up items were raised by the owner during the same checkpoint session (module-access-grants chart, activity-by-module data-bug suspicion, activity-share-by-project donut) — recorded in `21-04-SUMMARY.md` and below in Accumulated Context; they are new/deferred scope, not defects in this phase's deliverable, and do not block Phase 22.
+- **Status:** Milestone complete
 - **Last activity:** 2026-07-06 — Phase 21 Plan 04 complete, Phase 21 fully shipped. See frontmatter `last_activity_desc` and `21-04-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
