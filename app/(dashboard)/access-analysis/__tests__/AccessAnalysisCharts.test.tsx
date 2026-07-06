@@ -445,6 +445,8 @@ describe("AccessAnalysisCharts — Phase 20 panels (ISSUE-01/PIPE-01)", () => {
     expect(queryByText("Folder activity by company")).toBeNull();
     openTab(getByRole, /projects/i);
     expect(queryByText("Issue data coverage")).toBeNull();
+    expect(queryByText("Issues over time")).toBeNull();
+    expect(queryByText("Issues by status")).toBeNull();
     openTab(getByRole, /^overview$/i);
     expect(queryByText(/No Data Connector ingest runs recorded/)).toBeNull();
     // Confirms the "no crash" assertion isn't racing an unresolved effect.
@@ -481,6 +483,44 @@ describe("AccessAnalysisCharts — Phase 20 panels (ISSUE-01/PIPE-01)", () => {
     );
     // Overview is the default tab — no click needed.
     expect(getByText(/Account-wide/)).toBeTruthy();
+  });
+});
+
+// Phase 21 (ISSUE-02/03): Issues over time + Issues by status, mounted on the
+// Projects tab directly below Issue data coverage, riding the same lazy
+// fetch-once-per-tab-activation ref-flag pattern as the 20.1-06 panels.
+describe("AccessAnalysisCharts — Phase 21 issue-funnel panels (ISSUE-02/03)", () => {
+  it("hides both issue-funnel panels when loadIssueFunnel is not supplied", () => {
+    const { queryByText, getByRole } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />,
+    );
+    openTab(getByRole, /projects/i);
+    expect(queryByText("Issues over time")).toBeNull();
+    expect(queryByText("Issues by status")).toBeNull();
+  });
+
+  it("does not call loadIssueFunnel on initial (Overview) render", () => {
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
+    render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadIssueFunnel={loadIssueFunnel} />,
+    );
+    expect(loadIssueFunnel).not.toHaveBeenCalled();
+  });
+
+  it("fetches the issue funnel exactly once on first Projects-tab activation, and caches on revisit", async () => {
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
+    const { getByRole, findByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadIssueFunnel={loadIssueFunnel} />,
+    );
+    openTab(getByRole, /projects/i);
+    await findByText("Issues over time");
+    await findByText("Issues by status");
+    expect(loadIssueFunnel).toHaveBeenCalledTimes(1);
+
+    // Revisit: Overview then back to Projects — cached, no refetch.
+    openTab(getByRole, /^overview$/i);
+    openTab(getByRole, /projects/i);
+    expect(loadIssueFunnel).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -721,7 +761,7 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     expect(queryByText(/Pick projects to compare/i)).toBeNull();
   });
 
-  it("panel-inventory guard: every one of the 14 panels (post-20.1-06) is reachable inside its assigned tab", async () => {
+  it("panel-inventory guard: every one of the 16 panels (post-21-04) is reachable inside its assigned tab", async () => {
     const terrainProjects: TerrainProjectOption[] = [
       { id: "p1", name: "Tower A", office: "MTY", folderCount: 2, permCount: 3, userRoleCount: 3 },
     ];
@@ -731,6 +771,7 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
     const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
     const loadCompanyFolderBreakdown = vi.fn(async () => []);
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
     const { getByText, getByRole, findByText } = render(
       <AccessAnalysisCharts
         roleRows={roleRows}
@@ -742,6 +783,7 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
         loadPermissionLevel={loadPermissionLevel}
         loadFolderScopedActivity={loadFolderScopedActivity}
         loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
+        loadIssueFunnel={loadIssueFunnel}
         coordinationData={coordinationDataWithCoverage}
         ingestFreshness={{
           id: "run1",
@@ -781,9 +823,11 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     expect(getByText("Activity by company")).toBeTruthy();
     await findByText("Folder activity by company");
 
-    // Projects: Issue data coverage, Model Coordination.
+    // Projects: Issue data coverage, Issues over time, Issues by status (ISSUE-02/03), Model Coordination.
     openTab(getByRole, /projects/i);
     expect(getByText("Issue data coverage")).toBeTruthy();
+    await findByText("Issues over time");
+    await findByText("Issues by status");
     expect(getByText("Model Coordination")).toBeTruthy();
 
     // Compare: the folder permission terrain.

@@ -4,6 +4,9 @@ import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { SectionHeader } from "./SectionHeaders";
 import { IssueFetchCoverageDonut } from "./IssueFetchCoverageDonut";
 import { CoordinationByProject } from "./CoordinationByProject";
+import { DonutPanelSkeleton } from "./DonutSkeletons";
+import { IssueTimelineChart } from "./IssueTimelineChart";
+import { IssueStatusChart } from "./IssueStatusChart";
 import type {
   CoordinationByProjectData,
   IssueCoverageProjectRow,
@@ -11,12 +14,17 @@ import type {
 import type { CoordinationSummary } from "../coordinationCounts";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
 import type { ClashIssue } from "../coordinationClash";
+import type { IssueFunnelData, IssueFunnelStatusRow } from "@/lib/server/issueFunnelView";
+import type { TimelineSummary } from "../timelineCounts";
+
+const EMPTY_TIMELINE_SUMMARY: TimelineSummary = { points: [], total: 0, peak: null, busiestYear: null, span: null };
 
 /**
- * Projects tab (locked tab map): Issue data coverage · Model Coordination.
- * Coverage donut renders FIRST — trust precedes metric (ISSUE-01 convention).
- * Ph21-22 issue-funnel/issue-type charts mount into this tab in a later phase;
- * this plan only relocates the two existing panels, no new charts.
+ * Projects tab (locked tab map): Issue data coverage · Issues over time ·
+ * Issues by status · Model Coordination. Coverage donut renders FIRST — trust
+ * precedes metric (ISSUE-01 convention) — and frames trust for the two
+ * Phase 21 issue-funnel charts directly beneath it (ISSUE-02/03). Phase 22's
+ * issues-by-type chart appends as a third sibling in this same stacked block.
  */
 export function ProjectsTabPanel({
   coordinationData,
@@ -26,6 +34,10 @@ export function ProjectsTabPanel({
   mtySet,
   loadClashes,
   setProfileEmail,
+  loadIssueFunnel,
+  issueFunnelLoading,
+  issueTimelineSummary,
+  filteredIssueStatusRows,
 }: {
   coordinationData?: CoordinationByProjectData;
   filteredIssueCoverageProjects: IssueCoverageProjectRow[];
@@ -34,6 +46,11 @@ export function ProjectsTabPanel({
   mtySet: Set<string>;
   loadClashes?: (projectId: string) => Promise<ClashIssue[]>;
   setProfileEmail: (email: string) => void;
+  /** Phase 21 ISSUE-02/03: presence gates both issue-funnel panels below the coverage donut. */
+  loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
+  issueFunnelLoading?: boolean;
+  issueTimelineSummary?: TimelineSummary;
+  filteredIssueStatusRows?: IssueFunnelStatusRow[];
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -58,6 +75,50 @@ export function ProjectsTabPanel({
         </Reveal>
       ) : null}
 
+      {/* Issues over time (ISSUE-02) — full-width, directly below the coverage donut. */}
+      {loadIssueFunnel ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            {issueFunnelLoading ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <>
+                <SectionHeader
+                  title="Issues over time"
+                  subtitle="When are issues actually being raised? Every ACC issue by created month — sustained climbs and spikes mark heavy review pushes."
+                />
+                <IssueTimelineChart
+                  summary={issueTimelineSummary ?? EMPTY_TIMELINE_SUMMARY}
+                  coverageProjects={filteredIssueCoverageProjects}
+                />
+              </>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
+      {/* Issues by status (ISSUE-03) — full-width, beneath the timeline. */}
+      {loadIssueFunnel ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            {issueFunnelLoading ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <>
+                <SectionHeader
+                  title="Issues by status"
+                  subtitle="Where does the issue pile sit right now? All fetched issues by their current ACC status, shown exactly as ACC reports them."
+                />
+                <IssueStatusChart
+                  rows={filteredIssueStatusRows ?? []}
+                  coverageProjects={filteredIssueCoverageProjects}
+                />
+              </>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
       {/* Model Coordination — full-width */}
       {coordinationData ? (
         <Reveal>
@@ -77,8 +138,7 @@ export function ProjectsTabPanel({
         </Reveal>
       ) : null}
 
-      {/* Ph21-22 issue funnel / issue-type charts land here in a later phase —
-          this tab is the locked home for them (20.1-CONTEXT.md), not built yet. */}
+      {/* Phase 22's issues-by-type chart appends here as a third sibling, zero redesign. */}
     </div>
   );
 }
