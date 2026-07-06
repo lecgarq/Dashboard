@@ -72,12 +72,19 @@ describe("ProjectActivityDonut", () => {
     expect(queryByTestId("project-activity-drilldown")).toBeNull();
   });
 
-  it("clicking the Other slice is a no-op — it is not drillable", () => {
+  it("clicking the Other slice expands the ranked list of its folded projects, and closes on a second click", () => {
     const summary = summarizeProjectActivity(rows, 2); // p3 -> Other
     const { getByTestId, queryByTestId } = render(<ProjectActivityDonut summary={summary} />);
     const legend = getByTestId("project-activity-legend");
     fireEvent.click(within(legend).getByRole("button", { name: /Other \(1 project\)/ }));
+    const drill = getByTestId("project-activity-other-drilldown");
+    expect(drill.textContent).toContain("Project p3"); // folded project surfaced by name
+    expect(drill.textContent).toContain("5"); // its volume
+    // The module-breakdown drill must NOT open for Other.
     expect(queryByTestId("project-activity-drilldown")).toBeNull();
+    // Second click collapses it.
+    fireEvent.click(within(legend).getByRole("button", { name: /Other \(1 project\)/ }));
+    expect(queryByTestId("project-activity-other-drilldown")).toBeNull();
   });
 
   it("shows the live account-level exclusion figure and the top-N-of-M caption", () => {

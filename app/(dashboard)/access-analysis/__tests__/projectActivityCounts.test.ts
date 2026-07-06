@@ -57,6 +57,17 @@ describe("summarizeProjectActivity", () => {
     // The two smallest: p10=90, p11=89
     expect(other.value).toBe(90 + 89);
     expect(other.projectId).toBe("");
+    // The folded tail is preserved, ranked desc, for the Other slice's expand-to-list drill.
+    expect(s.otherProjects.map((p) => [p.projectId, p.value])).toEqual([
+      ["p10", 90],
+      ["p11", 89],
+    ]);
+    expect(s.otherProjects[0].name).toBe("Project p10");
+  });
+
+  it("otherProjects is empty when every project fits inside topN", () => {
+    const s = summarizeProjectActivity([mk("p1", "view-entity", 10)], DEFAULT_TOP_N);
+    expect(s.otherProjects).toEqual([]);
   });
 
   it("uses singular 'project' noun when exactly one project folds into Other", () => {

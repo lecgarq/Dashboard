@@ -34,6 +34,9 @@ export interface ProjectActivitySummary {
   accountLevelCount: number;
   /** Count of projects folded into the Other bucket (0 if none). */
   otherProjectCount: number;
+  /** The folded tail behind the Other slice, ranked by volume desc — feeds the
+   *  Other slice's expand-to-list drill. Empty when every project fits topN. */
+  otherProjects: ProjectActivitySlice[];
   /** projectId -> its raw rows, for KEPT slices only (feeds `summarizeModules`
    *  on click-to-drill). No entry for the Other bucket or Account-level. */
   rowsByProject: Map<string, ModuleActivityRow[]>;
@@ -48,10 +51,11 @@ export interface ProjectActivitySummary {
  * volume surfaced separately as `accountLevelCount` for the caption.
  *
  * Sorted by volume desc (tiebreak `name.localeCompare`); projects beyond
- * `topN` collapse into a single trailing "Other (N projects)" slice (no
- * drill entry — same convention as `summarizePermissionLevel`/
- * `summarizeProvisionedModules`). `total` sums all non-Account-level volume
- * (kept + Other), so donut percentages add to 100%.
+ * `topN` collapse into a single trailing "Other (N projects)" slice. The
+ * folded tail is preserved (ranked) as `otherProjects` so the Other slice
+ * expands into its project list (owner-directed, 2026-07-06 — was previously
+ * not drillable). `total` sums all non-Account-level volume (kept + Other),
+ * so donut percentages add to 100%.
  */
 export function summarizeProjectActivity(
   rows: ReadonlyArray<ModuleActivityRow>,
@@ -94,6 +98,11 @@ export function summarizeProjectActivity(
   }));
 
   const otherProjectCount = rest.length;
+  const otherProjects: ProjectActivitySlice[] = rest.map((p) => ({
+    projectId: p.projectId,
+    name: p.projectName,
+    value: p.value,
+  }));
   if (rest.length > 0) {
     const noun = rest.length === 1 ? "project" : "projects";
     slices.push({
@@ -110,5 +119,5 @@ export function summarizeProjectActivity(
     rowsByProject.set(p.projectId, p.rows);
   }
 
-  return { slices, total, accountLevelCount, otherProjectCount, rowsByProject };
+  return { slices, total, accountLevelCount, otherProjectCount, otherProjects, rowsByProject };
 }

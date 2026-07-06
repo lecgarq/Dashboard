@@ -9,8 +9,8 @@ import { summarizeModules } from "../moduleCounts";
 // Vibrant, cohesive palette for the project slices (mirrors RolesPieChart's
 // name-keyed categorical rotation — the donut is about *which project*).
 const PALETTE = [
-  "#6366f1", "#22d3ee", "#34d399", "#10b981", "#3b82f6", "#a78bfa",
-  "#2dd4bf", "#facc15", "#38bdf8", "#c084fc",
+  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
+  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f",
 ];
 const OTHER_COLOR = "#71717a"; // zinc-500 — the data-rollup color (ModulesPieChart's UNMAPPED_COLOR role)
 
@@ -45,21 +45,31 @@ function fmtPct(value: number, total: number): string {
  * store). Clicking a kept project slice computes
  * `summarizeModules` over that project's raw rows (`rowsByProject`) and
  * renders the module breakdown BELOW the legend (20.1-07 scroll-jump lesson —
- * drill content never renders above the legend). The "Other" slice has no
- * `rowsByProject` entry and is intentionally not drillable — clicking it is a
- * no-op.
+ * drill content never renders above the legend). The "Other" slice expands
+ * into the ranked list of its folded projects (`otherProjects`) — owner-
+ * directed 2026-07-06; it was previously a deliberate no-op.
  *
  * Built UNMOUNTED here — plan 21.1-04 wires it into the Overview tab's new
  * 2-up row (Activity share by project + Provisioned modules).
  */
+/** Drill-state sentinel for the Other slice (its projectId is "", which is
+ *  also the Account-level sentinel — so the drill key gets its own value). */
+const OTHER_DRILL = "__other__";
+
 export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySummary }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
-  const { slices, total, accountLevelCount, otherProjectCount, rowsByProject } = summary;
+  const { slices, total, accountLevelCount, otherProjectCount, otherProjects, rowsByProject } = summary;
 
   const [drill, setDrill] = useState<string | null>(null);
   const toggleDrill = (projectId: string) => {
-    if (!rowsByProject.has(projectId)) return; // Other slice (or unknown id) — not drillable, no-op
+    if (projectId === "") {
+      // Other slice — expands into its folded-project list (when it exists).
+      if (otherProjects.length === 0) return;
+      setDrill((cur) => (cur === OTHER_DRILL ? null : OTHER_DRILL));
+      return;
+    }
+    if (!rowsByProject.has(projectId)) return; // unknown id — no-op
     setDrill((cur) => (cur === projectId ? null : projectId));
   };
 
@@ -76,7 +86,7 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
   const colorFor = (projectId: string) => colorByProject.get(projectId) ?? "#888";
 
   const drillSummary = useMemo(() => {
-    if (!drill) return null;
+    if (!drill || drill === OTHER_DRILL) return null; // Other renders its own folded-project list
     return summarizeModules(rowsByProject.get(drill) ?? []);
   }, [drill, rowsByProject]);
 
@@ -178,9 +188,8 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
         onEvents={{ click: (p) => (p.data as { id?: string })?.id !== undefined && toggleDrill((p.data as { id: string }).id) }}
       />
 
-      {/* Ranked legend — click a project to drill into its module breakdown.
-          The "Other" slice has no rowsByProject entry, so toggleDrill is a
-          no-op for it (see the component doc comment above). */}
+      {/* Ranked legend — click a project to drill into its module breakdown;
+          click "Other" to expand the ranked list of its folded projects. */}
       <ul
         data-testid="project-activity-legend"
         className="mt-3 list-none border-t border-border pt-3"
@@ -188,7 +197,7 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
       >
         {slices.map((s) => {
           const isOther = s.projectId === "";
-          const open = drill === s.projectId;
+          const open = drill === (isOther ? OTHER_DRILL : s.projectId);
           const barPct = total > 0 ? (s.value / total) * 100 : 0;
           const color = colorFor(s.projectId);
           return (
@@ -197,14 +206,10 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
                 type="button"
                 aria-expanded={open}
                 onClick={() => toggleDrill(s.projectId)}
-                title={
-                  isOther
-                    ? `${s.name} — ${s.value.toLocaleString()} activities (${fmtPct(s.value, total)}) — not drillable`
-                    : `${s.name} — ${s.value.toLocaleString()} activities (${fmtPct(s.value, total)}) — click to ${open ? "collapse" : "expand"}`
-                }
-                className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors ${
-                  isOther ? "cursor-default" : "hover:bg-accent"
-                } ${open ? "bg-accent text-foreground" : "text-foreground/85"}`}
+                title={`${s.name} — ${s.value.toLocaleString()} activities (${fmtPct(s.value, total)}) — click to ${open ? "collapse" : "expand"}`}
+                className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent ${
+                  open ? "bg-accent text-foreground" : "text-foreground/85"
+                }`}
               >
                 <span
                   aria-hidden
@@ -215,24 +220,57 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
                 <span className="relative flex-1 truncate">{s.name}</span>
                 <span className="relative shrink-0 tabular-nums text-foreground">{s.value.toLocaleString()}</span>
                 <span className="relative w-14 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(s.value, total)}</span>
-                {!isOther && (
-                  <span
-                    aria-hidden
-                    className={`relative shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`}
-                  >
-                    ›
-                  </span>
-                )}
+                <span
+                  aria-hidden
+                  className={`relative shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+                >
+                  ›
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
 
+      {/* Drill-down: the Other slice's folded-project list — AFTER the legend
+          (20.1-07 scroll-jump lesson: never insert new content above the row
+          the user just clicked). Ranked by volume desc; % is of the WHOLE
+          donut total so rows read consistently with the legend. */}
+      {drill === OTHER_DRILL && otherProjects.length > 0 && (
+        <div data-testid="project-activity-other-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: OTHER_COLOR }} aria-hidden />
+              {slices.find((s) => s.projectId === "")?.name ?? "Other"}
+              <span className="text-xs font-normal text-muted-foreground">
+                {otherProjects.reduce((sum, p) => sum + p.value, 0).toLocaleString()} activities
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDrill(null)}
+              aria-label="Close breakdown"
+              className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="max-h-80 list-none space-y-0.5 overflow-auto pr-1" style={{ columnWidth: "260px", columnGap: "1.5rem" }}>
+            {otherProjects.map((p) => (
+              <li key={p.projectId} className="flex items-center gap-2 break-inside-avoid truncate px-2 py-1 text-xs text-foreground/85">
+                <span className="relative flex-1 truncate" title={p.name}>{p.name}</span>
+                <span className="shrink-0 tabular-nums text-foreground">{p.value.toLocaleString()}</span>
+                <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(p.value, total)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Drill-down: the clicked project's module breakdown — AFTER the
           legend (20.1-07 scroll-jump lesson: never insert new content above
           the row the user just clicked). */}
-      {drill && drillSummary && (
+      {drill && drill !== OTHER_DRILL && drillSummary && (
         <div data-testid="project-activity-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
