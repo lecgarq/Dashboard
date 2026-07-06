@@ -22,6 +22,7 @@ describe("activityClassification (BND-02 pin test)", () => {
         moduleId: "build",
         label: "Issue Attach",
         category: "Workflow",
+        attributedBy: "verb",
       });
     });
 
@@ -31,6 +32,7 @@ describe("activityClassification (BND-02 pin test)", () => {
         moduleId: "adminActions",
         label: "Create Project",
         category: "Workflow",
+        attributedBy: "verb",
       });
     });
 
@@ -40,6 +42,7 @@ describe("activityClassification (BND-02 pin test)", () => {
         moduleId: "adminActions",
         label: "Add Member",
         category: "Access & permissions",
+        attributedBy: "verb",
       });
     });
 
@@ -49,6 +52,7 @@ describe("activityClassification (BND-02 pin test)", () => {
         moduleId: UNMAPPED_MODULE,
         label: "totally-unknown-action-xyz-999",
         category: CATEGORY_LABELS.unknown,
+        attributedBy: "verb",
       });
     });
 
@@ -119,6 +123,69 @@ describe("activityClassification (BND-02 pin test)", () => {
   describe("UNMAPPED_MODULE", () => {
     it("equals the string 'unmapped'", () => {
       expect(UNMAPPED_MODULE).toBe("unmapped");
+    });
+  });
+
+  describe("service-first attribution", () => {
+    it("omitted service -> identical result to today's verb path, attributedBy: verb", () => {
+      const result = classifyActivity("view-entity");
+      expect(result).toEqual({
+        moduleId: "dataManagement",
+        label: "View Entity",
+        category: "Viewing & exports",
+        attributedBy: "verb",
+      });
+    });
+
+    it("undefined/null/empty/unrecognized service -> same as omitted, attributedBy: verb", () => {
+      const base = classifyActivity("view-entity");
+      expect(classifyActivity("view-entity", undefined)).toEqual(base);
+      expect(classifyActivity("view-entity", null)).toEqual(base);
+      expect(classifyActivity("view-entity", "")).toEqual(base);
+      expect(classifyActivity("view-entity", "not-a-real-service")).toEqual(base);
+    });
+
+    it("decisive override: submittals service overrides a non-build verb result -> build", () => {
+      const result = classifyActivity("view-entity", "submittals");
+      expect(result.moduleId).toBe("build");
+      expect(result.attributedBy).toBe("service");
+      // label/category kept from the verb result per precedence rule 4.
+      expect(result.label).toBe("View Entity");
+      expect(result.category).toBe("Viewing & exports");
+    });
+
+    it("decisive override: admin service overrides a non-adminActions verb result -> adminActions", () => {
+      const result = classifyActivity("view-entity", "admin");
+      expect(result.moduleId).toBe("adminActions");
+      expect(result.attributedBy).toBe("service");
+    });
+
+    it("umbrella deference: a permission verb (-> adminActions) + docs service stays adminActions, not dataManagement", () => {
+      const result = classifyActivity("assign-permission", "docs");
+      expect(result.moduleId).toBe("adminActions");
+      expect(result.attributedBy).toBe("service");
+    });
+
+    it("unmapped rescue: a nonsense rawAction + docs service -> dataManagement, label = raw string", () => {
+      const result = classifyActivity("totally-unknown-action-xyz-999", "docs");
+      expect(result).toEqual({
+        moduleId: "dataManagement",
+        label: "totally-unknown-action-xyz-999",
+        category: CATEGORY_LABELS.unknown,
+        attributedBy: "service",
+      });
+    });
+
+    it("unmapped, no service -> stays unmapped", () => {
+      const result = classifyActivity("totally-unknown-action-xyz-999");
+      expect(result.moduleId).toBe(UNMAPPED_MODULE);
+      expect(result.attributedBy).toBe("verb");
+    });
+
+    it("case/whitespace normalization: ' Docs ' behaves as 'docs'", () => {
+      const withSpacing = classifyActivity("totally-unknown-action-xyz-999", " Docs ");
+      const canonical = classifyActivity("totally-unknown-action-xyz-999", "docs");
+      expect(withSpacing).toEqual(canonical);
     });
   });
 });

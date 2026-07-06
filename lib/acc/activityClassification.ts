@@ -125,24 +125,87 @@ export function donutModules(): Array<{ id: string; label: string }> {
   return out;
 }
 
-/** Classify a raw action into its module, display label, and action category. */
-export function classifyActivity(rawAction: string): { moduleId: string; label: string; category: string } {
+/**
+ * Autodesk's own coarse `service`/`serviceGroup` tag -> module, for the handful
+ * of modules a service tag can actually speak to (21.1-RESEARCH.md: serviceGroup
+ * has only 4 values, service has 7 -- neither can resolve Preconstruction, Cost
+ * Management, Design/Forma, AutoSpecs, Datum, or Model Coordination nuances, so
+ * this is a NARROW override, never a full replacement of the verb taxonomy below).
+ *  - decisive: issues/submittals/rfis -> Build, admin -> Admin Actions. These
+ *    values are unambiguous about which module they mean.
+ *  - umbrella: docs/sheets/bridge -> Data Management. These are coarse buckets
+ *    that our verb taxonomy already refines into Design Collaboration / Datum /
+ *    Admin Actions in specific cases (e.g. ~8,107 docs-serviceGroup rows are a
+ *    deliberate permission-verb override to Admin Actions, not a bug) -- so an
+ *    umbrella service NEVER overrides a verb result that already resolved to a
+ *    real module; it only rescues an otherwise-Unmapped verb result.
+ */
+const SERVICE_TO_MODULE: Readonly<Record<string, string>> = {
+  issues: BUILD_ID,
+  submittals: BUILD_ID,
+  rfis: BUILD_ID,
+  admin: ADMIN_ACTIONS_ID,
+  docs: DATA_MANAGEMENT_ID,
+  sheets: DATA_MANAGEMENT_ID,
+  bridge: DATA_MANAGEMENT_ID,
+};
+/** Umbrella services never override an already-mapped verb result (only rescue Unmapped). */
+const UMBRELLA_SERVICES: ReadonlySet<string> = new Set(["docs", "sheets", "bridge"]);
+
+/** Classify a raw action into its module, display label, and action category.
+ *
+ * `service` is an OPTIONAL Autodesk service tag (AccActivity.service /
+ * AccActivityAccds.serviceGroup). When omitted/unrecognized, behavior is
+ * byte-identical to the service-unaware classifier this function used to be
+ * (`attributedBy: "verb"`). When present and recognized, service can narrowly
+ * override or rescue the verb result per the precedence below (21.1-RESEARCH.md).
+ */
+export function classifyActivity(
+  rawAction: string,
+  service?: string | null,
+): { moduleId: string; label: string; category: string; attributedBy: "service" | "verb" } {
   const norm = normalizeActionId(rawAction);
-  // 1) Coordination issues -> Build (issues live in ACC Build, not Model Coordination).
+  // Compute the verb-based result exactly as before -- zero changes to this logic.
+  let verbResult: { moduleId: string; label: string; category: string };
   const coord = COORDINATION_ISSUE_LABELS[norm];
-  if (coord) return { moduleId: BUILD_ID, label: coord, category: CAT.workflowChange };
-  // 2) Explicit extras (DB actions not in the excel catalog).
-  const extra = EXTRA_ACTIONS[norm];
-  if (extra) return { moduleId: extra.module, label: extra.label, category: extra.category };
-  // 3) Canonical excel taxonomy.
-  const action = getAction(resolveActionId(rawAction));
-  if (!action) return { moduleId: UNMAPPED_MODULE, label: rawAction, category: CAT.unknown };
-  // 4) Permission/membership/admin actions -> the Admin Actions module.
-  let moduleId = ADMIN_ACTION_IDS.has(action.id) ? ADMIN_ACTIONS_ID : action.moduleId;
-  // 5) Any remaining catalog actions that the excel maps to modelCoordination
-  //    (e.g. *-collection verbs) redirect to Data Management; we never emit a
-  //    Model Coordination slice in the donut.
-  if (moduleId === MODEL_COORDINATION_ID) moduleId = DATA_MANAGEMENT_ID;
-  const category = CATEGORY_OVERRIDES[action.id] ?? CAT[action.groupId] ?? CAT.unknown;
-  return { moduleId, label: action.label, category };
+  if (coord) {
+    verbResult = { moduleId: BUILD_ID, label: coord, category: CAT.workflowChange };
+  } else {
+    const extra = EXTRA_ACTIONS[norm];
+    if (extra) {
+      verbResult = { moduleId: extra.module, label: extra.label, category: extra.category };
+    } else {
+      const action = getAction(resolveActionId(rawAction));
+      if (!action) {
+        verbResult = { moduleId: UNMAPPED_MODULE, label: rawAction, category: CAT.unknown };
+      } else {
+        let moduleId = ADMIN_ACTION_IDS.has(action.id) ? ADMIN_ACTIONS_ID : action.moduleId;
+        if (moduleId === MODEL_COORDINATION_ID) moduleId = DATA_MANAGEMENT_ID;
+        const category = CATEGORY_OVERRIDES[action.id] ?? CAT[action.groupId] ?? CAT.unknown;
+        verbResult = { moduleId, label: action.label, category };
+      }
+    }
+  }
+
+  // Normalize + resolve the service tag. Absent/unrecognized -> verb result stands.
+  const svc = service?.trim().toLowerCase();
+  const svcModule = svc ? SERVICE_TO_MODULE[svc] : undefined;
+  if (!svcModule) return { ...verbResult, attributedBy: "verb" };
+
+  // Unmapped rescue: a recognized service resolves a verb result that had none.
+  if (verbResult.moduleId === UNMAPPED_MODULE) {
+    return { moduleId: svcModule, label: rawAction, category: CAT.unknown, attributedBy: "service" };
+  }
+
+  // Decisive service (not umbrella) disagreeing with the verb module -> service wins,
+  // keeping the verb result's label/category.
+  if (!UMBRELLA_SERVICES.has(svc!) && svcModule !== verbResult.moduleId) {
+    return { moduleId: svcModule, label: verbResult.label, category: verbResult.category, attributedBy: "service" };
+  }
+
+  // Otherwise (umbrella service deferring to an already-mapped verb refinement, or
+  // service and verb already agree) -- keep the verb module/label/category. Service
+  // was populated and recognized, so it still counts as service-attributed for the
+  // caveat's live split.
+  return { ...verbResult, attributedBy: "service" };
 }
