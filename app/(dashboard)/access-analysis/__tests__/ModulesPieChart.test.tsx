@@ -43,9 +43,17 @@ const summary: ModuleSummary = {
     ]],
     [UNMAPPED_MODULE, [{ label: "weird-action", raw: "weird-action", count: 7, category: "Other" }]],
   ]),
+  attribution: { serviceCount: 0, verbCount: 197 },
 };
 
-const empty: ModuleSummary = { slices: [], total: 0, activeModules: 0, zeroModules: [], typesByModule: new Map() };
+const empty: ModuleSummary = {
+  slices: [],
+  total: 0,
+  activeModules: 0,
+  zeroModules: [],
+  typesByModule: new Map(),
+  attribution: { serviceCount: 0, verbCount: 0 },
+};
 
 describe("ModulesPieChart", () => {
   it("renders an empty state when there is no activity", () => {

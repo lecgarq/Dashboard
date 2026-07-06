@@ -6,11 +6,17 @@ import { classifyActivity, donutModules } from "../moduleOverrides";
 //   issue-create / issue-view -> build
 //   view-entity / upload-entity -> dataManagement
 //   create-custom-attribute -> datum
-const mk = (projectId: string, rawAction: string, count: number): ModuleActivityRow => ({
+const mk = (
+  projectId: string,
+  rawAction: string,
+  count: number,
+  service: string | null = null,
+): ModuleActivityRow => ({
   projectId,
   projectName: projectId === "" ? "Account-level" : `Project ${projectId}`,
   rawAction,
   count,
+  service,
 });
 
 describe("summarizeModules", () => {
@@ -142,5 +148,46 @@ describe("summarizeModules", () => {
     const dm = s.typesByModule.get("dataManagement")!;
     expect(dm.find((t) => t.raw === "view-entity")?.category).toBe("Viewing & exports");
     expect(dm.find((t) => t.raw === "delete-entity")?.category).toBe("Deletions");
+  });
+
+  describe("service-first attribution (21.1-01)", () => {
+    it("a service-tagged row moves module vs its verb-only twin", () => {
+      // view-entity verb-classifies to dataManagement; the same rawAction tagged
+      // with the decisive "submittals" service must land in build instead.
+      const s = summarizeModules([
+        mk("p1", "view-entity", 100), // verb-only twin -> dataManagement
+        mk("p2", "view-entity", 40, "submittals"), // service override -> build
+      ]);
+      expect(s.slices.find((x) => x.id === "dataManagement")?.value).toBe(100);
+      expect(s.slices.find((x) => x.id === "build")?.value).toBe(40);
+    });
+
+    it("attribution counters: mixed rows split by attributedBy, summing to total", () => {
+      const s = summarizeModules([
+        mk("p1", "view-entity", 100), // no service -> verb
+        mk("p2", "view-entity", 40, "submittals"), // decisive service -> service
+        mk("p1", "issue-create", 25, "issues"), // service agrees with verb -> still service-attributed
+      ]);
+      expect(s.attribution.serviceCount + s.attribution.verbCount).toBe(s.total);
+      expect(s.attribution.serviceCount).toBe(65); // 40 + 25
+      expect(s.attribution.verbCount).toBe(100);
+    });
+
+    it("all-null-service rows -> serviceCount is 0 and slices match the pre-service-fix expectations", () => {
+      const s = summarizeModules([
+        mk("p1", "view-entity", 100),
+        mk("p2", "view-entity", 50),
+        mk("p1", "issue-create", 40),
+        mk("p1", "create-custom-attribute", 3),
+      ]);
+      expect(s.attribution.serviceCount).toBe(0);
+      expect(s.attribution.verbCount).toBe(193);
+      // Regression pin: identical to the pre-21.1 "buckets activity into modules" case above.
+      expect(s.slices.map((x) => [x.id, x.value])).toEqual([
+        ["dataManagement", 150],
+        ["build", 40],
+        ["datum", 3],
+      ]);
+    });
   });
 });

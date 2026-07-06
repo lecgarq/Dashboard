@@ -47,6 +47,9 @@ export interface ModuleSummary {
   zeroModules: Array<{ id: string; name: string }>;
   /** moduleId -> its activity types, merged across projects, sorted by count desc. */
   typesByModule: Map<string, ActivityType[]>;
+  /** Live attribution split for the TRUTH-03 caveat: activity volume attributed with a
+   *  recognized Autodesk service tag vs inferred from the verb taxonomy alone. */
+  attribution: { serviceCount: number; verbCount: number };
 }
 
 const moduleName = (id: string): string =>
@@ -61,10 +64,17 @@ const moduleName = (id: string): string =>
 export function summarizeModules(rows: ReadonlyArray<ModuleActivityRow>): ModuleSummary {
   const volume = new Map<string, number>();
   const typesAgg = new Map<string, Map<string, ActivityType>>(); // moduleId -> raw -> type
+  let serviceCount = 0;
+  let verbCount = 0;
 
   for (const row of rows) {
-    const { moduleId, label, category } = classifyActivity(row.rawAction);
+    const { moduleId, label, category, attributedBy } = classifyActivity(row.rawAction, row.service);
     volume.set(moduleId, (volume.get(moduleId) ?? 0) + row.count);
+    if (attributedBy === "service") serviceCount += row.count;
+    else verbCount += row.count;
+    // typesByModule stays keyed by rawAction within each module's own map: two rows
+    // with the same rawAction but different service values landing in DIFFERENT
+    // modules accumulate into their own module's byRaw map (per-module, not global).
     const byRaw = typesAgg.get(moduleId) ?? typesAgg.set(moduleId, new Map()).get(moduleId)!;
     const cur = byRaw.get(row.rawAction);
     if (cur) cur.count += row.count;
@@ -88,5 +98,5 @@ export function summarizeModules(rows: ReadonlyArray<ModuleActivityRow>): Module
     typesByModule.set(id, [...byRaw.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)));
   }
 
-  return { slices, total, activeModules, zeroModules, typesByModule };
+  return { slices, total, activeModules, zeroModules, typesByModule, attribution: { serviceCount, verbCount } };
 }
