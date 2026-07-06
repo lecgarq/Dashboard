@@ -16,8 +16,10 @@
  * Mapping decisions (researched against Autodesk help, 2026-06-05):
  *  - Coordination issues are recorded as issue-* events; they belong to Build
  *    (ACC Build tracks issues). Not in the excel catalog, so mapped explicitly here.
- *    Model Coordination is intentionally excluded from the donut entirely: any
- *    catalog action the excel maps to modelCoordination is redirected to Data Management.
+ *    Model Coordination is IN the donut (owner-directed, 2026-07-06 drill-down
+ *    regroup: "in model coordination we can do views, create clashes") — the
+ *    earlier redirect of its catalog actions to Data Management is removed; the
+ *    collection verbs land in Model Coordination's "Views" group.
  *  - Permission / membership / admin actions (everything the excel files under
  *    Preconstruction) form a dedicated "Admin Actions" module. Preconstruction is
  *    KEPT (empty) for future takeoff/cost activity; AutoSpecs / Design likewise.
@@ -28,8 +30,14 @@
  *    -> Datum (naming-standard family). See EXTRA_ACTIONS' own comment for the
  *    2026-07-06 owner-delegated mapping review that moved several of these.
  *
- * Two axes of "category": the MODULE (which ACC product) and the action CATEGORY
- * (read / content change / workflow / access / delete) from the excel groupId.
+ * Two axes: the MODULE (which ACC product) and the GROUP (which tool tab inside
+ * that product — Files / Reviews / Sheets / RFIs / …). The group axis replaced
+ * the excel action-category axis (content change / workflow / read / …) per the
+ * owner's 2026-07-06 direction: the drill-down must mirror the real ACC left-rail
+ * tools of each product, not generic verb categories. Issues stay in Build
+ * (its "Issues" group) — ASSUMED from the 21.1-04 owner-approved taxonomy; the
+ * owner's Docs tab list also names Issues, so flipping them to Data Management
+ * is a one-line change in toolGroup() if directed.
  */
 import { getActionsByModule, getModules, getAction, resolveActionId } from "@/app/(dashboard)/users/access-analysis/accTaxonomy";
 import { normalizeActionId } from "@/app/(dashboard)/users/access-analysis/accNormalize";
@@ -45,21 +53,73 @@ const DATUM_ID = "datum";
 /** Bucket id for any raw action with no mapping at all. Not a real module. */
 export const UNMAPPED_MODULE = "unmapped";
 
-/** Friendly names for the excel groupId action categories. */
-export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
-  contentChange: "Content changes",
-  workflowChange: "Workflow",
-  accessChange: "Access & permissions",
-  read: "Viewing & exports",
-  delete: "Deletions",
-  unknown: "Other",
-};
-const CAT = CATEGORY_LABELS;
+/** Fallback group for actions no tool-tab rule recognizes. */
+export const OTHER_GROUP = "Other";
 
-/** Display order for category groups in the drill-down. */
-export const CATEGORY_ORDER: readonly string[] = [
-  CAT.contentChange, CAT.workflowChange, CAT.accessChange, CAT.read, CAT.delete, CAT.unknown,
+/**
+ * Display order for the drill-down's tool groups (owner-directed, 2026-07-06):
+ * each module's groups are the real ACC left-rail tools of that product, listed
+ * here product-by-product. Groups are distinct across modules, so one global
+ * order suffices for the per-module drill-down sort.
+ */
+export const GROUP_ORDER: readonly string[] = [
+  // Data Management (Docs)
+  "Files", "Specifications", "Reviews", "Transmittals", "Boards",
+  // Build
+  "Sheets", "Issues", "Forms", "Photos", "RFIs", "Submittals", "Schedule",
+  // Design Collaboration
+  "Changes", "Create packages", "Consume packages",
+  // Model Coordination
+  "Views", "Clashes",
+  // Admin Actions
+  "Members & access", "Projects & settings",
+  // Datum
+  "Naming standards", "Custom attributes",
+  OTHER_GROUP,
 ];
+
+/**
+ * Resolve the ACC tool group (the product's left-rail tab) for an action id
+ * within its FINAL module. Called after module resolution (incl. service
+ * overrides/rescues), so a rescued raw id and a canonical catalog id both work —
+ * rules are substring/prefix patterns on the kebab-case id.
+ */
+function toolGroup(moduleId: string, id: string): string {
+  switch (moduleId) {
+    case DATA_MANAGEMENT_ID:
+      if (id.includes("transmittal")) return "Transmittals";
+      // notify-final-members: review-workflow step whose id lacks the substring.
+      if (id.includes("review") || id.includes("approval") || id === "notify-final-members") return "Reviews";
+      if (id.includes("spec")) return "Specifications";
+      if (id.includes("board")) return "Boards";
+      return "Files"; // entity file ops, links, sets, versions, calibration, office files
+    case BUILD_ID:
+      if (id.startsWith("issue-")) return "Issues";
+      if (id.includes("sheet") || id.includes("version-set") || id === "add-version-to-set") return "Sheets";
+      if (id.startsWith("rfi-") || id.startsWith("response-") || id.startsWith("comment-")) return "RFIs";
+      if (id.startsWith("submittal")) return "Submittals";
+      if (id.includes("form")) return "Forms";
+      if (id.includes("photo")) return "Photos";
+      if (id.includes("schedule")) return "Schedule";
+      return OTHER_GROUP;
+    case DESIGN_COLLABORATION_ID:
+      if (id.startsWith("receive-") || id.includes("consume")) return "Consume packages";
+      if (id.includes("package") || id.startsWith("send-entity")) return "Create packages";
+      return "Changes"; // publish-entity: the Revit publish that drives the Changes feed
+    case MODEL_COORDINATION_ID:
+      if (id.includes("clash")) return "Clashes";
+      return "Views"; // collection verbs: coordination spaces feeding model views
+    case ADMIN_ACTIONS_ID:
+      if (id.includes("project") || id.includes("setting")) return "Projects & settings";
+      return "Members & access"; // member/admin/permission verbs
+    case DATUM_ID:
+      if (/naming.?standard/.test(id)) return "Naming standards";
+      if (id.includes("attribute")) return "Custom attributes";
+      return OTHER_GROUP;
+    default:
+      return OTHER_GROUP;
+  }
+}
 
 /** Coordination issue events -> Build. Keyed by normalized id -> label. */
 const COORDINATION_ISSUE_LABELS: Readonly<Record<string, string>> = {
@@ -71,26 +131,6 @@ const COORDINATION_ISSUE_LABELS: Readonly<Record<string, string>> = {
   "issue-respond": "Issue Respond",
   "issue-answered": "Issue Answered",
   "issue-void": "Issue Void",
-};
-
-/**
- * Category refinements for catalog actions whose excel groupId is "unknown".
- * Keyed by canonical action id (post-alias). Keeps the drill-down's "Other"
- * bucket empty for the actions we understand.
- */
-const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
-  "receive-entity-from-project-with-automation": CAT.contentChange,
-  "add-resources-to-package": CAT.contentChange,
-  "review-entity": CAT.workflowChange,
-  "review-step-back": CAT.workflowChange,
-  "update-folder-properties": CAT.contentChange,
-  "upsert-custom-attribute-constraint": CAT.contentChange,
-  "upgrade-version": CAT.contentChange,
-  "attach-custom-attribute": CAT.contentChange,
-  "detach-custom-attribute": CAT.contentChange,
-  "update-custom-attribute": CAT.contentChange,
-  "add-attribute-to-naming-standard": CAT.contentChange,
-  "apply-naming-standard": CAT.contentChange,
 };
 
 /**
@@ -108,14 +148,14 @@ const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
  * given an explicit Datum mapping to unify with `apply-naming-standard` /
  * `add-attribute-to-naming-standard`.
  */
-const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; category: string }>> = {
-  "add-version-to-set": { module: BUILD_ID, label: "Add Version to Set", category: CAT.contentChange },
-  "create-set": { module: DATA_MANAGEMENT_ID, label: "Create Set", category: CAT.contentChange },
-  "calibrate-entity": { module: DATA_MANAGEMENT_ID, label: "Calibrate Entity", category: CAT.contentChange },
-  "create-project": { module: ADMIN_ACTIONS_ID, label: "Create Project", category: CAT.workflowChange },
-  "add-member": { module: ADMIN_ACTIONS_ID, label: "Add Member", category: CAT.accessChange },
-  "setting-update": { module: ADMIN_ACTIONS_ID, label: "Setting Update", category: CAT.workflowChange },
-  "add-folder-naming-standard": { module: DATUM_ID, label: "Add Folder Naming Standard", category: CAT.contentChange },
+const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string }>> = {
+  "add-version-to-set": { module: BUILD_ID, label: "Add Version to Set" },
+  "create-set": { module: DATA_MANAGEMENT_ID, label: "Create Set" },
+  "calibrate-entity": { module: DATA_MANAGEMENT_ID, label: "Calibrate Entity" },
+  "create-project": { module: ADMIN_ACTIONS_ID, label: "Create Project" },
+  "add-member": { module: ADMIN_ACTIONS_ID, label: "Add Member" },
+  "setting-update": { module: ADMIN_ACTIONS_ID, label: "Setting Update" },
+  "add-folder-naming-standard": { module: DATUM_ID, label: "Add Folder Naming Standard" },
 };
 
 /**
@@ -163,13 +203,13 @@ const ADMIN_ACTION_IDS: ReadonlySet<string> = new Set(
 );
 
 /**
- * Modules the activity donut can show: the 9 excel modules plus Admin Actions,
+ * Modules the activity donut can show: all 9 excel modules (incl. Model
+ * Coordination, restored 2026-07-06 owner-directed) plus Admin Actions,
  * inserted right after Preconstruction for a sensible reading order.
  */
 export function donutModules(): Array<{ id: string; label: string }> {
   const out: Array<{ id: string; label: string }> = [];
   for (const m of getModules()) {
-    if (m.id === MODEL_COORDINATION_ID) continue;
     out.push({ id: m.id, label: m.label });
     if (m.id === "preconstruction") out.push({ id: ADMIN_ACTIONS_ID, label: ADMIN_ACTIONS_LABEL });
   }
@@ -220,50 +260,56 @@ const UMBRELLA_SERVICES: ReadonlySet<string> = new Set(["docs", "sheets", "bridg
 export function classifyActivity(
   rawAction: string,
   service?: string | null,
-): { moduleId: string; label: string; category: string; attributedBy: "service" | "verb" } {
+): { moduleId: string; label: string; group: string; attributedBy: "service" | "verb" } {
   const norm = normalizeActionId(rawAction);
-  // Compute the verb-based result exactly as before -- zero changes to this logic.
-  let verbResult: { moduleId: string; label: string; category: string };
+  // Compute the verb-based module/label exactly as before. `gid` is the id the
+  // tool-group rules run on: the canonical catalog id when the action resolved,
+  // else the normalized raw id (rescue/unmapped paths).
+  let verbResult: { moduleId: string; label: string };
+  let gid = norm;
   const coord = COORDINATION_ISSUE_LABELS[norm];
   if (coord) {
-    verbResult = { moduleId: BUILD_ID, label: coord, category: CAT.workflowChange };
+    verbResult = { moduleId: BUILD_ID, label: coord };
   } else {
     const extra = EXTRA_ACTIONS[norm];
     if (extra) {
-      verbResult = { moduleId: extra.module, label: extra.label, category: extra.category };
+      verbResult = { moduleId: extra.module, label: extra.label };
     } else {
       const action = getAction(resolveActionId(rawAction));
       if (!action) {
-        verbResult = { moduleId: UNMAPPED_MODULE, label: rawAction, category: CAT.unknown };
+        verbResult = { moduleId: UNMAPPED_MODULE, label: rawAction };
       } else {
-        let moduleId = MODULE_OVERRIDES[action.id]
+        const moduleId = MODULE_OVERRIDES[action.id]
           ?? (ADMIN_ACTION_IDS.has(action.id) ? ADMIN_ACTIONS_ID : action.moduleId);
-        if (moduleId === MODEL_COORDINATION_ID) moduleId = DATA_MANAGEMENT_ID;
-        const category = CATEGORY_OVERRIDES[action.id] ?? CAT[action.groupId] ?? CAT.unknown;
-        verbResult = { moduleId, label: action.label, category };
+        verbResult = { moduleId, label: action.label };
+        gid = action.id;
       }
     }
   }
 
   // Normalize + resolve the service tag. Absent/unrecognized -> verb result stands.
+  // The tool group is always resolved against the FINAL module, so a service
+  // override/rescue regroups the action within its destination product.
   const svc = service?.trim().toLowerCase();
   const svcModule = svc ? SERVICE_TO_MODULE[svc] : undefined;
-  if (!svcModule) return { ...verbResult, attributedBy: "verb" };
+  if (!svcModule) {
+    return { ...verbResult, group: toolGroup(verbResult.moduleId, gid), attributedBy: "verb" };
+  }
 
   // Unmapped rescue: a recognized service resolves a verb result that had none.
   if (verbResult.moduleId === UNMAPPED_MODULE) {
-    return { moduleId: svcModule, label: rawAction, category: CAT.unknown, attributedBy: "service" };
+    return { moduleId: svcModule, label: rawAction, group: toolGroup(svcModule, norm), attributedBy: "service" };
   }
 
   // Decisive service (not umbrella) disagreeing with the verb module -> service wins,
-  // keeping the verb result's label/category.
+  // keeping the verb result's label.
   if (!UMBRELLA_SERVICES.has(svc!) && svcModule !== verbResult.moduleId) {
-    return { moduleId: svcModule, label: verbResult.label, category: verbResult.category, attributedBy: "service" };
+    return { moduleId: svcModule, label: verbResult.label, group: toolGroup(svcModule, gid), attributedBy: "service" };
   }
 
   // Otherwise (umbrella service deferring to an already-mapped verb refinement, or
-  // service and verb already agree) -- keep the verb module/label/category. Service
-  // was populated and recognized, so it still counts as service-attributed for the
+  // service and verb already agree) -- keep the verb module/label. Service was
+  // populated and recognized, so it still counts as service-attributed for the
   // caveat's live split.
-  return { ...verbResult, attributedBy: "service" };
+  return { ...verbResult, group: toolGroup(verbResult.moduleId, gid), attributedBy: "service" };
 }

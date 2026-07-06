@@ -25,7 +25,7 @@ describe("summarizeModules", () => {
     expect(s.slices).toEqual([]);
     expect(s.total).toBe(0);
     expect(s.activeModules).toBe(0);
-    expect(s.zeroModules).toHaveLength(9); // 8 excel modules (excl. modelCoordination) + Admin Actions
+    expect(s.zeroModules).toHaveLength(10); // 9 excel modules (incl. modelCoordination) + Admin Actions
     expect(s.zeroModules.some((m) => m.id === "adminActions")).toBe(true);
     expect(s.typesByModule.size).toBe(0);
   });
@@ -79,7 +79,8 @@ describe("summarizeModules", () => {
     expect(zeroIds).toContain("autospecs");
     expect(zeroIds).toContain("design");
     expect(zeroIds).toContain("insight");
-    expect(zeroIds).toHaveLength(8); // 9 donut modules (excl. modelCoordination) - dataManagement
+    expect(zeroIds).toContain("modelCoordination");
+    expect(zeroIds).toHaveLength(9); // 10 donut modules - dataManagement
   });
 
   it("routes coordination issue-* actions to Build (not Model Coordination, not Unmapped)", () => {
@@ -106,14 +107,17 @@ describe("summarizeModules", () => {
     expect(classifyActivity("issue-work-completed").moduleId).toBe("build");
   });
 
-  it("classifyActivity: *-collection verbs (catalog modelCoordination) route to dataManagement", () => {
-    // create-collection is one of the sheet collection verbs the excel maps to modelCoordination
-    expect(classifyActivity("create-collection").moduleId).toBe("dataManagement");
+  it("classifyActivity: *-collection verbs (catalog modelCoordination) route to Model Coordination / Views", () => {
+    // 2026-07-06 owner-directed regroup restored Model Coordination to the donut;
+    // its catalog collection verbs land in the module's Views group.
+    const result = classifyActivity("create-collection");
+    expect(result.moduleId).toBe("modelCoordination");
+    expect(result.group).toBe("Views");
   });
 
-  it("donutModules: modelCoordination is NOT present in the list", () => {
+  it("donutModules: modelCoordination IS present in the list (restored 2026-07-06)", () => {
     const modules = donutModules();
-    expect(modules.some((m) => m.id === "modelCoordination")).toBe(false);
+    expect(modules.some((m) => m.id === "modelCoordination")).toBe(true);
   });
 
   it("groups admin/permission actions into Admin Actions, leaving Preconstruction empty", () => {
@@ -148,14 +152,14 @@ describe("summarizeModules", () => {
     expect(s.slices.find((x) => x.id === "adminActions")?.value).toBe(7);
     const avt = s.typesByModule.get("build")!.find((t) => t.raw === "add-version-to-set");
     expect(avt?.label).toBe("Add Version to Set");
-    expect(avt?.category).toBe("Content changes");
+    expect(avt?.group).toBe("Sheets");
   });
 
-  it("tags every activity type with an action category", () => {
-    const s = summarizeModules([mk("p1", "view-entity", 5), mk("p1", "delete-entity", 2)]);
+  it("tags every activity type with its ACC tool group", () => {
+    const s = summarizeModules([mk("p1", "view-entity", 5), mk("p1", "create-transmittal", 2)]);
     const dm = s.typesByModule.get("dataManagement")!;
-    expect(dm.find((t) => t.raw === "view-entity")?.category).toBe("Viewing & exports");
-    expect(dm.find((t) => t.raw === "delete-entity")?.category).toBe("Deletions");
+    expect(dm.find((t) => t.raw === "view-entity")?.group).toBe("Files");
+    expect(dm.find((t) => t.raw === "create-transmittal")?.group).toBe("Transmittals");
   });
 
   describe("service-first attribution (21.1-01)", () => {

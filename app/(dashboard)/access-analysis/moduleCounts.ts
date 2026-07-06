@@ -27,7 +27,7 @@ export interface ActivityType {
   label: string; // human label from the taxonomy (or the raw action if unmapped)
   raw: string;
   count: number;
-  category: string; // action category (Content changes / Workflow / …) for grouping
+  group: string; // ACC tool group inside the module (Files / Reviews / Sheets / …)
 }
 
 export interface ModuleSlice {
@@ -68,7 +68,7 @@ export function summarizeModules(rows: ReadonlyArray<ModuleActivityRow>): Module
   let verbCount = 0;
 
   for (const row of rows) {
-    const { moduleId, label, category, attributedBy } = classifyActivity(row.rawAction, row.service);
+    const { moduleId, label, group, attributedBy } = classifyActivity(row.rawAction, row.service);
     volume.set(moduleId, (volume.get(moduleId) ?? 0) + row.count);
     if (attributedBy === "service") serviceCount += row.count;
     else verbCount += row.count;
@@ -78,7 +78,7 @@ export function summarizeModules(rows: ReadonlyArray<ModuleActivityRow>): Module
     const byRaw = typesAgg.get(moduleId) ?? typesAgg.set(moduleId, new Map()).get(moduleId)!;
     const cur = byRaw.get(row.rawAction);
     if (cur) cur.count += row.count;
-    else byRaw.set(row.rawAction, { label, raw: row.rawAction, count: row.count, category });
+    else byRaw.set(row.rawAction, { label, raw: row.rawAction, count: row.count, group });
   }
 
   const slices: ModuleSlice[] = [...volume.entries()]

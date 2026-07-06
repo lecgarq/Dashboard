@@ -34,14 +34,14 @@ const summary: ModuleSummary = {
   ],
   typesByModule: new Map([
     ["dataManagement", [
-      { label: "View Entity", raw: "view-entity", count: 100, category: "Viewing & exports" },
-      { label: "Upload Entity", raw: "upload-entity", count: 50, category: "Content changes" },
+      { label: "View Entity", raw: "view-entity", count: 100, group: "Files" },
+      { label: "Upload Entity", raw: "upload-entity", count: 50, group: "Files" },
     ]],
     ["build", [
-      { label: "Issue View", raw: "issue-view", count: 30, category: "Workflow" },
-      { label: "Issue Create", raw: "issue-create", count: 10, category: "Workflow" },
+      { label: "Issue View", raw: "issue-view", count: 30, group: "Issues" },
+      { label: "Issue Create", raw: "issue-create", count: 10, group: "Issues" },
     ]],
-    [UNMAPPED_MODULE, [{ label: "weird-action", raw: "weird-action", count: 7, category: "Other" }]],
+    [UNMAPPED_MODULE, [{ label: "weird-action", raw: "weird-action", count: 7, group: "Other" }]],
   ]),
   attribution: { serviceCount: 0, verbCount: 197 },
 };
@@ -75,13 +75,13 @@ describe("ModulesPieChart", () => {
     expect(getAllByTestId("warning-icon")).toHaveLength(1);
   });
 
-  it("clicking a module drills into every activity type mapped into it, grouped by category", () => {
+  it("clicking a module drills into every activity type mapped into it, grouped by ACC tool", () => {
     const { getByTestId, getByRole } = render(<ModulesPieChart summary={summary} />);
     fireEvent.click(within(getByTestId("module-legend")).getByRole("button", { name: /Build/ }));
     const drill = getByTestId("module-drilldown");
     expect(drill.textContent).toContain("Issue View");
     expect(drill.textContent).toContain("Issue Create");
-    expect(drill.textContent).toContain("Workflow"); // category header
+    expect(drill.textContent).toContain("Issues"); // tool-group header
     // Clicking again collapses it.
     fireEvent.click(within(getByTestId("module-legend")).getByRole("button", { name: /Build/ }));
     expect(getByRole).toBeTruthy();

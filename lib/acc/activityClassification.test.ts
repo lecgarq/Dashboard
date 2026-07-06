@@ -2,76 +2,65 @@ import { describe, expect, it } from "vitest";
 import {
   classifyActivity,
   donutModules,
-  CATEGORY_LABELS,
-  CATEGORY_ORDER,
+  GROUP_ORDER,
+  OTHER_GROUP,
   UNMAPPED_MODULE,
 } from "./activityClassification";
 
 /**
- * Pin test for the moved classifier (BND-02).
- * Asserts that classifyActivity, donutModules, CATEGORY_LABELS, and
- * CATEGORY_ORDER produce byte-identical output after the verbatim move from
- * app/(dashboard)/access-analysis/moduleOverrides.ts.
+ * Pin test for the classifier (BND-02 move + 2026-07-06 owner-directed
+ * drill-down regroup: generic action categories replaced by per-module ACC
+ * tool groups, Model Coordination restored to the donut).
  * Keep this LIGHT — one representative rawAction per branch.
  */
 describe("activityClassification (BND-02 pin test)", () => {
   describe("classifyActivity", () => {
-    it("maps a coordination issue rawAction (issue-attach) to Build with workflowChange category", () => {
+    it("maps a coordination issue rawAction (issue-attach) to Build's Issues group", () => {
       const result = classifyActivity("issue-attach");
       expect(result).toEqual({
         moduleId: "build",
         label: "Issue Attach",
-        category: "Workflow",
+        group: "Issues",
         attributedBy: "verb",
       });
     });
 
-    it("maps an EXTRA_ACTIONS rawAction (create-project) to adminActions", () => {
+    it("maps an EXTRA_ACTIONS rawAction (create-project) to adminActions / Projects & settings", () => {
       const result = classifyActivity("create-project");
       expect(result).toEqual({
         moduleId: "adminActions",
         label: "Create Project",
-        category: "Workflow",
+        group: "Projects & settings",
         attributedBy: "verb",
       });
     });
 
-    it("maps an EXTRA_ACTIONS rawAction (add-member) to adminActions with accessChange category", () => {
+    it("maps an EXTRA_ACTIONS rawAction (add-member) to adminActions / Members & access", () => {
       const result = classifyActivity("add-member");
       expect(result).toEqual({
         moduleId: "adminActions",
         label: "Add Member",
-        category: "Access & permissions",
+        group: "Members & access",
         attributedBy: "verb",
       });
     });
 
-    it("maps an unknown rawAction to UNMAPPED_MODULE with unknown category", () => {
+    it("maps an unknown rawAction to UNMAPPED_MODULE with the Other group", () => {
       const result = classifyActivity("totally-unknown-action-xyz-999");
       expect(result).toEqual({
         moduleId: UNMAPPED_MODULE,
         label: "totally-unknown-action-xyz-999",
-        category: CATEGORY_LABELS.unknown,
+        group: OTHER_GROUP,
         attributedBy: "verb",
       });
     });
 
-    it("never returns moduleId modelCoordination (redirected to dataManagement)", () => {
-      // Run a broad sweep of known rawActions and assert none produce modelCoordination
-      const testActions = [
-        "issue-attach",
-        "create-project",
-        "add-member",
-        "add-version-to-set",
-        "create-set",
-        "calibrate-entity",
-        "setting-update",
-        "totally-unknown-action-xyz-999",
-      ];
-      for (const action of testActions) {
-        const result = classifyActivity(action);
-        expect(result.moduleId).not.toBe("modelCoordination");
-      }
+    it("routes catalog modelCoordination actions (create-collection) to Model Coordination / Views", () => {
+      // 2026-07-06 owner-directed regroup restored Model Coordination to the donut;
+      // the earlier redirect of its catalog actions to dataManagement is removed.
+      const result = classifyActivity("create-collection");
+      expect(result.moduleId).toBe("modelCoordination");
+      expect(result.group).toBe("Views");
     });
   });
 
@@ -83,9 +72,9 @@ describe("activityClassification (BND-02 pin test)", () => {
       expect(modules[preconstructionIdx + 1]).toMatchObject({ id: "adminActions" });
     });
 
-    it("never contains modelCoordination", () => {
+    it("contains modelCoordination (restored 2026-07-06 owner-directed)", () => {
       const modules = donutModules();
-      expect(modules.some((m) => m.id === "modelCoordination")).toBe(false);
+      expect(modules.some((m) => m.id === "modelCoordination")).toBe(true);
     });
 
     it("contains adminActions", () => {
@@ -94,29 +83,21 @@ describe("activityClassification (BND-02 pin test)", () => {
     });
   });
 
-  describe("CATEGORY_LABELS", () => {
-    it("has all expected category keys with correct labels", () => {
-      expect(CATEGORY_LABELS).toEqual({
-        contentChange: "Content changes",
-        workflowChange: "Workflow",
-        accessChange: "Access & permissions",
-        read: "Viewing & exports",
-        delete: "Deletions",
-        unknown: "Other",
-      });
+  describe("GROUP_ORDER (ACC tool groups, owner-directed 2026-07-06)", () => {
+    it("lists each product's tool tabs and ends with Other", () => {
+      // Data Management (Docs)
+      expect(GROUP_ORDER).toEqual(expect.arrayContaining(["Files", "Specifications", "Reviews", "Transmittals", "Boards"]));
+      // Build
+      expect(GROUP_ORDER).toEqual(expect.arrayContaining(["Sheets", "Issues", "Forms", "Photos", "RFIs", "Submittals", "Schedule"]));
+      // Design Collaboration
+      expect(GROUP_ORDER).toEqual(expect.arrayContaining(["Changes", "Create packages", "Consume packages"]));
+      // Model Coordination
+      expect(GROUP_ORDER).toEqual(expect.arrayContaining(["Views", "Clashes"]));
+      expect(GROUP_ORDER[GROUP_ORDER.length - 1]).toBe(OTHER_GROUP);
     });
-  });
 
-  describe("CATEGORY_ORDER", () => {
-    it("has 6 entries in the correct display order", () => {
-      expect(CATEGORY_ORDER).toEqual([
-        "Content changes",
-        "Workflow",
-        "Access & permissions",
-        "Viewing & exports",
-        "Deletions",
-        "Other",
-      ]);
+    it("has no duplicate groups (one global order is safe for per-module sorting)", () => {
+      expect(new Set(GROUP_ORDER).size).toBe(GROUP_ORDER.length);
     });
   });
 
@@ -126,13 +107,45 @@ describe("activityClassification (BND-02 pin test)", () => {
     });
   });
 
+  describe("per-module tool groups", () => {
+    it("Data Management: file verbs -> Files, review verbs -> Reviews, transmittals -> Transmittals", () => {
+      expect(classifyActivity("view-entity").group).toBe("Files");
+      expect(classifyActivity("upload-entity").group).toBe("Files");
+      expect(classifyActivity("submit-review").group).toBe("Reviews");
+      expect(classifyActivity("set-approval-status").group).toBe("Reviews");
+      expect(classifyActivity("notify-final-members").group).toBe("Reviews"); // review step whose id lacks "review"
+      expect(classifyActivity("create-transmittal").group).toBe("Transmittals");
+      expect(classifyActivity("view-transmittal").group).toBe("Transmittals");
+    });
+
+    it("Build: sheets cluster -> Sheets, rfi/response -> RFIs, submittals -> Submittals", () => {
+      expect(classifyActivity("view-sheet").group).toBe("Sheets");
+      expect(classifyActivity("create-version-set").group).toBe("Sheets");
+      expect(classifyActivity("add-version-to-set").group).toBe("Sheets");
+      expect(classifyActivity("rfi-view", "rfis").group).toBe("RFIs");
+      expect(classifyActivity("submittals-item-create", "submittals").group).toBe("Submittals");
+    });
+
+    it("Design Collaboration: publish-entity -> Changes, send/receive -> Create/Consume packages", () => {
+      expect(classifyActivity("publish-entity").group).toBe("Changes");
+      expect(classifyActivity("send-entity-to-project").group).toBe("Create packages");
+      expect(classifyActivity("receive-entity-from-project-with-automation").group).toBe("Consume packages");
+    });
+
+    it("Datum: naming-standard family -> Naming standards, attribute verbs -> Custom attributes", () => {
+      expect(classifyActivity("apply-naming-standard").group).toBe("Naming standards");
+      expect(classifyActivity("add-folder-naming-standard").group).toBe("Naming standards");
+      expect(classifyActivity("create-custom-attribute").group).toBe("Custom attributes");
+    });
+  });
+
   describe("service-first attribution", () => {
-    it("omitted service -> identical result to today's verb path, attributedBy: verb", () => {
+    it("omitted service -> identical result to the verb path, attributedBy: verb", () => {
       const result = classifyActivity("view-entity");
       expect(result).toEqual({
         moduleId: "dataManagement",
         label: "View Entity",
-        category: "Viewing & exports",
+        group: "Files",
         attributedBy: "verb",
       });
     });
@@ -145,13 +158,14 @@ describe("activityClassification (BND-02 pin test)", () => {
       expect(classifyActivity("view-entity", "not-a-real-service")).toEqual(base);
     });
 
-    it("decisive override: submittals service overrides a non-build verb result -> build", () => {
+    it("decisive override: submittals service overrides a non-build verb result -> build, regrouped there", () => {
       const result = classifyActivity("view-entity", "submittals");
       expect(result.moduleId).toBe("build");
       expect(result.attributedBy).toBe("service");
-      // label/category kept from the verb result per precedence rule 4.
+      // Label kept from the verb result; group re-resolved against the FINAL module
+      // (view-entity matches no Build tool tab -> Other).
       expect(result.label).toBe("View Entity");
-      expect(result.category).toBe("Viewing & exports");
+      expect(result.group).toBe(OTHER_GROUP);
     });
 
     it("decisive override: admin service overrides a non-adminActions verb result -> adminActions", () => {
@@ -163,15 +177,16 @@ describe("activityClassification (BND-02 pin test)", () => {
     it("umbrella deference: a permission verb (-> adminActions) + docs service stays adminActions, not dataManagement", () => {
       const result = classifyActivity("assign-permission", "docs");
       expect(result.moduleId).toBe("adminActions");
+      expect(result.group).toBe("Members & access");
       expect(result.attributedBy).toBe("service");
     });
 
-    it("unmapped rescue: a nonsense rawAction + docs service -> dataManagement, label = raw string", () => {
+    it("unmapped rescue: a nonsense rawAction + docs service -> dataManagement, grouped by the destination's rules", () => {
       const result = classifyActivity("totally-unknown-action-xyz-999", "docs");
       expect(result).toEqual({
         moduleId: "dataManagement",
         label: "totally-unknown-action-xyz-999",
-        category: CATEGORY_LABELS.unknown,
+        group: "Files", // dataManagement's fallback tool group
         attributedBy: "service",
       });
     });
@@ -199,15 +214,17 @@ describe("activityClassification (BND-02 pin test)", () => {
    * EXTRA_ACTIONS / MODULE_OVERRIDES / SERVICE_TO_MODULE comments.
    */
   describe("owner-delegated mapping review (21.1-04 checkpoint)", () => {
-    it("sheets rescue: an unmapped sheets-service action lands in build (owner-directed), not dataManagement", () => {
+    it("sheets rescue: an unmapped sheets-service action lands in build (owner-directed) under Sheets", () => {
       const result = classifyActivity("view-sheet-public-link", "sheets");
       expect(result.moduleId).toBe("build");
+      expect(result.group).toBe("Sheets");
       expect(result.attributedBy).toBe("service");
     });
 
     it("sheets rescue: create-public-link-for-sheets + sheets service -> build", () => {
       const result = classifyActivity("create-public-link-for-sheets", "sheets");
       expect(result.moduleId).toBe("build");
+      expect(result.group).toBe("Sheets");
     });
 
     it("sheet verb cluster routes to build (owner-directed: Sheets is an ACC Build tool)", () => {
@@ -248,7 +265,7 @@ describe("activityClassification (BND-02 pin test)", () => {
       expect(result).toEqual({
         moduleId: "datum",
         label: "Add Folder Naming Standard",
-        category: "Content changes",
+        group: "Naming standards",
         attributedBy: "verb",
       });
       expect(classifyActivity("apply-naming-standard").moduleId).toBe("datum");
