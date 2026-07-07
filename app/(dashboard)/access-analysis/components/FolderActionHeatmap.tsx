@@ -15,17 +15,22 @@ import { summarizeFolderActionMatrix, type FolderActionCell } from "../folderAct
  * log10 so the "Project Files views" giant doesn't wash out every other cell.
  * Lazy expand-to-load, mirroring FolderActivityReveal.
  */
+/** Default folder rows; "Show all" expands to the server's ranking cap (250). */
+const DEFAULT_FOLDERS = 50;
+const ALL_FOLDERS = 250;
+
 export function FolderActionHeatmap({
   selectedProjectIds,
   loadMatrix,
 }: {
   selectedProjectIds: string[];
-  loadMatrix: (ids: string[]) => Promise<FolderActionCell[]>;
+  loadMatrix: (ids: string[], limit?: number) => Promise<FolderActionCell[]>;
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
 
   const [open, setOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [rows, setRows] = useState<FolderActionCell[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,8 +40,7 @@ export function FolderActionHeatmap({
     if (!open) return;
     let cancelled = false;
     setLoading(true);
-    setRows(null);
-    loadMatrix(selectedProjectIds)
+    loadMatrix(selectedProjectIds, showAll ? ALL_FOLDERS : DEFAULT_FOLDERS)
       .then((r) => {
         if (!cancelled) setRows(r);
       })
@@ -48,7 +52,14 @@ export function FolderActionHeatmap({
     };
     // idsKey captures selection identity; loadMatrix is a stable server-action ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, idsKey]);
+  }, [open, idsKey, showAll]);
+
+  // A fresh selection restarts from the default row count.
+  useEffect(() => {
+    setShowAll(false);
+    setRows(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
 
   const matrix = useMemo(() => (rows ? summarizeFolderActionMatrix(rows) : null), [rows]);
 
@@ -159,11 +170,26 @@ export function FolderActionHeatmap({
 
           {!loading && matrix && matrix.folders.length > 0 && option && (
             <>
-              <EChart option={option} height={chartHeight} notMerge />
-              <p className="mt-2 text-xs text-muted-foreground">
-                Top {matrix.folders.length.toLocaleString()} folders by activity ·{" "}
-                {matrix.total.toLocaleString()} activities in view.
-              </p>
+              {/* Expanded mode scrolls INSIDE the panel so the page keeps its own
+                  scroll (dashboard scroll-ownership rule); the chart canvas grows
+                  with the row count either way. */}
+              <div className={showAll ? "max-h-[720px] overflow-y-auto pr-1" : undefined}>
+                <EChart option={option} height={chartHeight} notMerge />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Top {matrix.folders.length.toLocaleString()} folders by activity ·{" "}
+                  {matrix.total.toLocaleString()} activities in view.
+                </p>
+                <button
+                  type="button"
+                  data-testid="folder-heatmap-showall"
+                  onClick={() => setShowAll((p) => !p)}
+                  className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                >
+                  {showAll ? `Show top ${DEFAULT_FOLDERS}` : `Show all folders (up to ${ALL_FOLDERS})`}
+                </button>
+              </div>
             </>
           )}
         </div>

@@ -131,7 +131,7 @@ export function AccessAnalysisCharts({
   loadOverview?: () => Promise<FolderTerrainData | null>;
   loadFolderRanking?: (ids: string[]) => Promise<FolderRankTotal[]>;
   loadFolderDetail?: (folderName: string, ids: string[]) => Promise<FolderProjectRow[]>;
-  loadFolderActionMatrix?: (ids: string[]) => Promise<FolderActionCell[]>;
+  loadFolderActionMatrix?: (ids: string[], limit?: number) => Promise<FolderActionCell[]>;
   /** ENG-01 pivot: lazy per-tab fetch (Roles + Users tabs), fired at most once. Presence gates both panels. */
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
   /** PERM-01 reframe: lazy per-tab fetch (Roles tab), fired at most once. Presence gates the panel. */

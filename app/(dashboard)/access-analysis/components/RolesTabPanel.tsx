@@ -82,7 +82,7 @@ export function RolesTabPanel({
   membershipRows?: MembershipRolesInput[];
   loadFolderRanking?: (ids: string[]) => Promise<FolderRankTotal[]>;
   loadFolderDetail?: (folderName: string, ids: string[]) => Promise<FolderProjectRow[]>;
-  loadFolderActionMatrix?: (ids: string[]) => Promise<FolderActionCell[]>;
+  loadFolderActionMatrix?: (ids: string[], limit?: number) => Promise<FolderActionCell[]>;
 }) {
   return (
     <div className="flex flex-col gap-6">

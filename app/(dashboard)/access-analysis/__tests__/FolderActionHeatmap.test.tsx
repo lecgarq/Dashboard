@@ -32,13 +32,25 @@ describe("FolderActionHeatmap", () => {
     const { getByTestId } = render(<FolderActionHeatmap selectedProjectIds={["p1", "p2"]} loadMatrix={loadMatrix} />);
     fireEvent.click(getByTestId("folder-heatmap-expand"));
     await waitFor(() => expect(getByTestId("echart")).toBeTruthy());
-    expect(loadMatrix).toHaveBeenCalledWith(["p1", "p2"]);
+    expect(loadMatrix).toHaveBeenCalledWith(["p1", "p2"], 50);
     // Busiest folder first on the y-axis; 3 non-zero cells.
     expect(getByTestId("echart").getAttribute("data-folders")).toBe("Project Files|ARQ");
     expect(getByTestId("echart").getAttribute("data-cells")).toBe("3");
     // Live caption, never hardcoded.
     expect(getByTestId("folder-heatmap-panel").textContent).toContain("Top 2 folders by activity");
     expect(getByTestId("folder-heatmap-panel").textContent).toContain("170 activities");
+  });
+
+  it("'Show all folders' refetches with the expanded limit and toggles back", async () => {
+    const loadMatrix = vi.fn(async () => matrix);
+    const { getByTestId } = render(<FolderActionHeatmap selectedProjectIds={["p1"]} loadMatrix={loadMatrix} />);
+    fireEvent.click(getByTestId("folder-heatmap-expand"));
+    await waitFor(() => expect(getByTestId("folder-heatmap-showall")).toBeTruthy());
+    fireEvent.click(getByTestId("folder-heatmap-showall"));
+    await waitFor(() => expect(loadMatrix).toHaveBeenCalledWith(["p1"], 250));
+    await waitFor(() => expect(getByTestId("folder-heatmap-showall").textContent).toContain("Show top 50"));
+    fireEvent.click(getByTestId("folder-heatmap-showall"));
+    await waitFor(() => expect(loadMatrix).toHaveBeenCalledTimes(3)); // 50 → 250 → 50
   });
 
   it("shows the empty state when the selection has no folder activity", async () => {

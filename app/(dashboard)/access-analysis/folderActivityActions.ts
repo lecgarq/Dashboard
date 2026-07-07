@@ -27,9 +27,13 @@ export async function loadFolderDetailAction(
   return loadFolderDetail(folderName, projectIds);
 }
 
-/** Auth-gated: (folder, verb) counts for the "Activity types by folder" heatmap. */
-export async function loadFolderActionMatrixAction(projectIds: string[]): Promise<FolderActionCell[]> {
+/** Auth-gated: (folder, verb) counts for the "Activity types by folder" heatmap.
+ *  `limit` bounds the folder rows (server clamps to FOLDER_RANK_LIMIT). */
+export async function loadFolderActionMatrixAction(
+  projectIds: string[],
+  limit?: number,
+): Promise<FolderActionCell[]> {
   const session = await auth();
   if (!session || projectIds.length === 0) return [];
-  return loadFolderActionMatrix(projectIds);
+  return loadFolderActionMatrix(projectIds, limit);
 }
