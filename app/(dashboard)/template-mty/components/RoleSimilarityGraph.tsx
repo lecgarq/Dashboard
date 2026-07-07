@@ -19,7 +19,38 @@ interface PEdge extends SimulationLinkDatum<PNode> {
 const H = 500;
 const CLICK_THRESHOLD_PX = 6;
 const CLICK_DURATION_MS = 250;
+/** Edge weight above which two roles are treated as one tightly-linked cluster (blob). */
+const CLUSTER_WEIGHT = 0.6;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+/** Lighten a hex color by mixing it toward white by `amt` (0–1). */
+function lighten(hex: string, amt: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = Math.min(255, ((n >> 16) & 0xff) + Math.round((255 - ((n >> 16) & 0xff)) * amt));
+  const g = Math.min(255, ((n >> 8) & 0xff) + Math.round((255 - ((n >> 8) & 0xff)) * amt));
+  const b = Math.min(255, (n & 0xff) + Math.round((255 - (n & 0xff)) * amt));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+/** Monotone-chain convex hull; returns points in CCW order. */
+function convexHull(pts: Array<[number, number]>): Array<[number, number]> {
+  if (pts.length <= 2) return pts;
+  const sorted = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: Array<[number, number]> = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: Array<[number, number]> = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
 
 export function RoleSimilarityGraph({
   graph,
@@ -34,6 +65,8 @@ export function RoleSimilarityGraph({
   const sub = dark ? "#a1a1aa" : "#6b7280";
   const edgeColor = dark ? "rgba(161,161,170,0.55)" : "rgba(82,82,91,0.5)";
   const nodeStroke = dark ? "#09090b" : "#ffffff";
+  const labelHalo = dark ? "#09090b" : "#ffffff";
+  const shadowColor = dark ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.22)";
 
   const reducedMotion = useReducedMotion();
 
@@ -70,6 +103,47 @@ export function RoleSimilarityGraph({
     }
     return { pnodes, pedges, neighbors };
   }, [graph, width, radius]);
+
+  const byId = useMemo(() => new Map(pnodes.map((n) => [n.roleId, n])), [pnodes]);
+
+  // Pair weight lookup — feeds the hover tooltip's "Most similar N%" rows.
+  const weightByPair = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const e of graph.edges) m.set(e.source < e.target ? `${e.source}|${e.target}` : `${e.target}|${e.source}`, e.weight);
+    return m;
+  }, [graph]);
+  const pairWeight = (a: string, b: string) => weightByPair.get(a < b ? `${a}|${b}` : `${b}|${a}`) ?? 0;
+
+  // Tightly-linked clusters (union-find over edges ≥ CLUSTER_WEIGHT) — drawn as
+  // soft hull blobs behind the graph so "effectively interchangeable" is visible.
+  const clusters = useMemo(() => {
+    const parent = new Map<string, string>();
+    const find = (x: string): string => {
+      let r = x;
+      while ((parent.get(r) ?? r) !== r) r = parent.get(r)!;
+      let c = x;
+      while ((parent.get(c) ?? c) !== c) { const next = parent.get(c)!; parent.set(c, r); c = next; }
+      return r;
+    };
+    for (const n of graph.nodes) parent.set(n.roleId, n.roleId);
+    for (const e of graph.edges) {
+      if (e.weight < CLUSTER_WEIGHT) continue;
+      const ra = find(e.source), rb = find(e.target);
+      if (ra !== rb) parent.set(ra, rb);
+    }
+    const groups = new Map<string, string[]>();
+    for (const n of graph.nodes) {
+      const r = find(n.roleId);
+      (groups.get(r) ?? groups.set(r, []).get(r)!).push(n.roleId);
+    }
+    return [...groups.values()].filter((g) => g.length >= 2);
+  }, [graph]);
+
+  const clusterOf = useMemo(() => {
+    const m = new Map<string, number>();
+    clusters.forEach((ids, i) => ids.forEach((id) => m.set(id, i)));
+    return m;
+  }, [clusters]);
 
   // One render counter drives both sim ticks and view (pan/zoom) updates.
   const [, setFrame] = useState(0);
@@ -202,18 +276,34 @@ export function RoleSimilarityGraph({
 
   const hoverNeighbors = hover ? neighbors.get(hover) ?? new Set<string>() : null;
   const isLit = (id: string) => !hover || id === hover || (hoverNeighbors?.has(id) ?? false);
-  const hovered = hover ? pnodes.find((n) => n.roleId === hover) ?? null : null;
+  const hovered = hover ? byId.get(hover) ?? null : null;
   const v = viewRef.current;
+
+  // Hover tooltip rows: neighbors sorted by similarity desc, with percentages.
+  const hoveredNeighborRows = hovered && hoverNeighbors
+    ? [...hoverNeighbors]
+        .map((id) => ({ id, name: byId.get(id)?.roleName ?? id, w: pairWeight(hovered.roleId, id) }))
+        .sort((a, b) => b.w - a.w)
+        .slice(0, 5)
+    : [];
+  const hoveredClusterSize = hovered ? clusters[clusterOf.get(hovered.roleId) ?? -1]?.length ?? 0 : 0;
 
   // Label margin for in-bounds clamping
   const LABEL_MARGIN_X = 40;
 
   return (
     <div className="panel-elevated p-5">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="px-1 text-xs text-muted-foreground">
-          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it. Click a dot to see role details.
-        </p>
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-col gap-1.5">
+          <p className="px-1 text-xs text-muted-foreground">
+            Each dot is a role; curved lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Shaded blobs group near-interchangeable roles (≥{Math.round(CLUSTER_WEIGHT * 100)}% similar). Scroll to zoom, drag the background to pan, drag a dot to move it. Click a dot for role details.
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 px-1 text-[11px]" style={{ color: sub }}>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{graph.nodes.length} roles</span>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{graph.edges.length} similarity links</span>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{clusters.length} tight {clusters.length === 1 ? "cluster" : "clusters"}</span>
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-[11px]" style={{ color: sub }}>
           {TIER_LEGEND.map((t) => (
             <span key={t.rank} className="flex items-center gap-1" title={t.label}>
@@ -238,27 +328,100 @@ export function RoleSimilarityGraph({
           onPointerLeave={onUp}
           onContextMenu={(e) => e.preventDefault()}
         >
+          <defs>
+            {/* One radial gradient per tier — gives every node a soft top-left sheen. */}
+            {TIER_LEGEND.map((t) => (
+              <radialGradient key={t.rank} id={`rsg-tier-${t.rank}`} cx="35%" cy="30%" r="80%">
+                <stop offset="0%" stopColor={lighten(TIER_COLORS[t.rank], 0.4)} />
+                <stop offset="100%" stopColor={TIER_COLORS[t.rank]} />
+              </radialGradient>
+            ))}
+            <filter id="rsg-shadow" x="-60%" y="-60%" width="220%" height="220%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" floodColor={shadowColor} />
+            </filter>
+          </defs>
+
           <g transform={`translate(${v.x} ${v.y}) scale(${v.k})`}>
+            {/* Cluster blobs — padded convex hulls behind everything, tinted by the
+                cluster's highest tier. Recomputed per frame from live positions. */}
+            {clusters.map((ids, i) => {
+              const members = ids.map((id) => byId.get(id)).filter((n): n is PNode => !!n);
+              if (members.length < 2) return null;
+              const pts = members.map((n) => [n.x ?? width / 2, n.y ?? H / 2] as [number, number]);
+              const hull = convexHull(pts);
+              const d = `M${hull.map((p) => `${p[0]},${p[1]}`).join("L")}Z`;
+              const pad = Math.max(...members.map((n) => n.r)) + 16;
+              const color = TIER_COLORS[Math.max(...members.map((n) => n.maxRank))] ?? "#71717a";
+              const dim = hover !== null && !ids.includes(hover);
+              return (
+                <path
+                  key={`hull-${i}`}
+                  d={d}
+                  fill={color}
+                  stroke={color}
+                  strokeWidth={pad * 2}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  opacity={dim ? 0.03 : dark ? 0.08 : 0.07}
+                  pointerEvents="none"
+                />
+              );
+            })}
+
+            {/* Edges — quadratic arcs; hovered node's edges take its tier colour. */}
             {pedges.map((e, i) => {
               const s = e.source as PNode;
               const t = e.target as PNode;
               if (typeof s !== "object" || typeof t !== "object") return null;
-              const lit = !hover || (isLit(s.roleId) && isLit(t.roleId) && (s.roleId === hover || t.roleId === hover));
+              const sx = s.x ?? 0, sy = s.y ?? 0, tx = t.x ?? 0, ty = t.y ?? 0;
+              const dx = tx - sx, dy = ty - sy;
+              const len = Math.hypot(dx, dy) || 1;
+              const off = Math.min(26, len * 0.16);
+              const cx = (sx + tx) / 2 - (dy / len) * off;
+              const cy = (sy + ty) / 2 + (dx / len) * off;
+              const touchesHover = hover !== null && (s.roleId === hover || t.roleId === hover);
+              const lit = !hover || touchesHover;
+              const stroke = touchesHover && hovered ? TIER_COLORS[hovered.maxRank] ?? edgeColor : edgeColor;
+              // Midpoint of the quadratic at t=0.5 — anchor for the similarity % label.
+              const qx = 0.25 * sx + 0.5 * cx + 0.25 * tx;
+              const qy = 0.25 * sy + 0.5 * cy + 0.25 * ty;
               return (
-                <line
-                  key={i}
-                  x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                  stroke={edgeColor}
-                  strokeWidth={(0.6 + e.weight * 2.4) / v.k}
-                  strokeOpacity={lit ? 0.55 * (0.4 + e.weight * 0.6) : 0.06}
-                />
+                <g key={i} pointerEvents="none">
+                  <path
+                    d={`M${sx},${sy} Q${cx},${cy} ${tx},${ty}`}
+                    fill="none"
+                    stroke={stroke}
+                    strokeWidth={(0.6 + e.weight * 2.6) / v.k}
+                    strokeOpacity={lit ? (touchesHover ? 0.85 : 0.55 * (0.4 + e.weight * 0.6)) : 0.05}
+                    strokeLinecap="round"
+                  />
+                  {touchesHover && (
+                    <text
+                      x={qx}
+                      y={qy - 4 / v.k}
+                      textAnchor="middle"
+                      fontSize={8.5 / v.k}
+                      fontWeight={600}
+                      fill={ink}
+                      stroke={labelHalo}
+                      strokeWidth={3 / v.k}
+                      style={{ paintOrder: "stroke" }}
+                    >
+                      {Math.round(e.weight * 100)}%
+                    </text>
+                  )}
+                </g>
               );
             })}
+
+            {/* Nodes — gradient fill, crisp rim, drop shadow; hover ring on the active node. */}
             {pnodes.map((n) => {
               const lit = isLit(n.roleId);
+              const isHover = hover === n.roleId;
+              const tierColor = TIER_COLORS[n.maxRank] ?? "#71717a";
               // In-bounds clamping for label position
               const labelX = clamp(n.x ?? (width / 2), LABEL_MARGIN_X, width - LABEL_MARGIN_X);
-              const labelY = clamp((n.y ?? (H / 2)) + n.r + 9 / v.k, 12, H - 12);
+              const labelY = clamp((n.y ?? (H / 2)) + n.r + 10 / v.k, 12, H - 12);
               return (
                 <g
                   key={n.roleId}
@@ -268,17 +431,37 @@ export function RoleSimilarityGraph({
                   onMouseEnter={() => setHover(n.roleId)}
                   onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
                 >
-                  <circle cx={n.x} cy={n.y} r={n.r} fill={TIER_COLORS[n.maxRank]} stroke={nodeStroke} strokeWidth={1.5 / v.k} opacity={lit ? 1 : 0.18} />
+                  {isHover && (
+                    <circle
+                      cx={n.x} cy={n.y} r={n.r + 5 / v.k}
+                      fill="none"
+                      stroke={tierColor}
+                      strokeWidth={1.5 / v.k}
+                      strokeOpacity={0.65}
+                    />
+                  )}
+                  <circle
+                    cx={n.x} cy={n.y} r={n.r}
+                    fill={`url(#rsg-tier-${n.maxRank})`}
+                    stroke={nodeStroke}
+                    strokeWidth={1.5 / v.k}
+                    opacity={lit ? 1 : 0.16}
+                    filter={lit ? "url(#rsg-shadow)" : undefined}
+                  />
                   <text
                     x={labelX}
                     y={labelY}
                     textAnchor="middle"
-                    fontSize={9 / v.k}
+                    fontSize={9.5 / v.k}
+                    fontWeight={isHover ? 600 : 400}
                     fill={ink}
-                    opacity={lit ? 0.9 : 0.12}
+                    stroke={labelHalo}
+                    strokeWidth={3 / v.k}
+                    style={{ paintOrder: "stroke" }}
+                    opacity={lit ? 0.92 : 0.1}
                     pointerEvents="none"
                   >
-                    {n.roleName.length > 18 ? n.roleName.slice(0, 17) + "…" : n.roleName}
+                    {n.roleName.length > 20 ? n.roleName.slice(0, 19) + "…" : n.roleName}
                   </text>
                 </g>
               );
@@ -297,15 +480,29 @@ export function RoleSimilarityGraph({
 
         {hovered && (
           <div
-            className="pointer-events-none absolute left-3 top-3 max-w-[260px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
+            className="pointer-events-none absolute left-3 top-3 max-w-[280px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
             // Tooltip stays pinned top-left (already in-bounds). If it ever follows a node,
             // clamp via CSS: left/top must not exceed panel - card dimensions.
           >
-            <div className="font-semibold text-foreground">{hovered.roleName}</div>
-            <div className="text-muted-foreground">{hovered.folderCount} folders</div>
-            {hoverNeighbors && hoverNeighbors.size > 0 && (
-              <div className="mt-1 text-muted-foreground">
-                Most similar: <span className="text-foreground/90">{[...hoverNeighbors].map((id) => pnodes.find((p) => p.roleId === id)?.roleName ?? id).slice(0, 5).join(", ")}</span>
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: TIER_COLORS[hovered.maxRank] }} aria-hidden />
+              {hovered.roleName}
+            </div>
+            <div className="text-muted-foreground">
+              {hovered.folderCount} folders
+              {hoveredClusterSize >= 2 && (
+                <> · in a cluster of {hoveredClusterSize} near-interchangeable roles</>
+              )}
+            </div>
+            {hoveredNeighborRows.length > 0 && (
+              <div className="mt-1.5 space-y-0.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Most similar</div>
+                {hoveredNeighborRows.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate text-foreground/90">{r.name}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{Math.round(r.w * 100)}%</span>
+                  </div>
+                ))}
               </div>
             )}
             {onNodeClick && (
