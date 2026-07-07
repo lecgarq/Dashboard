@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   summarizeFolderActivity,
+  summarizeFolderProjects,
   rolesByEmailForProject,
   type FolderActivityRow,
+  type FolderProjectRow,
 } from "../folderActivityCounts";
 import { UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 
@@ -89,5 +91,55 @@ describe("summarizeFolderActivity", () => {
       new Map([["a@x.com", ["Manager"]], ["b@x.com", ["Manager"]], ["c@x.com", ["Viewer"]]]),
     );
     expect(s.distinctRoles).toBe(2);
+  });
+});
+
+describe("summarizeFolderProjects (folder-first inversion: Projects → Roles → People)", () => {
+  const prow = (
+    projectId: string,
+    projectName: string,
+    userEmail: string,
+    count: number,
+    userName = userEmail,
+  ): FolderProjectRow => ({ projectId, projectName, userEmail, userName, count });
+
+  const memberships = [
+    { projectId: "p1", email: "ana@x.com", roles: ["Manager"] },
+    { projectId: "p2", email: "ana@x.com", roles: ["Viewer"] }, // same person, different role on p2
+    { projectId: "p2", email: "ben@x.com", roles: ["Viewer"] },
+  ];
+
+  it("folds rows into PROJECT nodes (name = projectName), sorted by volume desc", () => {
+    const s = summarizeFolderProjects(
+      [prow("p1", "Torre", "ana@x.com", 9, "Ana"), prow("p2", "Hospital", "ben@x.com", 4, "Ben")],
+      memberships,
+    );
+    expect(s.folders.map((n) => [n.name, n.total])).toEqual([
+      ["Torre", 9],
+      ["Hospital", 4],
+    ]);
+    expect(s.total).toBe(13);
+  });
+
+  it("buckets roles per (email, project) — the same person carries their per-project role", () => {
+    const s = summarizeFolderProjects(
+      [prow("p1", "Torre", "ana@x.com", 9, "Ana"), prow("p2", "Hospital", "ana@x.com", 4, "Ana")],
+      memberships,
+    );
+    const torre = s.folders.find((n) => n.name === "Torre")!;
+    const hospital = s.folders.find((n) => n.name === "Hospital")!;
+    expect(torre.roleSlices).toEqual([{ name: "Manager", value: 9 }]);
+    expect(hospital.roleSlices).toEqual([{ name: "Viewer", value: 4 }]);
+  });
+
+  it("restores plain emails in the user drill (no projectId prefix leaks)", () => {
+    const s = summarizeFolderProjects([prow("p1", "Torre", "ana@x.com", 9, "Ana")], memberships);
+    const users = s.folders[0].usersByRole.get("Manager")!;
+    expect(users).toEqual([{ email: "ana@x.com", name: "Ana", count: 9 }]);
+  });
+
+  it("unknown members land in the Unknown role bucket", () => {
+    const s = summarizeFolderProjects([prow("p9", "Ghost", "who@x.com", 2, "Who")], memberships);
+    expect(s.folders[0].roleSlices[0].name).toBe(UNKNOWN_ROLE);
   });
 });

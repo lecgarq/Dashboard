@@ -24,7 +24,7 @@ import { loadProvisionedModules } from "@/lib/server/provisionedModulesView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import { loadProjectClashes } from "./coordinationActions";
 import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
-import { loadFolderActivityProjectsAction, loadFolderActivityTreeAction } from "./folderActivityActions";
+import { loadFolderRankingAction, loadFolderDetailAction, loadFolderActionMatrixAction } from "./folderActivityActions";
 import { loadActivityRecencyAction } from "./activityRecencyActions";
 import { loadPermissionLevelAction } from "./permissionLevelActions";
 import { loadFolderScopedActivityAction, loadCompanyFolderBreakdownAction } from "./folderActivityByCompanyActions";
@@ -114,8 +114,9 @@ export async function MainCharts() {
       terrainProjects={terrainProjects}
       loadTerrain={loadTerrainForProject}
       loadOverview={loadOverviewTerrain}
-      loadFolderActivityProjects={loadFolderActivityProjectsAction}
-      loadFolderActivityTree={loadFolderActivityTreeAction}
+      loadFolderRanking={loadFolderRankingAction}
+      loadFolderDetail={loadFolderDetailAction}
+      loadFolderActionMatrix={loadFolderActionMatrixAction}
       loadActivityRecency={loadActivityRecencyAction}
       loadPermissionLevel={loadPermissionLevelAction}
       loadFolderScopedActivity={loadFolderScopedActivityAction}

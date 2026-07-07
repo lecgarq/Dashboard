@@ -30,20 +30,24 @@ function RoleBar({ node, colorFor }: { node: FolderActivityNode; colorFor: (r: s
 }
 
 /**
- * Presentational folder → role → user tree for ONE project. Folders (Top-N, with
- * a show-all toggle) carry a stacked role-distribution bar; expanding a folder
- * reveals role rows, expanding a role reveals the users (clickable to the profile
- * drawer). Role colors come from the shared buildRoleColorMap so they match the
- * "Activity by role" donut.
+ * Presentational node → role → user tree. Nodes (Top-N, with a show-all toggle)
+ * carry a stacked role-distribution bar; expanding a node reveals role rows,
+ * expanding a role reveals the users (clickable to the profile drawer). Role
+ * colors come from the shared buildRoleColorMap so they match the "Activity by
+ * role" donut. Nodes were originally folders within one project; the folder-
+ * first inversion (2026-07-07) also feeds it PROJECT nodes within one folder —
+ * `noun` labels the show-all button accordingly.
  */
 export function FolderActivityByRole({
   summary,
   onUserClick,
   defaultTopN = DEFAULT_TOP,
+  noun = "folders",
 }: {
   summary: FolderActivitySummary;
   onUserClick?: (email: string) => void;
   defaultTopN?: number;
+  noun?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
@@ -155,7 +159,7 @@ export function FolderActivityByRole({
           onClick={() => setShowAll(true)}
           className="mt-1 self-start rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
         >
-          Show all {summary.folders.length} folders ({hidden} more)
+          Show all {summary.folders.length} {noun} ({hidden} more)
         </button>
       )}
     </div>

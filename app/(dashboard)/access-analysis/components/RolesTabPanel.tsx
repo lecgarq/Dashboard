@@ -17,8 +17,10 @@ import type { DrillPerson } from "../roleCounts";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
-import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
-import type { FolderActivityRow } from "../folderActivityCounts";
+import type { FolderRankTotal } from "@/lib/server/folderActivityView";
+import type { FolderProjectRow } from "../folderActivityCounts";
+import type { FolderActionCell } from "../folderActionTypes";
+import { FolderActionHeatmap } from "./FolderActionHeatmap";
 
 /**
  * Roles tab (locked tab map): Role distribution · Activity by role (2-up grid) ·
@@ -52,8 +54,9 @@ export function RolesTabPanel({
   dataFloor,
   selected,
   membershipRows,
-  loadFolderActivityProjects,
-  loadFolderActivityTree,
+  loadFolderRanking,
+  loadFolderDetail,
+  loadFolderActionMatrix,
 }: {
   roleSummary: RoleSummary;
   sliceFilters: SliceFilters;
@@ -77,8 +80,9 @@ export function RolesTabPanel({
   dataFloor?: string | null;
   selected: Set<string>;
   membershipRows?: MembershipRolesInput[];
-  loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
-  loadFolderActivityTree?: (projectId: string) => Promise<FolderActivityRow[]>;
+  loadFolderRanking?: (ids: string[]) => Promise<FolderRankTotal[]>;
+  loadFolderDetail?: (folderName: string, ids: string[]) => Promise<FolderProjectRow[]>;
+  loadFolderActionMatrix?: (ids: string[]) => Promise<FolderActionCell[]>;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -174,16 +178,25 @@ export function RolesTabPanel({
         </Reveal>
       ) : null}
 
-      {/* Folder Activity by Role — full-width, collapsed by default (lazy load) */}
-      {loadFolderActivityProjects && loadFolderActivityTree && (
+      {/* Folder Activity by Role — full-width, collapsed by default (lazy load).
+          Folder-first drill: Folders → Projects → Roles → People (2026-07-07). */}
+      {loadFolderRanking && loadFolderDetail && (
         <Reveal>
           <FolderActivityReveal
             selectedProjectIds={[...selected]}
             memberships={membershipRows ?? []}
-            loadProjects={loadFolderActivityProjects}
-            loadTree={loadFolderActivityTree}
+            loadFolders={loadFolderRanking}
+            loadDetail={loadFolderDetail}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
+        </Reveal>
+      )}
+
+      {/* Activity types by folder — heatmap of what people DO in the busiest
+          folders (views / downloads / uploads / edits / …), collapsed by default. */}
+      {loadFolderActionMatrix && (
+        <Reveal>
+          <FolderActionHeatmap selectedProjectIds={[...selected]} loadMatrix={loadFolderActionMatrix} />
         </Reveal>
       )}
     </div>

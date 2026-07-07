@@ -71,8 +71,9 @@ vi.mock("./folderTerrainActions", () => ({
   loadOverviewTerrain: vi.fn(async () => null),
 }));
 vi.mock("./folderActivityActions", () => ({
-  loadFolderActivityProjectsAction: vi.fn(async () => []),
-  loadFolderActivityTreeAction: vi.fn(async () => []),
+  loadFolderRankingAction: vi.fn(async () => []),
+  loadFolderDetailAction: vi.fn(async () => []),
+  loadFolderActionMatrixAction: vi.fn(async () => []),
 }));
 // 20.1-06 lazy per-tab loaders (ENG-01/PERM-01/UAT-6) — mocked so the Roles-tab
 // activation in the test below (which fires the shell's lazy-fetch effect)

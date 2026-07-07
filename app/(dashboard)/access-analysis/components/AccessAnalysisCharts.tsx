@@ -33,8 +33,9 @@ import type { DcCoverage } from "@/lib/server/dcCoverageView";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
 import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
-import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
-import type { FolderActivityRow } from "../folderActivityCounts";
+import type { FolderRankTotal } from "@/lib/server/folderActivityView";
+import type { FolderProjectRow } from "../folderActivityCounts";
+import type { FolderActionCell } from "../folderActionTypes";
 import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
@@ -95,8 +96,9 @@ export function AccessAnalysisCharts({
   initialTerrain,
   loadTerrain,
   loadOverview,
-  loadFolderActivityProjects,
-  loadFolderActivityTree,
+  loadFolderRanking,
+  loadFolderDetail,
+  loadFolderActionMatrix,
   loadActivityRecency,
   loadPermissionLevel,
   loadFolderScopedActivity,
@@ -127,8 +129,9 @@ export function AccessAnalysisCharts({
   initialTerrain?: FolderTerrainData | null;
   loadTerrain?: (projectId: string) => Promise<FolderTerrainData | null>;
   loadOverview?: () => Promise<FolderTerrainData | null>;
-  loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
-  loadFolderActivityTree?: (projectId: string) => Promise<FolderActivityRow[]>;
+  loadFolderRanking?: (ids: string[]) => Promise<FolderRankTotal[]>;
+  loadFolderDetail?: (folderName: string, ids: string[]) => Promise<FolderProjectRow[]>;
+  loadFolderActionMatrix?: (ids: string[]) => Promise<FolderActionCell[]>;
   /** ENG-01 pivot: lazy per-tab fetch (Roles + Users tabs), fired at most once. Presence gates both panels. */
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
   /** PERM-01 reframe: lazy per-tab fetch (Roles tab), fired at most once. Presence gates the panel. */
@@ -499,8 +502,9 @@ export function AccessAnalysisCharts({
             dataFloor={dataFloor}
             selected={selected}
             membershipRows={membershipRows}
-            loadFolderActivityProjects={loadFolderActivityProjects}
-            loadFolderActivityTree={loadFolderActivityTree}
+            loadFolderRanking={loadFolderRanking}
+            loadFolderDetail={loadFolderDetail}
+            loadFolderActionMatrix={loadFolderActionMatrix}
           />
         </TabsContent>
 
@@ -577,7 +581,7 @@ export function AccessAnalysisCharts({
           <div data-testid="people-sheet">
             <PeopleDrillList
               title={peopleSheet.title}
-              color="#6366f1"
+              color="#5e96ce"
               people={peopleSheet.people}
               total={peopleSheet.people.reduce((s, p) => s + p.count, 0)}
               unitNoun="people"

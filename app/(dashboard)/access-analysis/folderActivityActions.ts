@@ -1,22 +1,35 @@
 "use server";
 import { auth } from "@/server/auth";
 import {
-  loadFolderActivityProjects,
-  loadFolderActivityTree,
-  type ProjectActivityTotal,
+  loadFolderRanking,
+  loadFolderDetail,
+  loadFolderActionMatrix,
+  type FolderRankTotal,
 } from "@/lib/server/folderActivityView";
-import type { FolderActivityRow } from "./folderActivityCounts";
+import type { FolderProjectRow } from "./folderActivityCounts";
+import type { FolderActionCell } from "./folderActionTypes";
 
-/** Auth-gated: per-project folder-activity totals for the selected projects. */
-export async function loadFolderActivityProjectsAction(projectIds: string[]): Promise<ProjectActivityTotal[]> {
+/** Auth-gated: folder ranking across the selected projects (level 1 of the
+ *  folder-first drill: Folders → Projects → Roles → People). */
+export async function loadFolderRankingAction(projectIds: string[]): Promise<FolderRankTotal[]> {
   const session = await auth();
   if (!session || projectIds.length === 0) return [];
-  return loadFolderActivityProjects(projectIds);
+  return loadFolderRanking(projectIds);
 }
 
-/** Auth-gated: one project's (folder, actor) activity rows. */
-export async function loadFolderActivityTreeAction(projectId: string): Promise<FolderActivityRow[]> {
+/** Auth-gated: one folder name's (project, actor) activity rows. */
+export async function loadFolderDetailAction(
+  folderName: string,
+  projectIds: string[],
+): Promise<FolderProjectRow[]> {
   const session = await auth();
-  if (!session || !projectId) return [];
-  return loadFolderActivityTree(projectId);
+  if (!session || !folderName || projectIds.length === 0) return [];
+  return loadFolderDetail(folderName, projectIds);
+}
+
+/** Auth-gated: (folder, verb) counts for the "Activity types by folder" heatmap. */
+export async function loadFolderActionMatrixAction(projectIds: string[]): Promise<FolderActionCell[]> {
+  const session = await auth();
+  if (!session || projectIds.length === 0) return [];
+  return loadFolderActionMatrix(projectIds);
 }
