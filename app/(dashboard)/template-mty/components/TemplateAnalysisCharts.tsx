@@ -118,21 +118,34 @@ export function TemplateAnalysisCharts({
       <Reveal>
         <section className="flex flex-col gap-3">
           <SectionHeader title="Role distribution" subtitle="Roles held across the template's member roster." />
-          <RolesPieChart data={overview.roleSummary.slices} distinctRoles={overview.distinctRoles} />
+          <RolesPieChart
+            data={overview.roleSummary.slices}
+            distinctRoles={overview.distinctRoles}
+            usersByRole={overview.roleSummary.usersByRole}
+            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="Folder access by tier" subtitle="Which roles — and how many of the members in them — hold each folder permission tier." />
-          <PermissionAccessChart summary={permissionAccess} />
+          <SectionHeader title="Folder access by tier" subtitle="Which roles — and how many of the members in them — hold each folder permission tier. Click a bar for the members behind it." />
+          <PermissionAccessChart
+            summary={permissionAccess}
+            members={overview.members}
+            onMemberClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="ACC module access" subtitle="Which ACC modules the template's members are provisioned for." />
-          <ModuleAccessChart summary={overview.moduleSummary} />
+          <SectionHeader title="ACC module access" subtitle="Which ACC modules the template's members are provisioned for. Click a bar for the members behind it." />
+          <ModuleAccessChart
+            summary={overview.moduleSummary}
+            members={overview.members}
+            onMemberClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
