@@ -155,8 +155,16 @@ export function RoleSimilarityGraph({
       .force("link", forceLink<PNode, PEdge>(pedges).id((d) => d.roleId).distance((l) => 46 + (1 - l.weight) * 150).strength((l) => 0.12 + l.weight * 0.6))
       .force("charge", forceManyBody<PNode>().strength(-230))
       .force("center", forceCenter(width / 2, H / 2))
-      .force("collide", forceCollide<PNode>().radius((d) => d.r + 5))
-      .on("tick", frame)
+      .force("collide", forceCollide<PNode>().radius((d) => d.r + 13)) // +13 reserves room for the label line under each node
+      .on("tick", () => {
+        // Keep nodes inside the canvas so labels never need to detach from
+        // their node — extra bottom room because labels sit below the circle.
+        for (const n of pnodes) {
+          n.x = clamp(n.x ?? width / 2, n.r + 10, width - n.r - 10);
+          n.y = clamp(n.y ?? H / 2, n.r + 10, H - n.r - 20);
+        }
+        frame();
+      })
       .on("end", () => { sim.stop(); }); // settle-and-freeze: stop after alphaMin reached
 
     // Under reduced-motion: skip animation entirely — use seed positions as final layout
@@ -288,9 +296,6 @@ export function RoleSimilarityGraph({
     : [];
   const hoveredClusterSize = hovered ? clusters[clusterOf.get(hovered.roleId) ?? -1]?.length ?? 0 : 0;
 
-  // Label margin for in-bounds clamping
-  const LABEL_MARGIN_X = 40;
-
   return (
     <div className="panel-elevated p-5">
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
@@ -419,9 +424,10 @@ export function RoleSimilarityGraph({
               const lit = isLit(n.roleId);
               const isHover = hover === n.roleId;
               const tierColor = TIER_COLORS[n.maxRank] ?? "#71717a";
-              // In-bounds clamping for label position
-              const labelX = clamp(n.x ?? (width / 2), LABEL_MARGIN_X, width - LABEL_MARGIN_X);
-              const labelY = clamp((n.y ?? (H / 2)) + n.r + 10 / v.k, 12, H - 12);
+              // Labels are glued to their node (bounds are enforced on the node
+              // positions in the sim tick, not by relocating labels).
+              const labelX = n.x ?? width / 2;
+              const labelY = (n.y ?? H / 2) + n.r + 10 / v.k;
               return (
                 <g
                   key={n.roleId}
