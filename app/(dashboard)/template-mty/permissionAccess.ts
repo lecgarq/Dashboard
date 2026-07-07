@@ -6,7 +6,7 @@ export interface TierRoleBreakdown {
 }
 
 export interface TierAccess {
-  rank: number; // 1..5
+  rank: number; // 1..6
   label: string; // from TIER_LEGEND
   userCount: number; // distinct members whose role grants this tier ≥ once
   roles: TierRoleBreakdown[]; // contributing roles, desc by user count

@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { summarizePermissionAccess } from "../permissionAccess";
 
-// rank legend: 1 View only · 2 View/download · 3 +Upload · 4 +Edit · 5 Full control
+// rank legend: 1 View only · 2 View/download · 3 +Publish markups · 4 +Upload · 5 +Edit · 6 Full control
 describe("summarizePermissionAccess", () => {
   const members = [
-    { name: "Cain", role: "Architect" },    // Full Control + View only
+    { name: "Cain", role: "Architect" },    // Full control + View only
     { name: "Elisa", role: "Architect" },
     { name: "Diego", role: "Designer" },     // View only + +Upload + +Edit
     { name: "Maria", role: "Contabilidad" }, // no folder perms
   ];
   const rolePermRanks = {
-    Architect: [5, 1],
-    Designer: [1, 3, 4],
+    Architect: [6, 1],
+    Designer: [1, 4, 5],
     // Contabilidad intentionally absent
   };
 
@@ -19,10 +19,10 @@ describe("summarizePermissionAccess", () => {
     const s = summarizePermissionAccess(members, rolePermRanks);
     expect(s.memberCount).toBe(4);
 
-    // tiers ordered rank desc; present ranks here: 5,4,3,1
-    expect(s.tiers.map((t) => t.rank)).toEqual([5, 4, 3, 1]);
+    // tiers ordered rank desc; present ranks here: 6,5,4,1
+    expect(s.tiers.map((t) => t.rank)).toEqual([6, 5, 4, 1]);
 
-    const full = s.tiers.find((t) => t.rank === 5)!;
+    const full = s.tiers.find((t) => t.rank === 6)!;
     expect(full.label).toBe("Full control");
     expect(full.userCount).toBe(2); // 2 Architects
     expect(full.roles).toEqual([{ role: "Architect", userCount: 2 }]);
