@@ -11,7 +11,7 @@ export function ModuleAccessChart({ summary }: { summary: ModuleAccessSummary })
   const dark = resolvedTheme !== "light";
   const cText = dark ? "#e4e4e7" : "#374151";
   const cAxis = dark ? "#3f3f46" : "#e5e7eb";
-  const cBar = "#6366f1";
+  const cBar = "#5e96ce";
   const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
 
   const slices = summary.slices;

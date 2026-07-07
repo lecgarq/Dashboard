@@ -5,7 +5,7 @@ import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption, LineSeriesOption } from "echarts";
 import type { TimelineSummary } from "../timelineCounts";
 
-const ACCENT = "#38bdf8"; // sky — same accent as the Model-Coordination module
+const ACCENT = "#3a9dbf"; // state-blue sky — same accent as the Model-Coordination module
 
 const MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",

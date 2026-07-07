@@ -21,7 +21,7 @@ import {
   type VNode, type VLink,
 } from "./useHierarchyLayout";
 
-const ROOT_COLOR = "#6366f1";
+const ROOT_COLOR = "#4e8ccb";
 
 // ─── TierMenuItems (render-only, stays with the canvas) ───────────────────────
 

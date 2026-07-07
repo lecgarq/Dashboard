@@ -19,12 +19,12 @@ const escapeHtml = (s: string) =>
  * to a neutral zinc tone — still rendered, never hidden.
  */
 const LEVEL_COLOR_RAMP = [
-  "#ef4444", // Full Controller — red-500
-  "#f97316", // View+Download+Upload+Edit — orange-500
-  "#f59e0b", // View+Download+Upload — amber-500
-  "#eab308", // View+Download — yellow-500
-  "#a78bfa", // Upload Only — violet-400
-  "#38bdf8", // View Only — sky-400
+  "#d03a35", // Full Controller — warm red
+  "#e2683a", // View+Download+Upload+Edit — naranja
+  "#d2a012", // View+Download+Upload — goldenrod
+  "#e5bc4c", // View+Download — goldenrod (light)
+  "#bc74a4", // Upload Only — wine
+  "#4fabc9", // View Only — state-blue sky
 ];
 const UNKNOWN_LEVEL_COLOR = "#71717a"; // zinc-500 — fallback for any unrecognized level
 

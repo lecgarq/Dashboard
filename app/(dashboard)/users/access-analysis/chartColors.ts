@@ -32,16 +32,16 @@ const VAR_NAME: Record<ChartRole, string> = {
 // Light-theme values from app/globals.css :root. Used when getComputedStyle
 // cannot resolve the custom property (jsdom, SSR).
 const FALLBACK_HEX: Record<ChartRole, string> = {
-  good: "#059669",
-  watch: "#D97706",
-  risk: "#EF4444",
-  info: "#2563EB",
+  good: "#0E8A6D",
+  watch: "#B0810A",
+  risk: "#C42021",
+  info: "#2E5F95",
   neutral: "#6B7280",
-  seq1: "#2563EB",
-  seq2: "#0F766E",
-  seq3: "#D97706",
-  seq4: "#7C3AED",
-  seq5: "#EA580C",
+  seq1: "#2E5F95",
+  seq2: "#E65A28",
+  seq3: "#0089A3",
+  seq4: "#B0810A",
+  seq5: "#7E3567",
 };
 
 const SEQUENCE: ChartRole[] = ["seq1", "seq2", "seq3", "seq4", "seq5"];

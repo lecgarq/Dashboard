@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import type { ProvisionedModuleSummary } from "../provisionedModulesCounts";
 import { MODULE_COLORS } from "./ModulesPieChart";
 
-const FALLBACK_COLOR = "#38bdf8"; // sky — any module id absent from MODULE_COLORS
+const FALLBACK_COLOR = "#3a9dbf"; // state-blue sky — any module id absent from MODULE_COLORS
 const DRILL_ROW_CAP = 30;
 
 const colorFor = (id: string) => MODULE_COLORS[id] ?? FALLBACK_COLOR;

@@ -4,12 +4,12 @@ import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import type { EChartsOption } from "echarts";
 import { EChart } from "../access-analysis/components/EChart";
-import type { ProjectData } from "./AccProfileSection";
-import { adminProjects, roleCounts, moduleCounts, type CountSlice } from "./statCardDetails";
+import { adminProjects, roleCounts, moduleCounts } from "./statCardDetails";
+import type { CountSlice, ProjectData, StatCardDetailKind } from "./statCardTypes";
 
 const PALETTE = [
-  "#6366f1", "#22d3ee", "#34d399", "#3b82f6", "#a78bfa", "#facc15",
-  "#fb7185", "#2dd4bf", "#fdba74", "#c084fc", "#86efac", "#93c5fd",
+  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
+  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f", "#55bcc7", "#e5bc4c",
 ];
 const colorFor = (i: number) => PALETTE[i % PALETTE.length];
 
@@ -70,7 +70,7 @@ export function StatCardDetail({
   kind,
   projects,
 }: {
-  kind: "admin" | "roles" | "modules";
+  kind: StatCardDetailKind;
   projects: ProjectData[];
 }): React.JSX.Element {
   const admin = useMemo(() => (kind === "admin" ? adminProjects(projects) : []), [kind, projects]);

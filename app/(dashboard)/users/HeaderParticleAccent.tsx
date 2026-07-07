@@ -30,8 +30,8 @@ const SPREAD_Y = 1.5;
 const SPREAD_Z = 0.5;
 const DRIFT_SPEED = 0.00012;
 
-// Brand-tinted color (indigo, low opacity) — matches CSS var --primary hue
-const PARTICLE_COLOR = new THREE.Color(0x6366f1);
+// Brand-tinted color (LECG azul, low opacity) — matches CSS var --primary hue
+const PARTICLE_COLOR = new THREE.Color(0x4e8ccb);
 
 // ---------------------------------------------------------------------------
 // Module-level helpers (called once at component init time)

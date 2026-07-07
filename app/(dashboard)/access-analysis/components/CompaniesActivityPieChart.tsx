@@ -12,12 +12,12 @@ import type { CompanyActivitySummary } from "../companyActivityCounts";
 // Same company palette + warning colors as CompaniesPieChart, so a company reads the
 // same hue in both donuts. Slices are data colors that work on light + dark cards.
 const PALETTE = [
-  "#6366f1", "#22d3ee", "#34d399", "#10b981", "#3b82f6", "#a78bfa",
-  "#2dd4bf", "#facc15", "#38bdf8", "#c084fc", "#4ade80", "#818cf8",
-  "#5eead4", "#fdba74", "#93c5fd", "#d8b4fe", "#86efac", "#67e8f9",
-  "#fde047", "#f0abfc", "#a5b4fc", "#bef264", "#7dd3fc", "#fca5a5",
+  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
+  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f", "#55bcc7", "#e5bc4c",
+  "#cd94bb", "#abbd7c", "#7cc2da", "#ea928c", "#abcbe8", "#f6bc9d",
+  "#8ad2da", "#f0d384", "#dfb5d2", "#c6d3a0", "#a8d8e8", "#f2b7b3",
 ];
-const UNKNOWN_COLOR = "#f59e0b"; // amber — activity by someone with no company on that project
+const UNKNOWN_COLOR = "#efb628"; // goldenrod — activity by someone with no company on that project
 const OTHERS_COLOR = "#71717a"; // zinc-500 — the folded tail
 
 const DEFAULT_TOP = 8;

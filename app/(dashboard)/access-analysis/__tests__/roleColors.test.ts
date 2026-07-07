@@ -5,8 +5,8 @@ import { UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 describe("buildRoleColorMap", () => {
   it("assigns fixed warning colors to Unknown and Multiple roles", () => {
     const m = buildRoleColorMap([UNKNOWN_ROLE, MULTIPLE_ROLES]);
-    expect(m.get(UNKNOWN_ROLE)).toBe("#f59e0b");
-    expect(m.get(MULTIPLE_ROLES)).toBe("#fb7185");
+    expect(m.get(UNKNOWN_ROLE)).toBe("#efb628");
+    expect(m.get(MULTIPLE_ROLES)).toBe("#e0577b");
   });
 
   it("gives a stable, distinct palette color to each normal role", () => {

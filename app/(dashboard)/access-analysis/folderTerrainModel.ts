@@ -104,12 +104,12 @@ export function rankForTier(tier: string): number {
  * read/markups vs upload/edit/control divide.
  */
 export const TIER_COLORS: Readonly<Record<number, string>> = {
-  1: "#1e3a4c", // deep slate-teal — View Only
-  2: "#2a7d8c", // teal — View+Download
-  3: "#46b8c4", // cyan — +Publish markups
-  4: "#e8943a", // orange — +Upload
-  5: "#f0b32f", // amber — +Edit
-  6: "#f8d348", // gold — Full administrative controls
+  1: "#1b3350", // deep azul oscuro — View Only
+  2: "#1a5e63", // brand teal — View+Download
+  3: "#2fa8b5", // seaweed — +Publish markups
+  4: "#e8813c", // naranja — +Upload
+  5: "#efb628", // brand goldenrod — +Edit
+  6: "#f5d24a", // pale goldenrod — Full administrative controls
 };
 
 export function colorForRank(rank: number): string {
