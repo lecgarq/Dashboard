@@ -5,8 +5,7 @@
  *
  * Renders the same rich ACC profile that /users shows (AccProfileFull), but fed
  * from an in-memory synced BulkAccUser via bulkUserToProfileData — so it opens
- * INSTANTLY with no getAccProfile round trip. The manual Refresh button is the
- * only path that fetches live from Autodesk.
+ * INSTANTLY with no getAccProfile round trip.
  *
  * G4 fix: in dialog variant the panel additionally fetches the FULL (non-lean)
  * BulkAccUser from accDcGraph.bulkUser — a local DC snapshot proc with no live
@@ -14,6 +13,14 @@
  * The panel renders the lean base data immediately (instant open), then enriches
  * the ACC section when the full data arrives. A subtle "loading details…" indicator
  * is shown on the ACC section header while the fetch is in flight.
+ *
+ * Freshness fix (2026-07-07): the DC snapshot can lag weeks behind the DC ingest
+ * cadence (observed 33 days), which left roles/modules stale until the manual
+ * Refresh. The dialog now ALSO queries users.getAccProfile — server-side it
+ * serves the member cache when <1h old and otherwise fetches live from ACC and
+ * re-caches — and baseData prefers whichever source has the newer syncedAt. The
+ * panel still opens instantly from the snapshot, then upgrades in place. The
+ * Refresh button remains the immediate force-live path.
  *
  * variant:
  *   - "dialog" — embedded inside the /users PersonDetailModal (modal owns chrome).
@@ -68,17 +75,38 @@ export function UserProfilePanel({
       },
     );
 
-  // Derive display data: Refresh override wins; otherwise use the full DC snapshot
-  // if available (has real roles/modules and email matches); fall back to lean
-  // in-memory user.
+  // Self-healing profile source: member cache when <1h old, otherwise a live ACC
+  // fetch server-side. retry:false — on APS credential/permission errors the DC
+  // snapshot below still renders, and the Refresh button is the manual retry.
+  const { data: cachedProfile, isLoading: profileLoading } =
+    trpc.users.getAccProfile.useQuery(
+      { email },
+      {
+        enabled: variant === "dialog" && !!email,
+        staleTime: 5 * 60_000,
+        retry: false,
+      },
+    );
+
+  // Derive display data: Refresh override wins; otherwise the NEWER of the
+  // member-cache profile vs the full DC snapshot (the snapshot can lag weeks
+  // behind ingest); fall back to the lean in-memory user.
   const baseData: AccProfileData | null = (() => {
     if (override) return override;
+    const candidates: AccProfileData[] = [];
+    const profile = cachedProfile as AccProfileData | undefined;
+    if (profile?.found) candidates.push(profile);
     if (
       fullBulkUser &&
       fullBulkUser.found &&
       fullBulkUser.email.toLowerCase() === email.toLowerCase()
     ) {
-      return bulkUserToProfileData(fullBulkUser);
+      candidates.push(bulkUserToProfileData(fullBulkUser));
+    }
+    if (candidates.length > 0) {
+      // ISO timestamps — lexicographic compare is chronological.
+      candidates.sort((a, b) => (b.syncedAt ?? "").localeCompare(a.syncedAt ?? ""));
+      return candidates[0];
     }
     if (user && user.found) return bulkUserToProfileData(user);
     return null;
@@ -99,8 +127,11 @@ export function UserProfilePanel({
       .finally(() => setRefreshing(false));
   }
 
-  // G4: true when the full-user fetch is in-flight (dialog only; rail skips it)
-  const detailLoading = variant === "dialog" && fullUserLoading && !fullBulkUser;
+  // G4: true while either detail source is still in-flight (dialog only; rail
+  // skips both) — the snapshot renders beneath the indicator in the meantime.
+  const detailLoading =
+    variant === "dialog" &&
+    ((fullUserLoading && !fullBulkUser) || (profileLoading && !cachedProfile));
 
   const body =
     refreshing && !baseData ? (

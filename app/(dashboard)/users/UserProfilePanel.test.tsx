@@ -6,8 +6,14 @@ import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type { OrgPerson } from "./directoryUtils";
 
 // vi.hoisted ensures these spies are available inside the hoisted vi.mock factory.
-const { fetchSpy, bulkUserQuerySpy } = vi.hoisted(() => ({
+const { fetchSpy, bulkUserQuerySpy, profileQuerySpy } = vi.hoisted(() => ({
   fetchSpy: vi.fn(async () => ({ found: false, syncedAt: "" })),
+  /**
+   * Simulates users.getAccProfile.useQuery (the self-healing member-cache
+   * profile source). Default: no data — tests that exercise the freshness
+   * preference override with mockReturnValueOnce.
+   */
+  profileQuerySpy: vi.fn((): { data: unknown; isLoading: boolean } => ({ data: undefined, isLoading: false })),
   /**
    * Simulates accDcGraph.bulkUser.useQuery.
    *
@@ -65,6 +71,7 @@ vi.mock("@/lib/core/trpc", () => ({
     users: {
       getAccUserActivity: { useQuery: () => ({ data: activityData, isLoading: false }) },
       getAccUserFolderAccess: { useQuery: () => ({ data: undefined, isLoading: false }) },
+      getAccProfile: { useQuery: profileQuerySpy },
     },
     accDcGraph: {
       bulkUser: { useQuery: bulkUserQuerySpy },
@@ -251,5 +258,47 @@ describe("UserProfilePanel", () => {
       />
     );
     expect(screen.getByTestId("acc-detail-loading")).toBeTruthy();
+  });
+
+  it("[freshness] prefers a NEWER member-cache profile over the stale DC snapshot without Refresh", () => {
+    // DC snapshot (bulkUserQuerySpy) is synced 2026-06-16 with role "Project Admin".
+    // The member-cache profile is 3 weeks newer with a different role — it must win.
+    profileQuerySpy.mockReturnValueOnce({
+      data: {
+        found: true,
+        status: "active",
+        name: "Ada Lovelace",
+        syncedAt: "2026-07-07T00:00:00.000Z",
+        projects: [
+          { id: "p1", name: "Tower A", status: "active", isAdmin: false, roles: ["BIM Manager"], modules: ["docs"] },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<UserProfilePanel user={found} email={found.email} variant="dialog" />);
+    expect(profileQuerySpy).toHaveBeenCalled();
+    expect(screen.getAllByText("BIM Manager").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Project Admin")).toBeNull();
+    // Still no automatic FORCE-live fetch — the imperative path stays Refresh-only.
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("[freshness] keeps the DC snapshot when the member-cache profile is OLDER", () => {
+    profileQuerySpy.mockReturnValueOnce({
+      data: {
+        found: true,
+        status: "active",
+        name: "Ada Lovelace",
+        syncedAt: "2026-01-01T00:00:00.000Z",
+        projects: [
+          { id: "p1", name: "Tower A", status: "active", isAdmin: false, roles: ["Old Role"], modules: ["docs"] },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<UserProfilePanel user={found} email={found.email} variant="dialog" />);
+    // DC snapshot (2026-06-16) is newer than the 2026-01-01 profile — snapshot wins.
+    expect(screen.getAllByText("Project Admin").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Old Role")).toBeNull();
   });
 });
