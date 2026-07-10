@@ -396,12 +396,12 @@ Plans:
   4. Any `issueTypeId`/`issueSubtypeId` not resolved by the lookup table renders an honest fallback label ("Unknown type") — never a raw GUID — verified against at least one live unresolved ID if one exists in the dataset.
   5. `npm test` stays green (existing suite + any new lookup-table/transform tests); `npx tsc --noEmit` passes.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 Plans:
 
 - [x] 22-01-PLAN.md — ISSUE-04: `AccIssueType` Prisma model + migration (migrations-raw fallback armed), `scripts/acc-issue-types-backfill.cjs` clone (3-leg auth, --dry-run field-shape validation), live run + resolved/total GUID evidence (wave 1)
-- [ ] 22-02-PLAN.md — ISSUE-05 data layer: `loadIssueFunnel()` third cut (2nd groupBy + lookup findMany joined in JS — preserves the queryRaw single-call test pin) + `issueTypeCounts.ts` top-N/Other transform with distinct "Unknown type"/"No type set" buckets (wave 2)
+- [x] 22-02-PLAN.md — ISSUE-05 data layer: `loadIssueFunnel()` third cut (2nd groupBy + lookup findMany joined in JS — preserves the queryRaw single-call test pin) + `issueTypeCounts.ts` top-N/Other transform with distinct "Unknown type"/"No type set" buckets (wave 2)
 - [ ] 22-03-PLAN.md — ISSUE-05 UI: `IssueTypeChart.tsx` (horizontal bars, expand-in-place Other, local per-project drill, live coverage captions) mounted below IssueStatusChart + owner `:3100` preflight checkpoint (wave 3)
 
 **UI hint**: yes
@@ -448,7 +448,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 20.1. Access-Analysis IA Redesign & Panel Semantics (inserted) | 7/7 | Complete | 2026-07-04 |
 | 21. Issue Funnel — Status & Time | 4/4 | Complete    | 2026-07-06 |
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
-| 22. Issue Type Resolution | 1/3 | In Progress|  |
+| 22. Issue Type Resolution | 2/3 | In Progress|  |
 | 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
 
 ---

@@ -5,17 +5,17 @@ milestone_name: New Graphs
 current_phase: 22
 current_phase_name: Issue Type Resolution
 status: active
-stopped_at: Phase 22 Plan 01 complete (AccIssueType lookup table + APS backfill script, ISSUE-04 done)
-last_updated: "2026-07-10T23:20:28.434Z"
+stopped_at: Phase 22 Plan 02 complete (loadIssueFunnel() typeRows cut + summarizeIssueType transform, ISSUE-05 data layer done)
+last_updated: "2026-07-10T23:32:12.779Z"
 last_activity: 2026-07-10
-last_activity_desc: Phase 22 Plan 01 complete — AccIssueType lookup table + APS backfill script (ISSUE-04 done). See `22-01-SUMMARY.md` for full detail.
+last_activity_desc: Phase 22 Plan 02 complete — ISSUE-05 data layer (typeRows cut + summarizeIssueType transform). See `22-02-SUMMARY.md` for full detail.
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 23
-  completed_plans: 21
-  percent: 91
-current_plan: "01"
+  completed_plans: 22
+  percent: 96
+current_plan: "02"
 ---
 
 # Project State
@@ -25,16 +25,16 @@ current_plan: "01"
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is in progress (22-01 done).
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is in progress (22-01, 22-02 done).
 
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**IN PROGRESS, 1 plan complete**).
-- **Plan:** 22-01 complete (ISSUE-04 done): additive `AccIssueType` Prisma lookup table applied via `prisma/migrations-raw/` raw SQL (migrate dev chokes on a pre-existing pgvector shadow-DB requirement, same standing guardrail as `AccInstanceEmbedding`/`AccActivityAccds`); `scripts/acc-issue-types-backfill.cjs` live-run over all 1,153 projects (519 ok / 38 forbidden / 596 404-ISSUES_SERVICE_NOT_FOUND — Issues module not provisioned in those containers, a distinct failure mode from the sibling `/issues` endpoint's 403-heavy pattern); 298/316 `issueTypeId` and 477/515 `issueSubtypeId` GUIDs now resolve to human-readable names (18 genuinely unresolved — a live "Unknown type" case exists for 22-03); idempotency confirmed. `npm test` 2495 passed/1 skipped/0 failed, tsc clean. See `22-01-SUMMARY.md`.
-- **Next:** Plan/execute 22-02/22-03 (ISSUE-05 issues-by-type chart, consuming the now-populated lookup table).
-- **Status:** ISSUE-04 unblocked ISSUE-05 — ready to plan the ISSUE-05 chart plans.
-- **Last activity:** 2026-07-10 — Phase 22 Plan 01 complete. See `22-01-SUMMARY.md` for full detail.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**IN PROGRESS, 2 plans complete**).
+- **Plan:** 22-02 complete (ISSUE-05 data layer done): `loadIssueFunnel()` (`lib/server/issueFunnelView.ts`) gained a third `typeRows` cut inside its existing `Promise.all`/5-min-TTL cache — a second `db.accIssue.groupBy(["projectId","issueTypeId"])` joined in JS against `db.accIssueType.findMany()` (never a second `$queryRaw`, single-call pin verified); three-state resolution (resolved name / non-null GUID absent from lookup / null id) kept distinct through the loader. New `app/(dashboard)/access-analysis/issueTypeCounts.ts`'s `summarizeIssueType()` clones `permissionLevelCounts.ts`'s top-N + Other shape, grouping resolved rows by `typeName` (not GUID, since APS issue types are project-scoped) with distinct honest "Unknown type"/"No type set" buckets that rank by count, lossless total. Both pieces built and tested UNMOUNTED — 22-03 consumes them. `npm test` 2507 passed/1 failed (pre-existing unrelated `/users` physicsLayer test-isolation flake, logged to `deferred-items.md`, not fixed)/1 skipped, tsc clean. See `22-02-SUMMARY.md`.
+- **Next:** Plan/execute 22-03 (ISSUE-05 chart component + mounting on the Projects tab, consuming `typeRows`/`summarizeIssueType`).
+- **Status:** ISSUE-05 data layer complete — ready to build/mount the issues-by-type chart.
+- **Last activity:** 2026-07-10 — Phase 22 Plan 02 complete. See `22-02-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
 
@@ -184,6 +184,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 21.1]: 21.1-04 (wiring + owner checkpoint, FINAL plan, COMPLETE, PHASE 21.1 SHIPPED): all 3 UAT items live on the Overview tab — `mainCharts.tsx` eager fan-out 9→10 (`loadProvisionedModules`), picker-only memos (`selected`, never `sliceFilteredProjectIds`), `projectOptions` union extended with provisioned rows (AccProjectMember covers all 1,153 live projects vs. DC-scoped roleRows), locked 2-up row [ProjectActivityDonut | ProvisionedModulesChart] between "Activity by module" and Ingest freshness, TRUTH-03 ⓘ caveat computes the live service/verb split from `moduleSummary.attribution` (stale "~40.7%" copy gone). Owner checkpoint ran TWO rounds on `:3100` webpack production preflights (isolated `.next-uat-21-1`, `:3000` PID 56060 untouched throughout): round 1 delegated the module-attribution mapping review ("I'll hand that to you — review the types of activities and the modules assigned, use your best effort") → corrections 1-4 (sheets rescue-target, version-set family, notify-final-members→Data Management, add-folder-naming-standard→Datum); round 2 final verdict verbatim "approved BUT move sheets and friends to the Build module" → correction 5 (owner-directed): sheet verbs + version-set family + sheets service rescue ALL route to Build via a new classifier-layer `MODULE_OVERRIDES` map (generated excel catalog never edited); `publish-entity` STAYS Design Collaboration (docs-tagged Revit model publish) — Design Collaboration honestly shrinks to a ~53-row sliver, not padded. Net ~24.4k rows (0.52% of 4.72M) now attribute to Build. `21.1-ATTRIBUTION-DELTA.md` regenerated live after each round with a full 5-correction review section. Gates: tsc clean, `npm test` 2477 passed/1 skipped/0 failed (baseline 2470, +7 pins, 0 regressions). Commits 944e4d18/d699a299/1dca75d3/55c4b78d, all explicit-path with staged-diff proof. UAT-21.1-01/02/03 all marked complete in ROADMAP.md (their only tracking surface — no formal REQ-IDs).
 - [Phase 21.1]: 21.1-03 (activity-share-by-project donut, UAT-21.1-03, COMPLETE): `projectActivityCounts.ts`'s `summarizeProjectActivity()` re-aggregates the SAME `ModuleActivityRow[]` the Overview already loads for the activity-by-module donut (`loadModuleActivity()`) per project -- zero new loader, zero new fetch. The synthetic Account-level bucket (`projectId === ""`, `moduleActivityView.ts`'s `ACCOUNT_LEVEL` sentinel) is excluded from the donut at the transform layer (never a slice, never a `rowsByProject` entry) and its live excluded volume surfaces as `accountLevelCount` for the caption; top-N (default 10) + trailing "Other (N projects)" mirrors `summarizePermissionLevel`/`summarizeProvisionedModules`'s bucketing shape. `ProjectActivityDonut.tsx` renders an ECharts donut (`ModulesPieChart` option shape) with a ranked legend, local click-to-drill (no cross-filter-bus wiring, grep-verified) that feeds the clicked project's raw rows into the SAME `summarizeModules` the activity-by-module donut uses (no reimplemented classification); the Other slice has no drill payload and its click is a guaranteed no-op. Categorical palette follows `RolesPieChart`'s name-keyed hue-rotation convention (project identity, not a fixed taxonomy); Other always gets the muted zinc rollup color. Caption states the live Account-level exclusion figure and a Top-N-of-M line, both individually conditional. Built UNMOUNTED -- plan 21.1-04 wires it in as the left panel of the new Overview 2-up row. 15 new Vitest cases (8 transform + 7 component), `npm test` 2467 passed/1 skipped/0 failed (grew from 2452 baseline, zero regressions), tsc clean, scope diff = exactly the 4 planned files. Deviation (Rule 1, caught pre-commit by the component's own grep test, no scope impact, repeat of the 21.1-02 pitfall): the component's own doc comment literally contained the banned cross-filter-bus token strings, failing its own grep test (reworded). `UAT-21.1-03` intentionally not marked complete in REQUIREMENTS.md -- same precedent as 21.1-02: UAT items resolve at the wiring plan (21.1-04), not the component-build plan.
 - [Phase 22]: 22-01: AccIssueType lookup table applied via prisma/migrations-raw/ raw SQL (migrate dev chokes on pre-existing pgvector shadow-DB requirement, P3018); scripts/acc-issue-types-backfill.cjs live-run over all 1,153 projects (519 ok/38 forbidden/596 404-ISSUES_SERVICE_NOT_FOUND, not the 403-forbidden pattern the sibling /issues endpoint uses); 298/316 issueTypeId and 477/515 issueSubtypeId GUIDs now resolve to human names, 18 genuinely unresolved (live Unknown-type case exists for 22-03); idempotency confirmed (16,928 rows unchanged after single-project re-run). — ISSUE-04 complete, unblocks ISSUE-05 (22-02/22-03 chart plans)
+- [Phase 22]: 22-02 (ISSUE-05 data layer, COMPLETE): loadIssueFunnel() gained a typeRows cut inside its existing Promise.all (second accIssue.groupBy on issueTypeId joined in JS against accIssueType.findMany() — single $queryRaw call-count pin still holds, grep-verified 1 call site); summarizeIssueType() (new issueTypeCounts.ts) groups resolved rows by typeName not GUID (APS types are project-scoped) with distinct honest "Unknown type"/"No type set" buckets that rank by count, lossless total. Both UNMOUNTED — plan 22-03 consumes them. Deviation (Rule 3): 3 pre-existing AccessAnalysisCharts.test.tsx fixtures fixed for the new required typeRows field (TS2322). 13 new Vitest cases, npm test 2507 passed/1 failed (pre-existing unrelated /users physicsLayer test-isolation flake, deferred-items.md)/1 skipped, tsc clean. ISSUE-05 intentionally NOT marked complete (resolves at 22-03 per 21-02/20.1-02 precedent).
 
 ### Blockers/Concerns
 
@@ -295,7 +296,7 @@ Sheets-cluster→Build taxonomy move (5 gap-closure corrections total in
 Gates: tsc clean, `npm test` 2477/1/0. See `21.1-04-SUMMARY.md`. Deploy to `:3000` when
 the owner wants 21.1 live (standard deploy sequence / `gsd-self-gate.cjs --rebuild`).
 
-**Phase 22 (Issue Type Resolution) is IN PROGRESS — 1 plan complete (22-01, ISSUE-04 done).**
+**Phase 22 (Issue Type Resolution) is IN PROGRESS — 2 plans complete (22-01, 22-02).**
 `22-01` (data layer, COMPLETE): additive `AccIssueType` Prisma model applied via
 `prisma/migrations-raw/2026-07-10-acc-issue-type.sql` (raw-SQL fallback — `prisma migrate dev`
 choked on the pre-existing pgvector shadow-DB requirement from
@@ -314,12 +315,37 @@ single-project re-run). `npm test` 2495 passed/1 skipped/0 failed (baseline 2477
 pre-existing branch WIP unrelated to this plan), tsc clean. Zero diff to `AccIssue`, any
 existing issue query, or `/users/spatial-graph`. See `22-01-SUMMARY.md`.
 
-**Next: plan 22-02/22-03 (ISSUE-05 — issues-by-type breakdown chart)**, now unblocked by the
-populated lookup table. Per `22-CONTEXT.md`'s locked decisions: horizontal bars, top-10 +
+**22-02 (ISSUE-05 data layer, COMPLETE):** `loadIssueFunnel()` (`lib/server/issueFunnelView.ts`)
+gained a third `typeRows` cut inside its existing `Promise.all`/5-min-TTL cache — a second
+`db.accIssue.groupBy(["projectId","issueTypeId"])` joined in JS against
+`db.accIssueType.findMany()` (never a second `$queryRaw` — the single-call pin
+`expect(mocks.queryRaw).toHaveBeenCalledTimes(1)` verified still holding, grep-confirmed exactly
+1 `$queryRaw` call site in the file). Three-state resolution kept distinct through the loader
+(resolved name / non-null GUID absent from lookup / null id — the transform labels them). New
+`app/(dashboard)/access-analysis/issueTypeCounts.ts`'s `summarizeIssueType()` clones
+`permissionLevelCounts.ts`'s top-N + Other shape, grouping resolved rows by **typeName** (not
+GUID — APS issue types are project-scoped, so the same logical type carries a different GUID
+per project) with two DISTINCT honest "Unknown type"/"No type set" buckets that rank by count
+like any real type, never pinned/dropped; `total` sums every input row's count regardless of the
+top-N fold, so the panel will reconcile with the status donut. Both pieces built and tested
+UNMOUNTED — plan 22-03 consumes them (`IssueFunnelTypeRow` + `summarizeIssueType`/`DEFAULT_TOP_N`/
+`IssueTypeSummary`/`IssueTypeBucket`, all already exported with the exact interface names
+22-CONTEXT.md specifies). 13 new Vitest cases (4 loader + 9 transform). Deviation (Rule 3,
+non-architectural): adding the required `typeRows` field to `IssueFunnelData` broke 3 pre-existing
+test fixtures in `AccessAnalysisCharts.test.tsx` (TS2322) — fixed with `typeRows: []`, matching
+the existing empty-array fixture convention. `npm test` 2507 passed/1 failed/1 skipped — the 1
+failure (`physicsLayer.test.ts`, `/users` spatial-graph-adjacent) is a pre-existing test-isolation
+flake unrelated to this plan's files, passes in isolation, logged to
+`.planning/phases/22-issue-type-resolution/deferred-items.md`, not fixed (out of scope). tsc
+clean. `ISSUE-05` intentionally NOT marked complete in REQUIREMENTS.md — same precedent as
+21-02/20.1-02: requirements resolve at the wiring/mounting plan (22-03), not the data-layer/
+transform-build plan. See `22-02-SUMMARY.md`.
+
+**Next: plan/execute 22-03 (ISSUE-05 — issues-by-type breakdown chart, mounting)**, now unblocked
+by the data layer above. Per `22-CONTEXT.md`'s locked decisions: horizontal bars, top-10 +
 expandable "Other", per-type project drill, mounted as a third full-width panel below
-`IssueStatusChart` on the Projects tab, extending `loadIssueFunnel()` with a second `groupBy`
-call (not `$queryRaw` — would break `issueFunnelView.test.ts`'s call-count pin) joined in JS
-against the now-populated `AccIssueType` table.
+`IssueStatusChart` on the Projects tab, consuming `typeRows`/`summarizeIssueType` (zero new
+loader/fetch — both already ride the existing lazy Projects-tab fetch path).
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -348,8 +374,8 @@ of v2.3 scope.
 ## Session
 
 **Last session:** 2026-07-10
-**Stopped at:** Phase 22 Plan 01 complete (AccIssueType lookup table + APS backfill script live-run, ISSUE-04 done). Next: plan 22-02/22-03 (ISSUE-05 chart).
-**Resume file:** .planning/phases/22-issue-type-resolution/22-01-SUMMARY.md
+**Stopped at:** Phase 22 Plan 02 complete (loadIssueFunnel() typeRows cut + summarizeIssueType transform, ISSUE-05 data layer done). Next: plan/execute 22-03 (ISSUE-05 chart component + mounting).
+**Resume file:** .planning/phases/22-issue-type-resolution/22-02-SUMMARY.md
 
 ## Performance Metrics
 
@@ -376,3 +402,4 @@ of v2.3 scope.
 | Phase 21.1 P03 | ~20min | 2 tasks | 4 files |
 | Phase 21.1 P04 | ~40min + 2 checkpoint rounds + ~50min gap-closure | 3 tasks (2 auto + 1 checkpoint) + 5 corrections | 9 files |
 | Phase 22 P01 | 50min | 3 tasks | 3 files |
+| Phase 22 P02 | ~35min | 2 tasks | 5 files |
