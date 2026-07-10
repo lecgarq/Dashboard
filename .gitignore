@@ -13,19 +13,11 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/.next-dev/
-/.next-buildcheck/
-/.next-new/
-/.next-e2e/
+# next.js — covers .next plus every isolated-dist variant the deploy/UAT/e2e
+# flows create (.next-old, .next-uat-*, .next-e2e-*, .next-prev-deploy, backups…);
+# zero tracked files start with .next, so the glob is safe.
+/.next*/
 /out/
-
-# manual next.js build-snapshot backups (never committed)
-/.next-bak/
-/.next-bak-*/
-/.next.bak-*/
-/.next.predeploy-*/
 
 # playwright e2e
 /playwright/.auth/
