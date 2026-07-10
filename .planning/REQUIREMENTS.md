@@ -23,7 +23,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 - [x] **ISSUE-01**: User can see per-project issue-fetch coverage (`ok` / `zero_issues` / `forbidden` / `error` from `AccIssueProjectFetchResult.status`) as a donut that frames trust for the issue metrics rendered beside it (TRUTH convention: coverage precedes the metric).
 - [x] **ISSUE-02**: User can see issues over time (histogram/timeline on `AccIssue.createdAt`, full 17,360-issue set — not just the coordination-classified subset), following the existing activity-timeline visual pattern.
 - [x] **ISSUE-03**: User can see issues by status (8 verified live statuses: open, closed, completed, in_review, draft, pending, not_approved, in_progress) with the existing `onSliceClick`/`activeSlice` cross-filter/drill convention.
-- [ ] **ISSUE-04**: Issue type/subtype GUIDs resolve locally to human-readable names — a new Prisma lookup table populated by a one-time APS issue-types metadata backfill (existing 3-leg auth, `acc-issues-backfill.cjs` pattern; 316 type / 515 subtype GUIDs verified live 2026-07-02). Unresolved IDs render an honest fallback label ("Unknown type"), never a raw GUID.
+- [x] **ISSUE-04**: Issue type/subtype GUIDs resolve locally to human-readable names — a new Prisma lookup table populated by a one-time APS issue-types metadata backfill (existing 3-leg auth, `acc-issues-backfill.cjs` pattern; 316 type / 515 subtype GUIDs verified live 2026-07-02). Unresolved IDs render an honest fallback label ("Unknown type"), never a raw GUID.
 - [ ] **ISSUE-05**: User can see issues by type (resolved names via ISSUE-04) as a breakdown chart with top-N + "other" bucketing.
 
 ### Permission Footprint (PERM)
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ISSUE-01 | Phase 20 | Complete |
 | ISSUE-02 | Phase 21 | Complete |
 | ISSUE-03 | Phase 21 | Complete |
-| ISSUE-04 | Phase 22 | Pending |
+| ISSUE-04 | Phase 22 | Complete |
 | ISSUE-05 | Phase 22 | Pending |
 | PERM-01 | Phase 20 | Complete |
 | ENG-01 | Phase 20 | Complete |

@@ -2,18 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
-status: active
 current_phase: 22
 current_phase_name: Issue Type Resolution
-current_plan: null
-stopped_at: Phase 21.1 COMPLETE (21.1-04 owner checkpoint approved; all 3 UAT items live; 5-correction taxonomy review closed)
-last_updated: "2026-07-10"
-last_activity: 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
+status: active
+stopped_at: Phase 22 Plan 01 complete (AccIssueType lookup table + APS backfill script, ISSUE-04 done)
+last_updated: "2026-07-10T23:20:28.434Z"
+last_activity: 2026-07-10
+last_activity_desc: Phase 22 Plan 01 complete — AccIssueType lookup table + APS backfill script (ISSUE-04 done). See `22-01-SUMMARY.md` for full detail.
 progress:
-  total_phases: 17
-  completed_phases: 15
-  total_plans: 42
-  completed_plans: 42
+  total_phases: 6
+  completed_phases: 4
+  total_plans: 23
+  completed_plans: 21
+  percent: 91
+current_plan: "01"
 ---
 
 # Project State
@@ -23,16 +25,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is next.
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is in progress (22-01 done).
 
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**).
-- **Plan:** 21.1-04 complete, PHASE 21.1 COMPLETE (all 3 UAT items live on the Overview tab: 2-up row [Activity share by project | Provisioned modules] + live service/verb-split ⓘ caveat; owner checkpoint APPROVED on a `:3100` production preflight after a 5-correction owner-delegated module-attribution taxonomy review — final verdict verbatim: "approved BUT move sheets and friends to the Build module", applied. `npm test` 2477 passed/1 skipped/0 failed, tsc clean). See `21.1-04-SUMMARY.md`.
-- **Next:** Phase 22 — Issue Type Resolution (plans TBD; ISSUE-04 must precede ISSUE-05).
-- **Status:** Ready to plan Phase 22
-- **Last activity:** 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**IN PROGRESS, 1 plan complete**).
+- **Plan:** 22-01 complete (ISSUE-04 done): additive `AccIssueType` Prisma lookup table applied via `prisma/migrations-raw/` raw SQL (migrate dev chokes on a pre-existing pgvector shadow-DB requirement, same standing guardrail as `AccInstanceEmbedding`/`AccActivityAccds`); `scripts/acc-issue-types-backfill.cjs` live-run over all 1,153 projects (519 ok / 38 forbidden / 596 404-ISSUES_SERVICE_NOT_FOUND — Issues module not provisioned in those containers, a distinct failure mode from the sibling `/issues` endpoint's 403-heavy pattern); 298/316 `issueTypeId` and 477/515 `issueSubtypeId` GUIDs now resolve to human-readable names (18 genuinely unresolved — a live "Unknown type" case exists for 22-03); idempotency confirmed. `npm test` 2495 passed/1 skipped/0 failed, tsc clean. See `22-01-SUMMARY.md`.
+- **Next:** Plan/execute 22-02/22-03 (ISSUE-05 issues-by-type chart, consuming the now-populated lookup table).
+- **Status:** ISSUE-04 unblocked ISSUE-05 — ready to plan the ISSUE-05 chart plans.
+- **Last activity:** 2026-07-10 — Phase 22 Plan 01 complete. See `22-01-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
 
@@ -181,6 +183,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 21.1]: 21.1-02 (provisioned-modules chart stack, UAT-21.1-01, COMPLETE): `lib/server/provisionedModulesView.ts`'s `loadProvisionedModules()` aggregates member-module grant counts from `AccProjectMember.products` (14,566 rows, full live-project coverage across all 1,153 `AccProject` rows) -- deliberately NOT `AccDcProjectUserProduct` (the DC-only ~550/1,153 subset `accessInstanceView.ts:107` actually feeds `reduceModules` from), per 21.1-RESEARCH.md Pitfall 3. Reuses `reduceModules` (modules.ts) + `buildProjectNameMap`/`resolveProjectName` (folderActivityView.ts) unchanged; output bounded by n_projects x n_modules, never one row per member. Live check (2026-07-06, throwaway script): 0/14,566 rows have null/empty `products` -- no coverage caption needed. `provisionedModulesCounts.ts`'s `summarizeProvisionedModules()` uses the full 10-module vocabulary (incl. modelCoordination, unlike the activity donut) with canonical `zeroModules` (all 10 always accounted for) and a per-project drill map. `ProvisionedModulesChart.tsx` renders horizontal bars (local click-to-drill, top-30 projects + overflow line, no cross-filter-bus wiring), colored via `MODULE_COLORS` (now exported from `ModulesPieChart.tsx`, one-line change, no other impact). All 3 pieces built and tested UNMOUNTED -- plan 21.1-04 wires them in. 20 new Vitest cases (7 loader + 7 transform + 6 chart), `npm test` 2452 passed/1 skipped/0 failed (grew from 2432 baseline, zero regressions), tsc clean, scope diff = exactly the 7 planned files. Deviations (Rule 1, all caught pre-commit by the plan's own gates, no scope impact): a `*/` sequence inside a JSDoc comment broke the parser (reworded); the component's own doc comment literally contained the banned cross-filter-bus token strings, failing its own grep test (reworded); an ECharts `label.formatter` type mismatch caught by `tsc --noEmit` (narrowed with a runtime typeof check). `UAT-21.1-01` intentionally not marked complete in REQUIREMENTS.md -- it isn't a tracked ID there (21.1-RESEARCH.md: no REQUIREMENTS.md IDs assigned to this inserted phase) and, per the 21-02/21-03 precedent, UAT items resolve at the wiring plan (21.1-04), not the component-build plan.
 - [Phase 21.1]: 21.1-04 (wiring + owner checkpoint, FINAL plan, COMPLETE, PHASE 21.1 SHIPPED): all 3 UAT items live on the Overview tab — `mainCharts.tsx` eager fan-out 9→10 (`loadProvisionedModules`), picker-only memos (`selected`, never `sliceFilteredProjectIds`), `projectOptions` union extended with provisioned rows (AccProjectMember covers all 1,153 live projects vs. DC-scoped roleRows), locked 2-up row [ProjectActivityDonut | ProvisionedModulesChart] between "Activity by module" and Ingest freshness, TRUTH-03 ⓘ caveat computes the live service/verb split from `moduleSummary.attribution` (stale "~40.7%" copy gone). Owner checkpoint ran TWO rounds on `:3100` webpack production preflights (isolated `.next-uat-21-1`, `:3000` PID 56060 untouched throughout): round 1 delegated the module-attribution mapping review ("I'll hand that to you — review the types of activities and the modules assigned, use your best effort") → corrections 1-4 (sheets rescue-target, version-set family, notify-final-members→Data Management, add-folder-naming-standard→Datum); round 2 final verdict verbatim "approved BUT move sheets and friends to the Build module" → correction 5 (owner-directed): sheet verbs + version-set family + sheets service rescue ALL route to Build via a new classifier-layer `MODULE_OVERRIDES` map (generated excel catalog never edited); `publish-entity` STAYS Design Collaboration (docs-tagged Revit model publish) — Design Collaboration honestly shrinks to a ~53-row sliver, not padded. Net ~24.4k rows (0.52% of 4.72M) now attribute to Build. `21.1-ATTRIBUTION-DELTA.md` regenerated live after each round with a full 5-correction review section. Gates: tsc clean, `npm test` 2477 passed/1 skipped/0 failed (baseline 2470, +7 pins, 0 regressions). Commits 944e4d18/d699a299/1dca75d3/55c4b78d, all explicit-path with staged-diff proof. UAT-21.1-01/02/03 all marked complete in ROADMAP.md (their only tracking surface — no formal REQ-IDs).
 - [Phase 21.1]: 21.1-03 (activity-share-by-project donut, UAT-21.1-03, COMPLETE): `projectActivityCounts.ts`'s `summarizeProjectActivity()` re-aggregates the SAME `ModuleActivityRow[]` the Overview already loads for the activity-by-module donut (`loadModuleActivity()`) per project -- zero new loader, zero new fetch. The synthetic Account-level bucket (`projectId === ""`, `moduleActivityView.ts`'s `ACCOUNT_LEVEL` sentinel) is excluded from the donut at the transform layer (never a slice, never a `rowsByProject` entry) and its live excluded volume surfaces as `accountLevelCount` for the caption; top-N (default 10) + trailing "Other (N projects)" mirrors `summarizePermissionLevel`/`summarizeProvisionedModules`'s bucketing shape. `ProjectActivityDonut.tsx` renders an ECharts donut (`ModulesPieChart` option shape) with a ranked legend, local click-to-drill (no cross-filter-bus wiring, grep-verified) that feeds the clicked project's raw rows into the SAME `summarizeModules` the activity-by-module donut uses (no reimplemented classification); the Other slice has no drill payload and its click is a guaranteed no-op. Categorical palette follows `RolesPieChart`'s name-keyed hue-rotation convention (project identity, not a fixed taxonomy); Other always gets the muted zinc rollup color. Caption states the live Account-level exclusion figure and a Top-N-of-M line, both individually conditional. Built UNMOUNTED -- plan 21.1-04 wires it in as the left panel of the new Overview 2-up row. 15 new Vitest cases (8 transform + 7 component), `npm test` 2467 passed/1 skipped/0 failed (grew from 2452 baseline, zero regressions), tsc clean, scope diff = exactly the 4 planned files. Deviation (Rule 1, caught pre-commit by the component's own grep test, no scope impact, repeat of the 21.1-02 pitfall): the component's own doc comment literally contained the banned cross-filter-bus token strings, failing its own grep test (reworded). `UAT-21.1-03` intentionally not marked complete in REQUIREMENTS.md -- same precedent as 21.1-02: UAT items resolve at the wiring plan (21.1-04), not the component-build plan.
+- [Phase 22]: 22-01: AccIssueType lookup table applied via prisma/migrations-raw/ raw SQL (migrate dev chokes on pre-existing pgvector shadow-DB requirement, P3018); scripts/acc-issue-types-backfill.cjs live-run over all 1,153 projects (519 ok/38 forbidden/596 404-ISSUES_SERVICE_NOT_FOUND, not the 403-forbidden pattern the sibling /issues endpoint uses); 298/316 issueTypeId and 477/515 issueSubtypeId GUIDs now resolve to human names, 18 genuinely unresolved (live Unknown-type case exists for 22-03); idempotency confirmed (16,928 rows unchanged after single-project re-run). — ISSUE-04 complete, unblocks ISSUE-05 (22-02/22-03 chart plans)
 
 ### Blockers/Concerns
 
@@ -292,11 +295,31 @@ Sheets-cluster→Build taxonomy move (5 gap-closure corrections total in
 Gates: tsc clean, `npm test` 2477/1/0. See `21.1-04-SUMMARY.md`. Deploy to `:3000` when
 the owner wants 21.1 live (standard deploy sequence / `gsd-self-gate.cjs --rebuild`).
 
-**Next after Phase 21.1: Phase 22 (Issue Type Resolution — ISSUE-04/ISSUE-05).** No plans exist
-yet (`ROADMAP.md` marks Phase 22 "Plans: TBD") — run `/gsd:discuss-phase` or `/gsd:plan-phase`
-for Phase 22 to begin. Phase 22 carries the milestone's only external-API-call +
-Prisma-migration risk (APS issue-types metadata backfill); ISSUE-04 must land and be
-verified before ISSUE-05 (the chart) is built, per `ROADMAP.md`'s locked sequencing.
+**Phase 22 (Issue Type Resolution) is IN PROGRESS — 1 plan complete (22-01, ISSUE-04 done).**
+`22-01` (data layer, COMPLETE): additive `AccIssueType` Prisma model applied via
+`prisma/migrations-raw/2026-07-10-acc-issue-type.sql` (raw-SQL fallback — `prisma migrate dev`
+choked on the pre-existing pgvector shadow-DB requirement from
+`20260416011500_fix_lod_search_foundation`, P3018, same standing guardrail as
+`AccInstanceEmbedding`/`AccActivityAccds`); `scripts/acc-issue-types-backfill.cjs` (clone of
+`scripts/acc-issues-backfill.cjs`'s auth/pagination/counters shape) live-run over all 1,153
+projects: 519 ok / 38 forbidden (403) / 596 error (404 `ISSUES_SERVICE_NOT_FOUND` — Issues
+module not provisioned in those containers, a genuinely different failure mode than the
+sibling `/issues` list endpoint's mostly-403 pattern the research anticipated, not a bug).
+16,928 rows upserted (5,291 type + 11,637 subtype, deduped by GUID). Resolution split: 298/316
+distinct `issueTypeId` and 477/515 distinct `issueSubtypeId` GUIDs on `AccIssue` now resolve to
+human-readable names (18 / 38 genuinely unresolved — confirms a **live unresolved GUID exists**,
+satisfying the roadmap's "Unknown type" live-verification success criterion for 22-03, no
+unit-test-only fallback needed). Idempotency confirmed (16,928 rows unchanged after a
+single-project re-run). `npm test` 2495 passed/1 skipped/0 failed (baseline 2477, growth is
+pre-existing branch WIP unrelated to this plan), tsc clean. Zero diff to `AccIssue`, any
+existing issue query, or `/users/spatial-graph`. See `22-01-SUMMARY.md`.
+
+**Next: plan 22-02/22-03 (ISSUE-05 — issues-by-type breakdown chart)**, now unblocked by the
+populated lookup table. Per `22-CONTEXT.md`'s locked decisions: horizontal bars, top-10 +
+expandable "Other", per-type project drill, mounted as a third full-width panel below
+`IssueStatusChart` on the Projects tab, extending `loadIssueFunnel()` with a second `groupBy`
+call (not `$queryRaw` — would break `issueFunnelView.test.ts`'s call-count pin) joined in JS
+against the now-populated `AccIssueType` table.
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -325,8 +348,8 @@ of v2.3 scope.
 ## Session
 
 **Last session:** 2026-07-10
-**Stopped at:** Phase 22 context gathered (12 decisions across chart form, subtypes, backfill lifecycle, table shape, coverage honesty, population, data layer, checkpoint scope). Next: /gsd:plan-phase 22
-**Resume file:** .planning/phases/22-issue-type-resolution/22-CONTEXT.md
+**Stopped at:** Phase 22 Plan 01 complete (AccIssueType lookup table + APS backfill script live-run, ISSUE-04 done). Next: plan 22-02/22-03 (ISSUE-05 chart).
+**Resume file:** .planning/phases/22-issue-type-resolution/22-01-SUMMARY.md
 
 ## Performance Metrics
 
@@ -352,3 +375,4 @@ of v2.3 scope.
 | Phase 21.1 P02 | ~20min | 3 tasks | 7 files |
 | Phase 21.1 P03 | ~20min | 2 tasks | 4 files |
 | Phase 21.1 P04 | ~40min + 2 checkpoint rounds + ~50min gap-closure | 3 tasks (2 auto + 1 checkpoint) + 5 corrections | 9 files |
+| Phase 22 P01 | 50min | 3 tasks | 3 files |
