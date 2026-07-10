@@ -321,6 +321,10 @@ by Plan 10-02 when the pure classification logic was moved from `moduleOverrides
 spatial-graph-coupled — moving them requires the spatial-graph surface to be in scope.
 Documented per checker execution-time note #1.
 
+**Status (2026-07-10): still deferred.** These 5 edges (plus
+`acc-route-hydration → useUsersDirectoryData`) are now the ONLY remaining
+lib→app edges after the group (3)/(4) cleanup below.
+
 #### (3) DEFERRED — PHASE-14 MONOLITH (REF-01, folderTerrain.ts split required)
 
 `app/(dashboard)/access-analysis/folderTerrain.ts` is a 1,093-line monolith that is
@@ -347,6 +351,18 @@ forward — both violate the locked Conservative scope decision.
 | template-mty-roster → types | `lib/acc/template-mty-roster.ts` | `app/(dashboard)/access-analysis/types.ts` |
 | folderActivityView → folderActivityCounts | `lib/server/folderActivityView.ts` | `app/(dashboard)/access-analysis/folderActivityCounts.ts` |
 
+**Status (2026-07-10): ✅ RESOLVED (commit 116941af, structure cleanup).** The
+Phase-16 folderTerrain split had already cleared the blocker; this cleanup moved
+the 14 pure shared modules to `lib/acc/` (`accessInstanceTypes.ts`,
+`moduleCatalog.ts`, `projectFilter.ts`, `projectGroups.ts`, `roleCounts.ts`,
+`coordinationClash.ts`, `folderInheritance.ts`, `folderTerrainModel/Layout/
+Scene/Camera.ts`, `roleSimilarity.ts`, `moduleAccess.ts`, `permissionAccess.ts`)
+with thin `export *` compatibility barrels left at every old `app/` path, and
+repointed the 7 `lib/server` view importers + `lib/acc/template-mty-roster.ts`.
+Gates: tsc clean, 2,118 targeted tests green, repo-map quality gate passed
+(dependency-cruiser warnings 6→2, both remaining = the deferred
+`scripts/build-instance-features.ts` spatial-graph edges).
+
 #### (4) NOTED — CLEAN EDGE (not deferred, not a violation)
 
 One additional lib→app edge is a clean, type-only import of a pure module that has NO
@@ -365,6 +381,13 @@ Introduced by Plan 10-01. Checker execution-time note #1 documented this edge.
 scope to "remove only edges fixable outside spatial-graph AND outside the Phase-14
 monolith." Moving coordinationClash.ts to lib/ would be safe but expands the plan's
 surface. Deferring it keeps the commit boundary minimal.
+
+**Status (2026-07-10): ✅ RESOLVED (commit 116941af).** `coordinationClash.ts`
+moved to `lib/acc/coordinationClash.ts` in the same group-(3) cleanup; barrel
+left at the old path. Also fixed in the same session (commit 8dba5f70): the 4
+`no-circular` dependency-cruiser errors — `HybridAnalyticsView.tsx` ⇄
+Posture/Rankings sections type-import cycles, broken by extracting
+`hybridAnalyticsViewTypes.ts`.
 
 ---
 
