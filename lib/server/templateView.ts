@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
-import { summarizeRoles, type RoleSummary } from "@/app/(dashboard)/access-analysis/roleCounts";
-import { rankForTier } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { summarizeRoles, type RoleSummary } from "@/lib/acc/roleCounts";
+import { rankForTier } from "@/lib/acc/folderTerrainModel";
 import {
   TEMPLATE_MTY_ROSTER,
   TEMPLATE_MTY_ROSTER_UPDATED,
@@ -11,11 +11,11 @@ import { TEMPLATE_MTY_ID } from "@/lib/acc/template-mty";
 import {
   summarizeModuleAccess,
   type ModuleAccessSummary,
-} from "@/app/(dashboard)/template-mty/moduleAccess";
+} from "@/lib/acc/moduleAccess";
 import {
   summarizePermissionAccess,
   type PermissionAccessSummary,
-} from "@/app/(dashboard)/template-mty/permissionAccess";
+} from "@/lib/acc/permissionAccess";
 
 const INTERNAL_DOMAIN = "@hermosillo.com";
 
@@ -71,7 +71,11 @@ export function buildTemplateOverview(
     isAdmin: r.accessLevel === "Project Admin",
   }));
 
-  const roleSummary = summarizeRoles(roster.map((r) => ({ roles: [r.role] })));
+  // Pass name/email so summarizeRoles can attribute each seat to its person —
+  // usersByRole feeds the Role-distribution drill-down (members per role).
+  const roleSummary = summarizeRoles(
+    roster.map((r) => ({ roles: [r.role], name: r.name, email: r.email })),
+  );
   const moduleSummary = summarizeModuleAccess(
     roster.map((r) => ({ name: r.name, role: r.role, modules: r.modules })),
   );

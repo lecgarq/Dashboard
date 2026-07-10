@@ -6,7 +6,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
 import { loadFolderPermRows } from "@/lib/server/folderPermQuery";
-import { officeCodeFor } from "@/app/(dashboard)/access-analysis/projectGroups";
+import { officeCodeFor } from "@/lib/acc/projectGroups";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import {
   rankForTier,
@@ -15,8 +15,8 @@ import {
   type TerrainCell,
   type TerrainProjectOption,
   type TerrainUser,
-} from "@/app/(dashboard)/access-analysis/folderTerrain";
-import { resolveEffectiveTier } from "@/app/(dashboard)/access-analysis/folderInheritance";
+} from "@/lib/acc/folderTerrainModel";
+import { resolveEffectiveTier } from "@/lib/acc/folderInheritance";
 
 const TTL_MS = 5 * 60 * 1000;
 const mtySet = new Set(mtyAllowlist as string[]);

@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
 import { buildRolePermissionTree } from "@/lib/server/templateRoleTree";
-import { buildRoleSimilarityGraph, type RoleSimilarityGraph } from "@/app/(dashboard)/template-mty/roleSimilarity";
+import { buildRoleSimilarityGraph, type RoleSimilarityGraph } from "@/lib/acc/roleSimilarity";
 import { TEMPLATE_MTY_ID } from "@/lib/acc/template-mty";
 
 /**

@@ -1,7 +1,7 @@
 import "server-only";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
-import { toClashIssue, type ClashIssue } from "@/app/(dashboard)/access-analysis/coordinationClash";
+import { toClashIssue, type ClashIssue } from "@/lib/acc/coordinationClash";
 
 /**
  * Server-only helper: per-project clash drill-down query.

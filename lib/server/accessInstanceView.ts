@@ -7,8 +7,8 @@
 
 import "server-only";
 import { db } from "@/server/db";
-import { reduceModules } from "@/app/(dashboard)/access-analysis/modules";
-import type { AccessInstance } from "@/app/(dashboard)/access-analysis/types";
+import { reduceModules } from "@/lib/acc/moduleCatalog";
+import type { AccessInstance } from "@/lib/acc/accessInstanceTypes";
 import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 const INTERNAL_DOMAIN = "@hermosillo.com";

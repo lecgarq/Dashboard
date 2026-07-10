@@ -5,19 +5,8 @@
  * from "../folderTerrain" or "@/app/(dashboard)/access-analysis/folderTerrain"
  * continue to resolve all symbols unchanged.
  *
- * Module boundaries:
- *   folderTerrainModel   — data contract types + tier/rank/colour + ordering
- *                          + iso-geometry primitives + Pt + TERRAIN
- *   folderTerrainLayout  — fixed iso layout (buildTerrainLayout) + compare
- *                          mode (buildSharedAxes / projectOntoAxes / buildStackedTerrain)
- *   folderTerrainScene   — rotatable axonometric scene (buildScene) + shared
- *                          scene primitives (culling / lighting / SceneFace /
- *                          SceneBar / TerrainScene)
- *   folderTerrainCamera  — orthographic camera (buildCameraScene) + floating-
- *                          plane compare (buildStackedScenes) + Camera helpers
+ * The four terrain modules moved to lib/acc/ (BND-03 group-3 cleanup) so
+ * lib/server consumers import them without a lib→app reverse dependency.
  */
 
-export * from "./folderTerrainModel";
-export * from "./folderTerrainLayout";
-export * from "./folderTerrainScene";
-export * from "./folderTerrainCamera";
+export * from "@/lib/acc/folderTerrain";

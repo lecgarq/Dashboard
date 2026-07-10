@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
-import { rankForTier, TIER_LEGEND } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { rankForTier, TIER_LEGEND } from "@/lib/acc/folderTerrainModel";
 import { TEMPLATE_MTY_ID } from "@/lib/acc/template-mty";
 
 export interface RoleTreeFolder {

@@ -13,7 +13,7 @@
 // Captured from the ACC web UI on 2026-06-09; per-member module access (the
 // "Product access enabled" column) added 2026-06-10.
 
-import type { ModuleId } from "@/app/(dashboard)/access-analysis/types";
+import type { ModuleId } from "@/lib/acc/accessInstanceTypes";
 
 // ACC module ids (the "Product access enabled" column on the member detail).
 // Legend:

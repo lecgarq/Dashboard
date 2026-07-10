@@ -11,8 +11,8 @@ import {
   type FolderTerrainData,
   type TerrainCell,
   type TerrainUser,
-} from "@/app/(dashboard)/access-analysis/folderTerrain";
-import { resolveEffectiveTier } from "@/app/(dashboard)/access-analysis/folderInheritance";
+} from "@/lib/acc/folderTerrainModel";
+import { resolveEffectiveTier } from "@/lib/acc/folderInheritance";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import { TEMPLATE_MTY_ROSTER } from "@/lib/acc/template-mty-roster";
 

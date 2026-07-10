@@ -1,0 +1,86 @@
+/**
+ * Pure helpers for the project multi-select on the roles donut.
+ *
+ * The donut is built from per-(user, project) memberships. The project picker is
+ * a checkbox dropdown: the user keeps a *set* of selected project ids, and the
+ * client re-runs `summarizeRoles` on the memberships of the selected projects.
+ * The search string only narrows which project options are shown in the list —
+ * it does not filter the donut directly.
+ */
+export interface ProjectRoleRow {
+  projectId: string;
+  projectName: string;
+  roles: string[];
+  /** The member's company on this project (null/blank → "Unknown company"); drives the Users-by-company donut. */
+  company?: string | null;
+  /** The member's display name; drives the membership-donut people drill-downs. */
+  name?: string;
+  /** The member's lowercased email; the drill-down's profile-drawer key + merge key. */
+  email?: string;
+  /** DC membership status ("active" | "deleted" | ...); "deleted" routes the
+   *  membership into the Roles donut's "Removed member" lifecycle bucket. */
+  status?: string | null;
+}
+
+/** Anything carrying a project id + name — the only fields the picker needs. */
+export interface ProjectNamed {
+  projectId: string;
+  projectName: string;
+}
+
+export interface ProjectOption {
+  id: string;
+  name: string;
+}
+
+/** Distinct projects as {id, name}, sorted alphabetically by name. */
+export function projectOptions(rows: ReadonlyArray<ProjectNamed>): ProjectOption[] {
+  const byId = new Map<string, string>();
+  for (const r of rows) if (!byId.has(r.projectId)) byId.set(r.projectId, r.projectName);
+  return [...byId.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Narrow the option list to those whose name contains `query`
+ * (case-insensitive, whitespace-trimmed). An empty/blank query keeps every
+ * option, so the full list shows by default.
+ */
+export function filterProjectOptions(options: ProjectOption[], query: string): ProjectOption[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return options;
+  return options.filter((o) => o.name.toLowerCase().includes(needle));
+}
+
+/** Keep only rows whose project id is in the selected set. */
+export function filterRowsBySelection<T extends { projectId: string }>(
+  rows: ReadonlyArray<T>,
+  selected: ReadonlySet<string>,
+): T[] {
+  return rows.filter((r) => selected.has(r.projectId));
+}
+
+/** Active drill filters, one value per dimension, ANDed across dimensions. Empty = no drill. */
+export type SliceFilters = Record<string, string>;
+
+/**
+ * Drill-within-selection: keeps only rows matching every active slice filter.
+ * Pure, in-memory — NO network call (Pitfall 2 / PERF-03). Peer to filterRowsBySelection.
+ * Supported dimensions: "role" (matches when r.roles includes the value) and
+ * "company" (matches when r.company === value). Unknown dimension keys are ignored.
+ * An empty filters object returns the rows unchanged (referential pass-through allowed).
+ */
+export function applySliceFilters<T extends { roles?: string[]; company?: string | null }>(
+  rows: ReadonlyArray<T>,
+  filters: SliceFilters,
+): T[] {
+  const role = Object.hasOwn(filters, "role") ? filters.role : undefined;
+  const company = Object.hasOwn(filters, "company") ? filters.company : undefined;
+  if (role === undefined && company === undefined) return rows as T[];
+  return rows.filter((r) => {
+    if (role !== undefined && !(r.roles ?? []).includes(role)) return false;
+    if (company !== undefined && (r.company ?? null) !== company) return false;
+    return true;
+  });
+}
