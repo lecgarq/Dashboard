@@ -296,6 +296,7 @@ server-side SQL/`groupBy`, never `findMany` + JS reduce; existing characterizati
 - [x] **Phase 20: Foundation Wins & Engagement Panels** - Permission footprint by role, ingest freshness, issue-fetch coverage donut, and dormant-users-by-sign-in all land with zero shared-query risk (completed 2026-07-03)
 - [x] **Phase 20.1: Access-Analysis IA Redesign & Panel Semantics (INSERTED)** - 6-tab IA, activity-recency/permission-volume semantic pivots, terrain on global picker, company-folder graph, scroll-jump fix; all six owner UAT items closed (completed 2026-07-04)
 - [x] **Phase 21: Issue Funnel — Status & Time** - Full-issue-set timeline and status breakdown with cross-filter drill (completed 2026-07-06)
+- [x] **Phase 21.1: Overview Tab UAT Follow-ups (INSERTED)** - Provisioned-modules chart, service-first attribution fix (+5-correction owner taxonomy review), activity-share-by-project donut; all 3 owner UAT items live, owner-approved (completed 2026-07-06)
 - [ ] **Phase 22: Issue Type Resolution** - APS issue-type/subtype metadata backfill + local lookup table, then an issues-by-type breakdown chart
 - [ ] **Phase 23: Workshop Curation & Milestone Close** - Panel count/grouping review across all new + existing surfaces, full gate sequence, rebuild + owner parity check
 
@@ -422,7 +423,7 @@ Plans:
 **Execution Order (v2.1):** 09 → 10 → 11 → 12 → 13 → 14
 **Execution Order (v2.2):** 15 → 16 → 17 → 18 → 19
 Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 16–17 (monolith splits). The sequences 15→16→17 and 15→18→19 could run in parallel; they are ordered here for risk management on a solo workflow.
-**Execution Order (v2.3):** 20 → 21 → 22 → 23 — risk-graded (small/materialized tables → issue funnel → external-call/migration-risk type-resolution → curation/close), not feature-request order; see `.planning/research/SUMMARY.md`.
+**Execution Order (v2.3):** 20 → 20.1 (inserted) → 21 → 21.1 (inserted) → 22 → 23 — risk-graded (small/materialized tables → issue funnel → external-call/migration-risk type-resolution → curation/close), not feature-request order; see `.planning/research/SUMMARY.md`.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -438,7 +439,9 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 18. AccFolderPermissionSummary Foundation | 1/1 | Complete | 2026-07-02 |
 | 19. Raw Scan Retirement & Refresh | 2/2 | Complete | 2026-07-02 |
 | 20. Foundation Wins & Engagement Panels | 5/5 | Complete    | 2026-07-03 |
-| 21. Issue Funnel — Status & Time | 3/4 | Complete    | 2026-07-06 |
+| 20.1. Access-Analysis IA Redesign & Panel Semantics (inserted) | 7/7 | Complete | 2026-07-04 |
+| 21. Issue Funnel — Status & Time | 4/4 | Complete    | 2026-07-06 |
+| 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 0/TBD | Not started | - |
 | 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
 

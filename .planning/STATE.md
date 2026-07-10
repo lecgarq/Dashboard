@@ -3,8 +3,11 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
 status: active
+current_phase: 22
+current_phase_name: Issue Type Resolution
+current_plan: null
 stopped_at: Phase 21.1 COMPLETE (21.1-04 owner checkpoint approved; all 3 UAT items live; 5-correction taxonomy review closed)
-last_updated: "2026-07-06T22:15:36.870Z"
+last_updated: "2026-07-10"
 last_activity: 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
 progress:
   total_phases: 17
@@ -20,14 +23,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` (+ `/template-mty` where a genuine fit exists) from existing-but-unvisualized Prisma data. Phase 20 complete (2026-07-03); Phases 21-23 remain.
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is next.
 
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
 - **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**).
 - **Plan:** 21.1-04 complete, PHASE 21.1 COMPLETE (all 3 UAT items live on the Overview tab: 2-up row [Activity share by project | Provisioned modules] + live service/verb-split ⓘ caveat; owner checkpoint APPROVED on a `:3100` production preflight after a 5-correction owner-delegated module-attribution taxonomy review — final verdict verbatim: "approved BUT move sheets and friends to the Build module", applied. `npm test` 2477 passed/1 skipped/0 failed, tsc clean). See `21.1-04-SUMMARY.md`.
-- **Status:** Milestone complete
+- **Next:** Phase 22 — Issue Type Resolution (plans TBD; ISSUE-04 must precede ISSUE-05).
+- **Status:** Ready to plan Phase 22
 - **Last activity:** 2026-07-06 — Phase 21.1 Plan 04 complete, phase closed. See `21.1-04-SUMMARY.md` for full detail.
 
 ## Status (data baseline — still current)
@@ -84,8 +88,8 @@ All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unifie
 
 ### Decisions
 
-v2.1/v2.2 (shipped) decisions are recorded in `PROJECT.md` Key Decisions + the per-plan
-SUMMARY files in `.planning/phases/09..19`. Decisions relevant to v2.3 planning:
+v2.1/v2.2 (shipped) decisions are recorded in `PROJECT.md` Key Decisions and git history.
+Only active-milestone phase artifacts remain on disk. Decisions relevant to v2.3 planning:
 
 - **v2.3 roadmap = 4 phases (20-23), not the 5-wave shape from research SUMMARY.md.**
   Research suggested 5 phases matching risk-graded waves across the original 9 candidates;
@@ -101,7 +105,7 @@ SUMMARY files in `.planning/phases/09..19`. Decisions relevant to v2.3 planning:
   curation + milestone-close gate (Phase 23, zero new requirements — mandatory per
   PITFALLS.md Pitfall 7, not automatic).
 
-- **Phase numbering continues sequentially from v2.2** (Phase 20, not reset to Phase 1) —
+- **Phase numbering continues sequentially from v2.2** (Phase 20, numbering not reset) —
   consistent with how v2.1→v2.2 continued 09→19 without a milestone-scoped reset; `config.json`
   has no `phase_id_convention` key, so the default `sequential` form (`### Phase N:`) applies.
 
@@ -142,10 +146,10 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   choked on pgvector — apply via raw `ALTER` + `prisma migrate resolve` when `migrate dev`
   fails (directly relevant to Phase 22's new issue-type lookup table migration).
 
-- **`.planning/` mid-migration:** `MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/` are
-  deleted in the working tree; v1.0/v2.0/v2.1/v2.2 history lives only in git HEAD. v2.3
-  continues evolving PROJECT/STATE/REQUIREMENTS/ROADMAP in place (same "safe logical close"
-  pattern used for v2.1 and v2.2).
+- **Planning retention:** completed v1.0-v2.2 phase and milestone artifacts were removed from
+  the working tree during the repository cleanup; tags and git history remain authoritative.
+  v2.3 continues evolving PROJECT/STATE/REQUIREMENTS/ROADMAP in place, with only its active
+  phase artifacts retained under `.planning/phases/`.
 
 - **gsd-tools `phase complete` is unreliable on this repo** — it has previously mangled
   STATE frontmatter on phase close (wrong milestone label, wrong progress numbers). **Always
@@ -302,9 +306,8 @@ that need a dev server are blocked until that infra item is picked up.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
-a fresh `:3000` rebuild). Full record: PROJECT.md Shipped Milestone section, `.planning/phases/15..19`
-SUMMARY/VERIFICATION artifacts, and git history. Physical archival (MILESTONES.md / RETROSPECTIVE.md /
-`milestones/`) remains intentionally DEFERRED per the `.planning/` mid-migration caveat.
+a fresh `:3000` rebuild). The working-tree summary is in PROJECT.md; detailed plan, summary,
+and verification artifacts remain available from the `v2.2` tag and git history.
 
 Guardrails carried forward: explicit-path commits with `git diff --cached --name-only` proof,
 `npx tsc --noEmit` before any rebuild, no new WebGL on data surfaces, zinc theme untouched,
@@ -321,9 +324,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-06T22:30:00Z
-**Stopped at:** Phase 21.1 COMPLETE (21.1-04 owner checkpoint approved; all 3 UAT items live; 5-correction taxonomy review closed)
-**Resume file:** None — next: plan Phase 22 (Issue Type Resolution, ISSUE-04/05) via /gsd:plan-phase
+**Last session:** 2026-07-10
+**Stopped at:** Session resumed; ROADMAP.md synced to current state (20.1/21.1 added to checklist + progress table, Phase 21 4/4). Next: plan Phase 22 (Issue Type Resolution, ISSUE-04/05) via /gsd:plan-phase
+**Resume file:** None
 
 ## Performance Metrics
 
