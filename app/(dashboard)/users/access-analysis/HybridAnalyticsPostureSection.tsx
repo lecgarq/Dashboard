@@ -12,7 +12,7 @@ import { HeadlineInsights } from "./HeadlineInsights";
 import { ActiveFiltersBar } from "./ActiveFiltersBar";
 import { SectionHeading } from "./hybridAnalyticsPanels";
 import { formatDateTime } from "./hybridAnalyticsTransforms";
-import type { HybridAnalyticsViewProps } from "./HybridAnalyticsView";
+import type { HybridAnalyticsViewProps } from "./hybridAnalyticsViewTypes";
 
 export function HybridAnalyticsPostureSection({
   viewModel,

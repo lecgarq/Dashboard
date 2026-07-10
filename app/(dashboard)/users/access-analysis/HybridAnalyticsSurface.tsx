@@ -7,7 +7,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { isAdmin } from "./analyticsFindings";
 import { useHybridAnalytics } from "./useHybridAnalytics";
-import { HybridAnalyticsView, type DetailFilter, type VgPlotColumnType } from "./HybridAnalyticsView";
+import { HybridAnalyticsView } from "./HybridAnalyticsView";
+import type { DetailFilter, VgPlotColumnType } from "./hybridAnalyticsViewTypes";
 import { HybridAnalyticsDrilldown } from "./HybridAnalyticsDrilldown";
 
 export function HybridAnalyticsSurface() {

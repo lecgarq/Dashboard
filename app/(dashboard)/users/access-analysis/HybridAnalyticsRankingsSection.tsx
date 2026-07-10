@@ -10,7 +10,7 @@ import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
 import { SectionHeading, FallbackBarPanel } from "./hybridAnalyticsPanels";
 import { ACCENTS, adminGrantFinding, toFallbackRows } from "./hybridAnalyticsTransforms";
-import type { HybridAnalyticsViewProps } from "./HybridAnalyticsView";
+import type { HybridAnalyticsViewProps } from "./hybridAnalyticsViewTypes";
 
 export function HybridAnalyticsRankingsSection({
   viewModel,

@@ -4,31 +4,17 @@
 // The chart/panel JSX body (~620 lines) is split into a posture section and a rankings section
 // so neither file exceeds the ~400-line ceiling — precedent: SPLIT-02 (Plan 16-02) split its view
 // the same way. Receives the view-model + drill-down handlers as props.
-import type { BulkAccUser } from "@/lib/acc/acc-types";
-import type { HybridAnalyticsViewModel } from "./useHybridAnalytics";
 import { HybridAnalyticsPostureSection } from "./HybridAnalyticsPostureSection";
 import { HybridAnalyticsRankingsSection } from "./HybridAnalyticsRankingsSection";
+import type { HybridAnalyticsViewProps } from "./hybridAnalyticsViewTypes";
 
-export interface DetailFilter {
-  title: string;
-  subtitle: string;
-  filterFn: (u: BulkAccUser) => boolean;
-}
-
-export type VgPlotColumnType =
-  | "projects"
-  | "admin"
-  | "topProjects"
-  | "topRoles"
-  | "topCompanies"
-  | "rolesProjectStatus";
-
-export interface HybridAnalyticsViewProps {
-  viewModel: HybridAnalyticsViewModel;
-  setDetailFilter: (filter: DetailFilter | null) => void;
-  handleVgPlotClick: (e: React.MouseEvent<HTMLDivElement>, columnType: VgPlotColumnType) => void;
-  handleHeadlineSelect: (id: string) => void;
-}
+// Types moved to hybridAnalyticsViewTypes.ts (no-circular fix); re-exported
+// so existing `from "./HybridAnalyticsView"` type imports keep resolving.
+export type {
+  DetailFilter,
+  VgPlotColumnType,
+  HybridAnalyticsViewProps,
+} from "./hybridAnalyticsViewTypes";
 
 export function HybridAnalyticsView(props: HybridAnalyticsViewProps) {
   return (

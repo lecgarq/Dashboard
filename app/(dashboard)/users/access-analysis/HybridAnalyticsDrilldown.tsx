@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import type { DetailFilter } from "./HybridAnalyticsView";
+import type { DetailFilter } from "./hybridAnalyticsViewTypes";
 
 export interface HybridAnalyticsDrilldownProps {
   detailFilter: DetailFilter | null;
