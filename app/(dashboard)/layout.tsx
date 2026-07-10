@@ -35,7 +35,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     helpers.sim.getWikiSections.prefetch(),
     helpers.exam.getExams.prefetch(),
     helpers.kpi.getHomeDashboard.prefetch(),
-    helpers.tasks.getMyTasks.prefetch(),
     helpers.trello.getBoards.prefetch(),
   ]);
 
