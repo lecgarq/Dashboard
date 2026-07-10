@@ -1,8 +1,8 @@
 ---
 phase: 22
 slug: issue-type-resolution
-status: draft
-nyquist_compliant: false
+status: planned
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-07-10
 ---
@@ -37,12 +37,16 @@ created: 2026-07-10
 
 ## Per-Task Verification Map
 
-*To be filled by the planner — each task must map to ISSUE-04 or ISSUE-05 with an automated command.*
-
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 22-01-* | 01 | 1 | ISSUE-04 | integration | backfill `--dry-run` + row-count check | ❌ W0 | ⬜ pending |
-| 22-02-* | 02 | 2 | ISSUE-05 | unit | `npx vitest run lib/server/issueFunnelView.test.ts` | ✅ | ⬜ pending |
+| 22-01-T1 (model + migration) | 01 | 1 | ISSUE-04 | integration | `npx tsc --noEmit` + node/pg `SELECT COUNT(*) FROM "AccIssueType"` (table exists) | ✅ (live DB) | ⬜ pending |
+| 22-01-T2 (backfill script + dry-run) | 01 | 1 | ISSUE-04 | manual-with-command | `node scripts/acc-issue-types-backfill.cjs --dry-run --project=<accessible-id>` (exit 0, sample record logged, 0 writes) | ❌ script new (no test file — matches `acc-issues-backfill.cjs` precedent) | ⬜ pending |
+| 22-01-T3 (live run + evidence) | 01 | 1 | ISSUE-04 | integration | node/pg `SELECT kind, COUNT(*) FROM "AccIssueType" GROUP BY kind` (both kinds > 0) + resolved/total split queries | ✅ (live DB) | ⬜ pending |
+| 22-02-T1 (loader type cut) | 02 | 2 | ISSUE-05 | unit | `npx vitest run lib/server/issueFunnelView.test.ts` (incl. the queryRaw single-call pin) | ✅ extend existing | ⬜ pending |
+| 22-02-T2 (summarizeIssueType) | 02 | 2 | ISSUE-05 | unit | `npx vitest run "app/(dashboard)/access-analysis/__tests__/issueTypeCounts.test.ts"` | ❌ W0 (created in-task) | ⬜ pending |
+| 22-03-T1 (IssueTypeChart) | 03 | 3 | ISSUE-05 | component | `npx vitest run "app/(dashboard)/access-analysis/__tests__/IssueTypeChart.test.tsx"` (incl. self-grep pin) | ❌ W0 (created in-task) | ⬜ pending |
+| 22-03-T2 (wiring) | 03 | 3 | ISSUE-05 | full suite | `npm test && npx tsc --noEmit` | ✅ | ⬜ pending |
+| 22-03-T3 (owner checkpoint) | 03 | 3 | ISSUE-05 | manual | `:3100` production preflight (`.next-uat-22`), owner UAT steps in 22-03-PLAN.md | n/a | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -50,7 +54,7 @@ created: 2026-07-10
 
 ## Wave 0 Requirements
 
-- [ ] None expected — existing vitest infrastructure covers phase requirements; new transform tests extend existing files/patterns.
+- [ ] None standalone — the two new test files (`issueTypeCounts.test.ts`, `IssueTypeChart.test.tsx`) are created inside the same task as the code they pin, following the repo's co-located-test convention; existing vitest infrastructure covers everything (no new framework/config).
 
 ---
 

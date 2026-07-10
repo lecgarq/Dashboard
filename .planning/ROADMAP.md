@@ -396,7 +396,13 @@ Plans:
   4. Any `issueTypeId`/`issueSubtypeId` not resolved by the lookup table renders an honest fallback label ("Unknown type") — never a raw GUID — verified against at least one live unresolved ID if one exists in the dataset.
   5. `npm test` stays green (existing suite + any new lookup-table/transform tests); `npx tsc --noEmit` passes.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 22-01-PLAN.md — ISSUE-04: `AccIssueType` Prisma model + migration (migrations-raw fallback armed), `scripts/acc-issue-types-backfill.cjs` clone (3-leg auth, --dry-run field-shape validation), live run + resolved/total GUID evidence (wave 1)
+- [ ] 22-02-PLAN.md — ISSUE-05 data layer: `loadIssueFunnel()` third cut (2nd groupBy + lookup findMany joined in JS — preserves the queryRaw single-call test pin) + `issueTypeCounts.ts` top-N/Other transform with distinct "Unknown type"/"No type set" buckets (wave 2)
+- [ ] 22-03-PLAN.md — ISSUE-05 UI: `IssueTypeChart.tsx` (horizontal bars, expand-in-place Other, local per-project drill, live coverage captions) mounted below IssueStatusChart + owner `:3100` preflight checkpoint (wave 3)
 
 **UI hint**: yes
 
