@@ -3,7 +3,6 @@ import { familiesRouter } from "./families";
 import { clashRouter } from "./clash";
 import { examRouter } from "./exam";
 import { kpiRouter } from "./kpi";
-import { tasksRouter } from "./tasks";
 import { searchRouter } from "./search";
 import { usersRouter } from "./users";
 import { projectRouter } from "./project";
@@ -30,7 +29,6 @@ export const appRouter = router({
   clash: clashRouter,
   exam: examRouter,
   kpi: kpiRouter,
-  tasks: tasksRouter,
   search: searchRouter,
   users: usersRouter,
   trello: trelloRouter,

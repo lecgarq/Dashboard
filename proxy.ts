@@ -15,7 +15,6 @@ const MODULE_ROUTES: Record<string, string> = {
   "/clash-detection": "clash",
   "/exam": "exam",
   "/trello": "trello",
-  "/tasks": "tasks",
   "/lod-checker": "lod",
   "/sim-automation": "sim",
 };
