@@ -325,8 +325,8 @@ of v2.3 scope.
 ## Session
 
 **Last session:** 2026-07-10
-**Stopped at:** Session resumed; ROADMAP.md synced to current state (20.1/21.1 added to checklist + progress table, Phase 21 4/4). Next: plan Phase 22 (Issue Type Resolution, ISSUE-04/05) via /gsd:plan-phase
-**Resume file:** None
+**Stopped at:** Phase 22 context gathered (12 decisions across chart form, subtypes, backfill lifecycle, table shape, coverage honesty, population, data layer, checkpoint scope). Next: /gsd:plan-phase 22
+**Resume file:** .planning/phases/22-issue-type-resolution/22-CONTEXT.md
 
 ## Performance Metrics
 
