@@ -11,7 +11,7 @@ import { CompaniesTabPanel } from "./CompaniesTabPanel";
 import { ProjectsTabPanel } from "./ProjectsTabPanel";
 import { CompareTabPanel } from "./CompareTabPanel";
 import { activityCoverageCounts } from "../coverageCounts";
-import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
+import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
 import { summarizeProvisionedModules } from "../provisionedModulesCounts";
 import { summarizeProjectActivity } from "../projectActivityCounts";
@@ -40,7 +40,7 @@ import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
-import type { IssueFunnelData, IssueFunnelStatusRow } from "@/lib/server/issueFunnelView";
+import type { IssueFunnelData, IssueFunnelStatusRow, IssueFunnelTypeRow } from "@/lib/server/issueFunnelView";
 import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
@@ -361,6 +361,12 @@ export function AccessAnalysisCharts({
     () => filterRowsBySelection(issueFunnelData?.statusRows ?? [], selected),
     [issueFunnelData, selected],
   );
+  // Phase 22 ISSUE-05: same picker-only filtering — deliberately `selected`,
+  // never `sliceFilteredProjectIds`. No cross-filter bus wiring here either.
+  const filteredIssueTypeRows: IssueFunnelTypeRow[] = useMemo(
+    () => filterRowsBySelection(issueFunnelData?.typeRows ?? [], selected),
+    [issueFunnelData, selected],
+  );
 
   // Dormant = entities with members in the current selection but 0 activity there,
   // ranked by headcount. Picker-scoped, so it mirrors the activity donut it sits under.
@@ -369,7 +375,7 @@ export function AccessAnalysisCharts({
       rankDormantByPeople(
         roleSummary.usersByRole,
         new Set(activityByRoleSummary.slices.map((s) => s.name)),
-        new Set([UNKNOWN_ROLE, MULTIPLE_ROLES]),
+        new Set([UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER]),
       ),
     [roleSummary, activityByRoleSummary],
   );
@@ -553,6 +559,7 @@ export function AccessAnalysisCharts({
             issueFunnelLoading={issueFunnelLoading}
             issueTimelineSummary={issueTimelineSummary}
             filteredIssueStatusRows={filteredIssueStatusRows}
+            filteredIssueTypeRows={filteredIssueTypeRows}
           />
         </TabsContent>
 

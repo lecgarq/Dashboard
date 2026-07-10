@@ -7,6 +7,7 @@ import { CoordinationByProject } from "./CoordinationByProject";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
 import { IssueTimelineChart } from "./IssueTimelineChart";
 import { IssueStatusChart } from "./IssueStatusChart";
+import { IssueTypeChart } from "./IssueTypeChart";
 import type {
   CoordinationByProjectData,
   IssueCoverageProjectRow,
@@ -14,17 +15,17 @@ import type {
 import type { CoordinationSummary } from "../coordinationCounts";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
 import type { ClashIssue } from "../coordinationClash";
-import type { IssueFunnelData, IssueFunnelStatusRow } from "@/lib/server/issueFunnelView";
+import type { IssueFunnelData, IssueFunnelStatusRow, IssueFunnelTypeRow } from "@/lib/server/issueFunnelView";
 import type { TimelineSummary } from "../timelineCounts";
 
 const EMPTY_TIMELINE_SUMMARY: TimelineSummary = { points: [], total: 0, peak: null, busiestYear: null, span: null };
 
 /**
  * Projects tab (locked tab map): Issue data coverage · Issues over time ·
- * Issues by status · Model Coordination. Coverage donut renders FIRST — trust
- * precedes metric (ISSUE-01 convention) — and frames trust for the two
- * Phase 21 issue-funnel charts directly beneath it (ISSUE-02/03). Phase 22's
- * issues-by-type chart appends as a third sibling in this same stacked block.
+ * Issues by status · Issues by type · Model Coordination. Coverage donut
+ * renders FIRST — trust precedes metric (ISSUE-01 convention) — and frames
+ * trust for the Phase 21/22 issue-funnel charts directly beneath it
+ * (ISSUE-02/03/05).
  */
 export function ProjectsTabPanel({
   coordinationData,
@@ -38,6 +39,7 @@ export function ProjectsTabPanel({
   issueFunnelLoading,
   issueTimelineSummary,
   filteredIssueStatusRows,
+  filteredIssueTypeRows,
 }: {
   coordinationData?: CoordinationByProjectData;
   filteredIssueCoverageProjects: IssueCoverageProjectRow[];
@@ -51,6 +53,8 @@ export function ProjectsTabPanel({
   issueFunnelLoading?: boolean;
   issueTimelineSummary?: TimelineSummary;
   filteredIssueStatusRows?: IssueFunnelStatusRow[];
+  /** Phase 22 ISSUE-05: rides the same lazy loadIssueFunnel fetch, no new fetch branch. */
+  filteredIssueTypeRows?: IssueFunnelTypeRow[];
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -119,6 +123,28 @@ export function ProjectsTabPanel({
         </Reveal>
       ) : null}
 
+      {/* Issues by type (ISSUE-05) — full-width, beneath the status panel. */}
+      {loadIssueFunnel ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            {issueFunnelLoading ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <>
+                <SectionHeader
+                  title="Issues by type"
+                  subtitle="What kinds of issues do we actually have? Every fetched issue by its resolved ACC type name — honest buckets for unresolved and untyped issues."
+                />
+                <IssueTypeChart
+                  rows={filteredIssueTypeRows ?? []}
+                  coverageProjects={filteredIssueCoverageProjects}
+                />
+              </>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      ) : null}
+
       {/* Model Coordination — full-width */}
       {coordinationData ? (
         <Reveal>
@@ -137,8 +163,6 @@ export function ProjectsTabPanel({
           </PremiumSurface>
         </Reveal>
       ) : null}
-
-      {/* Phase 22's issues-by-type chart appends here as a third sibling, zero redesign. */}
     </div>
   );
 }
