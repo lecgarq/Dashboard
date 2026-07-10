@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 /** Per-(project, month) issue-creation count for the ISSUE-02 timeline. */
-export interface IssueFunnelMonthRow {
+interface IssueFunnelMonthRow {
   projectId: string;
   projectName: string;
   month: string; // "YYYY-MM"
@@ -18,9 +18,19 @@ export interface IssueFunnelStatusRow {
   count: number;
 }
 
+/** Per-(project, issueTypeId) issue count for the ISSUE-05 type chart. */
+export interface IssueFunnelTypeRow {
+  projectId: string;
+  projectName: string;
+  issueTypeId: string | null; // null = issue has no type set
+  typeName: string | null; // null with a non-null issueTypeId = GUID not in the lookup table ("Unknown type")
+  count: number;
+}
+
 export interface IssueFunnelData {
   monthRows: IssueFunnelMonthRow[];
   statusRows: IssueFunnelStatusRow[];
+  typeRows: IssueFunnelTypeRow[];
 }
 
 interface RawMonthRow {
@@ -41,7 +51,7 @@ const TTL_MS = 5 * 60 * 1000;
 export async function loadIssueFunnel(force = false): Promise<IssueFunnelData> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.data;
 
-  const [monthRaw, statusGroups, projects, dcProjects] = await Promise.all([
+  const [monthRaw, statusGroups, typeGroups, issueTypes, projects, dcProjects] = await Promise.all([
     // Month cut: createdAt is nullable — a null would produce a corrupt month key,
     // so those rows are excluded here (still counted in the status cut below).
     db.$queryRaw<RawMonthRow[]>`
@@ -58,6 +68,13 @@ export async function loadIssueFunnel(force = false): Promise<IssueFunnelData> {
       by: ["projectId", "status"],
       _count: { id: true },
     }),
+    // Type cut (ISSUE-05): full set, same population as the status cut. Name
+    // resolution happens in JS below via the AccIssueType lookup table.
+    db.accIssue.groupBy({
+      by: ["projectId", "issueTypeId"],
+      _count: { id: true },
+    }),
+    db.accIssueType.findMany({ select: { id: true, name: true } }),
     db.accProject.findMany({ select: { id: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
   ]);
@@ -81,7 +98,18 @@ export async function loadIssueFunnel(force = false): Promise<IssueFunnelData> {
     count: g._count.id,
   }));
 
-  const data: IssueFunnelData = { monthRows, statusRows };
+  const nameByTypeId = new Map(issueTypes.map((t) => [t.id, t.name]));
+  const typeRows: IssueFunnelTypeRow[] = typeGroups.map((g) => ({
+    projectId: g.projectId,
+    projectName: resolveProjectName(nameById, g.projectId),
+    issueTypeId: g.issueTypeId,
+    // Three-state, kept distinct (never coalesced here — the transform labels them):
+    // resolved name / non-null GUID absent from the lookup ("Unknown type") / null id ("No type set").
+    typeName: g.issueTypeId == null ? null : (nameByTypeId.get(g.issueTypeId) ?? null),
+    count: g._count.id,
+  }));
+
+  const data: IssueFunnelData = { monthRows, statusRows, typeRows };
   cache = { at: Date.now(), data };
   return data;
 }

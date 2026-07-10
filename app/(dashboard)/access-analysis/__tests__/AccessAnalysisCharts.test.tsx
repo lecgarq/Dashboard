@@ -501,7 +501,7 @@ describe("AccessAnalysisCharts — Phase 21 issue-funnel panels (ISSUE-02/03)", 
   });
 
   it("does not call loadIssueFunnel on initial (Overview) render", () => {
-    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [], typeRows: [] }));
     render(
       <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadIssueFunnel={loadIssueFunnel} />,
     );
@@ -509,7 +509,7 @@ describe("AccessAnalysisCharts — Phase 21 issue-funnel panels (ISSUE-02/03)", 
   });
 
   it("fetches the issue funnel exactly once on first Projects-tab activation, and caches on revisit", async () => {
-    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [], typeRows: [] }));
     const { getByRole, findByText } = render(
       <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadIssueFunnel={loadIssueFunnel} />,
     );
@@ -772,7 +772,7 @@ describe("AccessAnalysisCharts — 6-tab IA (20.1-05)", () => {
     const loadPermissionLevel = vi.fn(async (): Promise<PermissionLevelRow[]> => permissionLevelRows);
     const loadFolderScopedActivity = vi.fn(async (): Promise<FolderActivityActorRow[]> => folderScopedActivityRows);
     const loadCompanyFolderBreakdown = vi.fn(async () => []);
-    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [] }));
+    const loadIssueFunnel = vi.fn(async () => ({ monthRows: [], statusRows: [], typeRows: [] }));
     const { getByText, getByRole, findByText } = render(
       <AccessAnalysisCharts
         roleRows={roleRows}

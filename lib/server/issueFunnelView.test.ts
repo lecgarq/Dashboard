@@ -8,12 +8,14 @@ const mocks = vi.hoisted(() => ({
   findProjects: vi.fn(),
   findDcProjects: vi.fn(),
   accIssueFindMany: vi.fn(),
+  accIssueTypeFindMany: vi.fn(),
 }));
 
 vi.mock("@/server/db", () => ({
   db: {
     $queryRaw: mocks.queryRaw,
     accIssue: { groupBy: mocks.groupBy, findMany: mocks.accIssueFindMany },
+    accIssueType: { findMany: mocks.accIssueTypeFindMany },
     accProject: { findMany: mocks.findProjects },
     accDcProject: { findMany: mocks.findDcProjects },
   },
@@ -28,10 +30,23 @@ describe("loadIssueFunnel", () => {
       { projectId: "p1", month: "2026-05", count: 3 },
       { projectId: "p1", month: "2026-06", count: 5 },
     ]);
-    mocks.groupBy.mockResolvedValue([
-      { projectId: "p1", status: "open", _count: { id: 4 } },
-      { projectId: "p1", status: "closed", _count: { id: 4 } },
-    ]);
+    // `groupBy` is shared by both the status cut and the type cut (ISSUE-05) — dispatch
+    // on `by` so each call gets its own shaped rows. Individual tests that call
+    // `mockResolvedValue(...)` directly override this for both calls, which is fine —
+    // those tests don't assert on typeRows.
+    mocks.groupBy.mockImplementation((args: { by: string[] }) => {
+      if (args.by.includes("issueTypeId")) {
+        return Promise.resolve([
+          { projectId: "p1", issueTypeId: "type-a", _count: { id: 4 } },
+          { projectId: "p1", issueTypeId: null, _count: { id: 4 } },
+        ]);
+      }
+      return Promise.resolve([
+        { projectId: "p1", status: "open", _count: { id: 4 } },
+        { projectId: "p1", status: "closed", _count: { id: 4 } },
+      ]);
+    });
+    mocks.accIssueTypeFindMany.mockResolvedValue([]);
     mocks.findProjects.mockResolvedValue([{ id: "p1", name: "Project One" }]);
     mocks.findDcProjects.mockResolvedValue([]);
   });
@@ -135,6 +150,74 @@ describe("loadIssueFunnel", () => {
     expect(mocks.groupBy).toHaveBeenCalledWith({
       by: ["projectId", "status"],
       _count: { id: true },
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // (e) Type cut (ISSUE-05) — bounded aggregate, GUID resolution via the
+  // AccIssueType lookup table, joined in JS (never a second raw SQL call —
+  // the queryRaw single-call pin above must keep holding).
+  // -------------------------------------------------------------------------
+  describe("type cut (ISSUE-05)", () => {
+    it("bounds typeRows to the aggregate row count, never a raw AccIssue scan", async () => {
+      mocks.groupBy.mockImplementation((args: { by: string[] }) => {
+        if (args.by.includes("issueTypeId")) {
+          return Promise.resolve([
+            { projectId: "p1", issueTypeId: "type-a", _count: { id: 3 } },
+            { projectId: "p1", issueTypeId: "type-b", _count: { id: 2 } },
+            { projectId: "p2", issueTypeId: null, _count: { id: 1 } },
+          ]);
+        }
+        return Promise.resolve([{ projectId: "p1", status: "open", _count: { id: 4 } }]);
+      });
+
+      const data = await loadIssueFunnel(true);
+      expect(data.typeRows.length).toBe(3);
+      expect(mocks.accIssueFindMany).not.toHaveBeenCalled();
+    });
+
+    it("resolves a known issueTypeId GUID to its lookup name", async () => {
+      mocks.groupBy.mockImplementation((args: { by: string[] }) => {
+        if (args.by.includes("issueTypeId")) {
+          return Promise.resolve([{ projectId: "p1", issueTypeId: "type-a", _count: { id: 5 } }]);
+        }
+        return Promise.resolve([{ projectId: "p1", status: "open", _count: { id: 5 } }]);
+      });
+      mocks.accIssueTypeFindMany.mockResolvedValue([{ id: "type-a", name: "Quality" }]);
+
+      const data = await loadIssueFunnel(true);
+      expect(data.typeRows).toEqual([
+        { projectId: "p1", projectName: "Project One", issueTypeId: "type-a", typeName: "Quality", count: 5 },
+      ]);
+    });
+
+    it("keeps a non-null issueTypeId with typeName: null when the GUID is absent from the lookup (Unknown type)", async () => {
+      mocks.groupBy.mockImplementation((args: { by: string[] }) => {
+        if (args.by.includes("issueTypeId")) {
+          return Promise.resolve([{ projectId: "p1", issueTypeId: "unresolved-guid", _count: { id: 2 } }]);
+        }
+        return Promise.resolve([{ projectId: "p1", status: "open", _count: { id: 2 } }]);
+      });
+      mocks.accIssueTypeFindMany.mockResolvedValue([]);
+
+      const data = await loadIssueFunnel(true);
+      expect(data.typeRows[0].issueTypeId).toBe("unresolved-guid");
+      expect(data.typeRows[0].typeName).toBeNull();
+    });
+
+    it("passes a null issueTypeId through as { issueTypeId: null, typeName: null } with count intact", async () => {
+      mocks.groupBy.mockImplementation((args: { by: string[] }) => {
+        if (args.by.includes("issueTypeId")) {
+          return Promise.resolve([{ projectId: "p1", issueTypeId: null, _count: { id: 7 } }]);
+        }
+        return Promise.resolve([{ projectId: "p1", status: "open", _count: { id: 7 } }]);
+      });
+
+      const data = await loadIssueFunnel(true);
+      expect(data.typeRows).toHaveLength(1);
+      expect(data.typeRows[0].issueTypeId).toBeNull();
+      expect(data.typeRows[0].typeName).toBeNull();
+      expect(data.typeRows[0].count).toBe(7);
     });
   });
 });
