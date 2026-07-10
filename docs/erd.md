@@ -403,6 +403,17 @@ erDiagram
     }
   
 
+  "AccFolderPermissionSummary" {
+    String id "🗝️"
+    String projectId 
+    String roleId 
+    Int folderCount 
+    BigInt totalBytes 
+    String permTypes 
+    DateTime refreshedAt 
+    }
+  
+
   "AccActivity" {
     String id "🗝️"
     String autodeskId 
@@ -415,6 +426,25 @@ erDiagram
     String sourceFile 
     String ingestRunId "❓"
     DateTime createdAt 
+    }
+  
+
+  "AccActivityAccds" {
+    String accdsActivityId "🗝️"
+    String autodeskId 
+    String userEmail "❓"
+    String userName "❓"
+    String projectId 
+    String serviceGroup "❓"
+    String activityVerb 
+    String objectId "❓"
+    String objectType "❓"
+    String objectName "❓"
+    String folderId "❓"
+    String folderName "❓"
+    DateTime createdAt 
+    String ingestRunId "❓"
+    DateTime fetchedAt 
     }
   
 
@@ -680,6 +710,15 @@ erDiagram
     DateTime startedAt 
     DateTime finishedAt 
     DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+
+  "AccIssueType" {
+    String id "🗝️"
+    String name 
+    String kind 
+    String parentTypeId "❓"
     DateTime updatedAt 
     }
   
