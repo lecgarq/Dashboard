@@ -22,6 +22,7 @@ import {
   UserCircle,
   CheckCircle2,
   ShieldCheck,
+  Globe,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -40,7 +41,7 @@ import { moduleLabel } from "@/lib/acc/modules";
 // ---------------------------------------------------------------------------
 // ActiveFilterPill — moved from UsersDirectoryClient (USR-01 decomposition, Wave 6).
 // ---------------------------------------------------------------------------
-export function ActiveFilterPill({
+function ActiveFilterPill({
   label,
   value,
   onClear,
@@ -110,6 +111,7 @@ export function DirectoryFilterBar({
   const filterAccModuleTier = useUsersDirectoryStore((s) => s.filterAccModuleTier);
   const statusFilter = useUsersDirectoryStore((s) => s.statusFilter);
   const projectAdminFilter = useUsersDirectoryStore((s) => s.projectAdminFilter);
+  const affiliationFilter = useUsersDirectoryStore((s) => s.affiliationFilter);
 
   // Store: setters
   const setFilterDept = useUsersDirectoryStore((s) => s.setFilterDept);
@@ -122,12 +124,13 @@ export function DirectoryFilterBar({
   const setFilterAccModuleTier = useUsersDirectoryStore((s) => s.setFilterAccModuleTier);
   const setStatusFilter = useUsersDirectoryStore((s) => s.setStatusFilter);
   const setProjectAdminFilter = useUsersDirectoryStore((s) => s.setProjectAdminFilter);
+  const setAffiliationFilter = useUsersDirectoryStore((s) => s.setAffiliationFilter);
   const clearAllFilters = useUsersDirectoryStore((s) => s.clearAllFilters);
 
   const hasActiveFilters = !!(
     filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
     filterAccProject || filterAccRole || filterAccModule ||
-    statusFilter.length > 0 || projectAdminFilter
+    statusFilter.length > 0 || projectAdminFilter || affiliationFilter
   );
 
   return (
@@ -280,6 +283,23 @@ export function DirectoryFilterBar({
             </SelectContent>
           </Select>
         )}
+
+        {/* Affiliation facet — email-domain rule (internalDomains). Combine with
+            "Project Admin only" to surface external users with admin permissions. */}
+        <Select
+          value={affiliationFilter ?? "__all__"}
+          onValueChange={(v) => setAffiliationFilter(v === "__all__" ? null : (v as "internal" | "external"))}
+        >
+          <SelectTrigger className="h-7 w-auto min-w-[110px] text-[11px] bg-card border-border gap-1">
+            <Globe size={11} className="shrink-0 text-muted-foreground" />
+            <SelectValue placeholder="Affiliation" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All Users</SelectItem>
+            <SelectItem value="internal">Internal</SelectItem>
+            <SelectItem value="external">External</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Phase 09 LIST-01 — Status multi-select facet */}
         <DropdownMenu>
@@ -439,6 +459,13 @@ export function DirectoryFilterBar({
               label="Admin"
               value="Project Admin only"
               onClear={() => setProjectAdminFilter(false)}
+            />
+          )}
+          {affiliationFilter && (
+            <ActiveFilterPill
+              label="Affiliation"
+              value={affiliationFilter === "external" ? "External" : "Internal"}
+              onClear={() => setAffiliationFilter(null)}
             />
           )}
         </div>

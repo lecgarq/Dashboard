@@ -23,12 +23,10 @@ import { DataTable } from "@/components/ui/DataTable";
 import { DrillSheet } from "@/components/ui/DrillSheet";
 import { USERS_COLUMNS } from "./DirectoryTableColumns";
 import { buildDirectoryRows, type DirectoryRow } from "./directoryTableRow";
+import { classifyAffiliation } from "./access-analysis/internalDomains";
 import { PeekPanel } from "./PeekPanel";
 import { UsersTableSkeleton } from "./UsersTableSkeleton";
 import { UsersTableHeader } from "./UsersTableHeader";
-
-// Re-export MODULE_BADGE_COLORS and ModuleBadge for backward-compat consumers.
-export { MODULE_BADGE_COLORS, ModuleBadge } from "./ModuleBadge";
 
 const UserActivityBody = dynamic<{ email: string; users: BulkAccUser[] }>(
   () => import("./dashboard/DashboardSidePanel").then((m) => m.UserActivityBody),
@@ -185,9 +183,16 @@ export function UsersDirectoryClient() {
     const now = Date.now();
     let active30d = 0;
     let admins = 0;
+    let inAcc = 0;
+    let externals = 0;
+    let internals = 0;
     for (const person of people) {
+      const affiliation = classifyAffiliation(person.email);
+      if (affiliation === "external") externals += 1;
+      else if (affiliation === "internal") internals += 1;
       const accUser = accSummaryMap.get(person.email.toLowerCase());
       if (accUser) {
+        if (accUser.found) inAcc += 1;
         // active30d: use lastActivityByEmail map (G1 fix) when available.
         // project.lastActivity is never populated by the /users feed (always null),
         // so falling back to it gives 0. Use the map when loaded; show 0 while loading.
@@ -203,7 +208,7 @@ export function UsersDirectoryClient() {
         }
       }
     }
-    return { totalUsers: people.length, active30d, admins };
+    return { totalUsers: people.length, inAcc, notInAcc: people.length - inAcc, internals, externals, active30d, admins };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, accSummaryMap, lastActivityByEmail]); // ACTIVE_30D_MS is a constant, no dep needed
 
@@ -233,6 +238,10 @@ export function UsersDirectoryClient() {
       {/* Page header — KPI glass strip + particle accent (Plan 04-04) */}
       <UsersTableHeader
         totalUsers={kpiValues.totalUsers}
+        inAcc={kpiValues.inAcc}
+        notInAcc={kpiValues.notInAcc}
+        internals={kpiValues.internals}
+        externals={kpiValues.externals}
         active30d={kpiValues.active30d}
         admins={kpiValues.admins}
       />

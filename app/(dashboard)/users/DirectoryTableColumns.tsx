@@ -24,14 +24,14 @@ const helper = createColumnHelper<DirectoryRow>();
 
 /** Name column — avatar + displayName + optional dormant status dot. */
 function NameCell({ row }: { row: { original: DirectoryRow } }) {
-  const { displayName, email, photoUrl, isDormant, lastActivity } = row.original;
+  const { displayName, email, photoUrl, isDormant, lastActivity, isExternal } = row.original;
   // Only show a dot when lastActivity is known (not null) and the user is dormant.
   const showDot = lastActivity !== null && isDormant;
 
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-2 min-w-0" title={isExternal ? "External collaborator" : undefined}>
       <div className="relative shrink-0">
-        <ProfileAvatar name={displayName} email={email} photoUrl={photoUrl} size="sm" />
+        <ProfileAvatar name={displayName} email={email} photoUrl={photoUrl} size="sm" external={isExternal} />
         {showDot && (
           <span
             data-dormant
@@ -41,6 +41,14 @@ function NameCell({ row }: { row: { original: DirectoryRow } }) {
         )}
       </div>
       <span className="truncate text-sm font-medium">{displayName}</span>
+      {isExternal && (
+        <Badge
+          variant="outline"
+          className="shrink-0 text-[10px] px-1.5 py-0 border-sky-500/40 text-sky-400"
+        >
+          Ext
+        </Badge>
+      )}
     </div>
   );
 }
@@ -106,6 +114,18 @@ export const USERS_COLUMNS: ColumnDef<DirectoryRow, string>[] = [
     size: 180,
     enableSorting: false,
     cell: (ctx) => <RoleCell row={ctx.row} />,
+  }) as ColumnDef<DirectoryRow, string>,
+
+  helper.accessor("company", {
+    id: "company",
+    header: "Company",
+    size: 160,
+    enableSorting: true,
+    cell: (ctx) => (
+      <span className="truncate text-sm block" title={ctx.getValue() ?? undefined}>
+        {ctx.getValue() ?? <span className="text-muted-foreground">—</span>}
+      </span>
+    ),
   }) as ColumnDef<DirectoryRow, string>,
 
   helper.accessor("officeLabel", {

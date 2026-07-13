@@ -23,6 +23,8 @@ const row = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
   lastActivity: "2026-06-01T12:00:00.000Z",
   projectCount: 5,
   isDormant: false,
+  isExternal: false,
+  company: null,
   accUser: null,
   ...overrides,
 });
@@ -51,13 +53,13 @@ function renderCell(colId: string, data: DirectoryRow): { container: HTMLElement
 // ---------------------------------------------------------------------------
 
 describe("USERS_COLUMNS", () => {
-  it("has exactly 5 columns", () => {
-    expect(USERS_COLUMNS).toHaveLength(5);
+  it("has exactly 6 columns", () => {
+    expect(USERS_COLUMNS).toHaveLength(6);
   });
 
-  it("column ids are: name, role, office, lastActive, projects (in order)", () => {
+  it("column ids are: name, role, company, office, lastActive, projects (in order)", () => {
     const ids = cols.map((c) => c.id);
-    expect(ids).toEqual(["name", "role", "office", "lastActive", "projects"]);
+    expect(ids).toEqual(["name", "role", "company", "office", "lastActive", "projects"]);
   });
 
   it("name column has enableSorting true", () => {

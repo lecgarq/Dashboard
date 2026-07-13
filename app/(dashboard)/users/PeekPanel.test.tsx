@@ -40,6 +40,8 @@ const makeRow = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
   lastActivity: "2026-06-01T12:00:00.000Z",
   projectCount: 5,
   isDormant: false,
+  isExternal: false,
+  company: null,
   accUser,
   ...overrides,
 });

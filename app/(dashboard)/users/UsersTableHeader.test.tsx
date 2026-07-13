@@ -48,11 +48,15 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   // Case 1: Three KPI tiles render with labels and values
   // -------------------------------------------------------------------------
-  it("renders three KPI tiles with the correct labels", () => {
+  it("renders the KPI tiles with the correct labels", () => {
     render(
-      <UsersTableHeader totalUsers={150} active30d={80} admins={12} />,
+      <UsersTableHeader totalUsers={150} inAcc={120} notInAcc={30} internals={120} externals={25} active30d={80} admins={12} />,
     );
     expect(screen.getByText("Total users")).toBeTruthy();
+    expect(screen.getByText("In ACC")).toBeTruthy();
+    expect(screen.getByText("Not in ACC")).toBeTruthy();
+    expect(screen.getByText("Internal")).toBeTruthy();
+    expect(screen.getByText("External")).toBeTruthy();
     expect(screen.getByText("Active 30d")).toBeTruthy();
     expect(screen.getByText("Admins")).toBeTruthy();
   });
@@ -62,7 +66,7 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("AnimatedNumber reaches the target value after animation completes", async () => {
     render(
-      <UsersTableHeader totalUsers={42} active30d={10} admins={3} />,
+      <UsersTableHeader totalUsers={42} inAcc={30} notInAcc={12} internals={36} externals={6} active30d={10} admins={3} />,
     );
 
     // Advance time well past the 1s ease-out animation
@@ -82,7 +86,7 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("re-rendering with the same value does not restart the animation from 0", async () => {
     const { rerender } = render(
-      <UsersTableHeader totalUsers={50} active30d={20} admins={5} />,
+      <UsersTableHeader totalUsers={50} inAcc={40} notInAcc={10} internals={46} externals={4} active30d={20} admins={5} />,
     );
 
     // Let animation complete
@@ -91,7 +95,7 @@ describe("UsersTableHeader", () => {
     });
 
     // Re-render with identical values
-    rerender(<UsersTableHeader totalUsers={50} active30d={20} admins={5} />);
+    rerender(<UsersTableHeader totalUsers={50} inAcc={40} notInAcc={10} internals={46} externals={4} active30d={20} admins={5} />);
 
     // Values should still show target (not reset to 0)
     const allText = document.body.textContent ?? "";
@@ -108,14 +112,14 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("animates up to the real target when values arrive after an initial 0 (async data load)", async () => {
     const { rerender } = render(
-      <UsersTableHeader totalUsers={0} active30d={0} admins={0} />,
+      <UsersTableHeader totalUsers={0} inAcc={0} notInAcc={0} internals={0} externals={0} active30d={0} admins={0} />,
     );
 
     // Initially 0 (data still loading)
     expect(document.body.textContent ?? "").toContain("0");
 
     // Data arrives — parent re-renders with real values
-    rerender(<UsersTableHeader totalUsers={3367} active30d={742} admins={88} />);
+    rerender(<UsersTableHeader totalUsers={3367} inAcc={2500} notInAcc={867} internals={1265} externals={2102} active30d={742} admins={88} />);
 
     await act(async () => {
       vi.advanceTimersByTime(1500);
@@ -132,11 +136,11 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("KPI tiles are wrapped in a glass surface", () => {
     const { container } = render(
-      <UsersTableHeader totalUsers={100} active30d={60} admins={8} />,
+      <UsersTableHeader totalUsers={100} inAcc={70} notInAcc={30} internals={80} externals={20} active30d={60} admins={8} />,
     );
     // PremiumSurface glass variant renders: rounded-xl bg-surface-2 border border-surface-border backdrop-blur-md
     const glassSurfaces = container.querySelectorAll(".bg-surface-2");
-    expect(glassSurfaces.length).toBeGreaterThanOrEqual(3);
+    expect(glassSurfaces.length).toBeGreaterThanOrEqual(5);
   });
 
   // -------------------------------------------------------------------------
@@ -144,7 +148,7 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("renders the Users page title", () => {
     render(
-      <UsersTableHeader totalUsers={10} active30d={5} admins={1} />,
+      <UsersTableHeader totalUsers={10} inAcc={7} notInAcc={3} internals={8} externals={2} active30d={5} admins={1} />,
     );
     expect(screen.getByText("Users")).toBeTruthy();
   });
@@ -154,7 +158,7 @@ describe("UsersTableHeader", () => {
   // -------------------------------------------------------------------------
   it("KPI tiles are display-only and have no role=button", () => {
     const { container } = render(
-      <UsersTableHeader totalUsers={100} active30d={60} admins={8} />,
+      <UsersTableHeader totalUsers={100} inAcc={70} notInAcc={30} internals={80} externals={20} active30d={60} admins={8} />,
     );
     // Tiles should not be buttons
     const glassSurfaces = container.querySelectorAll(".bg-surface-2");

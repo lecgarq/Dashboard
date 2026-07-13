@@ -102,8 +102,8 @@ interface KpiTileProps {
 
 function KpiTile({ label, value }: KpiTileProps) {
   return (
-    <PremiumSurface variant="glass" className="px-5 py-3 min-w-[110px]">
-      <p className="text-xs text-muted-foreground font-medium leading-tight mb-1">{label}</p>
+    <PremiumSurface variant="glass" className="px-4 py-2.5 min-w-[96px]">
+      <p className="text-xs text-muted-foreground font-medium leading-tight mb-1 whitespace-nowrap">{label}</p>
       <p className="text-2xl font-bold text-foreground tabular-nums leading-none">
         <AnimatedNumber value={value} />
       </p>
@@ -116,13 +116,17 @@ function KpiTile({ label, value }: KpiTileProps) {
 // ---------------------------------------------------------------------------
 export interface UsersTableHeaderProps {
   totalUsers: number;
+  inAcc: number;
+  notInAcc: number;
+  internals: number;
+  externals: number;
   active30d: number;
   admins: number;
 }
 
-export function UsersTableHeader({ totalUsers, active30d, admins }: UsersTableHeaderProps) {
+export function UsersTableHeader({ totalUsers, inAcc, notInAcc, internals, externals, active30d, admins }: UsersTableHeaderProps) {
   return (
-    <div className="relative flex items-center justify-between py-2 overflow-hidden rounded-2xl">
+    <div className="relative flex flex-wrap items-center justify-between gap-y-2 py-2 overflow-hidden rounded-2xl">
       {/* Particle accent — absolutely positioned behind KPIs, pointer-events:none */}
       <HeaderParticleAccent />
 
@@ -137,9 +141,13 @@ export function UsersTableHeader({ totalUsers, active30d, admins }: UsersTableHe
         </div>
       </div>
 
-      {/* Right: KPI tiles */}
-      <div className="relative z-10 flex items-center gap-3">
+      {/* Right: KPI tiles — wraps so no tile is ever clipped by overflow-hidden */}
+      <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
         <KpiTile label="Total users" value={totalUsers} />
+        <KpiTile label="In ACC" value={inAcc} />
+        <KpiTile label="Not in ACC" value={notInAcc} />
+        <KpiTile label="Internal" value={internals} />
+        <KpiTile label="External" value={externals} />
         <KpiTile label="Active 30d" value={active30d} />
         <KpiTile label="Admins" value={admins} />
       </div>

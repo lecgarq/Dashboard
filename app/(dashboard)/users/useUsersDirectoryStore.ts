@@ -59,6 +59,8 @@ export interface UsersDirectoryState {
   filterNoProjects: boolean;
   statusFilter: AggregatedStatus[];
   projectAdminFilter: boolean;
+  affiliationFilter: "internal" | "external" | null;
+  setAffiliationFilter: (v: "internal" | "external" | null) => void;
   setFilterNoProjects: (v: boolean) => void;
   setStatusFilter: (v: AggregatedStatus[] | ((prev: AggregatedStatus[]) => AggregatedStatus[])) => void;
   setProjectAdminFilter: (v: boolean | ((prev: boolean) => boolean)) => void;
@@ -120,6 +122,8 @@ export const useUsersDirectoryStore = create<UsersDirectoryState>((set, get) => 
   filterNoProjects: false,
   statusFilter: [],
   projectAdminFilter: false,
+  affiliationFilter: null,
+  setAffiliationFilter: (v) => set({ affiliationFilter: v }),
   setFilterNoProjects: (v) => set({ filterNoProjects: v }),
   setStatusFilter: (v) =>
     set((state) => ({
@@ -163,6 +167,7 @@ export const useUsersDirectoryStore = create<UsersDirectoryState>((set, get) => 
       filterAccModuleTier: null,
       statusFilter: [],
       projectAdminFilter: false,
+      affiliationFilter: null,
       search: "",
       debouncedSearch: "",
     }),

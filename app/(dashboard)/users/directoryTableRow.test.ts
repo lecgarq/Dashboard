@@ -53,6 +53,18 @@ const accUser = (overrides: Partial<BulkAccUser> = {}): BulkAccUser => ({
 // ---------------------------------------------------------------------------
 
 describe("buildDirectoryRows", () => {
+  it("flags isExternal from the email domain (canonical internalDomains rule)", () => {
+    const rows = buildDirectoryRows(
+      [
+        person(), // ada@hermosillo.com — internal
+        person({ resourceName: "people/456", email: "bob@partner.com" }),
+      ],
+      new Map(),
+    );
+    expect(rows[0].isExternal).toBe(false);
+    expect(rows[1].isExternal).toBe(true);
+  });
+
   it("derives lastActivity as the max (latest) project.lastActivity across all projects", () => {
     const user = accUser({
       projects: [

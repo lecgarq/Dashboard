@@ -25,7 +25,7 @@
 //     and stats (depend on store filter state + this hook's people/accSummaryMap)
 // ---------------------------------------------------------------------------
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import {
@@ -36,6 +36,7 @@ import {
 } from "./useMergedAccUsers";
 import type { OrgPerson, LocalDirectoryUser } from "./directoryUtils";
 import { uniqueSorted } from "./directoryUtils";
+import { classifyAffiliation } from "./access-analysis/internalDomains";
 
 // ---------------------------------------------------------------------------
 // PERF-03: single referentially-stable input shared by both the client query
@@ -96,6 +97,40 @@ export interface UsersDirectoryData {
 // Hook
 // ---------------------------------------------------------------------------
 export function useUsersDirectoryData(): UsersDirectoryData {
+  const utils = trpc.useUtils();
+
+  // -------------------------------------------------------------------------
+  // Freshness poll: server data-version token (FRESH-01)
+  // -------------------------------------------------------------------------
+  // The snapshot queries below hold 5-10 min staleTimes and no focus refetch,
+  // so without a push signal the page shows load-time data until a manual
+  // reload. This polls an opaque ~50-byte fingerprint of the underlying
+  // tables every 60s (paused in background tabs — React Query default) and
+  // invalidates the heavy queries ONLY when the token changes. Ingest lands →
+  // data appears in place within ~1 min; nothing changed → no refetch at all.
+  const { data: dataVersion } = trpc.accDcGraph.dataVersion.useQuery(undefined, {
+    refetchInterval: 60_000,
+    staleTime: 0,
+    retry: false,
+  });
+  const seenVersionRef = useRef<string | null>(null);
+  useEffect(() => {
+    const next = dataVersion?.version ?? null;
+    if (!next) return; // probe unavailable — never treat as a change
+    const prev = seenVersionRef.current;
+    seenVersionRef.current = next;
+    if (!prev || prev === next) return;
+    // Invalidate marks stale + refetches mounted queries; unmounted ones
+    // (profile panel, hover-prefetch caches) refetch on next use.
+    utils.accDcGraph.bulkUsers.invalidate();
+    utils.accDcGraph.bulkUser.invalidate();
+    utils.users.bulkAccSummary.invalidate();
+    utils.accMembers.enrichedUsers.invalidate();
+    utils.accActivity.lastFileActivityByEmailAll.invalidate();
+    utils.accActivity.getCoverage.invalidate();
+    utils.accFolders.getCoverage.invalidate();
+  }, [dataVersion, utils]);
+
   // -------------------------------------------------------------------------
   // Query 1: Primary DC user snapshot (leanProjects variant)
   // -------------------------------------------------------------------------
@@ -218,16 +253,41 @@ export function useUsersDirectoryData(): UsersDirectoryData {
   );
 
   // -------------------------------------------------------------------------
-  // Derivation: people (org directory or fallback)
+  // Derivation: people (org directory or fallback + external ACC collaborators)
   // -------------------------------------------------------------------------
-  const people = useMemo<OrgPerson[]>(() => {
+  const directoryPeople = useMemo<OrgPerson[]>(() => {
     if (directoryData?.status === "ok") {
       return directoryData.people ?? [];
     }
     return mapFallbackDirectoryToOrgPeople(fallbackDirectory as LocalDirectoryUser[]);
   }, [directoryData, fallbackDirectory]);
 
-  const isLoading = !people.length && isDirectoryLoading && isFallbackLoading;
+  // External ACC collaborators (non-internal email domains) never appear in the
+  // Google/fallback directory, so append them as synthetic people. They group
+  // under department "External" and carry no directory-only fields.
+  const people = useMemo<OrgPerson[]>(() => {
+    const dirEmails = new Set(directoryPeople.map((p) => p.email.toLowerCase()));
+    const externals: OrgPerson[] = [];
+    for (const u of accSummary) {
+      const key = u.email.toLowerCase();
+      if (dirEmails.has(key)) continue;
+      if (classifyAffiliation(u.email) !== "external") continue;
+      externals.push({
+        resourceName: `acc-external:${key}`,
+        displayName: u.name || u.email,
+        email: u.email,
+        photoUrl: null,
+        department: "External",
+        jobTitle: null,
+        phoneNumber: null,
+        costCenter: null,
+      });
+    }
+    externals.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    return [...directoryPeople, ...externals];
+  }, [directoryPeople, accSummary]);
+
+  const isLoading = !directoryPeople.length && isDirectoryLoading && isFallbackLoading;
 
   // -------------------------------------------------------------------------
   // Derivation: accSummaryMap — O(1) lookup in render
