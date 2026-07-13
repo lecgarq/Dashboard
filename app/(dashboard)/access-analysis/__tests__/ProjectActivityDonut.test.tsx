@@ -87,6 +87,21 @@ describe("ProjectActivityDonut", () => {
     expect(queryByTestId("project-activity-other-drilldown")).toBeNull();
   });
 
+  it("a folded project inside the Other list expands into its own module breakdown, and closes on a second click", () => {
+    const summary = summarizeProjectActivity(rows, 2); // p3 -> Other
+    const { getByTestId, queryByTestId } = render(<ProjectActivityDonut summary={summary} />);
+    fireEvent.click(within(getByTestId("project-activity-legend")).getByRole("button", { name: /Other \(1 project\)/ }));
+    const other = getByTestId("project-activity-other-drilldown");
+
+    fireEvent.click(within(other).getByRole("button", { name: /Project p3/ }));
+    const nested = getByTestId("project-activity-other-project-drilldown");
+    expect(nested.textContent).toContain("Datum"); // create-custom-attribute module bucket
+    expect(nested.textContent).toContain("5");
+
+    fireEvent.click(within(other).getByRole("button", { name: /Project p3/ }));
+    expect(queryByTestId("project-activity-other-project-drilldown")).toBeNull();
+  });
+
   it("shows the live account-level exclusion figure and the top-N-of-M caption", () => {
     const summary = summarizeProjectActivity(rows, 2);
     const { getByText } = render(<ProjectActivityDonut summary={summary} />);

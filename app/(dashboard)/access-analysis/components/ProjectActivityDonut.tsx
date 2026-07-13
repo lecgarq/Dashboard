@@ -62,14 +62,18 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
   const { slices, total, accountLevelCount, otherProjectCount, otherProjects, rowsByProject } = summary;
 
   const [drill, setDrill] = useState<string | null>(null);
+  // Nested expand INSIDE the Other list: one folded project's module breakdown.
+  const [otherDrill, setOtherDrill] = useState<string | null>(null);
   const toggleDrill = (projectId: string) => {
     if (projectId === "") {
       // Other slice — expands into its folded-project list (when it exists).
       if (otherProjects.length === 0) return;
+      setOtherDrill(null);
       setDrill((cur) => (cur === OTHER_DRILL ? null : OTHER_DRILL));
       return;
     }
     if (!rowsByProject.has(projectId)) return; // unknown id — no-op
+    setOtherDrill(null);
     setDrill((cur) => (cur === projectId ? null : projectId));
   };
 
@@ -89,6 +93,12 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
     if (!drill || drill === OTHER_DRILL) return null; // Other renders its own folded-project list
     return summarizeModules(rowsByProject.get(drill) ?? []);
   }, [drill, rowsByProject]);
+
+  // Module breakdown for the folded project expanded INSIDE the Other list.
+  const otherDrillSummary = useMemo(() => {
+    if (!otherDrill) return null;
+    return summarizeModules(rowsByProject.get(otherDrill) ?? []);
+  }, [otherDrill, rowsByProject]);
 
   const cTitle = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#52525b";
@@ -256,13 +266,48 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
             </button>
           </div>
           <ul className="max-h-80 list-none space-y-0.5 overflow-auto pr-1" style={{ columnWidth: "260px", columnGap: "1.5rem" }}>
-            {otherProjects.map((p) => (
-              <li key={p.projectId} className="flex items-center gap-2 break-inside-avoid truncate px-2 py-1 text-xs text-foreground/85">
-                <span className="relative flex-1 truncate" title={p.name}>{p.name}</span>
-                <span className="shrink-0 tabular-nums text-foreground">{p.value.toLocaleString()}</span>
-                <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(p.value, total)}</span>
-              </li>
-            ))}
+            {otherProjects.map((p) => {
+              const open = otherDrill === p.projectId;
+              return (
+                <li key={p.projectId} className="break-inside-avoid">
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => setOtherDrill((cur) => (cur === p.projectId ? null : p.projectId))}
+                    title={`${p.name} — click to ${open ? "collapse" : "expand"} its module breakdown`}
+                    className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent ${
+                      open ? "bg-accent text-foreground" : "text-foreground/85"
+                    }`}
+                  >
+                    <span className="relative flex-1 truncate">{p.name}</span>
+                    <span className="shrink-0 tabular-nums text-foreground">{p.value.toLocaleString()}</span>
+                    <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(p.value, total)}</span>
+                    <span
+                      aria-hidden
+                      className={`shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+                    >
+                      ›
+                    </span>
+                  </button>
+                  {open && otherDrillSummary && (
+                    <ul
+                      data-testid="project-activity-other-project-drilldown"
+                      className="mb-1 ml-4 list-none space-y-0.5 border-l border-border pl-2"
+                    >
+                      {otherDrillSummary.slices.map((m) => (
+                        <li key={m.id} className="flex items-center gap-2 truncate px-2 py-0.5 text-xs text-foreground/70">
+                          <span className="relative flex-1 truncate">{m.name}</span>
+                          <span className="shrink-0 tabular-nums text-foreground/90">{m.value.toLocaleString()}</span>
+                          <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">
+                            {fmtPct(m.value, otherDrillSummary.total)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

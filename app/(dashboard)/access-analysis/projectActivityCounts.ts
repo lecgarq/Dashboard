@@ -15,7 +15,7 @@ import type { ModuleActivityRow } from "@/lib/acc/moduleCountsTypes";
 export const DEFAULT_TOP_N = 10;
 
 /** One project's total activity volume (or the trailing "Other" bucket). */
-export interface ProjectActivitySlice {
+interface ProjectActivitySlice {
   /** "" for the Other bucket. */
   projectId: string;
   /** projectName, or "Other (N projects)" for the collapsed tail. */
@@ -37,8 +37,9 @@ export interface ProjectActivitySummary {
   /** The folded tail behind the Other slice, ranked by volume desc — feeds the
    *  Other slice's expand-to-list drill. Empty when every project fits topN. */
   otherProjects: ProjectActivitySlice[];
-  /** projectId -> its raw rows, for KEPT slices only (feeds `summarizeModules`
-   *  on click-to-drill). No entry for the Other bucket or Account-level. */
+  /** projectId -> its raw rows, for ALL real projects — kept slices AND the
+   *  folded tail (feeds `summarizeModules` on click-to-drill, including rows
+   *  inside the expanded Other list). No entry for Account-level. */
   rowsByProject: Map<string, ModuleActivityRow[]>;
 }
 
@@ -115,7 +116,7 @@ export function summarizeProjectActivity(
   const total = slices.reduce((sum, s) => sum + s.value, 0);
 
   const rowsByProject = new Map<string, ModuleActivityRow[]>();
-  for (const p of kept) {
+  for (const p of projects) {
     rowsByProject.set(p.projectId, p.rows);
   }
 

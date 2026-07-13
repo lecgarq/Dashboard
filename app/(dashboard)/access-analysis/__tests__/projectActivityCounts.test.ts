@@ -89,7 +89,7 @@ describe("summarizeProjectActivity", () => {
     expect(s.slices.every((sl) => sl.projectId !== "")).toBe(true);
   });
 
-  it("rowsByProject preserves a kept project's raw rows verbatim (usable by summarizeModules), with no entry for Other or Account-level", () => {
+  it("rowsByProject preserves raw rows verbatim for kept AND folded projects (usable by summarizeModules), with no entry for Account-level", () => {
     const rows: ModuleActivityRow[] = [
       mk("", "admin-action", 5),
       mk("p1", "view-entity", 30),
@@ -102,7 +102,9 @@ describe("summarizeProjectActivity", () => {
       mk("p1", "view-entity", 30),
       mk("p1", "issue-create", 20),
     ]);
-    expect(s.rowsByProject.has("p2")).toBe(false); // folded into Other
+    // Folded projects keep their rows too — they drill from inside the
+    // expanded Other list (owner-directed 2026-07-13).
+    expect(s.rowsByProject.get("p2")).toEqual([mk("p2", "view-entity", 1)]);
     expect(s.rowsByProject.has("")).toBe(false); // Account-level, never a drill entry
   });
 
