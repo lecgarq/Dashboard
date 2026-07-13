@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
-import { DEFAULT_TOP_N, PERMISSION_LEVEL_ORDER, summarizePermissionLevel } from "../permissionLevelCounts";
+import { DEFAULT_TOP_N, PERMISSION_LEVEL_ORDER, countRolesPerLevel, summarizePermissionLevel } from "../permissionLevelCounts";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 
 const isOther = (roleName: string) => roleName.startsWith("Other (");
@@ -64,6 +64,7 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
     () => summarizePermissionLevel(rows, expanded ? rows.length : DEFAULT_TOP_N),
     [rows, expanded],
   );
+  const rolesPerLevel = useMemo(() => countRolesPerLevel(rows), [rows]);
   const colorByLevel = useMemo(() => buildLevelColorMap(summary.levels), [summary.levels]);
 
   const cTitle = dark ? "#fafafa" : "#111827";
@@ -153,6 +154,35 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
         notMerge={false}
         onEvents={{ click: (p) => p.name && toggleDrill(p.name) }}
       />
+
+      {/* Roles-per-level strip (owner ask 2026-07-13): of all roles with any
+          folder permission, how many hold EACH level. A role holding several
+          levels counts under each — stated in the trailing note. */}
+      <div
+        data-testid="permission-level-role-counts"
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border pt-3"
+      >
+        <span className="mr-1 text-xs text-muted-foreground">
+          {rolesPerLevel.totalRoles.toLocaleString()} roles with folder permissions:
+        </span>
+        {rolesPerLevel.perLevel.map(({ level, roles }) => (
+          <span
+            key={level}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground/85"
+          >
+            <span
+              aria-hidden
+              className="h-2 w-2 shrink-0 rounded-sm"
+              style={{ background: colorByLevel.get(level) ?? UNKNOWN_LEVEL_COLOR }}
+            />
+            {level}
+            <span className="font-semibold tabular-nums text-foreground">{roles.toLocaleString()}</span>
+          </span>
+        ))}
+        <span className="text-[10px] text-muted-foreground">
+          — a role holding several levels counts under each
+        </span>
+      </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
         Counts folder-permission grants by level, from the live folder-permission table (View Only

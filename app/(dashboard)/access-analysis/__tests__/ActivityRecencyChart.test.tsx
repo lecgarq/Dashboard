@@ -55,6 +55,27 @@ describe("ActivityRecencyChart", () => {
     expect(drill.textContent).toContain("2 people");
   });
 
+  it("stale-year callout counts distinct PEOPLE across >365d + Never active", () => {
+    // Bo (400d), Cy (never), Dee (never) = 3 stale of 4 people; 2 never.
+    const { getByTestId } = render(<ActivityRecencyChart rows={rows} />);
+    const callout = getByTestId("activity-recency-stale-callout").textContent ?? "";
+    expect(callout).toContain("3");
+    expect(callout).toContain("of 4 people have no recorded activity in the last year");
+    expect(callout).toContain("2 of them never recorded at all");
+  });
+
+  it("stale-year callout does NOT count a person who is recently active on another membership", () => {
+    const mixed: ActivityRecencyRow[] = [
+      ...rows,
+      // Bo is stale on p1 (400d) but active on p2 — not stale as a PERSON.
+      { projectId: "p2", email: "bo@hermosillo.com", name: "Bo", company: "Estructure", roles: ["Project Admin"], lastActivityAt: daysAgo(3) },
+    ];
+    const { getByTestId } = render(<ActivityRecencyChart rows={mixed} />);
+    const callout = getByTestId("activity-recency-stale-callout").textContent ?? "";
+    expect(callout).toContain("2");
+    expect(callout).toContain("of 4 people");
+  });
+
   it("clicking a band drills to its users with role and date", () => {
     const { getByTestId } = render(<ActivityRecencyChart rows={rows} />);
     fireEvent.click(within(getByTestId("echart")).getByRole("button", { name: "<30d" }));

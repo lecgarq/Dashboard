@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PERMISSION_LEVEL_ORDER, summarizePermissionLevel } from "../permissionLevelCounts";
+import { PERMISSION_LEVEL_ORDER, countRolesPerLevel, summarizePermissionLevel } from "../permissionLevelCounts";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 
 function row(over: Partial<PermissionLevelRow>): PermissionLevelRow {
@@ -13,6 +13,29 @@ function row(over: Partial<PermissionLevelRow>): PermissionLevelRow {
     ...over,
   };
 }
+
+describe("countRolesPerLevel", () => {
+  it("counts DISTINCT roles per level in strongest-first order, with a role under each level it holds", () => {
+    const rows: PermissionLevelRow[] = [
+      row({ roleId: "r1", permType: "Full Controller" }),
+      row({ roleId: "r1", projectId: "p2", permType: "Full Controller" }), // same role+level twice — still 1 role
+      row({ roleId: "r1", permType: "View Only" }),
+      row({ roleId: "r2", permType: "View Only" }),
+      row({ roleId: "r3", permType: "Custom Level X" }), // unrecognized — kept, appended after known levels
+    ];
+    const { perLevel, totalRoles } = countRolesPerLevel(rows);
+    expect(perLevel).toEqual([
+      { level: "Full Controller", roles: 1 },
+      { level: "View Only", roles: 2 },
+      { level: "Custom Level X", roles: 1 },
+    ]);
+    expect(totalRoles).toBe(3); // r1 counted once despite holding two levels
+  });
+
+  it("returns empty perLevel and zero totalRoles for no rows", () => {
+    expect(countRolesPerLevel([])).toEqual({ perLevel: [], totalRoles: 0 });
+  });
+});
 
 describe("summarizePermissionLevel", () => {
   it("aggregates folder counts per role, split by verbatim permType level", () => {

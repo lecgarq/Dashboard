@@ -6,6 +6,7 @@ import type { EChartsOption } from "echarts";
 import { formatAbsolute } from "../relativeTime";
 import {
   ACTIVITY_RECENCY_BANDS,
+  bucketActivityRecency,
   summarizeActivityRecencyByRole,
   type ActivityRecencyBand,
 } from "../activityRecencyCounts";
@@ -46,6 +47,34 @@ export function ActivityRecencyChart({
 
   const summary = useMemo(() => summarizeActivityRecencyByRole(rows, now), [rows, now]);
   const roleColors = useMemo(() => buildRoleColorMap(summary.roleNames), [summary.roleNames]);
+
+  // Owner ask 2026-07-13: surface "no activity in the last year" (the >365d
+  // band PLUS Never active) as a headline number, counted in PEOPLE (distinct
+  // emails) — the bars below count memberships, so both units are stated.
+  const staleYear = useMemo(() => {
+    const all = new Set<string>();
+    const stale = new Set<string>();
+    const never = new Set<string>();
+    for (const r of rows) {
+      const email = r.email.toLowerCase();
+      all.add(email);
+      const band = bucketActivityRecency(r.lastActivityAt, now);
+      if (band === ">365d" || band === "Never active") {
+        stale.add(email);
+        if (band === "Never active") never.add(email);
+      }
+    }
+    // A person stale on one membership may be recently active on another —
+    // only count someone stale when EVERY membership of theirs is stale.
+    for (const r of rows) {
+      const band = bucketActivityRecency(r.lastActivityAt, now);
+      if (band !== ">365d" && band !== "Never active") {
+        stale.delete(r.email.toLowerCase());
+        never.delete(r.email.toLowerCase());
+      }
+    }
+    return { people: stale.size, neverPeople: never.size, totalPeople: all.size };
+  }, [rows, now]);
 
   const cTitle = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#52525b";
@@ -121,6 +150,24 @@ export function ActivityRecencyChart({
       <div data-testid="activity-recency-headline" className="mb-2 text-sm text-muted-foreground">
         <b className="text-foreground">{rows.length.toLocaleString()}</b> project memberships by activity recency
       </div>
+
+      {/* No-activity-in-a-year callout — people (distinct emails), not memberships. */}
+      {staleYear.people > 0 && (
+        <div
+          data-testid="activity-recency-stale-callout"
+          className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2"
+        >
+          <span className="text-xl font-bold tabular-nums text-amber-400">
+            {staleYear.people.toLocaleString()}
+          </span>
+          <span className="text-sm text-foreground/90">
+            of {staleYear.totalPeople.toLocaleString()} people have no recorded activity in the last year
+          </span>
+          <span className="text-xs text-muted-foreground">
+            ({staleYear.neverPeople.toLocaleString()} of them never recorded at all — click the bars to see who)
+          </span>
+        </div>
+      )}
 
       <EChart
         option={option}

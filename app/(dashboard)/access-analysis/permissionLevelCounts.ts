@@ -31,7 +31,7 @@ export const PERMISSION_LEVEL_ORDER = [
 ] as const;
 
 /** One role's aggregated permission-level footprint (a stacked chart bar). */
-export interface PermissionLevelBar {
+interface PermissionLevelBar {
   roleId: string;
   roleName: string;
   total: number;
@@ -40,7 +40,7 @@ export interface PermissionLevelBar {
 }
 
 /** One project row within a role's drill-down. */
-export interface PermissionLevelProjectRow {
+interface PermissionLevelProjectRow {
   projectId: string;
   projectName: string;
   folderCount: number;
@@ -55,6 +55,46 @@ export interface PermissionLevelSummary {
   /** Role name -> per-project folderCount rows sorted desc. Keys match `bars[].roleName`
    * for every bar except the trailing "Other" bucket (no drill entry required for Other). */
   projectsByRole: Map<string, PermissionLevelProjectRow[]>;
+}
+
+/** One level's distinct-role count (owner ask 2026-07-13: "how many roles do
+ *  I have with those types of permissions"). */
+export interface RolesPerLevel {
+  level: string;
+  /** Distinct roles holding this level on at least one folder. */
+  roles: number;
+}
+
+/**
+ * Counts DISTINCT roles per permission level, plus the total distinct roles in
+ * the rows. A role holding several levels is counted under each of them, so
+ * per-level counts intentionally sum to more than `totalRoles` — the chip
+ * strip states this. Level order matches PERMISSION_LEVEL_ORDER (strongest →
+ * weakest), unrecognized levels appended alphabetically — same convention as
+ * `summarizePermissionLevel`.
+ */
+export function countRolesPerLevel(
+  rows: ReadonlyArray<PermissionLevelRow>,
+): { perLevel: RolesPerLevel[]; totalRoles: number } {
+  const rolesByLevel = new Map<string, Set<string>>();
+  const allRoles = new Set<string>();
+  for (const r of rows) {
+    allRoles.add(r.roleId);
+    const set = rolesByLevel.get(r.permType) ?? new Set<string>();
+    set.add(r.roleId);
+    rolesByLevel.set(r.permType, set);
+  }
+  const known = PERMISSION_LEVEL_ORDER.filter((level) => rolesByLevel.has(level));
+  const unknown = [...rolesByLevel.keys()]
+    .filter((level) => !(PERMISSION_LEVEL_ORDER as readonly string[]).includes(level))
+    .sort((a, b) => a.localeCompare(b));
+  return {
+    perLevel: [...known, ...unknown].map((level) => ({
+      level,
+      roles: rolesByLevel.get(level)?.size ?? 0,
+    })),
+    totalRoles: allRoles.size,
+  };
 }
 
 /**
