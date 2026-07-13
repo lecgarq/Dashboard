@@ -8,6 +8,8 @@ import { DonutPanelSkeleton } from "./DonutSkeletons";
 import { formatAbsolute } from "../relativeTime";
 import { bucketActivityRecency, type ActivityRecencyBand } from "../activityRecencyCounts";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
+import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
+import { PermissionUsersDonut } from "./PermissionUsersDonut";
 
 interface RecencyDetailRow {
   key: string;
@@ -78,6 +80,9 @@ export function UsersTabPanel({
   covCovered,
   covTotal,
   dataFloor,
+  loadPermissionUsers,
+  permissionUsersLoading,
+  permissionUserCounts,
 }: {
   /** Presence gates the panel (fetched lazily by the shell on first Roles/Users tab activation). */
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
@@ -86,6 +91,10 @@ export function UsersTabPanel({
   covCovered: number;
   covTotal: number;
   dataFloor?: string | null;
+  /** Presence gates the users-by-permission-level donut (fetched lazily on first Users tab activation). */
+  loadPermissionUsers?: () => Promise<PermissionUserCounts | null>;
+  permissionUsersLoading?: boolean;
+  permissionUserCounts?: PermissionUserCounts | null;
 }) {
   const [query, setQuery] = useState("");
 
@@ -123,6 +132,24 @@ export function UsersTabPanel({
 
   return (
     <div className="flex flex-col gap-6">
+      {loadPermissionUsers && (
+        <Reveal>
+          <section className="flex flex-col gap-3">
+            {permissionUsersLoading ? (
+              <DonutPanelSkeleton />
+            ) : permissionUserCounts ? (
+              <>
+                <SectionHeader
+                  title="Users by permission level"
+                  subtitle="How many people hold each folder-permission level, counting every user once at their strongest grant — the quickest read on how much of the account can actually change or control content."
+                />
+                <PermissionUsersDonut counts={permissionUserCounts} />
+              </>
+            ) : null}
+          </section>
+        </Reveal>
+      )}
+
       <Reveal>
         <section className="flex flex-col gap-3">
           {activityRecencyLoading ? (

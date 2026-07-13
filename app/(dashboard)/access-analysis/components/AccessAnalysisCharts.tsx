@@ -39,6 +39,7 @@ import type { FolderActionCell } from "../folderActionTypes";
 import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
+import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
 import type { IssueFunnelData, IssueFunnelStatusRow, IssueFunnelTypeRow } from "@/lib/server/issueFunnelView";
 import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
@@ -101,6 +102,7 @@ export function AccessAnalysisCharts({
   loadFolderActionMatrix,
   loadActivityRecency,
   loadPermissionLevel,
+  loadPermissionUsers,
   loadFolderScopedActivity,
   loadCompanyFolderBreakdown,
   loadIssueFunnel,
@@ -136,6 +138,8 @@ export function AccessAnalysisCharts({
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
   /** PERM-01 reframe: lazy per-tab fetch (Roles tab), fired at most once. Presence gates the panel. */
   loadPermissionLevel?: () => Promise<PermissionLevelRow[] | null>;
+  /** Users-by-permission-level donut: lazy per-tab fetch (Users tab), fired at most once. Presence gates the panel. */
+  loadPermissionUsers?: () => Promise<PermissionUserCounts | null>;
   /** UAT-6: lazy per-tab fetch (Companies tab), fired at most once. Presence gates the panel. */
   loadFolderScopedActivity?: () => Promise<FolderActivityActorRow[] | null>;
   /** UAT-6: lazy per-company folder drill, fired on click (never eager, never cached account-wide). */
@@ -291,6 +295,9 @@ export function AccessAnalysisCharts({
   const [permissionLevelRows, setPermissionLevelRows] = useState<PermissionLevelRow[] | null>(null);
   const [permissionLevelLoading, setPermissionLevelLoading] = useState(false);
   const permissionLevelFetchedRef = useRef(false);
+  const [permissionUserCounts, setPermissionUserCounts] = useState<PermissionUserCounts | null>(null);
+  const [permissionUsersLoading, setPermissionUsersLoading] = useState(false);
+  const permissionUsersFetchedRef = useRef(false);
   const [folderScopedActivityRows, setFolderScopedActivityRows] = useState<FolderActivityActorRow[] | null>(null);
   const [folderScopedActivityLoading, setFolderScopedActivityLoading] = useState(false);
   const folderScopedActivityFetchedRef = useRef(false);
@@ -313,6 +320,13 @@ export function AccessAnalysisCharts({
       void loadPermissionLevel()
         .then((rows) => setPermissionLevelRows(rows))
         .finally(() => setPermissionLevelLoading(false));
+    }
+    if (tab === "users" && loadPermissionUsers && !permissionUsersFetchedRef.current) {
+      permissionUsersFetchedRef.current = true;
+      setPermissionUsersLoading(true);
+      void loadPermissionUsers()
+        .then((counts) => setPermissionUserCounts(counts))
+        .finally(() => setPermissionUsersLoading(false));
     }
     if (tab === "companies" && loadFolderScopedActivity && !folderScopedActivityFetchedRef.current) {
       folderScopedActivityFetchedRef.current = true;
@@ -522,6 +536,9 @@ export function AccessAnalysisCharts({
             covCovered={covCovered}
             covTotal={covTotal}
             dataFloor={dataFloor}
+            loadPermissionUsers={loadPermissionUsers}
+            permissionUsersLoading={permissionUsersLoading}
+            permissionUserCounts={permissionUserCounts}
           />
         </TabsContent>
 

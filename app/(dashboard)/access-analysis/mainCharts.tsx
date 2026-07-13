@@ -27,6 +27,7 @@ import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActio
 import { loadFolderRankingAction, loadFolderDetailAction, loadFolderActionMatrixAction } from "./folderActivityActions";
 import { loadActivityRecencyAction } from "./activityRecencyActions";
 import { loadPermissionLevelAction } from "./permissionLevelActions";
+import { loadPermissionUsersAction } from "./permissionUserActions";
 import { loadFolderScopedActivityAction, loadCompanyFolderBreakdownAction } from "./folderActivityByCompanyActions";
 import { loadIssueFunnelAction } from "./issueFunnelActions";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
@@ -88,6 +89,7 @@ export async function MainCharts() {
     company: v.company,
     name: v.name,
     email: v.email,
+    status: v.status,
   }));
 
   const membershipRows = view.map((v) => ({
@@ -119,6 +121,7 @@ export async function MainCharts() {
       loadFolderActionMatrix={loadFolderActionMatrixAction}
       loadActivityRecency={loadActivityRecencyAction}
       loadPermissionLevel={loadPermissionLevelAction}
+      loadPermissionUsers={loadPermissionUsersAction}
       loadFolderScopedActivity={loadFolderScopedActivityAction}
       loadCompanyFolderBreakdown={loadCompanyFolderBreakdownAction}
       loadIssueFunnel={loadIssueFunnelAction}
