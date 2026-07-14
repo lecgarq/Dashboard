@@ -1,0 +1,63 @@
+{
+  "ok": false,
+  "phase": "23-Workshop Curation & Milestone Close",
+  "rebuild": true,
+  "routes": [
+    "/api/health",
+    "/access-analysis",
+    "/template-mty",
+    "/C:/Program Files/Git/users"
+  ],
+  "failures": [
+    "STATE progress.total_phases must be 17, got 6",
+    "STATE progress.completed_phases must be 17, got 5"
+  ],
+  "warnings": [
+    "STATE body has no 'N of M phases complete' progress line",
+    "[W002] STATE.md references phase 23.1, but only phases 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20.1, 21, 21.1, 22, 23 are declared",
+    "[W002] STATE.md references phase 23.1, but only phases 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 20.1, 21, 21.1, 22, 23 are declared"
+  ],
+  "checks": [
+    {
+      "name": "npx tsc --noEmit",
+      "ok": true,
+      "status": 0
+    },
+    {
+      "name": "npm run build",
+      "ok": true,
+      "status": 0
+    },
+    {
+      "name": "Start scheduled task",
+      "ok": true,
+      "detail": "Started scheduled task LECG Dashboard Local"
+    },
+    {
+      "name": "GET /api/health",
+      "ok": true,
+      "status": 200,
+      "detail": "OK"
+    },
+    {
+      "name": "GET /access-analysis",
+      "ok": true,
+      "status": 307,
+      "detail": "Temporary Redirect"
+    },
+    {
+      "name": "GET /template-mty",
+      "ok": true,
+      "status": 307,
+      "detail": "Temporary Redirect"
+    },
+    {
+      "name": "GET /C:/Program Files/Git/users",
+      "ok": true,
+      "status": 307,
+      "detail": "Temporary Redirect"
+    }
+  ],
+  "gsd_tools": "gsd-core\\bin\\gsd-tools.cjs",
+  "timestamp": "2026-07-14T16:58:33.316Z"
+}

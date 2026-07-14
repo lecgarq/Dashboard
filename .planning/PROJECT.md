@@ -15,7 +15,22 @@ about its coverage.
 
 ## Current State
 
-**Shipped:** v2.2 Structural Refactors — functionally complete 2026-07-02 (5 phases,
+**Shipped:** v2.3 New Graphs — closed 2026-07-14 (6 phases, 28 plans; Phases 20, 20.1,
+21, 21.1, 22, 23). Added 8 new truthful charts to `/access-analysis` from
+existing-but-unvisualized Prisma data (issue-fetch coverage, issue timeline/status/type,
+permission footprint by role, dormant users by sign-in recency, ingest freshness), plus
+two inserted UAT-follow-up phases (20.1's 6-tab IA redesign + panel-semantic pivots, 21.1's
+provisioned-modules chart + service-first activity attribution fix). All 8 v2.3
+requirements complete (ISSUE-01–05, PERM-01, ENG-01, PIPE-01); Phase 23 closed the
+milestone with a full graph-by-graph owner sign-off — the live 23-panel `/access-analysis`
+surface (across all 6 tabs) plus `/users` received a blanket verbatim owner **"approved"**
+on a freshly rebuilt `:3000` (zero findings raised); the full automated gate sweep
+(tsc/test/TEST-01-03/WebGL-scope-fence/spatial-graph-scope-fence/repo-map check) is proven
+green with re-runnable evidence in `23-VERIFICATION.md`. Milestone archived to
+`.planning/milestones/v2.3-ROADMAP.md`/`v2.3-REQUIREMENTS.md`, logged in
+`.planning/MILESTONES.md`.
+
+**Prior:** v2.2 Structural Refactors — functionally complete 2026-07-02 (5 phases,
 9 plans; Phases 15–19). Executed the deferred structural refactors safely behind v2.1's
 characterization tests, with **zero change to what the workshop pages show**: REF-02
 (shared `lib/server/folderPermQuery.ts` extraction, consumed by `/template-mty` +
@@ -28,30 +43,25 @@ requirements complete; every phase goal-verified (Phase 19: gsd-verifier 10/10);
 visual parity on `/access-analysis` + `/template-mty` approved after a fresh `:3000` rebuild.
 Tagged `v2.2` (local, consistent with `v1.0`/`v2.0`/`v2.1`).
 
-**Prior:** v2.1 Concerns Hardening — closed 2026-07-01 (6 phases, 14 plans, Phases 09–14;
-all 20 requirements verified). Closed the `.planning/codebase/CONCERNS.md` debt map and
-shipped the characterization tests (TEST-01/02/03) that made the v2.2 refactors safe.
-Tagged `v2.1`.
+**Close method:** tag + PROJECT/STATE evolution with requirements kept in place. Completed
+phase directories and duplicate milestone archives are intentionally omitted from the working
+tree; tags and git history are the authoritative detailed record. Deploy = rebuild on `:3000`
+(not a branch merge); v2.3's final phase (23) rebuilt `:3000` and captured the owner's
+graph-by-graph sign-off before closing.
 
-**Close method:** "safe logical close" — tag + PROJECT/STATE evolution with requirements
-kept in place. Full physical archival (MILESTONES.md / RETROSPECTIVE.md / `milestones/v2.x-*`)
-remains intentionally deferred while `.planning/` is mid-migration (see Context): v1.0/v2.0
-history lives only in git HEAD, so resurrecting the archive directory is a separate migration
-task, not part of this close. Deploy = rebuild on `:3000` (not a branch merge); v2.2's final
-phase WAS rebuilt on `:3000` (owner-consented) to verify parity.
+**Current focus:** Awaiting next milestone. v2.4 candidate seeds are recorded in
+`.planning/ROADMAP.md`'s "v2.4 Seed Pool" section — carried-forward deferred candidates
+remain in Active below: SVC-01, the `/users/spatial-graph` concerns milestone, and the
+DC-01/DC-02 external-data unlocks.
 
-**Current focus:** v2.3 New Graphs (opened 2026-07-02). Deferred candidates carried in
-Active below: SVC-01, the `/users/spatial-graph` concerns milestone, and the DC-01/DC-02
-external-data unlocks.
-
-## Current Milestone: v2.3 New Graphs
+## Shipped Milestone: v2.3 New Graphs — ✅ SHIPPED 2026-07-14
 
 **Goal:** Add new truthful charts to `/access-analysis` and `/template-mty` from
 existing-but-unvisualized Prisma data, following the established panel registration
 pattern — no new data sources, no new WebGL, honest coverage labels throughout.
 
-**Target features** (candidate pool from ROADMAP.md "v2.3 Candidates (Seeds)";
-final scope set in REQUIREMENTS.md):
+**Target features delivered** (REQ-level detail in `REQUIREMENTS.md`, archived to
+`.planning/milestones/v2.3-REQUIREMENTS.md`):
 
 - AccIssue funnel — issues over time / by status / by type (full issue set, not
   just the coordination-classified subset)
@@ -61,10 +71,11 @@ final scope set in REQUIREMENTS.md):
   `AccActivity` directly; `rowsByModule` telemetry is a known zero)
 - Issue-fetch coverage donut — `AccIssueFetchRun` honest-coverage labeling
 - Dormant users by `lastSignIn` recency — `AccProjectMember.lastSignIn`
-- Activity verb / object-type breakdown — `AccActivityAccds` (respect ~12-mo floor label)
-- Folder storage treemap — `AccFolder` crawl rollups
-- Permission tier × folder-depth heatmap — 2D view via `folderPermQuery`
-- Provisioned-vs-active module coverage — provisioning data vs charted activity
+
+**Deferred from the original 9-candidate seed pool** (still open, see "Future
+Requirements" carried into the v2.4 Seed Pool below): activity verb/object-type breakdown,
+folder storage treemap, permission tier × folder-depth heatmap, provisioned-vs-active
+module coverage.
 
 ## Shipped Milestone: v2.2 Structural Refactors — ✅ SHIPPED 2026-07-02
 
@@ -109,15 +120,13 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 - ✓ **Shared query extraction** (REF-02 / QUERY-01) — v2.2 (`lib/server/folderPermQuery.ts` owns the base `AccFolderPermission` join; TEST-03 byte-identical)
 - ✓ **Access-analysis monolith splits** (REF-01 / SPLIT-01–04) — v2.2 (all 3 monoliths → data-hook / transform / thin-view, each ≤ ~400 lines; TEST-02 byte-identical)
 - ✓ **AccFolderPermissionSummary projection + raw-scan retirement + refresh** (REF-03 / PROJ-01–03) — v2.2 (projection reconciled 0-mismatch; summary consumer switched; raw scan hard-guarded; ingest-cron refresh, ≤1-cycle staleness)
+- ✓ **New graphs for /access-analysis** (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) — v2.3
+  (8/8 requirements; 23-panel surface owner-approved on `:3000` 2026-07-14)
 
 ### Active
 
-<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. New graphs promoted to Current Milestone v2.3 (2026-07-02). SVC-01, spatial-graph, DC-01/02 remain deferred candidates. -->
+<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. v2.3 New Graphs shipped → moved to Validated (2026-07-14). SVC-01, spatial-graph, DC-01/02 remain deferred candidates. -->
 
-- [ ] **New graphs for `/access-analysis` + `/template-mty`** — **CURRENT
-  MILESTONE v2.3** (see Current Milestone section above; scoped in
-  REQUIREMENTS.md). Full inventory + registration pattern: ROADMAP.md "v2.3
-  Candidates (Seeds)".
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
@@ -146,12 +155,11 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 - **v2.1 shipped 2026-07-01**, tagged `v2.1` (local-only, consistent with `v1.0`/`v2.0`).
   Prior history (v2.0 milestone + Phases 01–08, incl. the Phase 8 activity
-  re-extraction) is preserved in git history and the `.planning.backup/` snapshot.
-- **`.planning/` is mid-migration.** `MILESTONES.md`, `RETROSPECTIVE.md`, and the
-  `milestones/` archive directory (holding the v1.0 + v2.0 archives) are deleted in the
-  working tree (uncommitted) while that history remains in git HEAD. v2.1 was closed
-  via a safe logical close to avoid dropping that history; finishing the migration and
-  the full v2.1 archival is a pending bookkeeping task.
+  re-extraction) is preserved in tags and git history.
+- **Planning retention is deliberate.** The working tree keeps current PROJECT, STATE,
+  REQUIREMENTS, ROADMAP, research/codebase context, and active-milestone phase artifacts.
+  Completed milestone phase directories and duplicate archives are read from tags or git
+  history when needed.
 - Data extraction used a free ACCDS member-accessible web-session crawl (no Data
   Connector quota) plus a folder crawl; census in `.planning/STATE.md`.
 - **v2.2 shipped 2026-07-02**, tagged `v2.2` (local). The 2 pre-existing
@@ -161,6 +169,15 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
   The branch `feat/access-analysis-redesign` still carries other pre-existing unrelated WIP
   (uncommitted `app/...` / repo-map changes) and the `.planning/` migration deletions — left
   untouched throughout v2.2; all v2.2 commits were made by explicit path.
+- **v2.3 shipped 2026-07-14** (New Graphs, 6 phases/28 plans, 8/8 requirements). Closed via
+  the same tag-consistent retention model: `.planning/milestones/v2.3-ROADMAP.md` +
+  `v2.3-REQUIREMENTS.md` archived, `.planning/MILESTONES.md` gained a v2.3 entry (v2.0/v1.0
+  history preserved), STATE/ROADMAP/PROJECT evolved in place. Two urgent phases were inserted
+  mid-milestone (20.1 IA redesign, 21.1 Overview-tab UAT follow-ups) — the 20.1/21.1 pattern
+  is why v2.3 grew from a planned 4 phases to 6; Phase 23 explicitly avoided repeating it (no
+  Phase 23.1). Milestone closed on a full deliberate `:3000` rebuild + graph-by-graph owner
+  sign-off pass — the first milestone in this branch's history to get one, rather than
+  per-phase spot checks.
 
 ## Constraints
 
@@ -181,13 +198,15 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | Exclude `/users/spatial-graph` concerns (§3, §8.2/8.3) from v2.1 | Honors the standing out-of-scope boundary; lowest risk to the interactive graph | ✓ Good — boundary held; no spatial-graph churn in the diff |
 | Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | ✓ Good — REF-01/REF-02 now safe behind TEST-02/TEST-03 |
 | Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | ✓ Good — no rework needed |
-| Close v2.1 via "safe logical close" (tag + evolve; no archival, requirements kept in place) | `.planning/` mid-migration deleted MILESTONES.md + `milestones/` in the working tree; full archival would drop v1.0/v2.0 history that lives only in HEAD | — Pending — finish migration, then archive v2.1 |
+| Close v2.1 via tag + evolve; keep requirements in place and detailed artifacts in git history | Avoid duplicate planning archives in the working tree while retaining recoverable evidence | ✓ Good — retention policy finalized during repository cleanup |
 | v2.2 = full structural-refactor scope (REF-01 all 3 monoliths + REF-02 + REF-03 DB projection) | The characterization tests shipped in v2.1 exist precisely to make these safe; owner chose the widest slice incl. the summary projection | ✓ Good — all 8 requirements shipped behavior-preserving; every phase goal-verified; workshop pages unchanged |
-| v2.2 keeps `REQUIREMENTS.md` in place (v2.1 + v2.2 record preserved in Validated + git HEAD) | Consistent with the deferred-archival close; `milestones/` is still deleted mid-migration so re-creating an archive dir would re-open that history question | ✓ Good — same safe-logical-close repeated for v2.2 |
+| v2.2 keeps `REQUIREMENTS.md` in place (v2.1 + v2.2 record preserved in Validated + git history) | Keeps current requirements readable without duplicating completed phase directories | ✓ Good — same retention model repeated for v2.2 |
 | REF-03 terrain scoped OUT of the projection switch (Phase 19) | `AccFolderPermissionSummary` is a per-`(projectId,roleId)` rollup; terrain needs per-folder tier, which the rollup lacks — forcing it would lose granularity + break TEST-02. Only the summary aggregate matches the projection shape | ✓ Good — terrain stayed on `folderPermQuery.ts`, TEST-02 byte-identical; per-folder projection seeded for later |
 | Hard-guard (not delete) the `includePermissionContexts` raw scan | Preserves the WS2 edge-feed / per-folder-ACL capability behind an explicit `ACC_ALLOW_RAW_PERMISSION_SCAN=1` env escape hatch; throws by default so the ~6M-row OOM window can't silently re-open | ✓ Good — no prod caller enables it; TEST-01 strengthened |
 | Refresh via reusing the backfill script verbatim in the ingest cron | `execSync('node scripts/backfill-folder-perm-summary.cjs')` (non-fatal, server-side) makes the cron and standalone backfill the SAME code path — zero SQL duplication, no drift; bounded ≤1 ingest cycle | ✓ Good — reconciliation PASS post-refresh; staleness documented in INTEGRATIONS.md |
 | Rebuild `:3000` (owner-consented) to verify v2.2 parity, unlike v2.1 | The final phase was a server-side data-source swap → a rebuild is required to see it; owner explicitly approved stopping `:3000` (build 500s a live app per deploy-sequence) | ✓ Good — real owner visual sign-off on `/access-analysis` + `/template-mty` (unlike Phase 17's test-basis-only) |
+| Milestone-close gate = graph-by-graph owner sign-off across the FULL 4-page workshop, not just the new panels | Phase 23 (mandatory curation gate, no new requirements) exists precisely to catch a wrong number in a pre-v2.3 panel before the milestone ships | ✓ Good — blanket verbatim "approved" on all 23 `/access-analysis` panels + `/users`, zero findings; `IssueTypeChart` (the one panel with zero prior UAT) covered |
+| Keep v2.3 tight — no Phase 23.1 despite the 20.1/21.1 inserted-phase precedent | The 20.1/21.1 pattern already stretched v2.3 from 4 to 6 phases; the owner review's zero-finding outcome meant nothing needed a follow-up insertion | ✓ Good — milestone closed cleanly, no urgent-phase insertion needed |
 
 ---
-*Last updated: 2026-07-02 after starting milestone v2.3 New Graphs (new charts for `/access-analysis` + `/template-mty` from existing Prisma data).*
+*Last updated: 2026-07-14 after closing milestone v2.3 New Graphs (8/8 requirements shipped; see "Shipped Milestone: v2.3 New Graphs" above). Awaiting next milestone — v2.4 candidate seeds recorded in `.planning/ROADMAP.md`'s "v2.4 Seed Pool" section.*

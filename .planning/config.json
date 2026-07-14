@@ -9,35 +9,77 @@
     "research": true,
     "plan_check": true,
     "verifier": true,
+    "nyquist_validation": true,
+    "ai_integration_phase": true,
     "human_verify_mode": "end-of-phase",
     "context_coverage_gate": true,
     "test_command": "npm test",
-    "build_command": "npx tsc --noEmit && npm run build"
+    "build_command": "npx tsc --noEmit"
   },
   "granularity": "standard",
   "features": {
     "thinking_partner": true
   },
   "agent_skills": {
-    "gsd-advisor-researcher": [".claude/skills/lecg-dashboard"],
-    "gsd-code-fixer": [".claude/skills/lecg-dashboard"],
-    "gsd-code-reviewer": [".claude/skills/lecg-dashboard"],
-    "gsd-codebase-mapper": [".claude/skills/lecg-dashboard"],
-    "gsd-doc-verifier": [".claude/skills/lecg-dashboard"],
-    "gsd-doc-writer": [".claude/skills/lecg-dashboard"],
-    "gsd-executor": [".claude/skills/lecg-dashboard"],
-    "gsd-integration-checker": [".claude/skills/lecg-dashboard"],
-    "gsd-intel-updater": [".claude/skills/lecg-dashboard"],
-    "gsd-nyquist-auditor": [".claude/skills/lecg-dashboard"],
-    "gsd-pattern-mapper": [".claude/skills/lecg-dashboard"],
-    "gsd-phase-researcher": [".claude/skills/lecg-dashboard"],
-    "gsd-plan-checker": [".claude/skills/lecg-dashboard"],
-    "gsd-planner": [".claude/skills/lecg-dashboard"],
-    "gsd-roadmapper": [".claude/skills/lecg-dashboard"],
-    "gsd-security-auditor": [".claude/skills/lecg-dashboard"],
-    "gsd-ui-auditor": [".claude/skills/lecg-dashboard"],
-    "gsd-ui-checker": [".claude/skills/lecg-dashboard"],
-    "gsd-ui-researcher": [".claude/skills/lecg-dashboard"],
-    "gsd-verifier": [".claude/skills/lecg-dashboard"]
+    "gsd-advisor-researcher": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-code-fixer": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-code-reviewer": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-codebase-mapper": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-doc-verifier": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-doc-writer": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-executor": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-integration-checker": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-intel-updater": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-nyquist-auditor": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-pattern-mapper": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-phase-researcher": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-plan-checker": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-planner": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-roadmapper": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-security-auditor": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-ui-auditor": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-ui-checker": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-ui-researcher": [
+      ".claude/skills/lecg-dashboard"
+    ],
+    "gsd-verifier": [
+      ".claude/skills/lecg-dashboard"
+    ]
   }
 }

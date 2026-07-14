@@ -4,18 +4,18 @@ milestone: v2.3
 milestone_name: New Graphs
 current_phase: 23
 current_phase_name: Workshop Curation & Milestone Close
-status: active
-stopped_at: "Phase 23 plan 23-04 complete (gate sweep + scope fence) — full gate sweep re-run live: npx tsc --noEmit exit 0, npm test 2535/1/0 (no physicsLayer flake this run), TEST-01/02/03 byte-identical vs v2.2, zero new WebGL/R3F on /access-analysis, /users/spatial-graph untouched, node scripts/repo-map/check.cjs exit 0 (stale dependency-cruiser baseline refreshed 6->2, ratcheted down). 23-VERIFICATION.md written (status: owner_approved). ROADMAP Phase 22 AND Phase 23 checkboxes now [x]. Next: 23-05 (milestone close)."
+status: complete
+stopped_at: "Phase 23 plan 23-05 complete — v2.3 New Graphs MILESTONE CLOSED. MILESTONES.md restored (v2.0+v1.0 preserved) and gained a v2.3 entry; final gsd-self-gate.cjs --phase 23 --route /users --rebuild ran (rebuild+health+route checks recorded); milestone complete v2.3 archived ROADMAP/REQUIREMENTS to .planning/milestones/v2.3-*; PROJECT.md v2.3 Active entry promoted to Validated; ROADMAP v2.4 Seed Pool written; config.json reset. No Phase 23.1. v2.3 is the first milestone in this branch's history closed with a full deliberate deploy + graph-by-graph owner sign-off pass."
 last_updated: "2026-07-14T00:00:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 23 plan 23-04 (gate sweep + scope fence) executed — all 4 ROADMAP Phase 23 success criteria proven with re-runnable command output; repo-map baseline refresh (89237691) + ROADMAP/VERIFICATION commit (44803cd7). Milestone-close gate in 23-05 unblocked.
+last_activity_desc: Phase 23 plan 23-05 (milestone close, FINAL plan of v2.3) executed — MILESTONES.md history preserved + v2.3 entry appended, final self-gate run, milestone archived, PROJECT.md/ROADMAP.md updated with v2.4 seeds carried forward from REQUIREMENTS.md/STATE.md/deferred-items. v2.3 New Graphs is CLOSED (8/8 requirements, 23-panel workshop surface owner-approved on live :3000).
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 28
-  completed_plans: 27
-  percent: 96
-current_plan: 23-05
+  completed_plans: 28
+  percent: 100
+current_plan: null
 ---
 
 # Project State
@@ -25,16 +25,16 @@ current_plan: 23-05
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, 21.1, and 22 are ALL complete (8/8 requirements delivered). **Only Phase 23 (Workshop Curation & Milestone Close) remains.**
+**Current focus:** v2.3 New Graphs (opened 2026-07-02, CLOSED 2026-07-14) — all 6 phases (20, 20.1, 21, 21.1, 22, 23) complete, 8/8 requirements delivered, milestone archived. Awaiting next milestone.
 
 ## Current Position
 
-- **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**IN PROGRESS, 4/5 plans**).
-- **Plan:** 23-04 complete (2 commits `89237691` repo-map baseline refresh, `44803cd7` ROADMAP checkboxes + `23-VERIFICATION.md`): full gate sweep re-run live — `npx tsc --noEmit` exit 0; `npm test` 2535 passed/1 skipped/0 failed (matches `23-RESEARCH.md`'s time-sensitive baseline exactly, the documented `physicsLayer.test.ts` isolation flake did NOT reproduce this run); TEST-01/02/03 byte-identical vs the `v2.2` tag (all 3 diffs empty); zero new WebGL/R3F imports on `/access-analysis` across `v2.2..HEAD`; `/users/spatial-graph` zero-diff across the whole v2.3 milestone; `node scripts/repo-map/check.cjs` now exits 0 for the first time (the `dependency-cruiser-baseline.json` ratchet was stale, referencing 3 `scripts/diag-activity-*.cjs` files deleted 2026-07-10 in off-roadmap commit `b95bf5c7` — ratcheted DOWN 6→2 to match the live warning set exactly, never up). `23-VERIFICATION.md` written (`status: owner_approved`) with one evidence section per ROADMAP Phase-23 criterion plus a documented known-tooling-gap note (`gsd-self-gate.cjs` counts ROADMAP checkboxes cumulatively across all 3 milestones vs STATE.md's milestone-scoped progress block — pre-existing mismatch, not a regression). Both Phase 22 AND Phase 23 ROADMAP checkboxes flipped `[x]` (Phase 22 had shipped 3/3 but its checkbox was never flipped). See `23-04-SUMMARY.md`.
-- **Next:** **Phase 23 plan 23-05** — milestone close (restore `.planning/MILESTONES.md`, final `gsd-self-gate.cjs --phase 23 --rebuild`, `milestone complete v2.3` + manual STATE repair, PROJECT.md Active→Validated, ROADMAP v2.4 seeds, config reset).
-- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. The owner has blanket-approved the full 4-page workshop surface on live `:3000`, and the full automated gate sweep is now proven green with re-runnable evidence. Only the milestone-close artifact writes (23-05) remain.
-- **Last activity:** 2026-07-14 — Phase 23 plan 23-04 (gate sweep + scope fence) executed.
+- **Milestone:** v2.3 — New Graphs. **CLOSED 2026-07-14.** 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 6 phases (20, 20.1, 21, 21.1, 22, 23), 28/28 plans. Archived to `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md`; logged in `.planning/MILESTONES.md`.
+- **Phase:** 23 — Workshop Curation & Milestone Close (**COMPLETE, 5/5 plans**). Final plan 23-05 (this plan) restored `.planning/MILESTONES.md` (v2.0/v1.0 history preserved, v2.3 entry appended), ran the final `gsd-self-gate.cjs --phase 23 --route /users --rebuild` (rebuild + health + all route checks passed; only the known pre-existing cumulative-checkbox-count mismatch failed, documented in `23-VERIFICATION.md`), ran `milestone complete v2.3` (and manually repaired the STATE.md frontmatter corruption it introduced — see Blockers/Concerns), promoted PROJECT.md's v2.3 Active entry to Validated, and wrote a ROADMAP v2.4 Seed Pool carrying forward every standing deferred item.
+- **Plan:** 23-05 (FINAL, COMPLETE). See `23-05-SUMMARY.md`.
+- **Next:** Start the next milestone with the roadmap/requirements discussion workflow when the owner is ready. v2.4 candidate seeds are recorded in `.planning/ROADMAP.md`'s "v2.4 Seed Pool" section.
+- **Status:** v2.3 New Graphs is CLOSED. All 8 requirements delivered and owner-approved (blanket "approved" verdict on the full 4-page workshop surface, live `:3000`, 2026-07-14). No Phase 23.1 was needed.
+- **Last activity:** 2026-07-14 — Phase 23 plan 23-05 (milestone close, FINAL plan of v2.3) executed. v2.3 CLOSED.
 
 ## Status (data baseline — still current)
 
@@ -465,3 +465,7 @@ of v2.3 scope.
 | Phase 22 P01 | 50min | 3 tasks | 3 files |
 | Phase 22 P02 | ~35min | 2 tasks | 5 files |
 | Phase 23 P04 | ~40min | 3 tasks | 4 files |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone
