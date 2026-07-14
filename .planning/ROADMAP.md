@@ -8,6 +8,7 @@
 - ✅ **v2.1 Concerns Hardening** - Phases 09-14 (shipped 2026-07-01)
 - ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
+- 🚧 **v2.4 Spatial Graph Dimensions** - Phases 24-28 (in progress, opened 2026-07-14)
 
 ---
 
@@ -443,12 +444,160 @@ Plans:
 
 ---
 
+## 🚧 v2.4 Spatial Graph Dimensions (Active — opened 2026-07-14)
+
+**Milestone goal:** Make every access-analysis dimension selectable on the spatial graph
+(`/users/spatial-graph`, rendered by `AccessAnalysisShellClient` under
+`app/(dashboard)/users/access-analysis/`), and make selecting one actually restructure the
+graph — by unlocking dimension machinery that is already built, computed on every page
+load, and currently discarded. No new data source, no new Prisma table, no new loader, no
+new npm dependency.
+
+**Source requirements:** `.planning/REQUIREMENTS.md` (v2.4, 18 requirements: DIM-01–06,
+CAT-01–04, LAY-01–04, PERF-01–04)
+
+**⚠️ Name collision:** `app/(dashboard)/access-analysis/` is the 23-panel charts page (v2.3's
+surface, unchanged by v2.4). `app/(dashboard)/users/access-analysis/` is the **spatial-graph
+shell** this milestone touches. `/users/spatial-graph` and `/users/access-analysis` render the
+same UI.
+
+**Overarching guardrail:** every phase preserves the zinc theme and resolves ECharts colors
+from it, adds no new WebGL (the spatial graph already runs cosmos.gl — reviving its force
+engine is not "new" WebGL, and no other data surface gains WebGL), and keeps under-covered
+dimensions labeled, never hidden. `npx tsc --noEmit` before any rebuild; existing
+characterization tests (TEST-01/02/03) stay green throughout.
+
+## Phases
+
+- [ ] **Phase 24: Baseline & Dimension ID Unification** - Measure the honest first-paint baseline before anything else changes, then unify the catalog/registry dimension id-spaces so DIM-01/02 have one source to widen
+- [ ] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label
+- [ ] **Phase 26: Catalog Slider Wall** - The 208-dim `CatalogSliderSidebar` renders in production decoupled from the dead 3D flag, lazy-loads, is searchable, and greys unavailable dimensions with a reason
+- [ ] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into
+- [ ] **Phase 28: Performance Closeout & Verification** - DuckDB warm-up moves off the critical path, the lasso e2e test passes reliably (fixing the standing dev-server infra bug if it blocks the run), and first paint is re-measured against the Phase 24 baseline to prove no regression
+
+## Phase Details
+
+### Phase 24: Baseline & Dimension ID Unification
+
+**Goal**: A first-paint baseline is captured before any other v2.4 change lands (the honest
+number this milestone will be judged against), and the two divergent dimension id-spaces —
+`groupByDimensions.ts`'s catalog ids and `nodeColors.ts`'s registry ids — resolve from one
+unified source, so Phase 25's widening doesn't double the divergence it would otherwise
+create.
+**Depends on**: Phase 23 (v2.3, shipped) — first phase of v2.4, no intra-milestone dependency
+**Requirements**: DIM-03, DIM-06
+**Success Criteria** (what must be TRUE):
+
+  1. A first-paint timing measurement for `/users/spatial-graph` is taken and recorded BEFORE any other v2.4 phase touches the surface, explicitly re-measuring rather than reusing the stale pre-milestone ~0.46s figure — this is the baseline Phase 28's PERF-04 regression check compares against.
+  2. Group-by (`groupByDimensions.ts:10` `PRESETS`) and Color-by (`nodeColors.ts:62` `COLOR_MODES`) resolve their dimension option lists from a single unified id-space — the catalog-id/registry-id divergence described in REQUIREMENTS.md's "TWO ID-SPACES, NOT ONE" warning no longer exists as two independently-maintained arrays.
+  3. `dimensionRegistry.ts`'s doc comment at `:317-322` no longer falsely claims `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses" — it either accurately states its real scope (color + filter chips, not grouping/sliders) or the registry/catalog split is collapsed entirely.
+  4. `npx tsc --noEmit` passes; `npm test` stays green with no regression to existing dimension-related tests.
+
+**Plans**: TBD
+
+### Phase 25: Dimension Aperture — Group, Color & Filter
+
+**Goal**: A user standing at `/users/spatial-graph` can Group-by, Color-by, and filter by
+any of the already-computed node dimensions — not just the three hardcoded strings each
+control was limited to before this milestone — and every dimension states its real data
+coverage instead of pretending to be complete.
+**Depends on**: Phase 24 (DIM-01/02 widen the now-unified id-space; widening two still-divergent
+lists first was the explicitly-flagged trap)
+**Requirements**: DIM-01, DIM-02, DIM-04, DIM-05
+**Success Criteria** (what must be TRUE):
+
+  1. User can group the spatial graph by any of the ~14 already-computed node dimensions from `featureSnapshot.ts:127-235` (company, permission tier, permission strength, folder breadth, activity volume, activity recency, sign-in recency, membership tenure, risk score, module signature, internal/external, admin/member, dominant activity mix) in addition to role/project/user.
+  2. User can color the spatial graph by the same expanded dimension set via the Color-by control.
+  3. User can filter the graph by any available dimension from the toolbar chips — the chip list no longer reads the separate 12-dim `SliderContext.DIMENSIONS` array; it draws from the same unified aperture Group-by/Color-by use.
+  4. Every exposed dimension states its coverage honestly at the point of selection (tooltip/label) — DC-sourced dimensions show their ~550/1,153-project coverage, banded dimensions show their boundaries, and no under-covered dimension is silently presented as complete.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 26: Catalog Slider Wall
+
+**Goal**: The 208-dimension catalog sidebar — already written, tested, and never rendered
+in production — actually shows up on `/users/spatial-graph`, independent of the dead 3D
+flag that currently gates it, without becoming a first-paint cost or an unsearchable wall
+of 189 sliders.
+**Depends on**: Phase 24 (unified id-space so the sidebar, Group-by, and Color-by share one
+dimension vocabulary)
+**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04
+**Success Criteria** (what must be TRUE):
+
+  1. `CatalogSliderSidebar.tsx` renders in production on `/users/spatial-graph`, decoupled from `NEXT_PUBLIC_ACC_3D_GRAPH` — that flag no longer gates the slider wall, only the still-parked 3D graph (`RightPanelStack.tsx:180-186`, `AccessAnalysisShell.tsx:492`).
+  2. The 176-action catalog (`accTaxonomyActions.generated.ts`) is not iterated or initialized into slider state until the user actually opens the sidebar — verified by profiling initial render, not just code inspection — closing CONCERNS.md §3.3.
+  3. User can search the ~189 available catalog dimensions by name in the sidebar and the list narrows to matches.
+  4. The 19 `available:false` catalog dimensions render visibly greyed with a stated reason (never silently dropped from the list).
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Plan-sequencing note (locked):** CAT-01 (flag decouple + production render) must land as
+an earlier plan than CAT-02/03/04 in this phase — nothing else in this phase's scope is
+observable in the live UI until the sidebar actually renders, per REQUIREMENTS.md's explicit
+prerequisite note.
+
+### Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard
+
+**Goal**: Selecting a dimension physically restructures the spatial graph via the
+force-anchor engine that is already computed every page load and currently thrown away —
+and it does so without accidentally reheating the frozen cosmos.gl simulation, the
+known-fragile mechanism this phase deliberately reaches into.
+**Depends on**: Phase 25 (dimensions must be selectable before selecting one can
+restructure anything), Phase 26 (the catalog slider wall is the primary control surface
+driving `catalogTargets`/`catalogWeights`)
+**Requirements**: LAY-01, LAY-02, LAY-03, LAY-04, PERF-02
+**Success Criteria** (what must be TRUE):
+
+  1. Selecting a dimension in Group-by/Color-by or a catalog slider restructures the graph organically via force anchors — nodes physically move toward dimension-based clumps/axes, not merely recolor a static projection.
+  2. `catalogTargets`/`catalogWeights` (built every load at `AccessAnalysisShell.tsx:575-579`, currently discarded at the `:611-632` early return) are consumed by the live render path — dead compute becomes live compute.
+  3. Dimension slider changes morph the layout continuously between structures (lerp), with no teleport and no frozen single-frame jumps.
+  4. The layout stays organic at every slider position and dimension combination — never a fixed grid, at any point (standing owner constraint, previously violated and corrected).
+  5. A slider change or clustering call cannot accidentally reheat the frozen cosmos.gl simulation (`enableSimulation:false` contract) — guarded by an explicit invariant check, closing CONCERNS.md §3.2 specifically because this phase's LAY-01/LAY-02 work reaches directly into that fragile mechanism.
+
+**Plans**: TBD
+**UI hint**: yes
+
+**Plan-sequencing note (locked, risk mitigation):** build the PERF-02 reheat guard as an
+early plan in this phase — a safety net landing before or alongside the LAY-01/LAY-02
+force-anchor wiring, not after it and not in a separately-executed phase. LAY-01/LAY-02 and
+PERF-02 touch the same fragile reheat mechanism (CONCERNS.md §3.2); splitting them across
+independently-executed phases risks the two fighting each other.
+
+### Phase 28: Performance Closeout & Verification
+
+**Goal**: The remaining deferred spatial-graph performance debt closes out, and the
+milestone proves — with a real re-measurement, not an assumption — that widening the
+dimension surface across Phases 25–27 did not cost the page its first paint.
+**Depends on**: Phase 27 (the finished layout/dimension feature set is what PERF-01/03/04
+must be verified against)
+**Requirements**: PERF-01, PERF-03, PERF-04
+**Success Criteria** (what must be TRUE):
+
+  1. DuckDB-Wasm warm-up no longer blocks the render critical path — moved to idle-time (`requestIdleCallback`) or server-precomputed, not a blocking mount-time `useEffect` — closing CONCERNS.md §3.1.
+  2. The 3D lasso e2e test (`tests/e2e/acc-3d-lasso.spec.ts`) passes reliably within its time budget on the owner's machine — closing CONCERNS.md §3.4. If the standing `next dev --webpack`/`--turbopack` infra bug blocks the run, that bug is fixed inside this phase first; this is called out as a phase-level risk, not assumed away.
+  3. Spatial-graph first paint is re-measured after all v2.4 changes (Phases 24–27) and shown not to regress against the Phase 24 baseline — a real before/after comparison, not the stale pre-milestone ~0.46s figure.
+  4. `npx tsc --noEmit` and `npm test` are green; existing characterization tests (TEST-01/02/03) remain byte-identical.
+
+**Plans**: TBD
+
+**Phase-level risk (flagged, not resolved by this roadmap):** PERF-03 may be blocked by the
+standing Playwright/dev-server infra bug (`next dev --webpack` 500s every request on this
+machine; `--turbopack` corrupts CSS on ~50% of cold boots — see REQUIREMENTS.md "Future
+Requirements" and the v2.5 Seed Pool below). If the lasso e2e cannot run at all, PERF-03
+cannot be verified until that infra bug is fixed — plan for the fix as a possible first task
+in this phase.
+
+---
+
 ## Progress
 
 **Execution Order (v2.1):** 09 → 10 → 11 → 12 → 13 → 14
 **Execution Order (v2.2):** 15 → 16 → 17 → 18 → 19
 Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 16–17 (monolith splits). The sequences 15→16→17 and 15→18→19 could run in parallel; they are ordered here for risk management on a solo workflow.
 **Execution Order (v2.3):** 20 → 20.1 (inserted) → 21 → 21.1 (inserted) → 22 → 23 — risk-graded (small/materialized tables → issue funnel → external-call/migration-risk type-resolution → curation/close), not feature-request order; see `.planning/research/SUMMARY.md`.
+**Execution Order (v2.4):** 24 → 25 → 26 → 27 → 28 — id-space unification and the honest first-paint baseline land first (foundation both later phases depend on); dimension aperture (25) and the catalog slider wall (26) both widen off that unified id-space and can be planned independently of each other, but the layout engine (27) needs both — something to select (25) and a control surface to select it from (26) — before it can restructure anything; the cosmos.gl reheat guard (PERF-02) is bundled into 27, not split out, because it protects the exact mechanism 27 reaches into; perf closeout (28) runs last because PERF-01/03/04 must be verified against the finished feature set, not a partial one.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -469,6 +618,11 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
 | 23. Workshop Curation & Milestone Close | 5/5 | Complete | 2026-07-14 |
+| 24. Baseline & Dimension ID Unification | 0/TBD | Not started | - |
+| 25. Dimension Aperture — Group, Color & Filter | 0/TBD | Not started | - |
+| 26. Catalog Slider Wall | 0/TBD | Not started | - |
+| 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 0/TBD | Not started | - |
+| 28. Performance Closeout & Verification | 0/TBD | Not started | - |
 
 ---
 
@@ -496,16 +650,52 @@ verb/object-type breakdown, and provisioned-vs-active module coverage.
 
 ---
 
-## 📦 v2.4 Seed Pool (opened at v2.3 close, 2026-07-14)
+## 📦 v2.5 Seed Pool (opened at v2.4 planning, 2026-07-14)
 
-Candidates for the next milestone. **The Phase 23 owner review raised zero findings**
-(blanket verbatim "approved" — see `23-FINDINGS.md`), so nothing new came out of that
-specific review session. Every seed below is carried forward from a pre-existing source
-(`REQUIREMENTS.md` "Future Requirements", `STATE.md` Blockers/Concerns, or a per-phase
-`deferred-items.md`), not attributed to the 23-03 review it did not produce.
+Candidates for the milestone after v2.4. v2.4 absorbed the spatial-graph performance/
+fragility debt CONCERNS.md §3.1–3.4 into its own scope (Phases 27–28) — the old "Spatial-graph
+milestone" entry from the prior seed pool is retired here, since it is now this milestone.
+Everything below is either newly deferred by the v2.4 requirements pass (Tier 3 + pre-existing
+findings from the v2.4 source audit, both recorded in `REQUIREMENTS.md` "Future Requirements")
+or carried forward unresolved from v2.2/v2.3.
 
-**From `REQUIREMENTS.md` "Future Requirements" (v2.3 seed pool, deferred at scoping time):**
+**Tier 3 — graph dimensions needing new data plumbing (deferred at v2.4 scoping):**
 
+- **ISSUE-GRAPH-01** — slice the spatial graph by issue status/type/coordination flag.
+  Blocked on measurement: `AccIssue.createdBy` (`prisma/schema.prisma:849`, `String?`) has no
+  bridge to `AccDcUser` and an unmeasured resolution rate; needs a resolution-rate spike
+  before it can be scheduled.
+- **TIME-01** — temporal scrubber (activity/issues by month) on the spatial graph. Time is
+  not a node attribute; needs a new interaction concept, not a dimension slot.
+
+**Spatial-graph test debt (CONCERNS.md §8.2/8.3, deliberately still not in v2.4):**
+
+- **TEST-SPLIT-01** — split the two >100KB spatial-graph physics/e2e test files
+  (`physicsLayer.test.ts` 59KB, `GraphCanvas3D.test.ts` 45KB, `acc-dc-graph.spec.ts` 62KB).
+  v2.4 scoped in §3.1–3.4 only, not §8.2/8.3.
+
+**Pre-existing, surfaced during the v2.4 source audit (not introduced by it):**
+
+- **COMPANY-GRAIN-01** — `accessInstanceView.ts:140` reads `AccDcProjectUserCompany`
+  (per-membership) while `activityRecencyView.ts:139` reads `AccDcUser.companyId`
+  (per-user, global); they disagree for any user whose company differs across projects.
+  Affects `/access-analysis` panels 9/13 vs 14/15/16.
+- **ORPHAN-01** — dead code imported by nothing live: `PresetBar.tsx`, `SliderGroup.tsx`,
+  `SliderSidebar`, `dimensionSearch.ts`, `dimensionWeights.ts`; `SliderContext.applyPreset`
+  is a stub calling `resetAll()`; `activePreset` hardcoded `null`; `nodeColors` branches 2–3
+  unreachable. v2.4 may delete or revive some of these incidentally — whatever it touches
+  should not leave new orphans, but a dedicated sweep is still a future candidate.
+
+**Carried-forward v2.2/v2.3 candidates (standing, still deferred):**
+
+- **SVC-01** — `service`-override classification refinement (~966 clash-issue rows).
+- **DC-01 / DC-02** — unlock the 724 Data-Connector-403 projects via APS Account Admin
+  provisioning; wire per-project roles/modules once the DC CSV `activity_in_module` /
+  `total_activity` join lands.
+- **Per-folder terrain projection** — the `AccFolderPermissionSummary` projection is a
+  per-`(projectId,roleId)` rollup; a separate per-folder materialised projection could
+  retire the terrain views' raw `$queryRaw` scan too — only if terrain read cost becomes a
+  concern (Ph19 boundary note).
 - **Folder storage treemap** — `AccFolder` rollups; needs depth-cap/leaf-rollup UX design
   (unreadable-treemap failure mode).
 - **Permission tier × folder-depth heatmap** — new aggregation against the OOM-hardened
@@ -517,58 +707,35 @@ specific review session. Every seed below is carried forward from a pre-existing
   (`products` Json vs activity module labels) or the "gap" is a labeling artifact;
   strictly no $-cost framing.
 
-**Carried-forward v2.2/v2.3 candidates (standing, still deferred):**
-
-- **SVC-01** — `service`-override classification refinement (~966 clash-issue rows).
-- **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns (CONCERNS.md
-  §3 + §8.2/8.3): DuckDB warm-up, cosmos.gl reheat, 176-action catalog lazy-load, lasso e2e
-  flake, hydration-prefetch test, physics/e2e test splits.
-- **DC-01 / DC-02** — unlock the 724 Data-Connector-403 projects via APS Account Admin
-  provisioning; wire per-project roles/modules once the DC CSV `activity_in_module` /
-  `total_activity` join lands.
-- **Per-folder terrain projection** — the `AccFolderPermissionSummary` projection is a
-  per-`(projectId,roleId)` rollup; a separate per-folder materialised projection could
-  retire the terrain views' raw `$queryRaw` scan too — only if terrain read cost becomes a
-  concern (Ph19 boundary note).
-
-**Infra/tooling seeds (found during v2.3, not product features):**
+**Infra/tooling seeds (found during v2.3; the Playwright entry may be resolved by v2.4's
+PERF-03 — verify at v2.4 close before re-listing):**
 
 - **Playwright/dev-server infra fix** (carried from `20.1-07/deferred-items.md`):
   `playwright.config.ts`'s `webServer.command` and `package.json`'s `dev:next` script
   hardcode `next dev --webpack`, which 500s on every request on this machine/Next 16.2.6
   combination; `next dev --turbopack` is the only working dev-server option, but is itself
   deterministically flaky against `app/globals.css` (~50% of fresh-cache boots fail to
-  parse CSS with garbled-Unicode Tailwind arbitrary-value selector errors). E2e specs
-  needing a dev server stay blocked either way. Belongs in a dedicated infra phase:
-  investigate the Turbopack CSS-parse corruption, then switch both `playwright.config.ts`
-  and `dev:next` from `--webpack` to `--turbopack` (production `next build --webpack` is
-  unaffected and stays as-is).
+  parse CSS with garbled-Unicode Tailwind arbitrary-value selector errors). v2.4's Phase 28
+  (PERF-03) may fix this as an in-phase prerequisite — if it does, retire this entry at v2.4
+  close instead of carrying it forward again.
 - **Phase 17 SPLIT-04 owner visual sign-off** (carried from v2.2 close, still open) —
   `HybridAnalyticsSurface.tsx`'s split was accepted on a byte-identical DOM-golden-test
   basis only; no production route mounts the surface (`/users/access-analysis` redirects
   to `/users/spatial-graph`). Revisit if/when the surface ever gets a live, unflagged mount.
 - **MILESTONES.md v2.1/v2.2 backfill** — both v2.1 and v2.2 shipped but were never logged
-  to `.planning/MILESTONES.md` (only v1.0/v2.0 existed there before this close); a
-  pre-existing documentation gap found while restoring the file for the v2.3 entry. Low
-  priority — both are fully recoverable from the `v2.1`/`v2.2` git tags and `PROJECT.md`'s
-  "Shipped Milestone" history.
+  to `.planning/MILESTONES.md` before the v2.3 close restored the file. Low priority — both
+  are fully recoverable from the `v2.1`/`v2.2` git tags and `PROJECT.md`'s "Shipped
+  Milestone" history.
 - **`.planning/` phase-directory archival** — deliberately deferred at the v2.3 close
-  (`milestone complete` ran without `--archive-phases`) because the `.planning/` tree is
-  mid-migration on this branch with ~450 files of unrelated dirty WIP; moving the 6 v2.3
-  phase directories now would tangle with that migration. All 6 remain at
-  `.planning/phases/` (20, 20.1, 21, 21.1, 22, 23).
-- **`gsd-self-gate.cjs` STATE-count convention mismatch** (documented in
-  `23-VERIFICATION.md` and reconfirmed live during 23-05's final gate run) — the script
-  counts ROADMAP phase checkboxes cumulatively across all 3 milestones (v2.1+v2.2+v2.3 = 17
-  total) while `STATE.md`'s `progress` block is intentionally milestone-scoped (6/6 for
-  v2.3 alone). This makes the script's aggregate `ok` unreliable as a milestone-close signal
-  — a tooling decision (scope the count to the active milestone, or change the STATE
-  convention), not a product one.
-- **`gsd-tools milestone complete` / `state.*` STATE.md frontmatter corruption** — reconfirmed
-  a third time this milestone (23-03, 23-04 note, and again during this plan's Task 2):
-  running `milestone complete` mangled `current_phase: 23` → `3`, overwrote `status` with
-  a body-fragment-derived value, and displaced `current_phase_name` out of the frontmatter
-  block. Manually repaired each time; `git diff` + hand-repair is now the load-bearing
-  safety net, not a one-off. Worth a GSD tooling fix upstream (`stateReplaceFieldWithFallback`
-  is unreliable against this repo's STATE.md structure) rather than continuing to rely on
-  manual repair every milestone close.
+  because the `.planning/` tree is mid-migration on this branch with ~450 files of
+  unrelated dirty WIP. All 6 v2.3 phase directories remain at `.planning/phases/`.
+- **`gsd-self-gate.cjs` STATE-count convention mismatch** — the script counts ROADMAP phase
+  checkboxes cumulatively across all milestones while `STATE.md`'s `progress` block is
+  intentionally milestone-scoped. A tooling decision (scope the count to the active
+  milestone, or change the STATE convention), not a product one.
+- **`gsd-tools milestone complete` / `state.*` STATE.md frontmatter corruption** —
+  reconfirmed three times during v2.3 (`current_phase` mis-stamped, `status` overwritten
+  with a body-fragment-derived value, `current_phase_name` displaced out of the frontmatter
+  block). Manually repaired each time; `git diff` + hand-repair is the load-bearing safety
+  net for any `gsd-tools` STATE write, including during v2.4. Worth a GSD tooling fix
+  upstream rather than continuing to rely on manual repair every milestone close.

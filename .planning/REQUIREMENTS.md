@@ -192,34 +192,39 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Populated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DIM-01 | — | Pending |
-| DIM-02 | — | Pending |
-| DIM-03 | — | Pending |
-| DIM-04 | — | Pending |
-| DIM-05 | — | Pending |
-| DIM-06 | — | Pending |
-| CAT-01 | — | Pending |
-| CAT-02 | — | Pending |
-| CAT-03 | — | Pending |
-| CAT-04 | — | Pending |
-| LAY-01 | — | Pending |
-| LAY-02 | — | Pending |
-| LAY-03 | — | Pending |
-| LAY-04 | — | Pending |
-| PERF-01 | — | Pending |
-| PERF-02 | — | Pending |
-| PERF-03 | — | Pending |
-| PERF-04 | — | Pending |
+| DIM-01 | Phase 25 | Pending |
+| DIM-02 | Phase 25 | Pending |
+| DIM-03 | Phase 24 | Pending |
+| DIM-04 | Phase 25 | Pending |
+| DIM-05 | Phase 25 | Pending |
+| DIM-06 | Phase 24 | Pending |
+| CAT-01 | Phase 26 | Pending |
+| CAT-02 | Phase 26 | Pending |
+| CAT-03 | Phase 26 | Pending |
+| CAT-04 | Phase 26 | Pending |
+| LAY-01 | Phase 27 | Pending |
+| LAY-02 | Phase 27 | Pending |
+| LAY-03 | Phase 27 | Pending |
+| LAY-04 | Phase 27 | Pending |
+| PERF-01 | Phase 28 | Pending |
+| PERF-02 | Phase 27 | Pending |
+| PERF-03 | Phase 28 | Pending |
+| PERF-04 | Phase 28 | Pending |
 
 **Coverage:**
 - v2.4 requirements: **18** total
-- Mapped to phases: 0 ⚠️ (roadmap not yet created)
-- Unmapped: 18
+- Mapped to phases: **18/18** ✓
+- Unmapped: 0
+
+**Phase-to-requirement map:**
+- Phase 24 (Baseline & Dimension ID Unification): DIM-03, DIM-06
+- Phase 25 (Dimension Aperture — Group, Color & Filter): DIM-01, DIM-02, DIM-04, DIM-05
+- Phase 26 (Catalog Slider Wall): CAT-01, CAT-02, CAT-03, CAT-04
+- Phase 27 (Layout Engine — Force-Anchor Revival & Reheat Guard): LAY-01, LAY-02, LAY-03, LAY-04, PERF-02
+- Phase 28 (Performance Closeout & Verification): PERF-01, PERF-03, PERF-04
 
 ---
 *Requirements defined: 2026-07-14*
-*Last updated: 2026-07-14 at milestone v2.4 open*
+*Last updated: 2026-07-14 — ROADMAP.md created, 18/18 requirements mapped to Phases 24-28.*

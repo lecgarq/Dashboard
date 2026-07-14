@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: null
-current_phase_name: null
-status: defining_requirements
-stopped_at: "v2.4 Spatial Graph Dimensions opened 2026-07-14. Owner explicitly re-scoped /users/spatial-graph (Out of Scope since v2.1). Source audit proved the milestone is an UNLOCK, not a build: ~14 node dimensions already computed every load and discarded; 208-dim catalog + CatalogSliderSidebar already written but gated behind the never-set NEXT_PUBLIC_ACC_3D_GRAPH flag; force-anchor engine (catalogTargets/catalogWeights) computed then thrown away at AccessAnalysisShell.tsx:611. Owner chose Tier 1+2 dimension scope, force-engine revival (over static-map), and folding in the CONCERNS.md §3.1-3.4 perf debt. Research SKIPPED (no new library/data/API). Defining requirements."
+current_phase: 24
+current_phase_name: Baseline & Dimension ID Unification
+status: ready_to_plan
+stopped_at: "v2.4 Spatial Graph Dimensions OPENED and ROADMAPPED 2026-07-14. Owner explicitly re-scoped /users/spatial-graph (Out of Scope since v2.1). Source audit proved the milestone is an UNLOCK, not a build: ~14 node dimensions already computed every load and discarded; 208-dim catalog + CatalogSliderSidebar already written but gated behind the never-set NEXT_PUBLIC_ACC_3D_GRAPH flag; force-anchor engine (catalogTargets/catalogWeights) computed then thrown away at AccessAnalysisShell.tsx:611. Owner chose Tier 1+2 dimension scope, force-engine revival (over static-map), and folding in the CONCERNS.md 3.1-3.4 perf debt. Research SKIPPED. REQUIREMENTS.md = 18 reqs (DIM-01..06, CAT-01..04, LAY-01..04, PERF-01..04), all 18 mapped to 5 phases (24-28). Owner approved the roadmap. Next: /gsd:discuss-phase 24 or /gsd:plan-phase 24."
 last_updated: "2026-07-14T00:00:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: v2.4 Spatial Graph Dimensions milestone opened. PROJECT.md updated (Current Milestone section, /users/spatial-graph re-scoped out of Out-of-Scope, 5 new Key Decisions). Requirements next, then roadmap. Phase numbering continues from 23 → starts at Phase 24.
+last_activity_desc: v2.4 Spatial Graph Dimensions opened, scoped, and roadmapped. PROJECT.md updated (Current Milestone section, /users/spatial-graph re-scoped out of Out-of-Scope, 5 new Key Decisions). REQUIREMENTS.md written (18 reqs). ROADMAP.md written (5 phases, 24-28, 18/18 mapped) and owner-approved. Ready to plan Phase 24.
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -29,11 +29,39 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 ## Current Position
 
-- **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened 2026-07-14. Phase numbering continues from v2.3 → **starts at Phase 24**.
-- **Phase:** Not started (defining requirements).
-- **Plan:** —
-- **Status:** Defining requirements.
-- **Last activity:** 2026-07-14 — v2.4 opened; PROJECT.md updated; research skipped.
+- **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
+- **Phase:** 24 — Baseline & Dimension ID Unification (not started).
+- **Plan:** — (none yet)
+- **Status:** Ready to plan Phase 24.
+- **Next:** `/gsd:discuss-phase 24` (gather context) or `/gsd:plan-phase 24` (plan directly).
+- **Last activity:** 2026-07-14 — v2.4 opened, scoped, roadmapped, owner-approved.
+
+### v2.4 phase map (24–28)
+
+| Phase | Goal | Requirements |
+|---|---|---|
+| **24** Baseline & Dimension ID Unification | Capture the honest first-paint baseline **before** anything else changes; unify the catalog vs registry dimension id-spaces | DIM-03, DIM-06 |
+| **25** Dimension Aperture — Group, Color & Filter | Group-by/Color-by/filter all draw from the full dimension set with honest coverage labels | DIM-01, DIM-02, DIM-04, DIM-05 |
+| **26** Catalog Slider Wall | 208-dim sidebar renders in prod, decoupled from the dead 3D flag; lazy-loads, searchable, greys unavailable dims with a reason | CAT-01–04 |
+| **27** Layout Engine — Force-Anchor Revival & Reheat Guard | Dimension selection restructures the graph organically; **reheat guard lands FIRST** as the safety net | LAY-01–04, **PERF-02** |
+| **28** Performance Closeout & Verification | DuckDB warm-up off critical path; lasso e2e reliable; first paint re-measured vs the Phase 24 baseline | PERF-01, PERF-03, PERF-04 |
+
+**Locked sequencing (do not re-order without re-deciding):**
+
+- **PERF-02 lives in Phase 27, not Phase 28** — LAY-01/LAY-02 reach directly into the fragile
+  cosmos.gl reheat mechanism (CONCERNS.md §3.2). The guard must land as an early plan in Phase 27,
+  before/alongside the force-anchor wiring — never as a separately-executed phase, or the two fight.
+- **PERF-04's baseline is measured in Phase 24, verified in Phase 28** — measure before anything
+  lands, or there is nothing honest to compare against. Do not reuse the stale ~0.46s figure.
+- **DIM-03 (id-space unification) strictly precedes DIM-01/DIM-02** — widening two still-divergent
+  hardcoded lists just doubles the divergence.
+- **CAT-01 (flag decouple) strictly precedes CAT-02/03/04** — nothing else in Phase 26 is
+  observable until the sidebar actually renders.
+
+**Phase 28 open risk (flagged, unresolved):** PERF-03 (lasso e2e) may be blocked outright by the
+standing Playwright/dev-server infra bug — `next dev --webpack` 500s every request on this machine;
+`next dev --turbopack` corrupts CSS on ~50% of cold boots. If the e2e cannot run at all, PERF-03 is
+unverifiable and the infra bug must be fixed **inside** Phase 28.
 
 ### v2.4 scope decisions (owner, 2026-07-14)
 
