@@ -1,16 +1,16 @@
 diff --git a/node_modules/@cosmos.gl/graph/dist/index.js b/node_modules/@cosmos.gl/graph/dist/index.js
-index 060c7e7..288ec75 100644
+index 07a1abf..76ef0e9 100644
 --- a/node_modules/@cosmos.gl/graph/dist/index.js
 +++ b/node_modules/@cosmos.gl/graph/dist/index.js
-@@ -4669,8 +4669,9 @@ void main() {
+@@ -5552,8 +5552,9 @@ void main() {
  
    pointPosition.rg += pointVelocity.rg;
  
 -  pointPosition.r = clamp(pointPosition.r, 0.0, spaceSize);
 -  pointPosition.g = clamp(pointPosition.g, 0.0, spaceSize);
-+  // [LECG patch] clamp removed - see patches/@cosmos.gl+graph+3.0.0-beta.9.patch
++  // [LECG patch] clamp removed - see patches/@cosmos.gl+graph+3.3.0.patch
 +  // pointPosition.r = clamp(pointPosition.r, 0.0, spaceSize);
 +  // pointPosition.g = clamp(pointPosition.g, 0.0, spaceSize);
    
    fragColor = pointPosition;
- }`, Ht = `#version 300 es
+ }`, oi = `#version 300 es
