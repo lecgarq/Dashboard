@@ -516,7 +516,13 @@ lists first was the explicitly-flagged trap)
   3. User can filter the graph by any available dimension from the toolbar chips — the chip list no longer reads the separate 12-dim `SliderContext.DIMENSIONS` array; it draws from the same unified aperture Group-by/Color-by use.
   4. Every exposed dimension states its coverage honestly at the point of selection (tooltip/label) — DC-sourced dimensions show their ~550/1,153-project coverage, banded dimensions show their boundaries, and no under-covered dimension is silently presented as complete.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 25-01-PLAN.md — Banded aperture + coverage foundation: add owner-palette dims to the catalog, label continuous tiers, node-derived coverage (wave 1)
+- [ ] 25-02-PLAN.md — Widen the shared aperture; Group-by + Color-by themed pickers, banded swatches + shared legend, inline coverage + active-dim caveat badge (wave 2)
+- [ ] 25-03-PLAN.md — Add-a-chip filter over the unified aperture: multi-select values-to-keep, retire SliderContext.DIMENSIONS, coverage in the dimension menu (wave 3)
+
 **UI hint**: yes
 
 ### Phase 26: Catalog Slider Wall
