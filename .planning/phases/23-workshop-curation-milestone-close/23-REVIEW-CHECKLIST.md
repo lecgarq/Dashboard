@@ -5,6 +5,30 @@ built 2026-07-14 10:08:56), one panel at a time. The presenter test: can you exp
 without opening devtools, what each panel shows, what data backs it, and where coverage is
 incomplete?
 
+## Owner sign-off result (2026-07-14, plan 23-03)
+
+**The owner's verbatim response, reviewing this checklist on the rebuilt `:3000`, was exactly
+one word: "approved".**
+
+This is a **BLANKET approval of the full four-page workshop surface** — not a per-panel
+verdict. The owner did not walk each of the 23 `/access-analysis` panels (or `/users`,
+`/template-mty`, `/forma-proposal`) individually and dictate a separate call for each row.
+Every `Verdict` cell below reading `approved (blanket)†` records that single blanket approval,
+not an independently-observed per-panel judgment. **Zero findings were raised** — nothing
+landed in either the fix-now or v2.4-seed bucket (see `23-FINDINGS.md`).
+
+`Issues by type` (`IssueTypeChart`, Projects tab) — the one v2.3 panel that had ZERO prior
+owner UAT going into this review (Phase 22 closed on live-`:3000` evidence without a recorded
+sign-off) — is now covered by this same blanket approval, since it is mounted on the surface
+the owner approved. State this plainly: it is a blanket approval covering the panel, **not** a
+dedicated per-panel UAT walk-through of `IssueTypeChart` specifically. If a future reviewer
+needs true panel-by-panel evidence for `Issues by type`, that still does not exist and should
+not be inferred from this record.
+
+† = the granularity note above applies to every cell marked `approved (blanket)` in this file.
+
+---
+
 ## Triage rule (read this first)
 
 - **FIX IN PHASE 23:** copy/label fixes, wrong wording, ordering nits, obvious visual defects —
@@ -29,37 +53,37 @@ tab has 6 panels, not 5; "Folder Activity by Role" is a distinct, separately-gat
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Activity over time (`OverviewTabPanel.tsx:63-77`) | "Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero." | `timelineRows`/`timelineSummary`, activity-derived → `ActivityCoverageBadge` | — | |
-| Activity by module (`OverviewTabPanel.tsx:84-144`) | "Total actions recorded in each ACC module." | `moduleSummary`, activity-derived → `ActivityCoverageBadge` | Module-attribution ⓘ caveat: hover/focus tooltip, `data-testid="module-caveat"` (`OverviewTabPanel.tsx:119`) — states the live service-tag vs. `rawAction`-verb split percentage, computed from `moduleSummary.attribution`, never hardcoded | |
-| Activity share by project (`OverviewTabPanel.tsx:155-165`) | "Top 10 projects by activity volume, plus Other. Account-level admin activity is excluded — see caption below." | `projectActivitySummary`, activity-derived → `ActivityCoverageBadge` | Account-level exclusion caption (in-component) | |
-| Provisioned modules (`OverviewTabPanel.tsx:167-176`) | "Member x project module access grants for the selected projects — what's rolled out, vs. the activity donut's what's used." | `provisionedModuleSummary`, membership-derived → no coverage badge (correct — not activity data) | — | |
-| Ingest freshness (`OverviewTabPanel.tsx:183`) | Ops-metadata strip: how fresh is the underlying ingest pipeline (PIPE-01) | `ingestFreshness`, account-wide, not project-filtered | — | |
+| Activity over time (`OverviewTabPanel.tsx:63-77`) | "Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero." | `timelineRows`/`timelineSummary`, activity-derived → `ActivityCoverageBadge` | — | approved (blanket)† |
+| Activity by module (`OverviewTabPanel.tsx:84-144`) | "Total actions recorded in each ACC module." | `moduleSummary`, activity-derived → `ActivityCoverageBadge` | Module-attribution ⓘ caveat: hover/focus tooltip, `data-testid="module-caveat"` (`OverviewTabPanel.tsx:119`) — states the live service-tag vs. `rawAction`-verb split percentage, computed from `moduleSummary.attribution`, never hardcoded | approved (blanket)† |
+| Activity share by project (`OverviewTabPanel.tsx:155-165`) | "Top 10 projects by activity volume, plus Other. Account-level admin activity is excluded — see caption below." | `projectActivitySummary`, activity-derived → `ActivityCoverageBadge` | Account-level exclusion caption (in-component) | approved (blanket)† |
+| Provisioned modules (`OverviewTabPanel.tsx:167-176`) | "Member x project module access grants for the selected projects — what's rolled out, vs. the activity donut's what's used." | `provisionedModuleSummary`, membership-derived → no coverage badge (correct — not activity data) | — | approved (blanket)† |
+| Ingest freshness (`OverviewTabPanel.tsx:183`) | Ops-metadata strip: how fresh is the underlying ingest pipeline (PIPE-01) | `ingestFreshness`, account-wide, not project-filtered | — | approved (blanket)† |
 
 ### Roles tab (6 panels) — leads "Role distribution"
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Role distribution (`RolesTabPanel.tsx:91-111`) | "Roles held across all project memberships." | `roleSummary`, membership (not activity-derived → correctly no coverage badge, `RolesTabPanel.tsx:90` comment) | — | |
-| Activity by role (`RolesTabPanel.tsx:114-136`) | "Project activity attributed to the role each person held on that project. Click a role to see who did the work." | `activityActorRows`/`activityByRoleSummary`, activity-derived → `ActivityCoverageBadge` | — | |
-| Permission volume by level (`RolesTabPanel.tsx:140-156`) | "Which role holds the most access at each permission level? Counted per folder grant." | `loadPermissionLevel` lazy fetch, membership-derived → no coverage badge (correct) | — | |
-| Activity recency by role (`RolesTabPanel.tsx:159-179`) | "Which roles are actually doing work right now, vs. holding access they never use?" | `loadActivityRecency` lazy fetch, activity-derived (coverage in prose caption, not badge) | — | |
-| **Folder Activity by Role** (`FolderActivityReveal`, `RolesTabPanel.tsx:183-193`) | Folder-first drill: Folders → Projects → Roles → People | `loadFolderRanking`/`loadFolderDetail`, lazy, collapsed by default | — | |
-| Folder action heatmap (`FolderActionHeatmap`, `RolesTabPanel.tsx:197-201`) | What people DO in the busiest folders (views/downloads/uploads/edits) | `loadFolderActionMatrix`, lazy, collapsed by default | — | |
+| Role distribution (`RolesTabPanel.tsx:91-111`) | "Roles held across all project memberships." | `roleSummary`, membership (not activity-derived → correctly no coverage badge, `RolesTabPanel.tsx:90` comment) | — | approved (blanket)† |
+| Activity by role (`RolesTabPanel.tsx:114-136`) | "Project activity attributed to the role each person held on that project. Click a role to see who did the work." | `activityActorRows`/`activityByRoleSummary`, activity-derived → `ActivityCoverageBadge` | — | approved (blanket)† |
+| Permission volume by level (`RolesTabPanel.tsx:140-156`) | "Which role holds the most access at each permission level? Counted per folder grant." | `loadPermissionLevel` lazy fetch, membership-derived → no coverage badge (correct) | — | approved (blanket)† |
+| Activity recency by role (`RolesTabPanel.tsx:159-179`) | "Which roles are actually doing work right now, vs. holding access they never use?" | `loadActivityRecency` lazy fetch, activity-derived (coverage in prose caption, not badge) | — | approved (blanket)† |
+| **Folder Activity by Role** (`FolderActivityReveal`, `RolesTabPanel.tsx:183-193`) | Folder-first drill: Folders → Projects → Roles → People | `loadFolderRanking`/`loadFolderDetail`, lazy, collapsed by default | — | approved (blanket)† |
+| Folder action heatmap (`FolderActionHeatmap`, `RolesTabPanel.tsx:197-201`) | What people DO in the busiest folders (views/downloads/uploads/edits) | `loadFolderActionMatrix`, lazy, collapsed by default | — | approved (blanket)† |
 
 ### Users tab (2 panels) — leads "Users by permission level" (when loaded)
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Users by permission level (`UsersTabPanel.tsx:135-151`) | "How many people hold each folder-permission level, counting every user once at their strongest grant — the quickest read on how much of the account can actually change or control content." | `loadPermissionUsers` lazy fetch, membership-derived → no coverage badge | — | |
-| Activity recency detail (`UsersTabPanel.tsx:153-201`) | "Who is still actually working in ACC, and who has gone quiet? Sorted most-dormant first by default." | `filteredActivityRecencyRows`, activity-derived | Two live caption `<p>` elements: `data-testid="activity-recency-detail-coverage-caption"` (`UsersTabPanel.tsx:191`, "Activity data covers {covCovered} of {covTotal} ACC projects — memberships come from the DC snapshot.") and `...-semantics-caption` (`UsersTabPanel.tsx:194`, "\"Never active\" = no recorded activity in the ACCDS-crawled window" + data-floor date when present) | |
+| Users by permission level (`UsersTabPanel.tsx:135-151`) | "How many people hold each folder-permission level, counting every user once at their strongest grant — the quickest read on how much of the account can actually change or control content." | `loadPermissionUsers` lazy fetch, membership-derived → no coverage badge | — | approved (blanket)† |
+| Activity recency detail (`UsersTabPanel.tsx:153-201`) | "Who is still actually working in ACC, and who has gone quiet? Sorted most-dormant first by default." | `filteredActivityRecencyRows`, activity-derived | Two live caption `<p>` elements: `data-testid="activity-recency-detail-coverage-caption"` (`UsersTabPanel.tsx:191`, "Activity data covers {covCovered} of {covTotal} ACC projects — memberships come from the DC snapshot.") and `...-semantics-caption` (`UsersTabPanel.tsx:194`, "\"Never active\" = no recorded activity in the ACCDS-crawled window" + data-floor date when present) | approved (blanket)† |
 
 ### Companies tab (3 panels) — leads "Users by company"
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Users by company (`CompaniesTabPanel.tsx:66-86`) | "Project memberships grouped by each member's company." | `companySummary`, membership-derived → no coverage badge (correct) | — | |
-| Activity by company (`CompaniesTabPanel.tsx:89-111`) | "Project activity attributed to each person's company. Click a company to see who did the work." | `activityActorRows`/`activityByCompanySummary`, activity-derived → `ActivityCoverageBadge` | — | |
-| Folder activity by company (`CompaniesTabPanel.tsx:115-138`) | "Which companies touch which folders — top companies by folder-scoped activity." | `loadFolderScopedActivity`/`loadCompanyFolderBreakdown`, lazy | — | |
+| Users by company (`CompaniesTabPanel.tsx:66-86`) | "Project memberships grouped by each member's company." | `companySummary`, membership-derived → no coverage badge (correct) | — | approved (blanket)† |
+| Activity by company (`CompaniesTabPanel.tsx:89-111`) | "Project activity attributed to each person's company. Click a company to see who did the work." | `activityActorRows`/`activityByCompanySummary`, activity-derived → `ActivityCoverageBadge` | — | approved (blanket)† |
+| Folder activity by company (`CompaniesTabPanel.tsx:115-138`) | "Which companies touch which folders — top companies by folder-scoped activity." | `loadFolderScopedActivity`/`loadCompanyFolderBreakdown`, lazy | — | approved (blanket)† |
 
 ### Projects tab (6 panels) — leads "Issue data coverage"
 
@@ -69,18 +93,18 @@ live-`:3000` evidence 2026-07-14; its `:3100` preflight `checkpoint:human-verify
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Issue data coverage (`ProjectsTabPanel.tsx:71-88`) | "How much of the issue data can we see into? Every project checked by the latest fetch, honestly bucketed." | `coordinationData.issueCoverage`, live fetch-run coverage | — | |
-| Issues over time (`ProjectsTabPanel.tsx:91-110`) | "When are issues actually being raised? Every ACC issue by created month." | `loadIssueFunnel` lazy fetch | Live-computed fetched/total/unavailable coverage caption via `deriveIssueCoverageCaption` (`issueFunnelCounts.ts:132`), consumed via the `coverageProjects` prop — never a hardcoded figure | |
-| Issues by status (`ProjectsTabPanel.tsx:112-132`) | "Where does the issue pile sit right now? All fetched issues by their current ACC status, shown exactly as ACC reports them." | `loadIssueFunnel` lazy fetch | Same live coverage caption convention as above | |
-| **⚠ Issues by type — ZERO OWNER UAT** (`ProjectsTabPanel.tsx:134-154`, `IssueTypeChart.tsx`) | "What kinds of issues do we actually have? Every fetched issue by its resolved ACC type name — honest buckets for unresolved and untyped issues." | `loadIssueFunnel` lazy fetch (`filteredIssueTypeRows`) | Two distinct, ranked, never-pinned buckets: `UNKNOWN_LABEL = "Unknown type"` (`issueTypeCounts.ts:30`) and `NONE_LABEL = "No type set"` (`issueTypeCounts.ts:32`); plus a never-backfilled guard at `IssueTypeChart.tsx:97-110` that renders "Type names not yet backfilled" + "Run scripts/acc-issue-types-backfill.cjs to resolve issue type names." instead of a wall of 100% Unknown-type bars when GUIDs exist but none resolve | |
-| Workflow tools (`ProjectsTabPanel.tsx:156-181`) | "How much are the document Reviews, Transmittals, RFIs, and Submittals workflows actually used? Every recorded action, by type — click one for its per-project breakdown." (one panel shell, 4 donuts) | `workflowToolSummaries` lazy fetch | `ProjectsTabPanel.tsx:165`: "RFI and Submittal events come only from the batch Data Connector feed (the live feed does not report them), so recent weeks may lag." | |
-| Model Coordination (`ProjectsTabPanel.tsx:183-200`) | "Coordination-classified issues, by project." | `coordinationData`, live | — | |
+| Issue data coverage (`ProjectsTabPanel.tsx:71-88`) | "How much of the issue data can we see into? Every project checked by the latest fetch, honestly bucketed." | `coordinationData.issueCoverage`, live fetch-run coverage | — | approved (blanket)† |
+| Issues over time (`ProjectsTabPanel.tsx:91-110`) | "When are issues actually being raised? Every ACC issue by created month." | `loadIssueFunnel` lazy fetch | Live-computed fetched/total/unavailable coverage caption via `deriveIssueCoverageCaption` (`issueFunnelCounts.ts:132`), consumed via the `coverageProjects` prop — never a hardcoded figure | approved (blanket)† |
+| Issues by status (`ProjectsTabPanel.tsx:112-132`) | "Where does the issue pile sit right now? All fetched issues by their current ACC status, shown exactly as ACC reports them." | `loadIssueFunnel` lazy fetch | Same live coverage caption convention as above | approved (blanket)† |
+| **⚠ Issues by type — ZERO OWNER UAT** (`ProjectsTabPanel.tsx:134-154`, `IssueTypeChart.tsx`) | "What kinds of issues do we actually have? Every fetched issue by its resolved ACC type name — honest buckets for unresolved and untyped issues." | `loadIssueFunnel` lazy fetch (`filteredIssueTypeRows`) | Two distinct, ranked, never-pinned buckets: `UNKNOWN_LABEL = "Unknown type"` (`issueTypeCounts.ts:30`) and `NONE_LABEL = "No type set"` (`issueTypeCounts.ts:32`); plus a never-backfilled guard at `IssueTypeChart.tsx:97-110` that renders "Type names not yet backfilled" + "Run scripts/acc-issue-types-backfill.cjs to resolve issue type names." instead of a wall of 100% Unknown-type bars when GUIDs exist but none resolve | approved (blanket)† |
+| Workflow tools (`ProjectsTabPanel.tsx:156-181`) | "How much are the document Reviews, Transmittals, RFIs, and Submittals workflows actually used? Every recorded action, by type — click one for its per-project breakdown." (one panel shell, 4 donuts) | `workflowToolSummaries` lazy fetch | `ProjectsTabPanel.tsx:165`: "RFI and Submittal events come only from the batch Data Connector feed (the live feed does not report them), so recent weeks may lag." | approved (blanket)† |
+| Model Coordination (`ProjectsTabPanel.tsx:183-200`) | "Coordination-classified issues, by project." | `coordinationData`, live | — | approved (blanket)† |
 
 ### Compare tab (1 panel) — nothing to order
 
 | Panel | The question it answers | Data source / authority | Known caveat | Verdict |
 |---|---|---|---|---|
-| Folder permission terrain (`CompareTabPanel.tsx:37-52`) | "Follows the project search bar above — 0 selected shows the account-wide overview, 1 shows that project, 2+ stacks the top-staffed selection for comparison." | `loadTerrain`/`loadOverview`, driven by the global picker | Explicit naming-collision note in-copy: this tab's name is unrelated to the terrain's own internal `mode === "compare"` view | |
+| Folder permission terrain (`CompareTabPanel.tsx:37-52`) | "Follows the project search bar above — 0 selected shows the account-wide overview, 1 shows that project, 2+ stacks the top-staffed selection for comparison." | `loadTerrain`/`loadOverview`, driven by the global picker | Explicit naming-collision note in-copy: this tab's name is unrelated to the terrain's own internal `mode === "compare"` view | approved (blanket)† |
 
 ---
 
@@ -91,10 +115,10 @@ changed surface, not per widget.
 
 | Surface | What changed | Source | Verdict |
 |---|---|---|---|
-| KPI header strip | 7 glass tiles: Total users / In ACC / Not in ACC / Internal / External / Active 30d / Admins, flex-wrap so no tile clips | `UsersTableHeader.tsx:146-152` | |
-| External ACC collaborators | Non-`hermosillo.com`-domain ACC users appended to the directory under department "External" | `useUsersDirectoryData.ts:267,270-286` (`classifyAffiliation(u.email) !== "external"` filter, `department: "External"`) | |
-| Affiliation filter | Internal/External toggle in the directory filter bar | `DirectoryFilterBar.tsx:114,290,464-467` | |
-| Company column | New "Company" column in the directory table | `DirectoryTableColumns.tsx:119-121` | |
+| KPI header strip | 7 glass tiles: Total users / In ACC / Not in ACC / Internal / External / Active 30d / Admins, flex-wrap so no tile clips | `UsersTableHeader.tsx:146-152` | approved (blanket)† |
+| External ACC collaborators | Non-`hermosillo.com`-domain ACC users appended to the directory under department "External" | `useUsersDirectoryData.ts:267,270-286` (`classifyAffiliation(u.email) !== "external"` filter, `department: "External"`) | approved (blanket)† |
+| Affiliation filter | Internal/External toggle in the directory filter bar | `DirectoryFilterBar.tsx:114,290,464-467` | approved (blanket)† |
+| Company column | New "Company" column in the directory table | `DirectoryTableColumns.tsx:119-121` | approved (blanket)† |
 
 ---
 
@@ -106,9 +130,9 @@ their nodes). Source: `app/(dashboard)/template-mty/components/RoleSimilarityGra
 
 | Check | Verdict |
 |---|---|
-| Does the role-similarity graph render (cluster blobs, curved edges, similarity % labels)? | |
-| Do labels stay glued to their nodes on pan/zoom/interaction? | |
-| Can the presenter explain it live without devtools? | |
+| Does the role-similarity graph render (cluster blobs, curved edges, similarity % labels)? | approved (blanket)† |
+| Do labels stay glued to their nodes on pan/zoom/interaction? | approved (blanket)† |
+| Can the presenter explain it live without devtools? | approved (blanket)† |
 
 ## `/forma-proposal` — SHORT visual pass
 
@@ -117,8 +141,8 @@ Received only the LECG brand-palette theme commit (`4638020b`, 2 files:
 
 | Check | Verdict |
 |---|---|
-| Does the LECG brand palette read correctly (no theme drift, no blue/slate cast)? | |
-| No visual regression vs. the prior palette pass? | |
+| Does the LECG brand palette read correctly (no theme drift, no blue/slate cast)? | approved (blanket)† |
+| No visual regression vs. the prior palette pass? | approved (blanket)† |
 
 ---
 
