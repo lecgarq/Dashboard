@@ -5,10 +5,10 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 24
 current_phase_name: Baseline & Dimension ID Unification
 status: ready_to_plan
-stopped_at: "v2.4 Spatial Graph Dimensions OPENED and ROADMAPPED 2026-07-14. Owner explicitly re-scoped /users/spatial-graph (Out of Scope since v2.1). Source audit proved the milestone is an UNLOCK, not a build: ~14 node dimensions already computed every load and discarded; 208-dim catalog + CatalogSliderSidebar already written but gated behind the never-set NEXT_PUBLIC_ACC_3D_GRAPH flag; force-anchor engine (catalogTargets/catalogWeights) computed then thrown away at AccessAnalysisShell.tsx:611. Owner chose Tier 1+2 dimension scope, force-engine revival (over static-map), and folding in the CONCERNS.md 3.1-3.4 perf debt. Research SKIPPED. REQUIREMENTS.md = 18 reqs (DIM-01..06, CAT-01..04, LAY-01..04, PERF-01..04), all 18 mapped to 5 phases (24-28). Owner approved the roadmap. Next: /gsd:discuss-phase 24 or /gsd:plan-phase 24."
-last_updated: "2026-07-14T00:00:00.000Z"
+stopped_at: "Phase 24 context gathered (24-CONTEXT.md). Decisions: baseline measured on isolated :3100 prod build via a COMMITTED script (median-of-N; record both first-paint AND time-to-graph-rendered, judge graph-rendered; record cosmos 3.3.0 + node count 22,279 + BUILD_ID + commit); catalog ids become the single dimension id-space (registry maps onto catalog, NOT retired — DIM-06 = doc-scope fix); pixel-identical UI bar (same 3 options, tests untouched); measurement lands FIRST within the phase. Note: cosmos.gl 3.3.0 blocker RESOLVED — committed 0bfe0962 + deployed :3000. Next: /gsd:plan-phase 24."
+last_updated: "2026-07-14T21:50:26.276Z"
 last_activity: 2026-07-14
-last_activity_desc: v2.4 Spatial Graph Dimensions opened, scoped, and roadmapped. PROJECT.md updated (Current Milestone section, /users/spatial-graph re-scoped out of Out-of-Scope, 5 new Key Decisions). REQUIREMENTS.md written (18 reqs). ROADMAP.md written (5 phases, 24-28, 18/18 mapped) and owner-approved. Ready to plan Phase 24.
+last_activity_desc: Phase 24 context gathered via discuss-phase — measurement protocol, repeatability, unification direction (catalog-as-source), and behavior-invariance bar decided; 24-CONTEXT.md committed.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -579,9 +579,9 @@ v2.4 Seed Pool. Not part of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-14
-**Stopped at:** Phase 23 plan 23-05 (FINAL) complete — v2.3 New Graphs MILESTONE CLOSED. MILESTONES.md restored + v2.3 entry appended, final self-gate green (rebuild/health/route), milestone archived, PROJECT.md/ROADMAP.md updated with v2.4 seeds. No Phase 23.1. Next: scope v2.4 when the owner is ready.
-**Resume file:** none — milestone closed, no active plan
+**Last session:** 2026-07-14T21:50:26.272Z
+**Stopped at:** Phase 24 context gathered
+**Resume file:** .planning/phases/24-baseline-dimension-id-unification/24-CONTEXT.md
 
 ## Performance Metrics
 
