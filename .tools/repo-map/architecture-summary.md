@@ -1,6 +1,6 @@
 # Codebase Architecture Summary
 
-Generated: 2026-06-19T22:30:32.274Z
+Generated: 2026-07-14T16:47:51.564Z
 
 Inputs:
 - Repomix compressed whole-repo snapshot: `.tools/repo-map/repomix-output.xml`
@@ -23,9 +23,9 @@ Inputs:
 |---|---:|---:|---:|
 | Circular imports | Pass | 0 | Yes |
 | Dependency errors | Pass | 0 | Yes |
-| Dependency warnings | Warn | 6 | Growth only |
-| AST blocking rules | Baseline | 1 / baseline 1 | New only |
-| AST warnings/info/hints | Report | 277 | No |
+| Dependency warnings | Warn | 2 | Growth only |
+| AST blocking rules | Pass | 0 / baseline 1 | New only |
+| AST warnings/info/hints | Report | 236 | No |
 | Baseline file refs | Pass | 0 | Yes |
 
 
@@ -34,18 +34,18 @@ Inputs:
 This repository is a Next.js App Router dashboard backed by tRPC routers, Prisma/Postgres data access, Autodesk Platform Services integrations, Google APIs, collaborative editing infrastructure, and a Python LOD engine. The main UI surface lives in `app/` and `components/`, shared client/server code lives in `lib/`, request boundaries live in `server/routers/`, database schema lives in `prisma/schema.prisma`, operational scripts live in `scripts/`, and the Python image/LOD service lives in `services/lod-engine/`.
 
 Mapped source density:
-- app: 491 mapped files
-- scripts: 230 mapped files
-- lib: 223 mapped files
-- components: 120 mapped files
+- app: 562 mapped files
+- lib: 268 mapped files
+- scripts: 191 mapped files
+- components: 119 mapped files
 - server: 43 mapped files
 - services: 25 mapped files
-- tests: 10 mapped files
+- tests: 12 mapped files
 - hooks: 6 mapped files
-- adapters: 3 mapped files
 - electron: 1 mapped files
 - types: 1 mapped files
 - auth.config.ts: 1 mapped files
+- instrumentation.ts: 1 mapped files
 
 ## 2. Feature Modules
 
@@ -70,6 +70,7 @@ Prominent feature areas in the current tree:
 
 tRPC router entries detected from `server/routers/root.ts`:
 - accActivity
+- accCoordination
 - accDcGraph
 - accFolders
 - accGraph
@@ -88,7 +89,6 @@ tRPC router entries detected from `server/routers/root.ts`:
 - project
 - search
 - sim
-- tasks
 - trello
 - users
 - workspace
@@ -121,12 +121,14 @@ Prisma models detected:
 - AccDcUser
 - AccFolder
 - AccFolderPermission
+- AccFolderPermissionSummary
 - AccGraphLayoutCache
 - AccHubRoleCache
 - AccInstanceEmbedding
 - AccIssue
 - AccIssueFetchRun
 - AccIssueProjectFetchResult
+- AccIssueType
 - AccMemberCache
 - AccPersonGraphSnapshot
 - AccProject
@@ -175,16 +177,15 @@ Prisma models detected:
 Prisma is the central ORM layer, with schema in `prisma/schema.prisma`, client generation in `postinstall`, and server-side DB setup in `server/db.ts`. Direct Prisma access should remain server-only: routers, server helpers, scripts, and migration utilities are expected places. Client components should consume tRPC/API results rather than importing database helpers.
 
 ast-grep structural counts:
-- react-use-effect: 148 matches
+- react-use-effect: 146 matches
 - router-push: 3 matches
-- prisma-access: 66 matches
+- prisma-access: 61 matches
 - fetch-calls: 6 matches
 
 ast-grep rule scan counts:
-- large-use-effect: 148 matches
-- no-console-log: 123 matches
-- unsafe-todo: 5 matches
-- direct-prisma-in-ui: 1 matches
+- large-use-effect: 146 matches
+- no-console-log: 88 matches
+- unsafe-todo: 2 matches
 
 ## 6. Duplicated Responsibilities
 
@@ -200,53 +201,49 @@ Largest source files in the mapped roots:
 - tests/e2e/acc-dc-graph.spec.ts (62 KB)
 - app/(dashboard)/users/access-analysis/physicsLayer.test.ts (59 KB)
 - lib/acc/dcIngest.ts (57 KB)
-- app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx (55 KB)
-- app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx (50 KB)
-- scripts/progress-monitor.cjs (50 KB)
-- app/(dashboard)/access-analysis/folderTerrain.ts (49 KB)
+- scripts/progress-monitor.cjs (52 KB)
 - lib/acc/dcIngest.test.ts (47 KB)
 - app/(dashboard)/users/access-analysis/GraphCanvas3D.test.ts (45 KB)
 - components/dashboard/MailPanel.tsx (43 KB)
 - scripts/repo-map/generate.cjs (41 KB)
+- app/(dashboard)/access-analysis/__tests__/AccessAnalysisCharts.test.tsx (41 KB)
 - components/trello/CardDialog.tsx (40 KB)
+- app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx (38 KB)
+- app/(dashboard)/users/AccProfileSection.tsx (37 KB)
 
 These are good first candidates for atomization when they combine fetching, transformation, UI state, and rendering in one module.
 
 ## 8. Risky Dependencies
 
 dependency-cruiser findings:
-- Modules analyzed: 1005
+- Modules analyzed: 1111
 - Cross-area dependency edges: 25
 - Circular dependency edges: 0
 - Unresolved dependency edges: 0
-- Rule violations: 6
+- Rule violations: 2
 - CI-blocking dependency errors: 0
-- Non-blocking dependency warnings: 6
+- Non-blocking dependency warnings: 2
 
 Strongest cross-area dependencies:
-- app -> lib: 213 imports
-- app -> components: 159 imports
-- components -> lib: 124 imports
-- scripts -> node core: 104 imports
+- app -> lib: 287 imports
+- app -> components: 170 imports
+- components -> lib: 122 imports
+- scripts -> node core: 96 imports
 - server -> lib: 81 imports
-- app -> server: 29 imports
-- lib -> node core: 27 imports
-- lib -> server: 23 imports
-- lib -> app: 20 imports
-- scripts -> lib: 20 imports
+- lib -> server: 36 imports
+- app -> server: 32 imports
+- lib -> node core: 31 imports
+- scripts -> lib: 25 imports
+- app -> node core: 23 imports
 
 Rule violation summary:
-- warn no-scripts-to-app: 6
+- warn no-scripts-to-app: 2
 
 Dependency warning triage:
 | Warning | Classification | Action |
 |---|---|---|
 | no-scripts-to-app: `scripts/build-instance-features.ts` -> `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
 | no-scripts-to-app: `scripts/build-instance-features.ts` -> `app/(dashboard)/users/access-analysis/instanceFeatureTokens.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
-| no-scripts-to-app: `scripts/diag-activity-coordination.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
-| no-scripts-to-app: `scripts/diag-activity-module-audit.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
-| no-scripts-to-app: `scripts/diag-activity-service-xtab.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
-| no-scripts-to-app: `scripts/diag-activity-types.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts` | Technical debt | Move the shared helper into lib/server or scripts/lib, or document a narrow exception |
 
 Circular import edges:
 - None detected in the generated data.
