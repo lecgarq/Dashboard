@@ -623,7 +623,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
 | 23. Workshop Curation & Milestone Close | 5/5 | Complete | 2026-07-14 |
-| 24. Baseline & Dimension ID Unification | 2/2 | Complete   | 2026-07-14 |
+| 24. Baseline & Dimension ID Unification | 2/2 | Complete    | 2026-07-14 |
 | 25. Dimension Aperture — Group, Color & Filter | 0/TBD | Not started | - |
 | 26. Catalog Slider Wall | 0/TBD | Not started | - |
 | 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 0/TBD | Not started | - |

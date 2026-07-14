@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: 24
-current_phase_name: Baseline & Dimension ID Unification
-status: executing
+current_phase: 25
+current_phase_name: Dimension Aperture — Group, Color & Filter
+status: ready_to_plan
 stopped_at: "Phase 24 COMPLETE (both plans). Plan 02: dimensionIdSpace.ts unifies Group-by/Color-by option lists (DIM-03); dimensionRegistry.ts doc claim corrected (DIM-06). tsc 0 errors, npm test 2538/2539 (2535 baseline + 3 new), zero diff on existing dimension tests. Next: plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/02/04/05)."
 last_updated: "2026-07-14T22:31:21.012Z"
 last_activity: 2026-07-14
@@ -14,8 +14,8 @@ progress:
   completed_phases: 1
   total_plans: 2
   completed_plans: 2
-  percent: 100
-current_plan: "25-01"
+  percent: 20
+current_plan: null
 ---
 
 # Project State
