@@ -63,6 +63,41 @@ standing Playwright/dev-server infra bug — `next dev --webpack` 500s every req
 `next dev --turbopack` corrupts CSS on ~50% of cold boots. If the e2e cannot run at all, PERF-03 is
 unverifiable and the infra bug must be fixed **inside** Phase 28.
 
+### 🚨 UNCOMMITTED cosmos.gl MAJOR UPGRADE in the working tree (found 2026-07-14 at v2.4 open)
+
+**This must be resolved before Phase 27 is planned. It is not optional.**
+
+`package.json` (uncommitted) upgrades **`@cosmos.gl/graph` `3.0.0-beta.9` → `3.3.0`**, with a new
+untracked patch `patches/@cosmos.gl+graph+3.3.0.patch` (created 2026-07-14 11:43). Version
+**3.3.0 is already installed in `node_modules`**, and `package.json:43`'s `postinstall` runs
+`patch-package`, so the patch **is being applied**. `package-lock.json` carries a matching
++5,647/−2,634 diff (this also bumps tiptap 3.23.1 → 3.27.4 and others).
+
+Why this is load-bearing for v2.4:
+
+1. **The live `:3000` build predates it.** Phase 23 recorded `.next/BUILD_ID` at
+   `2026-07-14 10:08:56`; the upgrade landed at `11:43`. The running app is on **old** cosmos while
+   `node_modules` is on **new** cosmos. **The next `npm run build` silently swaps the graph
+   engine.** Phase 24's PERF-04 baseline measurement is meaningless unless it is taken against a
+   known, stated cosmos version.
+2. **CONCERNS.md §3.2 — the reheat analysis PERF-02 must close — was written against
+   `3.0.0-beta.9`.** Its `SKIP_THRESHOLD`/EPSILON/TAU findings may not hold on 3.3.0.
+3. **CONCERNS.md §8.2 explicitly warns** that any cosmos.gl upgrade "risks breaking large swaths
+   of tests that test library internals" — and the spatial-graph physics tests do exactly that.
+4. Prior art records that **cosmos.gl v3 INVERTED the simulation-alpha semantics** vs d3
+   (`getSimulationAlpha()` returns `1 − progress`). Version-sensitive behavior sits precisely in
+   the layer Phase 27 rewrites.
+
+**Not introduced by the v2.4 planning session** — the three v2.4 commits (`2bca746a`, `105994c9`,
+`ac4e1af5`) touched `.planning/**` only, proven by `git diff --stat ee89610b..HEAD -- . ':!.planning'`
+returning empty. This is pre-existing working-tree WIP of unknown provenance.
+
+**Required before Phase 27 planning — ask the owner:** is the 3.3.0 upgrade intentional and
+should it be committed (and the graph re-verified against it), or reverted? Phase 24 should pin and
+record the cosmos version it measures against either way. `VERIFY:` whether `npm test`'s
+spatial-graph physics suites still pass on 3.3.0 — they were last proven green (2535 passed) on
+the **old** version.
+
 ### v2.4 scope decisions (owner, 2026-07-14)
 
 | Decision | Chosen |
