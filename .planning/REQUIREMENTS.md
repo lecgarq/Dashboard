@@ -65,7 +65,7 @@ The user-visible heart of the milestone: 205 of 208 dimensions are currently unr
 - [ ] **DIM-02**: User can **color** the spatial graph by any available node dimension — not
       just the three hardcoded in `nodeColors.ts:62`.
 
-- [ ] **DIM-03**: Group-by and color-by resolve from a **single unified dimension id-space**.
+- [x] **DIM-03**: Group-by and color-by resolve from a **single unified dimension id-space**.
       Today they are two divergent hardcoded arrays over two different id-spaces (catalog vs
       registry). One source of truth after this requirement.
 
@@ -76,7 +76,7 @@ The user-visible heart of the milestone: 205 of 208 dimensions are currently unr
       dimensions cover ~550/1,153 projects, not all of them; banded dimensions show their
       boundaries. Under-covered dimensions are **labeled, not hidden** (standing constraint).
 
-- [ ] **DIM-06**: `dimensionRegistry.ts`'s stale doc comment (`:317-322` — falsely claims
+- [x] **DIM-06**: `dimensionRegistry.ts`'s stale doc comment (`:317-322` — falsely claims
       `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses") is
       corrected to describe real ownership, or the registry/catalog split is collapsed.
 
@@ -215,10 +215,10 @@ Explicitly excluded. Documented to prevent scope creep.
 |-------------|-------|--------|
 | DIM-01 | Phase 25 | Pending |
 | DIM-02 | Phase 25 | Pending |
-| DIM-03 | Phase 24 | Pending |
+| DIM-03 | Phase 24 | Complete |
 | DIM-04 | Phase 25 | Pending |
 | DIM-05 | Phase 25 | Pending |
-| DIM-06 | Phase 24 | Pending |
+| DIM-06 | Phase 24 | Complete |
 | CAT-01 | Phase 26 | Pending |
 | CAT-02 | Phase 26 | Pending |
 | CAT-03 | Phase 26 | Pending |

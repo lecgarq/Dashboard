@@ -469,7 +469,7 @@ characterization tests (TEST-01/02/03) stay green throughout.
 
 ## Phases
 
-- [ ] **Phase 24: Baseline & Dimension ID Unification** - Measure the honest first-paint baseline before anything else changes, then unify the catalog/registry dimension id-spaces so DIM-01/02 have one source to widen
+- [x] **Phase 24: Baseline & Dimension ID Unification** - Measure the honest first-paint baseline before anything else changes, then unify the catalog/registry dimension id-spaces so DIM-01/02 have one source to widen (completed 2026-07-14)
 - [ ] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label
 - [ ] **Phase 26: Catalog Slider Wall** - The 208-dim `CatalogSliderSidebar` renders in production decoupled from the dead 3D flag, lazy-loads, is searchable, and greys unavailable dimensions with a reason
 - [ ] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into
@@ -493,12 +493,12 @@ create.
   3. `dimensionRegistry.ts`'s doc comment at `:317-322` no longer falsely claims `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses" — it either accurately states its real scope (color + filter chips, not grouping/sliders) or the registry/catalog split is collapsed entirely.
   4. `npx tsc --noEmit` passes; `npm test` stays green with no regression to existing dimension-related tests.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 Plans:
 
 - [x] 24-01-PLAN.md — Baseline measurement: committed script + spec measure first-paint and time-to-graph-rendered on isolated :3100 prod build (median-of-5), record committed as 24-BASELINE.md (wave 1)
-- [ ] 24-02-PLAN.md — Id-space unification: dimensionIdSpace.ts becomes the single source both pickers resolve from (catalog ids of record), pixel-identical UI, dimensionRegistry doc claim corrected (wave 2)
+- [x] 24-02-PLAN.md — Id-space unification: dimensionIdSpace.ts becomes the single source both pickers resolve from (catalog ids of record), pixel-identical UI, dimensionRegistry doc claim corrected (wave 2)
 
 ### Phase 25: Dimension Aperture — Group, Color & Filter
 
@@ -623,7 +623,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
 | 23. Workshop Curation & Milestone Close | 5/5 | Complete | 2026-07-14 |
-| 24. Baseline & Dimension ID Unification | 1/2 | In Progress|  |
+| 24. Baseline & Dimension ID Unification | 2/2 | Complete   | 2026-07-14 |
 | 25. Dimension Aperture — Group, Color & Filter | 0/TBD | Not started | - |
 | 26. Catalog Slider Wall | 0/TBD | Not started | - |
 | 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 0/TBD | Not started | - |

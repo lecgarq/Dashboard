@@ -5,17 +5,17 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 24
 current_phase_name: Baseline & Dimension ID Unification
 status: executing
-stopped_at: "Phase 24 Plan 01 (baseline measurement) complete. Median time-to-graph-rendered 6193.2ms, median first-paint 644ms, N=5, 22,279 nodes, cosmos.gl 3.3.0 — committed to 24-BASELINE.md. Live :3000 verified untouched throughout. Next: Plan 24-02 (DIM-03/DIM-06 id-space unification — catalog ids become the single source; wave 2, depends_on 24-01)."
-last_updated: "2026-07-14T22:20:00.000Z"
+stopped_at: "Phase 24 COMPLETE (both plans). Plan 02: dimensionIdSpace.ts unifies Group-by/Color-by option lists (DIM-03); dimensionRegistry.ts doc claim corrected (DIM-06). tsc 0 errors, npm test 2538/2539 (2535 baseline + 3 new), zero diff on existing dimension tests. Next: plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/02/04/05)."
+last_updated: "2026-07-14T22:31:21.012Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 24 Plan 01 executed — spatial-graph baseline measurement script + spec authored and run for real against the isolated :3100 prod build; 24-BASELINE.md committed as the PERF-04 reference.
+last_activity_desc: Phase 24 Plan 02 (dimension id-space unification) executed and committed. Phase 24 complete.
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 50
-current_plan: "24-02"
+  completed_plans: 2
+  percent: 100
+current_plan: "25-01"
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 24 — Baseline & Dimension ID Unification (in progress — Plan 01 of 2 complete).
-- **Plan:** 24-01 complete (baseline measurement). 24-02 next (DIM-03/DIM-06 id-space unification, wave 2, `depends_on: ["24-01"]`).
-- **Status:** Phase 24 Plan 01 executed — `24-BASELINE.md` committed (median time-to-graph-rendered 6193.2ms, median first-paint 644ms, N=5, 22,279 nodes, cosmos.gl 3.3.0). Live `:3000` verified untouched.
-- **Next:** `/gsd:execute-phase 24` (continue with Plan 24-02) or `node .claude/gsd-core/bin/gsd-tools.cjs` equivalent — resolve the exact continuation command from the current runner.
-- **Last activity:** 2026-07-14 — Phase 24 Plan 01 (baseline) executed and committed.
+- **Phase:** 24 — Baseline & Dimension ID Unification — **COMPLETE** (2/2 plans).
+- **Plan:** 24-01 complete (baseline measurement, PERF-04). 24-02 complete (DIM-03/DIM-06 id-space unification).
+- **Status:** Phase 24 Plan 02 executed — `dimensionIdSpace.ts` created as the single source for the Group-by/Color-by option lists; `groupByDimensions.ts`/`nodeColors.ts` rewired to it; `dimensionRegistry.ts`'s stale "single source of truth" doc claim corrected. Both invariance-gate tests (`groupByDimensions.test.ts`, `nodeColors.test.ts`) pass with zero diff. `npx tsc --noEmit` 0 errors, `npm test` 2538/2539 (2535 baseline + 3 new).
+- **Next:** Plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/DIM-02/DIM-04/DIM-05) — widens `dimensionIdSpace.ts`'s `PRESET_DIMENSION_IDS` and its catalog→registry bridge.
+- **Last activity:** 2026-07-14 — Phase 24 Plan 02 (dimension id-space unification) executed and committed. Phase 24 complete.
 
 ### v2.4 phase map (24–28)
 
@@ -51,10 +51,13 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 - **PERF-02 lives in Phase 27, not Phase 28** — LAY-01/LAY-02 reach directly into the fragile
   cosmos.gl reheat mechanism (CONCERNS.md §3.2). The guard must land as an early plan in Phase 27,
   before/alongside the force-anchor wiring — never as a separately-executed phase, or the two fight.
+
 - **PERF-04's baseline is measured in Phase 24, verified in Phase 28** — measure before anything
   lands, or there is nothing honest to compare against. Do not reuse the stale ~0.46s figure.
+
 - **DIM-03 (id-space unification) strictly precedes DIM-01/DIM-02** — widening two still-divergent
   hardcoded lists just doubles the divergence.
+
 - **CAT-01 (flag decouple) strictly precedes CAT-02/03/04** — nothing else in Phase 26 is
   observable until the sidebar actually renders.
 
@@ -80,10 +83,13 @@ Why this is load-bearing for v2.4:
    `node_modules` is on **new** cosmos. **The next `npm run build` silently swaps the graph
    engine.** Phase 24's PERF-04 baseline measurement is meaningless unless it is taken against a
    known, stated cosmos version.
+
 2. **CONCERNS.md §3.2 — the reheat analysis PERF-02 must close — was written against
    `3.0.0-beta.9`.** Its `SKIP_THRESHOLD`/EPSILON/TAU findings may not hold on 3.3.0.
+
 3. **CONCERNS.md §8.2 explicitly warns** that any cosmos.gl upgrade "risks breaking large swaths
    of tests that test library internals" — and the spatial-graph physics tests do exactly that.
+
 4. Prior art records that **cosmos.gl v3 INVERTED the simulation-alpha semantics** vs d3
    (`getSimulationAlpha()` returns `1 − progress`). Version-sensitive behavior sits precisely in
    the layer Phase 27 rewrites.
@@ -116,23 +122,28 @@ These are the load-bearing findings. **Any planner/executor must treat these as 
   (the **spatial-graph shell**) are *different surfaces with nearly identical paths*. The
   spatial graph lives in the `users/` one. `/users/spatial-graph` and `/users/access-analysis`
   render the **same UI** (`spatial-graph/page.tsx:6,17` → `AccessAnalysisShellClient`).
+
 - **Node grain = one user × project membership** (`nodeId = user_id::project_id`,
   `graphNodesFromUsers.ts:13,79-84`), ~16,942 nodes. Dimensions at other grains (per-folder-grant,
   per-issue) cannot color a node without an explicit, stated aggregation rule.
+
 - **The aperture is two hardcoded arrays of three strings:**
   `groupByDimensions.ts:10` `PRESETS = ["role","project","user"]` (catalog id-space) and
   `nodeColors.ts:62` `COLOR_MODES = ["role","project","user"]` (registry id-space).
   **These are two different id-spaces that happen to share three names** — unifying them is
   a real task, not a rename.
+
 - **~14 dims already computed per node and unused:** `featureSnapshot.ts:127-235`
   (`rawRowToSnapshot`) — company, permissionStrength, folderBreadth, accessibleDataBytes,
   activityRecency, activity, signin, membershipBucket, riskScore, internalExternal, isAdmin,
   activityMix, tier, moduleSignature/moduleFlags. Contract: `interactionTypes.ts:24-123`.
+
 - **208-dim catalog is real, generated, tested, and half-wired:** `dimensionCatalog.ts:24-32`
   = 9 structural + 176 generated ACC actions (`accTaxonomyActions.generated.ts`, from `acc.xlsx`
   via `scripts/gen-acc-taxonomy.cjs`) + 4 folder-reach + 19 greyed (`available:false`).
   It already owns slider state/defaults (`SliderContext.tsx:153-163`), the group-by option list,
   and clustering (`blobDescriptor`/`embeddingBlobDescriptor` call `dim.extract`).
+
 - **`CatalogSliderSidebar` never renders in production.** `RightPanelStack.tsx:180-186` picks
   `GroupByControls` (a 3-option `<select>` + one strength slider) whenever
   `useGroupByControls` is true, which is `!ACC_3D_GRAPH_ENABLED` (`AccessAnalysisShell.tsx:492`).
@@ -140,6 +151,7 @@ These are the load-bearing findings. **Any planner/executor must treat these as 
   wall to the (separately parked) 3D graph. Decoupling them is a v2.4 task.
   `VERIFY:` the flag's value in the live `:3000` runtime env — `.env` is permission-blocked
   from agent reads (correct, secret hygiene). Confirm with the owner or via build output.
+
 - **The force-anchor engine is DEAD COMPUTE.** `AccessAnalysisShell.tsx:575-579` builds
   `buildCatalogTargets` + `buildCatalogWeights` every load; the live path then **returns early
   at `:611-632`** with `createStaticLayer(nodeIds, xy)` from precomputed `AccInstanceEmbedding`
@@ -148,14 +160,17 @@ These are the load-bearing findings. **Any planner/executor must treat these as 
   Anchor semantics: `catalogTargets.ts:215-236` (categorical → spherical-Fibonacci clumps,
   multiHot → centroid of key anchors, ordinal → hashed per-dim axis ramp), weighted by
   `catalogWeights.ts:19,34-40` (confidence high 1 / med 0.7 / low 0.4).
+
 - **Orphaned code to reckon with (imported by nothing live):** `PresetBar.tsx`,
   `SliderGroup.tsx`, `SliderSidebar`, `dimensionSearch.ts`, `dimensionWeights.ts`.
   `SliderContext.applyPreset` is a stub that calls `resetAll()` (`:369-374`); `activePreset`
   is hardcoded `null` (`:377`). `nodeColors` branches 2–3 (auto-follow, cluster-galaxy) are
   **unreachable dead code** (`AccessAnalysisShell.tsx:260-262`).
+
 - **`dimensionRegistry.ts`'s own doc comment is STALE** — it claims `RUNTIME_DIMENSION_IDS`
   (6 dims) is "the single source of truth for what the runtime uses" (`:317-322`). It is not;
   the catalog owns sliders/grouping/clustering, the registry owns color + filter chips.
+
 - **Data source unchanged:** `accDcGraph.bulkUsers` (`server/routers/acc-dc-graph.ts:32-42`
   → `lib/server/acc-hot-cache.ts:224-410`) + `accDcGraph.instanceEmbedding`
   (`AccInstanceEmbedding`, written **offline** by `scripts/compute_instance_embeddings.py`
@@ -167,8 +182,10 @@ These are the load-bearing findings. **Any planner/executor must treat these as 
   exists (`prisma/schema.prisma:849`, `String?`) but is an ACC user GUID with **no bridge to
   `AccDcUser`** and an **unmeasured resolution rate**. Wiring it blind risks a mostly-empty
   dimension. Needs a measurement spike first.
+
 - **Temporal scrubber** (activity / issues by month). Time is not a node attribute; needs a
   new interaction concept, not a dimension slot.
+
 - **Company grain inconsistency** (found during the v2.4 audit, pre-existing):
   `accessInstanceView.ts:140` reads `AccDcProjectUserCompany` (per-membership) while
   `activityRecencyView.ts:139` reads `AccDcUser.companyId` (per-user, global). They will
@@ -329,6 +346,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 23]: 23-03 (docs-only, 1 commit `f956956f`, COMPLETE — human checkpoint Task 1 resolved by owner, Tasks 2 executed, Task 3 correctly skipped): owner reviewed the full 4-page workshop surface on the rebuilt `:3000` (`23-REVIEW-CHECKLIST.md`) and gave a **blanket verbatim "approved"** — one word covering the whole surface, not 27 individually-dictated per-panel calls. Recorded at its true granularity in both `23-REVIEW-CHECKLIST.md` (new header note + `approved (blanket)†` in every Verdict cell) and the new `23-FINDINGS.md` (zero findings; both "Fix in Phase 23" and "Deferred to v2.4" sections empty by construction) — closes T-23-05 (repudiation risk) honestly, without inflating the evidence into fabricated per-panel commentary. `Issues by type` (the one panel with zero prior owner UAT) is now covered by this blanket approval, with an explicit note that it is not a dedicated per-panel UAT pass. Task 3 (conditional fix-now edits) skipped in full per plan — no fix-now items, none invented, no redeploy needed. No Phase 23.1 created. See `23-03-SUMMARY.md`.
 - [Phase 23]: 23-04 (gates + scope fence, 2 commits `89237691`/`44803cd7`, COMPLETE): refreshed the stale `.tools/repo-map/baselines/dependency-cruiser-baseline.json` (6→2 `no-scripts-to-app` warnings, ratcheted DOWN only — 3 of the prior edges named `scripts/diag-activity-{coordination,module-audit,types}.cjs`, deleted 2026-07-10 in off-roadmap commit `b95bf5c7`, a 4th `diag-activity-service-xtab.cjs` edge is also no longer live); `node scripts/repo-map/check.cjs` now exits 0 for the first time. Full gate sweep re-run live: `npx tsc --noEmit` exit 0; `npm test` 2535 passed/1 skipped/0 failed (matches research baseline exactly, no `physicsLayer` flake this run); TEST-01/02/03 (`acc-hot-cache.test.ts`/`folderPermissionTerrainView.test.ts`/`templateFolderTerrain.sharedQuery.test.ts`) byte-identical vs the `v2.2` tag; zero new WebGL/R3F import lines on `/access-analysis` across `v2.2..HEAD`; `/users/spatial-graph` zero-diff across the whole v2.3 milestone. Corrected `/template-mty`/`/forma-proposal` fact recorded precisely: 8 files / 2 files respectively touched since `v2.2` (role-similarity graph + brand-palette theme pass), both confirmed WebGL-free by import-line grep — neither page is "untouched" but neither received a v2.3-requirement panel either. `23-VERIFICATION.md` written (`status: owner_approved`) with a documented known-tooling-gap note for `gsd-self-gate.cjs`'s cumulative-vs-milestone-scoped checkbox counting mismatch. ROADMAP Phase 22 AND Phase 23 checkboxes flipped `[x]` (Phase 22's was never flipped despite shipping 3/3); Phase 23 Plans list corrected to 4/5; Progress-table row corrected to `4/5 | In Progress (gates green, milestone-close pending)` — deviation from the plan's literal template text (which said `5/5 | Complete`, written for a state where 23-05 had already run; only 4/5 plans are actually done after this plan). See `23-04-SUMMARY.md`.
 - [Phase 23]: 23-05 (FINAL plan, milestone close, 1 commit `d3618510`, COMPLETE — **PHASE 23 SHIPPED, v2.3 NEW GRAPHS MILESTONE CLOSED**): restored `.planning/MILESTONES.md` from git BEFORE running `milestone complete` (tracked but deleted from the working tree — verified v2.0/v1.0 sections present, `grep -c` = 2, before any write); ran the final `gsd-self-gate.cjs --phase 23 --route /users --rebuild` (real Task Scheduler stop → tsc → build → restart → route probes; overall `ok: false` from the known cumulative-checkbox STATE-count mismatch only, every rebuild/health/route check in `checks[]` PASS); ran `gsd-tools milestone complete v2.3` (archived ROADMAP/REQUIREMENTS to `.planning/milestones/v2.3-*`, MILESTONES.md gained its v2.3 entry — 3 sections now present). **STATE.md frontmatter was corrupted by the tool a third time this milestone** (`current_phase` 23→3, `status` overwritten, `current_phase_name` displaced) — hand-repaired via `git diff` review, matching the pattern already documented for 23-03/23-04; `state record-session` was never invoked. Promoted PROJECT.md's v2.3 Active entry to Validated + added a "Shipped Milestone: v2.3" section mirroring the v2.2 pattern. Wrote ROADMAP.md's `## 📦 v2.4 Seed Pool` carrying forward every standing deferred item (4 REQUIREMENTS.md Future Requirements seeds, 4 v2.2-carried candidates, Playwright/Turbopack infra bug, SPLIT-04 sign-off gap, MILESTONES.md v2.1/v2.2 backfill gap, deferred phase archival, gsd-self-gate STATE-count convention mismatch, and the `milestone complete` frontmatter-corruption tooling gap itself) — `23-FINDINGS.md` raised zero findings, so none of the seeds are attributed to that review. Deviation: the `--route /users` Bash-tool argument was MSYS-path-mangled; manually re-verified the real `/users` route with a direct `curl` (307, matches the mangled probe's coincidental result). No Phase 23.1 created. See `23-05-SUMMARY.md`.
+- [Phase 24]: Catalog ids are the dimension id-space of record; Group-by and Color-by both resolve their option lists from dimensionIdSpace.ts's PRESET_DIMENSION_IDS via an explicit catalog-to-registry bridge — Two independently-maintained hardcoded 3-string arrays (groupByDimensions.PRESETS, nodeColors.COLOR_MODES) coincidentally shared 3 names across different id-spaces; unifying them before Phase 25 widens the aperture prevents doubling the divergence
+- [Phase 24]: dimensionRegistry.ts's RUNTIME_DIMENSION_IDS doc comment corrected to state real scope (legacy 6-slider subset), not 'the single source of truth for what the runtime uses' — DIM-06: the claim was false since the catalog took over slider state/defaults, grouping, and clustering; registry retained for color + filter-chip metadata, full collapse deferred (owner decision)
 
 ### Blockers/Concerns
 
@@ -579,9 +598,9 @@ v2.4 Seed Pool. Not part of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-14T21:50:26.272Z
-**Stopped at:** Phase 24 context gathered
-**Resume file:** .planning/phases/24-baseline-dimension-id-unification/24-CONTEXT.md
+**Last session:** 2026-07-14T22:31:21.002Z
+**Stopped at:** Phase 24 COMPLETE (both plans). Plan 02: dimensionIdSpace.ts unifies Group-by/Color-by option lists (DIM-03); dimensionRegistry.ts doc claim corrected (DIM-06). tsc 0 errors, npm test 2538/2539 (2535 baseline + 3 new), zero diff on existing dimension tests. Next: plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/02/04/05).
+**Resume file:** None
 
 ## Performance Metrics
 
@@ -611,6 +630,7 @@ v2.4 Seed Pool. Not part of v2.3 scope.
 | Phase 22 P02 | ~35min | 2 tasks | 5 files |
 | Phase 23 P04 | ~40min | 3 tasks | 4 files |
 | Phase 23 P05 (FINAL, MILESTONE CLOSE) | ~55min | 3 tasks | 9 files |
+| Phase 24 P02 | 15min | 3 tasks | 5 files |
 
 ## Operator Next Steps
 
