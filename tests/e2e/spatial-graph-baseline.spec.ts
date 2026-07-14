@@ -72,12 +72,14 @@ async function measureOnce(page: Page, run: number, cold: boolean): Promise<RunR
   await page.goto(GRAPH_URL, { waitUntil: "commit" });
 
   // Skip-guard: fail with a clear message if the server wasn't built with the
-  // test flag, instead of hanging until the outer timeout.
+  // test flag, instead of hanging until the outer timeout. Generous timeout —
+  // AccessAnalysisShell (which installs the bridge on mount) only mounts after
+  // the DuckDB warm-up loading screen resolves (~15-20s+ cold, CONCERNS.md §3.1).
   await page
     .waitForFunction(
       () => typeof (window as unknown as BaselineWindow).__ACC_GRAPH_TEST__ !== "undefined",
       undefined,
-      { timeout: 20_000 },
+      { timeout: 60_000 },
     )
     .catch(() => {
       throw new Error(
