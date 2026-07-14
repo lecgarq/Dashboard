@@ -493,10 +493,11 @@ create.
   3. `dimensionRegistry.ts`'s doc comment at `:317-322` no longer falsely claims `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses" — it either accurately states its real scope (color + filter chips, not grouping/sliders) or the registry/catalog split is collapsed entirely.
   4. `npx tsc --noEmit` passes; `npm test` stays green with no regression to existing dimension-related tests.
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 Plans:
-- [ ] 24-01-PLAN.md — Baseline measurement: committed script + spec measure first-paint and time-to-graph-rendered on isolated :3100 prod build (median-of-5), record committed as 24-BASELINE.md (wave 1)
+
+- [x] 24-01-PLAN.md — Baseline measurement: committed script + spec measure first-paint and time-to-graph-rendered on isolated :3100 prod build (median-of-5), record committed as 24-BASELINE.md (wave 1)
 - [ ] 24-02-PLAN.md — Id-space unification: dimensionIdSpace.ts becomes the single source both pickers resolve from (catalog ids of record), pixel-identical UI, dimensionRegistry doc claim corrected (wave 2)
 
 ### Phase 25: Dimension Aperture — Group, Color & Filter
@@ -622,7 +623,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
 | 23. Workshop Curation & Milestone Close | 5/5 | Complete | 2026-07-14 |
-| 24. Baseline & Dimension ID Unification | 0/TBD | Not started | - |
+| 24. Baseline & Dimension ID Unification | 1/2 | In Progress|  |
 | 25. Dimension Aperture — Group, Color & Filter | 0/TBD | Not started | - |
 | 26. Catalog Slider Wall | 0/TBD | Not started | - |
 | 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 0/TBD | Not started | - |
@@ -669,6 +670,7 @@ or carried forward unresolved from v2.2/v2.3.
   Blocked on measurement: `AccIssue.createdBy` (`prisma/schema.prisma:849`, `String?`) has no
   bridge to `AccDcUser` and an unmeasured resolution rate; needs a resolution-rate spike
   before it can be scheduled.
+
 - **TIME-01** — temporal scrubber (activity/issues by month) on the spatial graph. Time is
   not a node attribute; needs a new interaction concept, not a dimension slot.
 
@@ -684,6 +686,7 @@ or carried forward unresolved from v2.2/v2.3.
   (per-membership) while `activityRecencyView.ts:139` reads `AccDcUser.companyId`
   (per-user, global); they disagree for any user whose company differs across projects.
   Affects `/access-analysis` panels 9/13 vs 14/15/16.
+
 - **ORPHAN-01** — dead code imported by nothing live: `PresetBar.tsx`, `SliderGroup.tsx`,
   `SliderSidebar`, `dimensionSearch.ts`, `dimensionWeights.ts`; `SliderContext.applyPreset`
   is a stub calling `resetAll()`; `activePreset` hardcoded `null`; `nodeColors` branches 2–3
@@ -696,17 +699,22 @@ or carried forward unresolved from v2.2/v2.3.
 - **DC-01 / DC-02** — unlock the 724 Data-Connector-403 projects via APS Account Admin
   provisioning; wire per-project roles/modules once the DC CSV `activity_in_module` /
   `total_activity` join lands.
+
 - **Per-folder terrain projection** — the `AccFolderPermissionSummary` projection is a
   per-`(projectId,roleId)` rollup; a separate per-folder materialised projection could
   retire the terrain views' raw `$queryRaw` scan too — only if terrain read cost becomes a
   concern (Ph19 boundary note).
+
 - **Folder storage treemap** — `AccFolder` rollups; needs depth-cap/leaf-rollup UX design
   (unreadable-treemap failure mode).
+
 - **Permission tier × folder-depth heatmap** — new aggregation against the OOM-hardened
   `folderPermQuery.ts` path; needs its own perf regression test before scheduling.
+
 - **Activity verb/object-type breakdown** — `AccActivityAccds` facets; needs top-N
   bucketing design; must carry the ~12-mo ACCDS floor label; must read raw columns (not
   spatial-graph taxonomy helpers — BND-03 boundary risk).
+
 - **Provisioned-vs-active module coverage** — needs module-key vocabulary alignment
   (`products` Json vs activity module labels) or the "gap" is a labeling artifact;
   strictly no $-cost framing.
@@ -722,21 +730,26 @@ PERF-03 — verify at v2.4 close before re-listing):**
   parse CSS with garbled-Unicode Tailwind arbitrary-value selector errors). v2.4's Phase 28
   (PERF-03) may fix this as an in-phase prerequisite — if it does, retire this entry at v2.4
   close instead of carrying it forward again.
+
 - **Phase 17 SPLIT-04 owner visual sign-off** (carried from v2.2 close, still open) —
   `HybridAnalyticsSurface.tsx`'s split was accepted on a byte-identical DOM-golden-test
   basis only; no production route mounts the surface (`/users/access-analysis` redirects
   to `/users/spatial-graph`). Revisit if/when the surface ever gets a live, unflagged mount.
+
 - **MILESTONES.md v2.1/v2.2 backfill** — both v2.1 and v2.2 shipped but were never logged
   to `.planning/MILESTONES.md` before the v2.3 close restored the file. Low priority — both
   are fully recoverable from the `v2.1`/`v2.2` git tags and `PROJECT.md`'s "Shipped
   Milestone" history.
+
 - **`.planning/` phase-directory archival** — deliberately deferred at the v2.3 close
   because the `.planning/` tree is mid-migration on this branch with ~450 files of
   unrelated dirty WIP. All 6 v2.3 phase directories remain at `.planning/phases/`.
+
 - **`gsd-self-gate.cjs` STATE-count convention mismatch** — the script counts ROADMAP phase
   checkboxes cumulatively across all milestones while `STATE.md`'s `progress` block is
   intentionally milestone-scoped. A tooling decision (scope the count to the active
   milestone, or change the STATE convention), not a product one.
+
 - **`gsd-tools milestone complete` / `state.*` STATE.md frontmatter corruption** —
   reconfirmed three times during v2.3 (`current_phase` mis-stamped, `status` overwritten
   with a body-fragment-derived value, `current_phase_name` displaced out of the frontmatter

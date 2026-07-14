@@ -61,16 +61,21 @@ The user-visible heart of the milestone: 205 of 208 dimensions are currently unr
       permission strength, folder breadth, activity volume, activity recency, sign-in recency,
       membership tenure, risk score, module signature, internal/external, admin/member,
       dominant activity mix.
+
 - [ ] **DIM-02**: User can **color** the spatial graph by any available node dimension — not
       just the three hardcoded in `nodeColors.ts:62`.
+
 - [ ] **DIM-03**: Group-by and color-by resolve from a **single unified dimension id-space**.
       Today they are two divergent hardcoded arrays over two different id-spaces (catalog vs
       registry). One source of truth after this requirement.
+
 - [ ] **DIM-04**: User can **filter** the graph by any available node dimension. Today the
       toolbar chips read a third, separate list (`SliderContext.DIMENSIONS`, 12 registry dims).
+
 - [ ] **DIM-05**: Every exposed dimension **states its coverage honestly**. DC-sourced
       dimensions cover ~550/1,153 projects, not all of them; banded dimensions show their
       boundaries. Under-covered dimensions are **labeled, not hidden** (standing constraint).
+
 - [ ] **DIM-06**: `dimensionRegistry.ts`'s stale doc comment (`:317-322` — falsely claims
       `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses") is
       corrected to describe real ownership, or the registry/catalog split is collapsed.
@@ -83,10 +88,13 @@ The 208-dim sidebar is written, tested, and never rendered.
       production**, decoupled from `NEXT_PUBLIC_ACC_3D_GRAPH`. That flag currently gates both
       the slider wall and the parked 3D graph — one flag, two unrelated features
       (`RightPanelStack.tsx:180-186`, `AccessAnalysisShell.tsx:492`).
+
 - [ ] **CAT-02**: The 176-action catalog **lazy-loads** — not iterated at graph init when the
       sidebar has never been opened. Closes CONCERNS.md §3.3.
+
 - [ ] **CAT-03**: User can **search** the catalog dimension list by name. With ~189 available
       dims, an unsearchable wall is unusable.
+
 - [ ] **CAT-04**: The 19 `available:false` catalog dimensions render **visibly greyed with a
       reason**, never silently dropped — an unavailable dimension is information, not absence.
 
@@ -97,11 +105,14 @@ change that.
 
 - [ ] **LAY-01**: Selecting a dimension **restructures the graph organically** via force
       anchors — it does not merely recolor a static projection.
+
 - [ ] **LAY-02**: `catalogTargets` / `catalogWeights` are **consumed by the live render path**.
       Today they are built every page load (`AccessAnalysisShell.tsx:575-579`) and thrown away
       when the code returns early at `:611-632`. Dead compute becomes live compute.
+
 - [ ] **LAY-03**: Dimension sliders **morph the layout continuously** between structures — no
       teleport, no frozen frames.
+
 - [ ] **LAY-04**: The layout **stays organic — never a fixed grid**, at any slider position or
       dimension combination. Standing owner constraint, previously violated and corrected.
 
@@ -112,17 +123,21 @@ page demoed live.
 
 - [ ] **PERF-01**: DuckDB-Wasm warm-up is **off the render critical path** (idle-time or
       server-precomputed, not a blocking mount-time `useEffect`). Closes CONCERNS.md §3.1.
+
 - [ ] **PERF-02**: The cosmos.gl simulation **cannot be accidentally reheated** by a slider
       change or clustering call. Closes CONCERNS.md §3.2 — the known-fragile area, and the one
       LAY-01/LAY-02 deliberately reach into.
+
 - [ ] **PERF-03**: The 3D lasso e2e test **passes reliably within its time budget** on the
       owner's machine. Closes CONCERNS.md §3.4. **Risk:** may be blocked by the standing
       Playwright/dev-server infra bug (see Future Requirements) — if so, that bug must be fixed
       inside v2.4 for this requirement to be verifiable.
+
 - [ ] **PERF-04**: Spatial-graph **first paint does not regress** despite the widened dimension
-      surface. `VERIFY:` establish the baseline by **measurement before changing anything** —
-      a prior ~0.46s figure exists but predates this milestone and must be re-measured, not
-      assumed.
+      surface. Baseline captured in Phase 24 Plan 01 (`24-BASELINE.md` — median
+      time-to-graph-rendered 6193.2ms, median first-paint 644ms, N=5, isolated `:3100` build).
+      **Not yet complete** — the no-regression comparison is Phase 28's job; this checkbox
+      flips only when Phase 28 re-measures and confirms no regression.
 
 ---
 
@@ -137,6 +152,7 @@ Deferred. Tracked, not in this roadmap.
   `String?`) but is an ACC user GUID with **no bridge to `AccDcUser`** and an **unmeasured
   resolution rate**. Wiring it blind risks a mostly-empty dimension that lies. Needs a
   resolution-rate spike first.
+
 - **TIME-01**: Temporal scrubber (activity / issues by month) on the graph. Time is not a node
   attribute — needs a new interaction concept, not a dimension slot.
 
@@ -151,6 +167,7 @@ Deferred. Tracked, not in this roadmap.
   (per-membership) while `activityRecencyView.ts:139` reads `AccDcUser.companyId` (per-user,
   global). They disagree for any user whose company differs across projects. Affects
   `/access-analysis` panels 9/13 vs 14/15/16.
+
 - **ORPHAN-01**: Dead code imported by nothing live — `PresetBar.tsx`, `SliderGroup.tsx`,
   `SliderSidebar`, `dimensionSearch.ts`, `dimensionWeights.ts`; `SliderContext.applyPreset` is
   a stub calling `resetAll()` (`:369-374`); `activePreset` hardcoded `null` (`:377`);
@@ -165,8 +182,10 @@ Deferred. Tracked, not in this roadmap.
 - **Playwright/dev-server infra fix** — `next dev --webpack` 500s every request;
   `--turbopack` corrupts CSS on ~50% of cold boots. E2e specs needing a dev server are blocked
   either way. **This directly threatens PERF-03.**
+
 - **`gsd-tools` STATE.md frontmatter corruption** — corrupted STATE 3× during v2.3. Hand-repair
   and diff after any `gsd-tools` STATE write.
+
 - **MILESTONES.md v2.1/v2.2 backfill** — both shipped, never logged.
 - **`.planning/` phase-directory archival** — deferred; the tree is mid-migration with ~450
   files of unrelated dirty WIP.
@@ -211,14 +230,16 @@ Explicitly excluded. Documented to prevent scope creep.
 | PERF-01 | Phase 28 | Pending |
 | PERF-02 | Phase 27 | Pending |
 | PERF-03 | Phase 28 | Pending |
-| PERF-04 | Phase 28 | Pending |
+| PERF-04 | Phase 28 | Pending (baseline captured Phase 24) |
 
 **Coverage:**
+
 - v2.4 requirements: **18** total
 - Mapped to phases: **18/18** ✓
 - Unmapped: 0
 
 **Phase-to-requirement map:**
+
 - Phase 24 (Baseline & Dimension ID Unification): DIM-03, DIM-06
 - Phase 25 (Dimension Aperture — Group, Color & Filter): DIM-01, DIM-02, DIM-04, DIM-05
 - Phase 26 (Catalog Slider Wall): CAT-01, CAT-02, CAT-03, CAT-04

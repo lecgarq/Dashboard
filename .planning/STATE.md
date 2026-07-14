@@ -4,18 +4,18 @@ milestone: v2.4
 milestone_name: Spatial Graph Dimensions
 current_phase: 24
 current_phase_name: Baseline & Dimension ID Unification
-status: ready_to_plan
-stopped_at: "Phase 24 context gathered (24-CONTEXT.md). Decisions: baseline measured on isolated :3100 prod build via a COMMITTED script (median-of-N; record both first-paint AND time-to-graph-rendered, judge graph-rendered; record cosmos 3.3.0 + node count 22,279 + BUILD_ID + commit); catalog ids become the single dimension id-space (registry maps onto catalog, NOT retired — DIM-06 = doc-scope fix); pixel-identical UI bar (same 3 options, tests untouched); measurement lands FIRST within the phase. Note: cosmos.gl 3.3.0 blocker RESOLVED — committed 0bfe0962 + deployed :3000. Next: /gsd:plan-phase 24."
-last_updated: "2026-07-14T21:50:26.276Z"
+status: executing
+stopped_at: "Phase 24 Plan 01 (baseline measurement) complete. Median time-to-graph-rendered 6193.2ms, median first-paint 644ms, N=5, 22,279 nodes, cosmos.gl 3.3.0 — committed to 24-BASELINE.md. Live :3000 verified untouched throughout. Next: Plan 24-02 (DIM-03/DIM-06 id-space unification — catalog ids become the single source; wave 2, depends_on 24-01)."
+last_updated: "2026-07-14T22:20:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 24 context gathered via discuss-phase — measurement protocol, repeatability, unification direction (catalog-as-source), and behavior-invariance bar decided; 24-CONTEXT.md committed.
+last_activity_desc: Phase 24 Plan 01 executed — spatial-graph baseline measurement script + spec authored and run for real against the isolated :3100 prod build; 24-BASELINE.md committed as the PERF-04 reference.
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
-current_plan: null
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
+current_plan: "24-02"
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 24 — Baseline & Dimension ID Unification (not started).
-- **Plan:** — (none yet)
-- **Status:** Ready to plan Phase 24.
-- **Next:** `/gsd:discuss-phase 24` (gather context) or `/gsd:plan-phase 24` (plan directly).
-- **Last activity:** 2026-07-14 — v2.4 opened, scoped, roadmapped, owner-approved.
+- **Phase:** 24 — Baseline & Dimension ID Unification (in progress — Plan 01 of 2 complete).
+- **Plan:** 24-01 complete (baseline measurement). 24-02 next (DIM-03/DIM-06 id-space unification, wave 2, `depends_on: ["24-01"]`).
+- **Status:** Phase 24 Plan 01 executed — `24-BASELINE.md` committed (median time-to-graph-rendered 6193.2ms, median first-paint 644ms, N=5, 22,279 nodes, cosmos.gl 3.3.0). Live `:3000` verified untouched.
+- **Next:** `/gsd:execute-phase 24` (continue with Plan 24-02) or `node .claude/gsd-core/bin/gsd-tools.cjs` equivalent — resolve the exact continuation command from the current runner.
+- **Last activity:** 2026-07-14 — Phase 24 Plan 01 (baseline) executed and committed.
 
 ### v2.4 phase map (24–28)
 
