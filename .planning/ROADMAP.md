@@ -418,7 +418,26 @@ Plans:
   3. `npm test` is green — all existing characterization tests (TEST-01/02/03) stay byte-identical, plus every v2.3 aggregate-bound test added in Phases 20–22; `npx tsc --noEmit` exits 0.
   4. `git diff`/`node scripts/repo-map/check.cjs` confirms no new WebGL was introduced on `/access-analysis` and `/users/spatial-graph` was not touched by any v2.3 phase.
 
-**Plans**: TBD
+**Planner note (2026-07-14, evidence-backed — reinterprets SC#1):** SC#1 was written
+2026-07-02, BEFORE Phase 20.1 (inserted) built the 6-tab IA. The tab IA **is** the answer to
+the wall-of-charts risk, so SC#1 is a review-and-confirm item, not a build item — no
+grouping/collapse scheme is manufactured, tab order does not change, panel counts are not
+rebalanced, and no panel is cut (all REJECTED goals per `23-CONTEXT.md`). Curation is
+within-tab ordering only, and a **zero-diff curation result is a legitimate PASS**. SC#1's
+"7 new panels" count is also stale: the live inventory is **23 panels** (Overview 5, Roles 6,
+Users 2, Companies 3, Projects 6, Compare 1), recounted from source in `23-RESEARCH.md` §A.
+Sign-off scope is the FULL four-page workshop surface at graded depth (owner decision):
+`/access-analysis` deep, `/users` deep (verify-only), `/template-mty` short functional,
+`/forma-proposal` short visual.
+
+**Plans**: 5 plans
+Plans:
+
+- [ ] 23-01-PLAN.md — Rebuild + deploy `:3000` via the MANUAL sequence (Task Scheduler stop → `npx tsc --noEmit` → `npm run build` → restart → `/api/health` 200). MUST be first: `.next/BUILD_ID` (2026-07-13 16:13) predates HEAD (2026-07-14 09:31) and the workflow-tools donuts commit — the live surface is stale (wave 1)
+- [ ] 23-02-PLAN.md — Panel recount from source (23, not 22 — Roles has 6) + per-tab lead-panel verdict + the graph-by-graph owner review checklist (`23-REVIEW-CHECKLIST.md`), caveat column grounded in real honesty labels with file:line citations (wave 2)
+- [ ] 23-03-PLAN.md — **Owner sign-off checkpoint (blocking human gate)**: full four-page surface, graded depth, `IssueTypeChart` given explicit attention (only v2.3 panel with zero prior UAT). Findings triaged AT THE MOMENT RAISED — fix-now (no loader, no data) vs v2.4 seed. No Phase 23.1 (wave 3)
+- [ ] 23-04-PLAN.md — Gates + scope fence: refresh the stale repo-map dependency-cruiser baseline (currently exits 1 on 3 deleted-script refs from `b95bf5c7`), `npm test` + `npx tsc --noEmit`, TEST-01/02/03 byte-identical vs `v2.2`, no-new-WebGL + spatial-graph-untouched proofs, `23-VERIFICATION.md`, flip Phase 22 + 23 checkboxes (wave 4)
+- [ ] 23-05-PLAN.md — Milestone close: restore `.planning/MILESTONES.md` FIRST (tracked but deleted — `milestone complete` would discard v2.0/v1.0 history), final `gsd-self-gate.cjs --phase 23 --route /users --rebuild`, `milestone complete v2.3` + manual STATE repair (**never** `state record-session` — corruption live-reproduced), PROJECT.md Active→Validated, ROADMAP v2.4 seeds, config reset (wave 5)
 
 **UI hint**: yes
 
@@ -449,7 +468,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21. Issue Funnel — Status & Time | 4/4 | Complete    | 2026-07-06 |
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
-| 23. Workshop Curation & Milestone Close | 0/TBD | Not started | - |
+| 23. Workshop Curation & Milestone Close | 0/5 | Planned | - |
 
 ---
 
