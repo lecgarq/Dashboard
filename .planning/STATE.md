@@ -5,10 +5,10 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 25
 current_phase_name: Dimension Aperture — Group, Color & Filter
 status: ready_to_plan
-stopped_at: "Phase 25 CONTEXT captured (25-CONTEXT.md, committed 360dbf67). Owner decisions: full dimension palette (role/project/user + all 4 themes — Identity/Activity/Risk/Permission, ~17 dims, no new data) but restrained rendering (banded swatches only, NO ramps, one legend, add-a-chip filtering) per 'don't overbloat'; coverage labels inline in picker + caveat badge on active dim (DIM-05); filter = multi-select values to keep (DIM-04). VERIFY real per-dim coverage before display (the ~48% used in discussion is illustrative). Next: /gsd:plan-phase 25 (DIM-01/02/04/05)."
-last_updated: "2026-07-14T22:31:21.012Z"
+stopped_at: "Phase 25 PLANNED — 3 plans committed (c3cf53de): 25-01 (wave 1: banding/coverage/catalog substrate, DIM-01/05), 25-02 (wave 2: widened Group-by + Color-by pickers resolving from unified PRESET_DIMENSION_IDS, DIM-01/02/05), 25-03 (wave 3: add-a-chip filter from the aperture, DIM-04/05). Owner decisions from 25-CONTEXT.md remain locked (banded swatches only, NO ramps, one legend, coverage labels inline; VERIFY real per-dim coverage — the ~48% figure is illustrative). STATE was stale (still said 'Next: plan-phase 25' after plans existed); reconciled with tree. Next: /gsd:execute-phase 25 or /lecg-execute-phase 25."
+last_updated: "2026-07-14T23:20:33.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 25 context gathered via discuss-phase (Group/Color/Filter aperture decisions locked). Ready to plan.
+last_activity_desc: Phase 25 plans created (3 plans, waves 1-3, committed c3cf53de). STATE reconciled with tree. Ready to execute.
 progress:
   total_phases: 5
   completed_phases: 1
@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 - **Phase:** 24 — Baseline & Dimension ID Unification — **COMPLETE** (2/2 plans).
 - **Plan:** 24-01 complete (baseline measurement, PERF-04). 24-02 complete (DIM-03/DIM-06 id-space unification).
 - **Status:** Phase 24 Plan 02 executed — `dimensionIdSpace.ts` created as the single source for the Group-by/Color-by option lists; `groupByDimensions.ts`/`nodeColors.ts` rewired to it; `dimensionRegistry.ts`'s stale "single source of truth" doc claim corrected. Both invariance-gate tests (`groupByDimensions.test.ts`, `nodeColors.test.ts`) pass with zero diff. `npx tsc --noEmit` 0 errors, `npm test` 2538/2539 (2535 baseline + 3 new).
-- **Next:** Plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/DIM-02/DIM-04/DIM-05) — widens `dimensionIdSpace.ts`'s `PRESET_DIMENSION_IDS` and its catalog→registry bridge.
+- **Next:** Execute Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/DIM-02/DIM-04/DIM-05) — 3 plans committed (c3cf53de), waves 1→3: 25-01 substrate (bands/coverage/catalog), 25-02 pickers, 25-03 add-a-chip filter.
 - **Last activity:** 2026-07-14 — Phase 24 Plan 02 (dimension id-space unification) executed and committed. Phase 24 complete.
 
 ### v2.4 phase map (24–28)
