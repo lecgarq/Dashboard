@@ -49,10 +49,47 @@ tree; tags and git history are the authoritative detailed record. Deploy = rebui
 (not a branch merge); v2.3's final phase (23) rebuilt `:3000` and captured the owner's
 graph-by-graph sign-off before closing.
 
-**Current focus:** Awaiting next milestone. v2.4 candidate seeds are recorded in
-`.planning/ROADMAP.md`'s "v2.4 Seed Pool" section — carried-forward deferred candidates
-remain in Active below: SVC-01, the `/users/spatial-graph` concerns milestone, and the
-DC-01/DC-02 external-data unlocks.
+**Current focus:** v2.4 Spatial Graph Dimensions — opened 2026-07-14. See "Current
+Milestone" below. This milestone **explicitly re-scopes `/users/spatial-graph`**, which has
+been Out of Scope since v2.1, at the owner's direct request.
+
+## Current Milestone: v2.4 Spatial Graph Dimensions
+
+**Goal:** Make every access-analysis dimension selectable on the spatial graph, and make
+selecting one actually restructure the graph — by unlocking dimension machinery that is
+already built, computed on every page load, and currently discarded.
+
+**Owner's ask (verbatim, 2026-07-14):** *"Improve the spatial graph, add all the access
+analysis themes that we did — I want to see those dimensions in the spatial graph."*
+
+**Why this is an unlock, not a build** (verified 2026-07-14 from source):
+
+- `featureSnapshot.ts:127-235` already enriches all ~16,942 user×project nodes with ~14
+  dimensions (company, permission strength, folder breadth, accessible bytes, activity
+  recency, activity volume, sign-in recency, membership tenure, risk score,
+  internal/external, admin/member, dominant activity mix, permission tier, module
+  signature) — **none are selectable.**
+- `groupByDimensions.ts:10` and `nodeColors.ts:62` are both hardcoded to
+  `["role","project","user"]`. Two arrays of three strings are the whole aperture.
+- `dimensionCatalog.ts` builds a **208-dimension catalog** (9 structural + 176 generated
+  ACC action verbs + 4 folder-reach + 19 greyed) and `CatalogSliderSidebar.tsx` renders it —
+  but only behind `NEXT_PUBLIC_ACC_3D_GRAPH=1`, which is set nowhere. The flag wrongly
+  couples the slider wall to the (also-parked) 3D graph.
+- `AccessAnalysisShell.tsx:575-579` computes `buildCatalogTargets` + `buildCatalogWeights`
+  (the force anchors that let a dimension physically restructure the graph) on every load,
+  then the live path **returns early at `:611-632`** and builds a static layer from
+  precomputed `AccInstanceEmbedding` coordinates instead. It is dead compute.
+
+**Target features:**
+
+- Widen Group-by / Color-by / filter from 3 options to the full node-dimension set
+- Render the catalog slider wall, decoupled from the dead 3D flag
+- Revive the force-anchor engine so a dimension restructures the graph organically
+- Close the deferred spatial-graph perf debt (CONCERNS.md §3.1–3.4)
+
+**Explicitly deferred to v2.5** (Tier 3, needs new data plumbing): issue status / type /
+coordination on the graph (requires an `AccIssue.createdBy` → `AccDcUser` id bridge with an
+unmeasured resolution rate), and a temporal scrubber for activity/issues over time.
 
 ## Shipped Milestone: v2.3 New Graphs — ✅ SHIPPED 2026-07-14
 
@@ -125,13 +162,16 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 ### Active
 
-<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. v2.3 New Graphs shipped → moved to Validated (2026-07-14). SVC-01, spatial-graph, DC-01/02 remain deferred candidates. -->
+<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. v2.3 New Graphs shipped → moved to Validated (2026-07-14). The spatial-graph seed is now the ACTIVE v2.4 milestone (2026-07-14). SVC-01, DC-01/02 remain deferred candidates. -->
 
+- [ ] **v2.4 Spatial Graph Dimensions** (ACTIVE — see "Current Milestone" above) — expose the
+  ~14 already-computed node dimensions in Group-by/Color-by/filter, render the 208-dim
+  catalog slider wall (decoupled from the dead `NEXT_PUBLIC_ACC_3D_GRAPH` flag), revive the
+  discarded force-anchor layout engine, and close the deferred `/users/spatial-graph`
+  perf concerns (CONCERNS.md §3.1–3.4: DuckDB warm-up on the critical path, cosmos.gl
+  reheat fragility, 176-action catalog eager load, lasso e2e flake).
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
-- [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
-  (CONCERNS.md §3 + §8.2/8.3): DuckDB warm-up, cosmos.gl reheat, 176-action catalog
-  lazy-load, lasso e2e flake, hydration-prefetch test, physics/e2e test splits.
 - [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
   APS Account Admin provisioning; wire per-project roles/modules once the DC CSV
   `activity_in_module` / `total_activity` join lands.
@@ -143,13 +183,23 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 ### Out of Scope
 
-- `/users/spatial-graph` rework — out of scope unless explicitly re-scoped (its
-  concerns are seeded above as a dedicated future milestone, not folded into
-  general work).
-- New WebGL on data surfaces — confined to approved `/users` header and
-  `/forma-proposal` background accents.
+- ~~`/users/spatial-graph` rework~~ — **RE-SCOPED IN 2026-07-14 by explicit owner request.**
+  This boundary held from v2.1 through v2.3 exactly as written ("out of scope unless
+  explicitly re-scoped"); v2.4 is that re-scope. The surface is now IN scope. Note that
+  `/users/spatial-graph` and `/users/access-analysis` render the **same UI**
+  (`spatial-graph/page.tsx:6,17` → `AccessAnalysisShellClient`).
+- **Issue dimensions on the graph** (issue status / type / coordination) — deferred to v2.5.
+  `AccIssue.createdBy` is an ACC user GUID with no bridge to `AccDcUser` and an unmeasured
+  resolution rate; wiring it blind would produce a mostly-empty dimension.
+- **Temporal scrubber on the graph** (activity/issues by month) — deferred to v2.5. Time is
+  not a node attribute; it needs a new interaction concept, not a dimension slot.
+- New WebGL on **data** surfaces — confined to approved `/users` header and
+  `/forma-proposal` background accents. **Unchanged by v2.4:** the spatial graph is not a
+  data surface and already runs cosmos.gl/WebGL; reviving its force engine adds no new
+  WebGL to `/access-analysis`, `/template-mty`, or `/forma-proposal`.
 - New analytics not derivable from the Prisma DB — under-covered sources are
-  labeled, not hidden.
+  labeled, not hidden. **v2.4 adds no new data source** — every dimension it exposes is
+  already computed today.
 
 ## Context
 
@@ -207,6 +257,11 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | Rebuild `:3000` (owner-consented) to verify v2.2 parity, unlike v2.1 | The final phase was a server-side data-source swap → a rebuild is required to see it; owner explicitly approved stopping `:3000` (build 500s a live app per deploy-sequence) | ✓ Good — real owner visual sign-off on `/access-analysis` + `/template-mty` (unlike Phase 17's test-basis-only) |
 | Milestone-close gate = graph-by-graph owner sign-off across the FULL 4-page workshop, not just the new panels | Phase 23 (mandatory curation gate, no new requirements) exists precisely to catch a wrong number in a pre-v2.3 panel before the milestone ships | ✓ Good — blanket verbatim "approved" on all 23 `/access-analysis` panels + `/users`, zero findings; `IssueTypeChart` (the one panel with zero prior UAT) covered |
 | Keep v2.3 tight — no Phase 23.1 despite the 20.1/21.1 inserted-phase precedent | The 20.1/21.1 pattern already stretched v2.3 from 4 to 6 phases; the owner review's zero-finding outcome meant nothing needed a follow-up insertion | ✓ Good — milestone closed cleanly, no urgent-phase insertion needed |
+| **v2.4 re-scopes `/users/spatial-graph`** (standing Out-of-Scope boundary since v2.1) | Direct owner request 2026-07-14. The boundary was always written as "unless explicitly re-scoped" and seeded as a dedicated future milestone — this is that milestone, not scope creep | — Pending |
+| **v2.4 = unlock + revive, NOT build** | Source audit (2026-07-14) proved ~14 node dimensions are already computed every load and discarded, the 208-dim catalog + its slider sidebar are already written, and the force-anchor engine is already computed then thrown away at `AccessAnalysisShell.tsx:611`. The milestone's value is in the aperture, not new machinery | — Pending |
+| **Revive the force-anchor layout engine** (dimensions restructure the graph) rather than keeping the static embedding map | Owner chose it over the lower-risk "recolor/regroup only" option. A dimension that can't move the graph isn't really a graph dimension — and the anchors are already computed. Accepted risk: touches cosmos.gl reheat, the known-fragile area (CONCERNS.md §3.2) | — Pending |
+| **Tier 3 (issue dims + temporal scrubber) explicitly deferred to v2.5** | `AccIssue.createdBy` → `AccDcUser` has no id bridge and an unmeasured resolution rate; shipping it blind risks a mostly-empty dimension that lies. Time is not a node attribute | — Pending |
+| **Perf debt (CONCERNS.md §3.1–3.4) folded into v2.4, not deferred again** | Exposing 189 sliders makes the eager 176-action catalog init a real first-paint cost on a live-demo page, not a theoretical one. The debt becomes load-bearing precisely because of this milestone | — Pending |
 
 ---
-*Last updated: 2026-07-14 after closing milestone v2.3 New Graphs (8/8 requirements shipped; see "Shipped Milestone: v2.3 New Graphs" above). Awaiting next milestone — v2.4 candidate seeds recorded in `.planning/ROADMAP.md`'s "v2.4 Seed Pool" section.*
+*Last updated: 2026-07-14 — opened milestone **v2.4 Spatial Graph Dimensions** (see "Current Milestone" above). This milestone explicitly re-scopes `/users/spatial-graph`, Out of Scope since v2.1, at direct owner request. Prior: closed v2.3 New Graphs (8/8 requirements shipped).*

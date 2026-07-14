@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: New Graphs
-current_phase: 23
-current_phase_name: Workshop Curation & Milestone Close
-status: complete
-stopped_at: "Phase 23 plan 23-05 complete — v2.3 New Graphs MILESTONE CLOSED. MILESTONES.md restored (v2.0+v1.0 preserved) and gained a v2.3 entry; final gsd-self-gate.cjs --phase 23 --route /users --rebuild ran (rebuild+health+route checks recorded); milestone complete v2.3 archived ROADMAP/REQUIREMENTS to .planning/milestones/v2.3-*; PROJECT.md v2.3 Active entry promoted to Validated; ROADMAP v2.4 Seed Pool written; config.json reset. No Phase 23.1. v2.3 is the first milestone in this branch's history closed with a full deliberate deploy + graph-by-graph owner sign-off pass."
+milestone: v2.4
+milestone_name: Spatial Graph Dimensions
+current_phase: null
+current_phase_name: null
+status: defining_requirements
+stopped_at: "v2.4 Spatial Graph Dimensions opened 2026-07-14. Owner explicitly re-scoped /users/spatial-graph (Out of Scope since v2.1). Source audit proved the milestone is an UNLOCK, not a build: ~14 node dimensions already computed every load and discarded; 208-dim catalog + CatalogSliderSidebar already written but gated behind the never-set NEXT_PUBLIC_ACC_3D_GRAPH flag; force-anchor engine (catalogTargets/catalogWeights) computed then thrown away at AccessAnalysisShell.tsx:611. Owner chose Tier 1+2 dimension scope, force-engine revival (over static-map), and folding in the CONCERNS.md §3.1-3.4 perf debt. Research SKIPPED (no new library/data/API). Defining requirements."
 last_updated: "2026-07-14T00:00:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 23 plan 23-05 (milestone close, FINAL plan of v2.3) executed — MILESTONES.md history preserved + v2.3 entry appended, final self-gate run, milestone archived, PROJECT.md/ROADMAP.md updated with v2.4 seeds carried forward from REQUIREMENTS.md/STATE.md/deferred-items. v2.3 New Graphs is CLOSED (8/8 requirements, 23-panel workshop surface owner-approved on live :3000).
+last_activity_desc: v2.4 Spatial Graph Dimensions milestone opened. PROJECT.md updated (Current Milestone section, /users/spatial-graph re-scoped out of Out-of-Scope, 5 new Key Decisions). Requirements next, then roadmap. Phase numbering continues from 23 → starts at Phase 24.
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 28
-  completed_plans: 28
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 current_plan: null
 ---
 
@@ -22,19 +22,95 @@ current_plan: null
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-01)
+See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02, CLOSED 2026-07-14) — all 6 phases (20, 20.1, 21, 21.1, 22, 23) complete, 8/8 requirements delivered, milestone archived. Awaiting next milestone.
+**Current focus:** v2.4 Spatial Graph Dimensions (opened 2026-07-14) — expose the already-computed node dimensions on `/users/spatial-graph`, revive the discarded force-anchor layout engine, close the deferred spatial-graph perf debt. Defining requirements.
 
 ## Current Position
 
-- **Milestone:** v2.3 — New Graphs. **CLOSED 2026-07-14.** 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 6 phases (20, 20.1, 21, 21.1, 22, 23), 28/28 plans. Archived to `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md`; logged in `.planning/MILESTONES.md`.
-- **Phase:** 23 — Workshop Curation & Milestone Close (**COMPLETE, 5/5 plans**). Final plan 23-05 (this plan) restored `.planning/MILESTONES.md` (v2.0/v1.0 history preserved, v2.3 entry appended), ran the final `gsd-self-gate.cjs --phase 23 --route /users --rebuild` (rebuild + health + all route checks passed; only the known pre-existing cumulative-checkbox-count mismatch failed, documented in `23-VERIFICATION.md`), ran `milestone complete v2.3` (and manually repaired the STATE.md frontmatter corruption it introduced — see Blockers/Concerns), promoted PROJECT.md's v2.3 Active entry to Validated, and wrote a ROADMAP v2.4 Seed Pool carrying forward every standing deferred item.
-- **Plan:** 23-05 (FINAL, COMPLETE). See `23-05-SUMMARY.md`.
-- **Next:** Start the next milestone with the roadmap/requirements discussion workflow when the owner is ready. v2.4 candidate seeds are recorded in `.planning/ROADMAP.md`'s "v2.4 Seed Pool" section.
-- **Status:** v2.3 New Graphs is CLOSED. All 8 requirements delivered and owner-approved (blanket "approved" verdict on the full 4-page workshop surface, live `:3000`, 2026-07-14). No Phase 23.1 was needed.
-- **Last activity:** 2026-07-14 — Phase 23 plan 23-05 (milestone close, FINAL plan of v2.3) executed. v2.3 CLOSED.
+- **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened 2026-07-14. Phase numbering continues from v2.3 → **starts at Phase 24**.
+- **Phase:** Not started (defining requirements).
+- **Plan:** —
+- **Status:** Defining requirements.
+- **Last activity:** 2026-07-14 — v2.4 opened; PROJECT.md updated; research skipped.
+
+### v2.4 scope decisions (owner, 2026-07-14)
+
+| Decision | Chosen |
+|---|---|
+| Dimension aperture | **Tier 1 + 2** — expose ~14 already-computed node dims in Group-by/Color-by/filter **and** render the 208-dim catalog slider wall. **No new data.** Tier 3 (issue dims, temporal scrubber) deferred to v2.5. |
+| Layout behavior | **Revive the force-anchor engine** — a dimension must restructure the graph organically, not just recolor it. Rejected the lower-risk "static embedding map + recolor only" option. |
+| Perf debt | **Folded in** — CONCERNS.md §3.1–3.4 (DuckDB warm-up off critical path, 176-action catalog lazy-load, cosmos.gl reheat guard, lasso e2e flake). |
+| Research | **Skipped** — no new library, data source, or external API. `workflow.research=false` persisted to config. |
+
+### v2.4 grounding facts (verified from source, 2026-07-14)
+
+These are the load-bearing findings. **Any planner/executor must treat these as the baseline.**
+
+- ⚠️ **NAME COLLISION — read this before touching any file.** `/access-analysis` (the 23-panel
+  charts page, `app/(dashboard)/access-analysis/`) and `app/(dashboard)/users/access-analysis/`
+  (the **spatial-graph shell**) are *different surfaces with nearly identical paths*. The
+  spatial graph lives in the `users/` one. `/users/spatial-graph` and `/users/access-analysis`
+  render the **same UI** (`spatial-graph/page.tsx:6,17` → `AccessAnalysisShellClient`).
+- **Node grain = one user × project membership** (`nodeId = user_id::project_id`,
+  `graphNodesFromUsers.ts:13,79-84`), ~16,942 nodes. Dimensions at other grains (per-folder-grant,
+  per-issue) cannot color a node without an explicit, stated aggregation rule.
+- **The aperture is two hardcoded arrays of three strings:**
+  `groupByDimensions.ts:10` `PRESETS = ["role","project","user"]` (catalog id-space) and
+  `nodeColors.ts:62` `COLOR_MODES = ["role","project","user"]` (registry id-space).
+  **These are two different id-spaces that happen to share three names** — unifying them is
+  a real task, not a rename.
+- **~14 dims already computed per node and unused:** `featureSnapshot.ts:127-235`
+  (`rawRowToSnapshot`) — company, permissionStrength, folderBreadth, accessibleDataBytes,
+  activityRecency, activity, signin, membershipBucket, riskScore, internalExternal, isAdmin,
+  activityMix, tier, moduleSignature/moduleFlags. Contract: `interactionTypes.ts:24-123`.
+- **208-dim catalog is real, generated, tested, and half-wired:** `dimensionCatalog.ts:24-32`
+  = 9 structural + 176 generated ACC actions (`accTaxonomyActions.generated.ts`, from `acc.xlsx`
+  via `scripts/gen-acc-taxonomy.cjs`) + 4 folder-reach + 19 greyed (`available:false`).
+  It already owns slider state/defaults (`SliderContext.tsx:153-163`), the group-by option list,
+  and clustering (`blobDescriptor`/`embeddingBlobDescriptor` call `dim.extract`).
+- **`CatalogSliderSidebar` never renders in production.** `RightPanelStack.tsx:180-186` picks
+  `GroupByControls` (a 3-option `<select>` + one strength slider) whenever
+  `useGroupByControls` is true, which is `!ACC_3D_GRAPH_ENABLED` (`AccessAnalysisShell.tsx:492`).
+  `NEXT_PUBLIC_ACC_3D_GRAPH` is **absent from the repo** — the flag wrongly couples the slider
+  wall to the (separately parked) 3D graph. Decoupling them is a v2.4 task.
+  `VERIFY:` the flag's value in the live `:3000` runtime env — `.env` is permission-blocked
+  from agent reads (correct, secret hygiene). Confirm with the owner or via build output.
+- **The force-anchor engine is DEAD COMPUTE.** `AccessAnalysisShell.tsx:575-579` builds
+  `buildCatalogTargets` + `buildCatalogWeights` every load; the live path then **returns early
+  at `:611-632`** with `createStaticLayer(nodeIds, xy)` from precomputed `AccInstanceEmbedding`
+  coords. `targets`/`dimWeights` are only consumed by `createPhysicsLayerWorker` at `:635-645`,
+  which is flag-ON only. Reviving this is the milestone's core layout task.
+  Anchor semantics: `catalogTargets.ts:215-236` (categorical → spherical-Fibonacci clumps,
+  multiHot → centroid of key anchors, ordinal → hashed per-dim axis ramp), weighted by
+  `catalogWeights.ts:19,34-40` (confidence high 1 / med 0.7 / low 0.4).
+- **Orphaned code to reckon with (imported by nothing live):** `PresetBar.tsx`,
+  `SliderGroup.tsx`, `SliderSidebar`, `dimensionSearch.ts`, `dimensionWeights.ts`.
+  `SliderContext.applyPreset` is a stub that calls `resetAll()` (`:369-374`); `activePreset`
+  is hardcoded `null` (`:377`). `nodeColors` branches 2–3 (auto-follow, cluster-galaxy) are
+  **unreachable dead code** (`AccessAnalysisShell.tsx:260-262`).
+- **`dimensionRegistry.ts`'s own doc comment is STALE** — it claims `RUNTIME_DIMENSION_IDS`
+  (6 dims) is "the single source of truth for what the runtime uses" (`:317-322`). It is not;
+  the catalog owns sliders/grouping/clustering, the registry owns color + filter chips.
+- **Data source unchanged:** `accDcGraph.bulkUsers` (`server/routers/acc-dc-graph.ts:32-42`
+  → `lib/server/acc-hot-cache.ts:224-410`) + `accDcGraph.instanceEmbedding`
+  (`AccInstanceEmbedding`, written **offline** by `scripts/compute_instance_embeddings.py`
+  via `dc-daily-ingest.cjs:143`). **v2.4 adds no new loader and no new Prisma table.**
+
+### Deferred to v2.5 (Tier 3 — recorded, not planned)
+
+- **Issue dimensions on the graph** (status / type / coordination). `AccIssue.createdBy`
+  exists (`prisma/schema.prisma:849`, `String?`) but is an ACC user GUID with **no bridge to
+  `AccDcUser`** and an **unmeasured resolution rate**. Wiring it blind risks a mostly-empty
+  dimension. Needs a measurement spike first.
+- **Temporal scrubber** (activity / issues by month). Time is not a node attribute; needs a
+  new interaction concept, not a dimension slot.
+- **Company grain inconsistency** (found during the v2.4 audit, pre-existing):
+  `accessInstanceView.ts:140` reads `AccDcProjectUserCompany` (per-membership) while
+  `activityRecencyView.ts:139` reads `AccDcUser.companyId` (per-user, global). They will
+  disagree for any user whose company differs across projects. Not introduced by v2.4;
+  surfaces on `/access-analysis` panels 9/13 vs 14/15/16.
 
 ## Status (data baseline — still current)
 
