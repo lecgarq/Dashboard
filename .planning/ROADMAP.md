@@ -430,11 +430,11 @@ Sign-off scope is the FULL four-page workshop surface at graded depth (owner dec
 `/access-analysis` deep, `/users` deep (verify-only), `/template-mty` short functional,
 `/forma-proposal` short visual.
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 Plans:
 
 - [x] 23-01-PLAN.md — Rebuild + deploy `:3000` via the MANUAL sequence (Task Scheduler stop → `npx tsc --noEmit` → `npm run build` → restart → `/api/health` 200). MUST be first: `.next/BUILD_ID` (2026-07-13 16:13) predates HEAD (2026-07-14 09:31) and the workflow-tools donuts commit — the live surface is stale (wave 1)
-- [ ] 23-02-PLAN.md — Panel recount from source (23, not 22 — Roles has 6) + per-tab lead-panel verdict + the graph-by-graph owner review checklist (`23-REVIEW-CHECKLIST.md`), caveat column grounded in real honesty labels with file:line citations (wave 2)
+- [x] 23-02-PLAN.md — Panel recount from source (23, not 22 — Roles has 6) + per-tab lead-panel verdict + the graph-by-graph owner review checklist (`23-REVIEW-CHECKLIST.md`), caveat column grounded in real honesty labels with file:line citations (wave 2)
 - [ ] 23-03-PLAN.md — **Owner sign-off checkpoint (blocking human gate)**: full four-page surface, graded depth, `IssueTypeChart` given explicit attention (only v2.3 panel with zero prior UAT). Findings triaged AT THE MOMENT RAISED — fix-now (no loader, no data) vs v2.4 seed. No Phase 23.1 (wave 3)
 - [ ] 23-04-PLAN.md — Gates + scope fence: refresh the stale repo-map dependency-cruiser baseline (currently exits 1 on 3 deleted-script refs from `b95bf5c7`), `npm test` + `npx tsc --noEmit`, TEST-01/02/03 byte-identical vs `v2.2`, no-new-WebGL + spatial-graph-untouched proofs, `23-VERIFICATION.md`, flip Phase 22 + 23 checkboxes (wave 4)
 - [ ] 23-05-PLAN.md — Milestone close: restore `.planning/MILESTONES.md` FIRST (tracked but deleted — `milestone complete` would discard v2.0/v1.0 history), final `gsd-self-gate.cjs --phase 23 --route /users --rebuild`, `milestone complete v2.3` + manual STATE repair (**never** `state record-session` — corruption live-reproduced), PROJECT.md Active→Validated, ROADMAP v2.4 seeds, config reset (wave 5)
@@ -468,7 +468,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 21. Issue Funnel — Status & Time | 4/4 | Complete    | 2026-07-06 |
 | 21.1. Overview Tab UAT Follow-ups (inserted) | 4/4 | Complete | 2026-07-06 |
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
-| 23. Workshop Curation & Milestone Close | 1/5 | In Progress|  |
+| 23. Workshop Curation & Milestone Close | 2/5 | In Progress|  |
 
 ---
 

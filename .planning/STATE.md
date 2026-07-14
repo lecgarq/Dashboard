@@ -5,17 +5,17 @@ milestone_name: New Graphs
 current_phase: 23
 current_phase_name: Workshop Curation & Milestone Close
 status: active
-stopped_at: Phase 23 plan 23-01 complete (zero-diff deploy plan) — `:3000` rebuilt from current working tree. Next: 23-02 (panel curation).
+stopped_at: Phase 23 plan 23-02 complete (panel curation + owner review checklist) — 23-panel inventory recounted (Roles=6, not 5), zero-diff curation PASS, 23-REVIEW-CHECKLIST.md written. Next: 23-03 (owner review).
 last_updated: "2026-07-14T00:00:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 23 plan 23-01 (rebuild + deploy `:3000`) executed — tsc clean, build succeeded, all 4 workshop routes probed live (307 auth-gate PASS), BUILD_ID newer than HEAD. Zero commits (deploy-only plan).
+last_activity_desc: Phase 23 plan 23-02 (panel curation recount + owner review checklist) executed — 23-panel inventory confirmed from source, no within-tab reorder warranted, 23-REVIEW-CHECKLIST.md committed (e70d3850). tsc clean, access-analysis Vitest suite 520/520 green.
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 28
-  completed_plans: 24
-  percent: 83
-current_plan: 23-02
+  completed_plans: 25
+  percent: 89
+current_plan: 23-03
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**IN PROGRESS, 1/5 plans**).
-- **Plan:** 23-01 complete (deploy-only, zero commits): rebuilt `:3000` from the current working tree via the manual deploy sequence (Task Scheduler stop → `npx tsc --noEmit` [exit 0] → `npm run build` [success] → restart → route probes). `.next/BUILD_ID` moved from the stale `2026-07-13 16:13:05` to `2026-07-14 10:08:56` — newer than HEAD (`33e9b992`, `2026-07-14 10:03:24`), proving the served build now reflects the current tree (incl. the workflow-tools donuts commit and all 2026-07-13 off-roadmap `/users`/`/access-analysis` changes). `/api/health` → 200; `/users`, `/access-analysis`, `/template-mty`, `/forma-proposal` → 307 (auth-gate redirect, PASS per plan). See `23-01-SUMMARY.md`.
-- **Next:** **Phase 23 plan 23-02** — panel recount from source + curation ordering pass + graph-by-graph review checklist. Its panel-count review must now cover a LARGER inventory than the roadmap assumed (see "Panel inventory drift" under Blockers/Concerns).
-- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. Milestone is feature-complete; only the curation + close gate remains. `:3000` now serves the current tree (see 23-01 above) — the review surface is provably current.
-- **Last activity:** 2026-07-14 — Phase 23 plan 23-01 (rebuild + deploy `:3000`) executed.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**IN PROGRESS, 2/5 plans**).
+- **Plan:** 23-02 complete (docs-only, 1 commit `e70d3850`): recounted the live `/access-analysis` panel inventory from source — **23 panels, not 22** (`23-CONTEXT.md`'s own table under-counted the Roles tab; "Folder Activity by Role" is a distinct `PremiumSurface` mount, not part of the folder-action heatmap below it). Ruled zero-diff on the within-tab lead-panel curation question (every tab already leads with its strongest panel — no reorder performed, matching `23-RESEARCH.md` §A's finding). Wrote `23-REVIEW-CHECKLIST.md` — the graded-depth owner sign-off checklist covering all 4 workshop pages, every caveat cited to a real source `file:line` honesty label, `Issues by type` flagged as the zero-UAT panel. `npx tsc --noEmit` clean; `npm test -- "app/(dashboard)/access-analysis"` 61 files/520 tests green. See `23-02-SUMMARY.md`.
+- **Next:** **Phase 23 plan 23-03** — the live owner graph-by-graph review session, walking `23-REVIEW-CHECKLIST.md` on the rebuilt `:3000` (23-01) and filling in its Verdict column.
+- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. Milestone is feature-complete; only the curation + close gate remains. `:3000` serves the current tree (23-01) and now has a corrected 23-panel review checklist ready for owner sign-off (23-02).
+- **Last activity:** 2026-07-14 — Phase 23 plan 23-02 (panel curation recount + owner review checklist) executed.
 
 ## Status (data baseline — still current)
 
@@ -185,6 +185,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 21.1]: 21.1-03 (activity-share-by-project donut, UAT-21.1-03, COMPLETE): `projectActivityCounts.ts`'s `summarizeProjectActivity()` re-aggregates the SAME `ModuleActivityRow[]` the Overview already loads for the activity-by-module donut (`loadModuleActivity()`) per project -- zero new loader, zero new fetch. The synthetic Account-level bucket (`projectId === ""`, `moduleActivityView.ts`'s `ACCOUNT_LEVEL` sentinel) is excluded from the donut at the transform layer (never a slice, never a `rowsByProject` entry) and its live excluded volume surfaces as `accountLevelCount` for the caption; top-N (default 10) + trailing "Other (N projects)" mirrors `summarizePermissionLevel`/`summarizeProvisionedModules`'s bucketing shape. `ProjectActivityDonut.tsx` renders an ECharts donut (`ModulesPieChart` option shape) with a ranked legend, local click-to-drill (no cross-filter-bus wiring, grep-verified) that feeds the clicked project's raw rows into the SAME `summarizeModules` the activity-by-module donut uses (no reimplemented classification); the Other slice has no drill payload and its click is a guaranteed no-op. Categorical palette follows `RolesPieChart`'s name-keyed hue-rotation convention (project identity, not a fixed taxonomy); Other always gets the muted zinc rollup color. Caption states the live Account-level exclusion figure and a Top-N-of-M line, both individually conditional. Built UNMOUNTED -- plan 21.1-04 wires it in as the left panel of the new Overview 2-up row. 15 new Vitest cases (8 transform + 7 component), `npm test` 2467 passed/1 skipped/0 failed (grew from 2452 baseline, zero regressions), tsc clean, scope diff = exactly the 4 planned files. Deviation (Rule 1, caught pre-commit by the component's own grep test, no scope impact, repeat of the 21.1-02 pitfall): the component's own doc comment literally contained the banned cross-filter-bus token strings, failing its own grep test (reworded). `UAT-21.1-03` intentionally not marked complete in REQUIREMENTS.md -- same precedent as 21.1-02: UAT items resolve at the wiring plan (21.1-04), not the component-build plan.
 - [Phase 22]: 22-01: AccIssueType lookup table applied via prisma/migrations-raw/ raw SQL (migrate dev chokes on pre-existing pgvector shadow-DB requirement, P3018); scripts/acc-issue-types-backfill.cjs live-run over all 1,153 projects (519 ok/38 forbidden/596 404-ISSUES_SERVICE_NOT_FOUND, not the 403-forbidden pattern the sibling /issues endpoint uses); 298/316 issueTypeId and 477/515 issueSubtypeId GUIDs now resolve to human names, 18 genuinely unresolved (live Unknown-type case exists for 22-03); idempotency confirmed (16,928 rows unchanged after single-project re-run). — ISSUE-04 complete, unblocks ISSUE-05 (22-02/22-03 chart plans)
 - [Phase 22]: 22-02 (ISSUE-05 data layer, COMPLETE): loadIssueFunnel() gained a typeRows cut inside its existing Promise.all (second accIssue.groupBy on issueTypeId joined in JS against accIssueType.findMany() — single $queryRaw call-count pin still holds, grep-verified 1 call site); summarizeIssueType() (new issueTypeCounts.ts) groups resolved rows by typeName not GUID (APS types are project-scoped) with distinct honest "Unknown type"/"No type set" buckets that rank by count, lossless total. Both UNMOUNTED — plan 22-03 consumes them. Deviation (Rule 3): 3 pre-existing AccessAnalysisCharts.test.tsx fixtures fixed for the new required typeRows field (TS2322). 13 new Vitest cases, npm test 2507 passed/1 failed (pre-existing unrelated /users physicsLayer test-isolation flake, deferred-items.md)/1 skipped, tsc clean. ISSUE-05 intentionally NOT marked complete (resolves at 22-03 per 21-02/20.1-02 precedent).
+- [Phase 23]: 23-01 (deploy-only, zero commits, COMPLETE): rebuilt `:3000` via the manual deploy sequence (Task Scheduler stop → `npx tsc --noEmit` → `npm run build` → restart → route probes); `.next/BUILD_ID` moved from stale `2026-07-13 16:13:05` to `2026-07-14 10:08:56`, newer than HEAD, proving the review target is current. All 4 workshop routes probed live (307 auth-gate, PASS). See `23-01-SUMMARY.md`.
+- [Phase 23]: 23-02 (docs-only, 1 commit `e70d3850`, COMPLETE): recounted the live `/access-analysis` panel inventory from source — **23 panels, not 22** (Roles tab has 6, not 5; "Folder Activity by Role" is a distinct `PremiumSurface` mount from the folder-action heatmap). Ruled zero-diff on the within-tab lead-panel curation question — every tab already leads with its strongest panel, no reorder performed (matches `23-RESEARCH.md` §A). Wrote `23-REVIEW-CHECKLIST.md` (144 lines): triage rule header, all 23 `/access-analysis` panels graded DEEP, `/users` DEEP-ish verification-only (4 never-reviewed 2026-07-13 surfaces), `/template-mty`/`/forma-proposal` SHORT passes, every caveat cell cited to a real source `file:line` honesty label, `Issues by type` flagged as the zero-owner-UAT panel. Corrected `23-CONTEXT.md`'s stale "untouched" claim about `/template-mty`/`/forma-proposal` (both received off-roadmap commits during the v2.3 window per `23-RESEARCH.md` §E). tsc clean, `npm test -- "app/(dashboard)/access-analysis"` 61/520 green. See `23-02-SUMMARY.md`.
 
 ### Blockers/Concerns
 
@@ -192,15 +194,13 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   (ISSUE-04's external APS call + new Prisma migration) resolved cleanly — the backfill ran
   over all 1,153 projects and the lookup table is populated.
 
-- **NEW — Panel inventory drift (matters directly for Phase 23).** Phase 23's success
-  criterion #1 pins the curation review to "the 7 new panels from Phases 20–22." That count
-  is now **stale**. Off-roadmap work landed on `feat/access-analysis-redesign` after Phase 22:
-  the 2026-07-13 commits (`93722dae`, `72b2150a`, `ac91b1d8`, `874565b6`) added `/users`
-  directory summary tiles + external-collaborators + affiliation filter, an Other-bucket
-  module drill, a users-by-permission-level donut, and a roles-per-level strip +
-  no-activity-in-a-year callout; plus the workflow-tools 2x2 donut section (Reviews /
-  Transmittals / RFIs / Submittals, committed 2026-07-14). **Phase 23 must curate the ACTUAL
-  live panel surface, not the 7 the roadmap anticipated** — recount before planning it.
+- **RESOLVED (was "Panel inventory drift") — closed by 23-02.** The live `/access-analysis`
+  panel inventory is now authoritatively **23 panels** (recounted from source in
+  `23-02-SUMMARY.md`/`23-REVIEW-CHECKLIST.md`; Roles tab has 6 panels, not 5 — "Folder Activity
+  by Role" is a distinct mount from the folder-action heatmap below it). The curation question
+  ("does each tab lead with its strongest panel?") was ruled zero-diff — no reorder performed.
+  This superseded both `23-CONTEXT.md`'s 22-panel count and the roadmap's stale "7 new panels"
+  figure.
 
 - **NEW — 22-03 has the thinnest verification trail of any v2.3 panel.** Its blocking
   `checkpoint:human-verify` (`:3100` production preflight) was never run; the phase was closed
@@ -376,22 +376,21 @@ The last phase of v2.3, and the only one left. It carries **zero new requirement
 mandatory curation + verification gate (PITFALLS.md Pitfall 7: shipping every new panel flat and
 always-visible dilutes the workshop narrative).
 
-**Before planning it, recount the panel surface.** The roadmap's success criterion #1 says
-"the 7 new panels from Phases 20–22" — that number is stale. Off-roadmap work (2026-07-13
-commits + the workflow-tools donuts) added roughly five more panels across `/access-analysis`
-and `/users`. Curation has a bigger wall of charts to answer for than the roadmap assumed.
+**23-01 (rebuild `:3000`, COMPLETE)** and **23-02 (panel recount + review checklist, COMPLETE)**
+are done — see the `[Phase 23]` bullets above and `23-01-SUMMARY.md`/`23-02-SUMMARY.md`. The
+panel inventory is now authoritatively 23 (not the roadmap's stale "7 new panels" nor
+`23-CONTEXT.md`'s 22), curation is a confirmed zero-diff PASS, and
+`23-REVIEW-CHECKLIST.md` is written and ready to walk.
 
-Also in scope for the close:
-- Owner visual sign-off on `/access-analysis` after a fresh `:3000` rebuild (Task Scheduler
-  stop → `npx tsc --noEmit` → `npm run build` → restart → `/api/health` 200).
-- Phases 20.1, 21.1, and 22 are all live on `:3000` already — but v2.3 has never had a single
-  deliberate full-milestone deploy + sign-off pass.
-- Give `IssueTypeChart` explicit attention: it is the one panel with no recorded owner UAT.
-- Confirm no new WebGL on `/access-analysis` and that `/users/spatial-graph` was untouched
-  across the whole milestone.
-
-Suggested entry: `/gsd:discuss-phase 23` (no CONTEXT.md exists for it yet), then
-`/gsd:plan-phase 23`.
+**Next: Phase 23 plan 23-03** — the live owner graph-by-graph review session on `:3000`,
+walking `23-REVIEW-CHECKLIST.md`'s 4-page, graded-depth checklist and filling in its Verdict
+column. Give `IssueTypeChart` ("Issues by type") explicit attention — it is flagged in the
+checklist as the one panel with zero recorded owner UAT. Remaining phase work after 23-03: the
+gate sweep (criterion #3/#4 — `npm test`, `npx tsc --noEmit`, `repo-map:check`, WebGL/
+spatial-graph scope-fence proof) and the milestone-close artifact writes (MILESTONES.md restore
++ v2.3 entry, ROADMAP Phase 22 checkbox fix, STATE snapshot, PROJECT.md Active→Validated
+promotion, config reset) — see `23-RESEARCH.md` §F for the exact sequencing and known
+`gsd-tools state record-session` corruption trap (do not run that command).
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
