@@ -5,17 +5,17 @@ milestone_name: New Graphs
 current_phase: 23
 current_phase_name: Workshop Curation & Milestone Close
 status: active
-stopped_at: Phase 22 CLOSED 3/3 (live-evidence basis); workflow-tools donuts committed (were deployed-but-uncommitted). Next: Phase 23 — curation + milestone close, with a grown panel inventory.
+stopped_at: Phase 23 plan 23-01 complete (zero-diff deploy plan) — `:3000` rebuilt from current working tree. Next: 23-02 (panel curation).
 last_updated: "2026-07-14T00:00:00.000Z"
 last_activity: 2026-07-14
-last_activity_desc: Reconciled 4-day STATE drift — Phase 22 closed (22-03 code had shipped 2026-07-10 but was never doc-closed), workflow-tools donuts committed. Only Phase 23 remains.
+last_activity_desc: Phase 23 plan 23-01 (rebuild + deploy `:3000`) executed — tsc clean, build succeeded, all 4 workshop routes probed live (307 auth-gate PASS), BUILD_ID newer than HEAD. Zero commits (deploy-only plan).
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 28
+  completed_plans: 24
   percent: 83
-current_plan: null
+current_plan: 23-02
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**NOT STARTED, plans TBD**).
-- **Plan:** 22-03 complete (ISSUE-05 user-visible): `IssueTypeChart.tsx` (horizontal bars, top-10 + expand-in-place Other, local per-project drill, live GUID-resolution + coverage captions, never-backfilled guard) mounted as the third issue panel on the Projects tab below `IssueStatusChart`. Rides the existing lazy `loadIssueFunnel` Projects-tab fetch — zero new loader, eager fan-out unchanged. Code shipped 2026-07-10 (`a01872fd` chart+tests, `65871f56` wiring); **doc-close happened 2026-07-14** after a 4-day drift where STATE.md still said "next: 22-03" for code that was already live. See `22-03-SUMMARY.md`.
-- **Next:** **Phase 23 — Workshop Curation & Milestone Close.** Its panel-count review must now cover a LARGER inventory than the roadmap assumed (see "Panel inventory drift" under Blockers/Concerns).
-- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. Milestone is feature-complete; only the curation + close gate remains.
-- **Last activity:** 2026-07-14 — STATE reconciliation: Phase 22 closed on live evidence, workflow-tools donuts committed (had been deployed-but-uncommitted since 2026-07-13).
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**IN PROGRESS, 1/5 plans**).
+- **Plan:** 23-01 complete (deploy-only, zero commits): rebuilt `:3000` from the current working tree via the manual deploy sequence (Task Scheduler stop → `npx tsc --noEmit` [exit 0] → `npm run build` [success] → restart → route probes). `.next/BUILD_ID` moved from the stale `2026-07-13 16:13:05` to `2026-07-14 10:08:56` — newer than HEAD (`33e9b992`, `2026-07-14 10:03:24`), proving the served build now reflects the current tree (incl. the workflow-tools donuts commit and all 2026-07-13 off-roadmap `/users`/`/access-analysis` changes). `/api/health` → 200; `/users`, `/access-analysis`, `/template-mty`, `/forma-proposal` → 307 (auth-gate redirect, PASS per plan). See `23-01-SUMMARY.md`.
+- **Next:** **Phase 23 plan 23-02** — panel recount from source + curation ordering pass + graph-by-graph review checklist. Its panel-count review must now cover a LARGER inventory than the roadmap assumed (see "Panel inventory drift" under Blockers/Concerns).
+- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. Milestone is feature-complete; only the curation + close gate remains. `:3000` now serves the current tree (see 23-01 above) — the review surface is provably current.
+- **Last activity:** 2026-07-14 — Phase 23 plan 23-01 (rebuild + deploy `:3000`) executed.
 
 ## Status (data baseline — still current)
 
