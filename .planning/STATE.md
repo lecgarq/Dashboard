@@ -5,10 +5,10 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 25
 current_phase_name: Dimension Aperture — Group, Color & Filter
 status: ready_to_plan
-stopped_at: "Phase 24 COMPLETE (both plans). Plan 02: dimensionIdSpace.ts unifies Group-by/Color-by option lists (DIM-03); dimensionRegistry.ts doc claim corrected (DIM-06). tsc 0 errors, npm test 2538/2539 (2535 baseline + 3 new), zero diff on existing dimension tests. Next: plan Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/02/04/05)."
+stopped_at: "Phase 25 CONTEXT captured (25-CONTEXT.md, committed 360dbf67). Owner decisions: full dimension palette (role/project/user + all 4 themes — Identity/Activity/Risk/Permission, ~17 dims, no new data) but restrained rendering (banded swatches only, NO ramps, one legend, add-a-chip filtering) per 'don't overbloat'; coverage labels inline in picker + caveat badge on active dim (DIM-05); filter = multi-select values to keep (DIM-04). VERIFY real per-dim coverage before display (the ~48% used in discussion is illustrative). Next: /gsd:plan-phase 25 (DIM-01/02/04/05)."
 last_updated: "2026-07-14T22:31:21.012Z"
 last_activity: 2026-07-14
-last_activity_desc: Phase 24 Plan 02 (dimension id-space unification) executed and committed. Phase 24 complete.
+last_activity_desc: Phase 25 context gathered via discuss-phase (Group/Color/Filter aperture decisions locked). Ready to plan.
 progress:
   total_phases: 5
   completed_phases: 1
