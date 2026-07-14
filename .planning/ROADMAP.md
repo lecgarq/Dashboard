@@ -493,7 +493,11 @@ create.
   3. `dimensionRegistry.ts`'s doc comment at `:317-322` no longer falsely claims `RUNTIME_DIMENSION_IDS` is "the single source of truth for what the runtime uses" — it either accurately states its real scope (color + filter chips, not grouping/sliders) or the registry/catalog split is collapsed entirely.
   4. `npx tsc --noEmit` passes; `npm test` stays green with no regression to existing dimension-related tests.
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 24-01-PLAN.md — Baseline measurement: committed script + spec measure first-paint and time-to-graph-rendered on isolated :3100 prod build (median-of-5), record committed as 24-BASELINE.md (wave 1)
+- [ ] 24-02-PLAN.md — Id-space unification: dimensionIdSpace.ts becomes the single source both pickers resolve from (catalog ids of record), pixel-identical UI, dimensionRegistry doc claim corrected (wave 2)
 
 ### Phase 25: Dimension Aperture — Group, Color & Filter
 
