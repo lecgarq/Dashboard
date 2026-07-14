@@ -420,8 +420,8 @@ of v2.3 scope.
 ## Session
 
 **Last session:** 2026-07-14
-**Stopped at:** STATE reconciliation after a 4-day drift. Phase 22 closed 3/3 (22-03's code had shipped 2026-07-10 but was never doc-closed, so STATE kept reporting it as the next action). Workflow-tools donuts — live on `:3000` since 2026-07-13 but existing only in the working tree — are now committed. All 8 v2.3 requirements delivered; only Phase 23 (curation + milestone close) remains.
-**Resume file:** .planning/phases/22-issue-type-resolution/22-03-SUMMARY.md
+**Stopped at:** Phase 23 context gathered. Earlier the same session: STATE reconciled after a 4-day drift (Phase 22 closed 3/3 — 22-03's code had shipped 2026-07-10 but was never doc-closed) and the workflow-tools donuts committed (live on `:3000` since 2026-07-13 but existing only in the working tree). **Key Phase 23 finding: ROADMAP criterion #1 is already answered by Phase 20.1's 6-tab IA** — live recount is 22 panels / 6 tabs, and curation is ordering-only (a zero-diff result is a legitimate pass). Next: `/gsd:plan-phase 23`.
+**Resume file:** .planning/phases/23-workshop-curation-milestone-close/23-CONTEXT.md
 
 ## Performance Metrics
 
