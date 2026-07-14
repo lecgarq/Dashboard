@@ -1,14 +1,14 @@
 /**
  * groupByDimensions.ts — The projector map's "Group by" picker offers exactly three
  * presets: Role (default), Project, User name. Everything else in the catalog is
- * intentionally not offered here (the controls were pared down to these three).
+ * intentionally not offered here. The list itself now lives in dimensionIdSpace.ts
+ * (Phase 24 unification) — this module only ranks/filters against it.
  * Pure.
  */
 import type { CatalogDimension } from "./dimensionCatalog.types";
+import { PRESET_DIMENSION_IDS } from "./dimensionIdSpace";
 
-/** The only dims the picker offers, in display order. Index 0 (role) is the default. */
-const PRESETS = ["role", "project", "user"];
-const PRESET_SET = new Set(PRESETS);
+const PRESET_SET = new Set(PRESET_DIMENSION_IDS);
 
 function isGroupable(d: CatalogDimension): boolean {
   return d.available && PRESET_SET.has(d.id);
@@ -16,8 +16,8 @@ function isGroupable(d: CatalogDimension): boolean {
 
 export function groupByDimensions(catalog: readonly CatalogDimension[]): CatalogDimension[] {
   const rank = (id: string): number => {
-    const i = PRESETS.indexOf(id);
-    return i < 0 ? PRESETS.length : i;
+    const i = PRESET_DIMENSION_IDS.indexOf(id);
+    return i < 0 ? PRESET_DIMENSION_IDS.length : i;
   };
   return catalog.filter(isGroupable).sort((a, b) => rank(a.id) - rank(b.id));
 }

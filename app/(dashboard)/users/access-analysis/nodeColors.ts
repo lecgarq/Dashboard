@@ -17,8 +17,8 @@
  * alpha mask + cosmos `pointGreyoutOpacity` / three.js DIM), kept orthogonal to
  * color so the two never fight.
  *
- * NOTE: additive and intentionally UNWIRED. A later phase adds a color-by selector
- * in the Toolbar and swaps the constant buffer in the shell for `buildNodeColors`.
+ * NOTE: additive and wired — Toolbar.tsx renders a color-by selector over
+ * COLOR_MODES and calls `buildNodeColors` to color the graph.
  */
 
 import {
@@ -27,6 +27,7 @@ import {
   dimensionHasSurface,
   type DimensionId,
 } from "./dimensionRegistry";
+import { PRESET_DIMENSION_IDS, colorModeIdForCatalogId } from "./dimensionIdSpace";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
@@ -59,7 +60,11 @@ export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
 // Exactly three presets for the projector map: Role (default), Project, User name.
 // Other dims remain valid for the helpers below but are no longer offered in the UI.
-export const COLOR_MODES: readonly ColorMode[] = ["role", "project", "user"];
+// Derived from the unified catalog id-space (dimensionIdSpace.ts, Phase 24) via the
+// catalog→registry bridge. Cast is safe: today's resolved ids ("role", "project" =
+// registry DimensionIds; "user" = EXTRA mode) are all valid ColorMode members.
+export const COLOR_MODES: readonly ColorMode[] =
+  PRESET_DIMENSION_IDS.map(colorModeIdForCatalogId) as readonly ColorMode[];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
