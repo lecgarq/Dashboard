@@ -8,6 +8,8 @@ import { DonutPanelSkeleton } from "./DonutSkeletons";
 import { IssueTimelineChart } from "./IssueTimelineChart";
 import { IssueStatusChart } from "./IssueStatusChart";
 import { IssueTypeChart } from "./IssueTypeChart";
+import { WorkflowToolDonut } from "./WorkflowToolDonut";
+import { WORKFLOW_TOOLS, type WorkflowTool, type WorkflowToolSummary } from "../workflowToolCounts";
 import type {
   CoordinationByProjectData,
   IssueCoverageProjectRow,
@@ -40,6 +42,8 @@ export function ProjectsTabPanel({
   issueTimelineSummary,
   filteredIssueStatusRows,
   filteredIssueTypeRows,
+  workflowToolSummaries,
+  workflowToolsLoading,
 }: {
   coordinationData?: CoordinationByProjectData;
   filteredIssueCoverageProjects: IssueCoverageProjectRow[];
@@ -55,6 +59,10 @@ export function ProjectsTabPanel({
   filteredIssueStatusRows?: IssueFunnelStatusRow[];
   /** Phase 22 ISSUE-05: rides the same lazy loadIssueFunnel fetch, no new fetch branch. */
   filteredIssueTypeRows?: IssueFunnelTypeRow[];
+  /** Reviews/RFIs/Submittals donuts — lazy loadWorkflowTools fetch; undefined
+   *  until resolved (or forever, on a no-session result) → section stays hidden. */
+  workflowToolSummaries?: Record<WorkflowTool, WorkflowToolSummary>;
+  workflowToolsLoading?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -144,6 +152,33 @@ export function ProjectsTabPanel({
           </PremiumSurface>
         </Reveal>
       ) : null}
+
+      {/* Workflow tools (Reviews / Transmittals / RFIs / Submittals) — 2x2 donut
+          grid. Hidden until the lazy fetch resolves (no-session results keep it
+          hidden). RFI/submittal volume comes only from the DC feed — see
+          lib/server/workflowToolsView.ts for the per-verb-family keep rules. */}
+      {(workflowToolsLoading || workflowToolSummaries) && (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Workflow tools"
+              subtitle="How much are the document Reviews, Transmittals, RFIs, and Submittals workflows actually used? Every recorded action, by type — click one for its per-project breakdown. RFI and Submittal events come only from the batch Data Connector feed (the live feed does not report them), so recent weeks may lag."
+            />
+            {workflowToolsLoading || !workflowToolSummaries ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2">
+                {WORKFLOW_TOOLS.map((tool) => (
+                  <div key={tool} className="flex flex-col gap-2">
+                    <h3 className="text-center font-display text-sm font-semibold tracking-tight text-foreground">{tool}</h3>
+                    <WorkflowToolDonut label={tool} summary={workflowToolSummaries[tool]} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      )}
 
       {/* Model Coordination — full-width */}
       {coordinationData ? (

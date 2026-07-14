@@ -21,6 +21,7 @@ import { summarizeActivityByCompany } from "../companyActivityCounts";
 import { rankDormantByPeople } from "../dormantActivity";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
+import { summarizeWorkflowTools } from "../workflowToolCounts";
 import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectRoleRow, type SliceFilters } from "../projectFilter";
 import { FilterBanner } from "./FilterBanner";
 import { PeopleDrillList } from "./PeopleDrillList";
@@ -106,6 +107,7 @@ export function AccessAnalysisCharts({
   loadFolderScopedActivity,
   loadCompanyFolderBreakdown,
   loadIssueFunnel,
+  loadWorkflowTools,
   ingestFreshness,
   provisionedModuleRows,
 }: {
@@ -146,6 +148,8 @@ export function AccessAnalysisCharts({
   loadCompanyFolderBreakdown?: (emails: string[], projectIds: string[]) => Promise<CompanyFolderSlice[] | null>;
   /** Phase 21 ISSUE-02/03: lazy per-tab fetch (Projects tab), fired at most once. Presence gates both issue-funnel panels. */
   loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
+  /** Reviews/RFIs/Submittals donuts: lazy per-tab fetch (Projects tab), fired at most once. Presence gates the panel. */
+  loadWorkflowTools?: () => Promise<ModuleActivityRow[] | null>;
   /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
   ingestFreshness?: IngestFreshness | null;
   /** UAT-21.1-01: eager Overview-tab prop (mainCharts.tsx's Promise.all fan-out, 9->10 — Overview is
@@ -305,6 +309,10 @@ export function AccessAnalysisCharts({
   const [issueFunnelData, setIssueFunnelData] = useState<IssueFunnelData | null>(null);
   const [issueFunnelLoading, setIssueFunnelLoading] = useState(false);
   const issueFunnelFetchedRef = useRef(false);
+  // Reviews/RFIs/Submittals donuts: same ref-flag lazy fetch-once pattern, Projects tab.
+  const [workflowToolRows, setWorkflowToolRows] = useState<ModuleActivityRow[] | null>(null);
+  const [workflowToolsLoading, setWorkflowToolsLoading] = useState(false);
+  const workflowToolsFetchedRef = useRef(false);
 
   useEffect(() => {
     if ((tab === "roles" || tab === "users") && loadActivityRecency && !activityRecencyFetchedRef.current) {
@@ -343,7 +351,14 @@ export function AccessAnalysisCharts({
         .then((data) => setIssueFunnelData(data))
         .finally(() => setIssueFunnelLoading(false));
     }
-  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel]);
+    if (tab === "projects" && loadWorkflowTools && !workflowToolsFetchedRef.current) {
+      workflowToolsFetchedRef.current = true;
+      setWorkflowToolsLoading(true);
+      void loadWorkflowTools()
+        .then((rows) => setWorkflowToolRows(rows))
+        .finally(() => setWorkflowToolsLoading(false));
+    }
+  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel, loadWorkflowTools]);
 
   // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
   // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
@@ -380,6 +395,12 @@ export function AccessAnalysisCharts({
   const filteredIssueTypeRows: IssueFunnelTypeRow[] = useMemo(
     () => filterRowsBySelection(issueFunnelData?.typeRows ?? [], selected),
     [issueFunnelData, selected],
+  );
+  // Reviews/RFIs/Submittals donuts: same picker-only filtering. `undefined`
+  // until the lazy fetch resolves with rows (a no-session null stays hidden).
+  const workflowToolSummaries = useMemo(
+    () => (workflowToolRows ? summarizeWorkflowTools(filterRowsBySelection(workflowToolRows, selected)) : undefined),
+    [workflowToolRows, selected],
   );
 
   // Dormant = entities with members in the current selection but 0 activity there,
@@ -577,6 +598,8 @@ export function AccessAnalysisCharts({
             issueTimelineSummary={issueTimelineSummary}
             filteredIssueStatusRows={filteredIssueStatusRows}
             filteredIssueTypeRows={filteredIssueTypeRows}
+            workflowToolSummaries={workflowToolSummaries}
+            workflowToolsLoading={workflowToolsLoading}
           />
         </TabsContent>
 
