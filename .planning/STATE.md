@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: New Graphs
-current_phase: 22
-current_phase_name: Issue Type Resolution
+current_phase: 23
+current_phase_name: Workshop Curation & Milestone Close
 status: active
-stopped_at: Phase 22 Plan 02 complete (loadIssueFunnel() typeRows cut + summarizeIssueType transform, ISSUE-05 data layer done)
-last_updated: "2026-07-10T23:32:12.779Z"
-last_activity: 2026-07-10
-last_activity_desc: Phase 22 Plan 02 complete — ISSUE-05 data layer (typeRows cut + summarizeIssueType transform). See `22-02-SUMMARY.md` for full detail.
+stopped_at: Phase 22 CLOSED 3/3 (live-evidence basis); workflow-tools donuts committed (were deployed-but-uncommitted). Next: Phase 23 — curation + milestone close, with a grown panel inventory.
+last_updated: "2026-07-14T00:00:00.000Z"
+last_activity: 2026-07-14
+last_activity_desc: Reconciled 4-day STATE drift — Phase 22 closed (22-03 code had shipped 2026-07-10 but was never doc-closed), workflow-tools donuts committed. Only Phase 23 remains.
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 23
-  completed_plans: 22
-  percent: 96
-current_plan: "02"
+  completed_plans: 23
+  percent: 83
+current_plan: null
 ---
 
 # Project State
@@ -25,16 +25,16 @@ current_plan: "02"
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, and 21.1 are complete; Phase 22 Issue Type Resolution is in progress (22-01, 22-02 done).
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — Phases 20, 20.1, 21, 21.1, and 22 are ALL complete (8/8 requirements delivered). **Only Phase 23 (Workshop Curation & Milestone Close) remains.**
 
 ## Current Position
 
 - **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: 8 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) across 4 phases (20-23), continuing sequential phase numbering from v2.2's Phase 19. No new data sources, no new npm dependencies, no new WebGL, honest coverage labels.
-- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**IN PROGRESS, 2 plans complete**).
-- **Plan:** 22-02 complete (ISSUE-05 data layer done): `loadIssueFunnel()` (`lib/server/issueFunnelView.ts`) gained a third `typeRows` cut inside its existing `Promise.all`/5-min-TTL cache — a second `db.accIssue.groupBy(["projectId","issueTypeId"])` joined in JS against `db.accIssueType.findMany()` (never a second `$queryRaw`, single-call pin verified); three-state resolution (resolved name / non-null GUID absent from lookup / null id) kept distinct through the loader. New `app/(dashboard)/access-analysis/issueTypeCounts.ts`'s `summarizeIssueType()` clones `permissionLevelCounts.ts`'s top-N + Other shape, grouping resolved rows by `typeName` (not GUID, since APS issue types are project-scoped) with distinct honest "Unknown type"/"No type set" buckets that rank by count, lossless total. Both pieces built and tested UNMOUNTED — 22-03 consumes them. `npm test` 2507 passed/1 failed (pre-existing unrelated `/users` physicsLayer test-isolation flake, logged to `deferred-items.md`, not fixed)/1 skipped, tsc clean. See `22-02-SUMMARY.md`.
-- **Next:** Plan/execute 22-03 (ISSUE-05 chart component + mounting on the Projects tab, consuming `typeRows`/`summarizeIssueType`).
-- **Status:** ISSUE-05 data layer complete — ready to build/mount the issues-by-type chart.
-- **Last activity:** 2026-07-10 — Phase 22 Plan 02 complete. See `22-02-SUMMARY.md` for full detail.
+- **Phase:** 20 — Foundation Wins & Engagement Panels (COMPLETE, 5/5 plans). Phase 20.1 — Access-Analysis IA Redesign & Panel Semantics (INSERTED, **COMPLETE, 7/7 plans**). Phase 21 — Issue Funnel — Status & Time (**COMPLETE, 4/4 plans**). Phase 21.1 — Overview Tab UAT Follow-ups (INSERTED, **COMPLETE, 4/4 plans, owner-approved live**). Phase 22 — Issue Type Resolution (**COMPLETE, 3/3 plans — closed 2026-07-14 on live-`:3000` evidence, see caveat below**). Phase 23 — Workshop Curation & Milestone Close (**NOT STARTED, plans TBD**).
+- **Plan:** 22-03 complete (ISSUE-05 user-visible): `IssueTypeChart.tsx` (horizontal bars, top-10 + expand-in-place Other, local per-project drill, live GUID-resolution + coverage captions, never-backfilled guard) mounted as the third issue panel on the Projects tab below `IssueStatusChart`. Rides the existing lazy `loadIssueFunnel` Projects-tab fetch — zero new loader, eager fan-out unchanged. Code shipped 2026-07-10 (`a01872fd` chart+tests, `65871f56` wiring); **doc-close happened 2026-07-14** after a 4-day drift where STATE.md still said "next: 22-03" for code that was already live. See `22-03-SUMMARY.md`.
+- **Next:** **Phase 23 — Workshop Curation & Milestone Close.** Its panel-count review must now cover a LARGER inventory than the roadmap assumed (see "Panel inventory drift" under Blockers/Concerns).
+- **Status:** All 8 v2.3 requirements (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) delivered. Milestone is feature-complete; only the curation + close gate remains.
+- **Last activity:** 2026-07-14 — STATE reconciliation: Phase 22 closed on live evidence, workflow-tools donuts committed (had been deployed-but-uncommitted since 2026-07-13).
 
 ## Status (data baseline — still current)
 
@@ -188,9 +188,25 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 
 ### Blockers/Concerns
 
-- blocking. Phase 20 and Phase 21 shipped clean. Risk for the rest of v2.3 is concentrated and
-  isolated in Phase 22 (ISSUE-04's external APS call + new Prisma migration) — tracked above
-  and sequenced deliberately after the lower-risk Phase 20/20.1/21 work.
+- Nothing blocking. Phases 20/20.1/21/21.1/22 all shipped. Phase 22's concentrated risk
+  (ISSUE-04's external APS call + new Prisma migration) resolved cleanly — the backfill ran
+  over all 1,153 projects and the lookup table is populated.
+
+- **NEW — Panel inventory drift (matters directly for Phase 23).** Phase 23's success
+  criterion #1 pins the curation review to "the 7 new panels from Phases 20–22." That count
+  is now **stale**. Off-roadmap work landed on `feat/access-analysis-redesign` after Phase 22:
+  the 2026-07-13 commits (`93722dae`, `72b2150a`, `ac91b1d8`, `874565b6`) added `/users`
+  directory summary tiles + external-collaborators + affiliation filter, an Other-bucket
+  module drill, a users-by-permission-level donut, and a roles-per-level strip +
+  no-activity-in-a-year callout; plus the workflow-tools 2x2 donut section (Reviews /
+  Transmittals / RFIs / Submittals, committed 2026-07-14). **Phase 23 must curate the ACTUAL
+  live panel surface, not the 7 the roadmap anticipated** — recount before planning it.
+
+- **NEW — 22-03 has the thinnest verification trail of any v2.3 panel.** Its blocking
+  `checkpoint:human-verify` (`:3100` production preflight) was never run; the phase was closed
+  2026-07-14 on the basis that the chart had been live on `:3000` since 2026-07-10 without a
+  reported defect. `VERIFY:` no recorded owner sign-off exists for the issues-by-type panel.
+  Give it explicit attention in the Phase 23 curation pass.
 
 - **New (non-blocking, from 21-04 owner checkpoint):** 3 Overview-tab UAT follow-up items were
   raised during the Phase 21 checkpoint session — a new module-access-grants-per-module chart
@@ -341,11 +357,41 @@ clean. `ISSUE-05` intentionally NOT marked complete in REQUIREMENTS.md — same 
 21-02/20.1-02: requirements resolve at the wiring/mounting plan (22-03), not the data-layer/
 transform-build plan. See `22-02-SUMMARY.md`.
 
-**Next: plan/execute 22-03 (ISSUE-05 — issues-by-type breakdown chart, mounting)**, now unblocked
-by the data layer above. Per `22-CONTEXT.md`'s locked decisions: horizontal bars, top-10 +
-expandable "Other", per-type project drill, mounted as a third full-width panel below
-`IssueStatusChart` on the Projects tab, consuming `typeRows`/`summarizeIssueType` (zero new
-loader/fetch — both already ride the existing lazy Projects-tab fetch path).
+**22-03 (ISSUE-05 chart + mounting) is COMPLETE.** `IssueTypeChart.tsx` — horizontal bars,
+top-10 + expand-in-place "Other", per-type project drill, live GUID-resolution/coverage
+captions, and a never-backfilled guard that tells the presenter to run
+`scripts/acc-issue-types-backfill.cjs` rather than rendering a wall of 100% "Unknown type"
+bars. Mounted as the third full-width issue panel below `IssueStatusChart` on the Projects
+tab, consuming `typeRows`/`summarizeIssueType` (zero new loader/fetch — rides the existing
+lazy Projects-tab path). Code shipped 2026-07-10; closed 2026-07-14 on live-`:3000` evidence
+(the `:3100` preflight checkpoint was never run — see Blockers/Concerns). See `22-03-SUMMARY.md`.
+
+**PHASE 22 IS COMPLETE (3/3). All 8 v2.3 requirements are delivered.**
+
+---
+
+## Next Action: Phase 23 — Workshop Curation & Milestone Close
+
+The last phase of v2.3, and the only one left. It carries **zero new requirements** — it is the
+mandatory curation + verification gate (PITFALLS.md Pitfall 7: shipping every new panel flat and
+always-visible dilutes the workshop narrative).
+
+**Before planning it, recount the panel surface.** The roadmap's success criterion #1 says
+"the 7 new panels from Phases 20–22" — that number is stale. Off-roadmap work (2026-07-13
+commits + the workflow-tools donuts) added roughly five more panels across `/access-analysis`
+and `/users`. Curation has a bigger wall of charts to answer for than the roadmap assumed.
+
+Also in scope for the close:
+- Owner visual sign-off on `/access-analysis` after a fresh `:3000` rebuild (Task Scheduler
+  stop → `npx tsc --noEmit` → `npm run build` → restart → `/api/health` 200).
+- Phases 20.1, 21.1, and 22 are all live on `:3000` already — but v2.3 has never had a single
+  deliberate full-milestone deploy + sign-off pass.
+- Give `IssueTypeChart` explicit attention: it is the one panel with no recorded owner UAT.
+- Confirm no new WebGL on `/access-analysis` and that `/users/spatial-graph` was untouched
+  across the whole milestone.
+
+Suggested entry: `/gsd:discuss-phase 23` (no CONTEXT.md exists for it yet), then
+`/gsd:plan-phase 23`.
 
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
 CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
@@ -373,9 +419,9 @@ of v2.3 scope.
 
 ## Session
 
-**Last session:** 2026-07-10
-**Stopped at:** Phase 22 Plan 02 complete (loadIssueFunnel() typeRows cut + summarizeIssueType transform, ISSUE-05 data layer done). Next: plan/execute 22-03 (ISSUE-05 chart component + mounting).
-**Resume file:** .planning/phases/22-issue-type-resolution/22-02-SUMMARY.md
+**Last session:** 2026-07-14
+**Stopped at:** STATE reconciliation after a 4-day drift. Phase 22 closed 3/3 (22-03's code had shipped 2026-07-10 but was never doc-closed, so STATE kept reporting it as the next action). Workflow-tools donuts — live on `:3000` since 2026-07-13 but existing only in the working tree — are now committed. All 8 v2.3 requirements delivered; only Phase 23 (curation + milestone close) remains.
+**Resume file:** .planning/phases/22-issue-type-resolution/22-03-SUMMARY.md
 
 ## Performance Metrics
 
