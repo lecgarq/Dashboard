@@ -189,6 +189,7 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
 - [Phase 23]: 23-02 (docs-only, 1 commit `e70d3850`, COMPLETE): recounted the live `/access-analysis` panel inventory from source — **23 panels, not 22** (Roles tab has 6, not 5; "Folder Activity by Role" is a distinct `PremiumSurface` mount from the folder-action heatmap). Ruled zero-diff on the within-tab lead-panel curation question — every tab already leads with its strongest panel, no reorder performed (matches `23-RESEARCH.md` §A). Wrote `23-REVIEW-CHECKLIST.md` (144 lines): triage rule header, all 23 `/access-analysis` panels graded DEEP, `/users` DEEP-ish verification-only (4 never-reviewed 2026-07-13 surfaces), `/template-mty`/`/forma-proposal` SHORT passes, every caveat cell cited to a real source `file:line` honesty label, `Issues by type` flagged as the zero-owner-UAT panel. Corrected `23-CONTEXT.md`'s stale "untouched" claim about `/template-mty`/`/forma-proposal` (both received off-roadmap commits during the v2.3 window per `23-RESEARCH.md` §E). tsc clean, `npm test -- "app/(dashboard)/access-analysis"` 61/520 green. See `23-02-SUMMARY.md`.
 - [Phase 23]: 23-03 (docs-only, 1 commit `f956956f`, COMPLETE — human checkpoint Task 1 resolved by owner, Tasks 2 executed, Task 3 correctly skipped): owner reviewed the full 4-page workshop surface on the rebuilt `:3000` (`23-REVIEW-CHECKLIST.md`) and gave a **blanket verbatim "approved"** — one word covering the whole surface, not 27 individually-dictated per-panel calls. Recorded at its true granularity in both `23-REVIEW-CHECKLIST.md` (new header note + `approved (blanket)†` in every Verdict cell) and the new `23-FINDINGS.md` (zero findings; both "Fix in Phase 23" and "Deferred to v2.4" sections empty by construction) — closes T-23-05 (repudiation risk) honestly, without inflating the evidence into fabricated per-panel commentary. `Issues by type` (the one panel with zero prior owner UAT) is now covered by this blanket approval, with an explicit note that it is not a dedicated per-panel UAT pass. Task 3 (conditional fix-now edits) skipped in full per plan — no fix-now items, none invented, no redeploy needed. No Phase 23.1 created. See `23-03-SUMMARY.md`.
 - [Phase 23]: 23-04 (gates + scope fence, 2 commits `89237691`/`44803cd7`, COMPLETE): refreshed the stale `.tools/repo-map/baselines/dependency-cruiser-baseline.json` (6→2 `no-scripts-to-app` warnings, ratcheted DOWN only — 3 of the prior edges named `scripts/diag-activity-{coordination,module-audit,types}.cjs`, deleted 2026-07-10 in off-roadmap commit `b95bf5c7`, a 4th `diag-activity-service-xtab.cjs` edge is also no longer live); `node scripts/repo-map/check.cjs` now exits 0 for the first time. Full gate sweep re-run live: `npx tsc --noEmit` exit 0; `npm test` 2535 passed/1 skipped/0 failed (matches research baseline exactly, no `physicsLayer` flake this run); TEST-01/02/03 (`acc-hot-cache.test.ts`/`folderPermissionTerrainView.test.ts`/`templateFolderTerrain.sharedQuery.test.ts`) byte-identical vs the `v2.2` tag; zero new WebGL/R3F import lines on `/access-analysis` across `v2.2..HEAD`; `/users/spatial-graph` zero-diff across the whole v2.3 milestone. Corrected `/template-mty`/`/forma-proposal` fact recorded precisely: 8 files / 2 files respectively touched since `v2.2` (role-similarity graph + brand-palette theme pass), both confirmed WebGL-free by import-line grep — neither page is "untouched" but neither received a v2.3-requirement panel either. `23-VERIFICATION.md` written (`status: owner_approved`) with a documented known-tooling-gap note for `gsd-self-gate.cjs`'s cumulative-vs-milestone-scoped checkbox counting mismatch. ROADMAP Phase 22 AND Phase 23 checkboxes flipped `[x]` (Phase 22's was never flipped despite shipping 3/3); Phase 23 Plans list corrected to 4/5; Progress-table row corrected to `4/5 | In Progress (gates green, milestone-close pending)` — deviation from the plan's literal template text (which said `5/5 | Complete`, written for a state where 23-05 had already run; only 4/5 plans are actually done after this plan). See `23-04-SUMMARY.md`.
+- [Phase 23]: 23-05 (FINAL plan, milestone close, 1 commit `d3618510`, COMPLETE — **PHASE 23 SHIPPED, v2.3 NEW GRAPHS MILESTONE CLOSED**): restored `.planning/MILESTONES.md` from git BEFORE running `milestone complete` (tracked but deleted from the working tree — verified v2.0/v1.0 sections present, `grep -c` = 2, before any write); ran the final `gsd-self-gate.cjs --phase 23 --route /users --rebuild` (real Task Scheduler stop → tsc → build → restart → route probes; overall `ok: false` from the known cumulative-checkbox STATE-count mismatch only, every rebuild/health/route check in `checks[]` PASS); ran `gsd-tools milestone complete v2.3` (archived ROADMAP/REQUIREMENTS to `.planning/milestones/v2.3-*`, MILESTONES.md gained its v2.3 entry — 3 sections now present). **STATE.md frontmatter was corrupted by the tool a third time this milestone** (`current_phase` 23→3, `status` overwritten, `current_phase_name` displaced) — hand-repaired via `git diff` review, matching the pattern already documented for 23-03/23-04; `state record-session` was never invoked. Promoted PROJECT.md's v2.3 Active entry to Validated + added a "Shipped Milestone: v2.3" section mirroring the v2.2 pattern. Wrote ROADMAP.md's `## 📦 v2.4 Seed Pool` carrying forward every standing deferred item (4 REQUIREMENTS.md Future Requirements seeds, 4 v2.2-carried candidates, Playwright/Turbopack infra bug, SPLIT-04 sign-off gap, MILESTONES.md v2.1/v2.2 backfill gap, deferred phase archival, gsd-self-gate STATE-count convention mismatch, and the `milestone complete` frontmatter-corruption tooling gap itself) — `23-FINDINGS.md` raised zero findings, so none of the seeds are attributed to that review. Deviation: the `--route /users` Bash-tool argument was MSYS-path-mangled; manually re-verified the real `/users` route with a direct `curl` (307, matches the mangled probe's coincidental result). No Phase 23.1 created. See `23-05-SUMMARY.md`.
 
 ### Blockers/Concerns
 
@@ -382,61 +383,66 @@ lazy Projects-tab path). Code shipped 2026-07-10; closed 2026-07-14 on live-`:30
 
 ---
 
-## Next Action: Phase 23 — Workshop Curation & Milestone Close
+## Next Action: v2.3 New Graphs CLOSED — awaiting next milestone
 
-The last phase of v2.3, and the only one left. It carries **zero new requirements** — it is the
-mandatory curation + verification gate (PITFALLS.md Pitfall 7: shipping every new panel flat and
-always-visible dilutes the workshop narrative).
+**Phase 23 — Workshop Curation & Milestone Close is COMPLETE, 5/5 plans.** It carried **zero
+new requirements** — it was the mandatory curation + verification gate (PITFALLS.md Pitfall 7:
+shipping every new panel flat and always-visible dilutes the workshop narrative).
 
-**23-01 (rebuild `:3000`, COMPLETE)**, **23-02 (panel recount + review checklist, COMPLETE)**,
-**23-03 (owner sign-off + zero-finding register, COMPLETE)**, and **23-04 (gate sweep + scope
-fence, COMPLETE)** are done — see the `[Phase 23]` bullets above and
-`23-01-SUMMARY.md`/`23-02-SUMMARY.md`/`23-03-SUMMARY.md`/`23-04-SUMMARY.md`. The panel
-inventory is authoritatively 23 (not the roadmap's stale "7 new panels" nor `23-CONTEXT.md`'s
-22), curation is a confirmed zero-diff PASS, the owner has given a blanket verbatim "approved"
-on the full 4-page workshop surface on rebuilt `:3000` (zero findings raised), and the full
-automated gate sweep (tsc/test/TEST-01-03/WebGL-scope-fence/spatial-graph-scope-fence/
-repo-map check) is proven green with live, re-runnable command output in
-`23-VERIFICATION.md`. Both Phase 22 and Phase 23 ROADMAP checkboxes are now `[x]`.
+**23-01 (rebuild `:3000`)**, **23-02 (panel recount + review checklist)**, **23-03 (owner
+sign-off + zero-finding register)**, **23-04 (gate sweep + scope fence)**, and **23-05
+(milestone close, FINAL)** are all done — see the `[Phase 23]` bullets above and
+`23-01-SUMMARY.md` through `23-05-SUMMARY.md`. The panel inventory is authoritatively 23 (not
+the roadmap's stale "7 new panels" nor `23-CONTEXT.md`'s 22), curation was a confirmed
+zero-diff PASS, the owner gave a blanket verbatim "approved" on the full 4-page workshop
+surface on rebuilt `:3000` (zero findings raised), the full automated gate sweep proved green
+in `23-VERIFICATION.md`, and 23-05 closed the milestone: `.planning/MILESTONES.md` restored
+(v2.0/v1.0 preserved) + v2.3 entry appended, final `gsd-self-gate.cjs --phase 23 --route
+/users --rebuild` ran (rebuild/health/route checks all PASS), `milestone complete v2.3`
+archived ROADMAP/REQUIREMENTS to `.planning/milestones/v2.3-*`, PROJECT.md's v2.3 Active entry
+promoted to Validated, and ROADMAP.md gained a `## 📦 v2.4 Seed Pool` carrying forward every
+standing deferred item.
 
-**Next: Phase 23 plan 23-05** — milestone close (MILESTONES.md restore + v2.3 entry, final
-`gsd-self-gate.cjs --phase 23 --route /users --rebuild`, `milestone complete v2.3` + manual
-STATE repair, PROJECT.md Active→Validated promotion, ROADMAP v2.4 seeds, config reset — see
-`23-RESEARCH.md` §F for the exact sequencing). Known trap: `gsd-tools query
-state.advance-plan`/`state.update-progress` corrupted STATE frontmatter again this session
-(mis-parsed `current_phase`/`current_plan`/progress numbers) — diff+repair STATE manually
-after any `gsd-tools query state.*` write; do not trust its output blindly. This plan's STATE
-update was done via direct manual `Edit` calls, not `gsd-tools query state.*`, for that reason.
+**v2.3 New Graphs milestone is CLOSED.** 8/8 requirements (ISSUE-01–05, PERM-01, ENG-01,
+PIPE-01), 6 phases (20, 20.1, 21, 21.1, 22, 23), 28/28 plans. **Next:** start the next
+milestone's requirements discussion when the owner is ready — see ROADMAP.md's "v2.4 Seed
+Pool" section for candidates.
 
-Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md): `next dev --turbopack`
-CSS corruption on this machine is **deterministic against the current tree** (4/4 fresh-cache
-boots, identical 496 parse errors), not ~50% intermittent; `next dev --webpack` 500s
-repo-wide. Production `next build --webpack` is unaffected (proven 2026-07-04). E2e specs
-that need a dev server are blocked until that infra item is picked up.
+**Standing tooling trap (reconfirmed a third time during 23-05):** `gsd-tools milestone
+complete` / `gsd-tools query state.*` corrupt STATE.md frontmatter on this repo — every write
+must be followed by `git diff -- .planning/STATE.md` and manual field-by-field repair; do not
+trust the tool's output blindly. Recorded as a v2.4 tooling seed (worth a genuine upstream fix).
+
+Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md, still open, carried to
+v2.4 Seed Pool): `next dev --turbopack` CSS corruption on this machine is **deterministic
+against the current tree** (4/4 fresh-cache boots, identical 496 parse errors), not ~50%
+intermittent; `next dev --webpack` 500s repo-wide. Production `next build --webpack` is
+unaffected (proven 2026-07-04, reconfirmed 2026-07-14 during 23-05's rebuild). E2e specs that
+need a dev server are blocked until that infra item is picked up.
 
 Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
 (tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
 a fresh `:3000` rebuild). The working-tree summary is in PROJECT.md; detailed plan, summary,
 and verification artifacts remain available from the `v2.2` tag and git history.
 
-Guardrails carried forward: explicit-path commits with `git diff --cached --name-only` proof,
-`npx tsc --noEmit` before any rebuild, no new WebGL on data surfaces, zinc theme untouched,
-`/users/spatial-graph` not touched, honest coverage labels on under-covered sources, never chart
-`rowsByModule`, convert `totalBytes` BigInt server-side, never drop the null-`lastSignIn` bucket,
-never render a raw issue-type GUID.
+Guardrails carried forward into the next milestone: explicit-path commits with `git diff
+--cached --name-only` proof, `npx tsc --noEmit` before any rebuild, no new WebGL on data
+surfaces, zinc theme untouched, `/users/spatial-graph` not touched, honest coverage labels on
+under-covered sources, never chart `rowsByModule`, convert `totalBytes` BigInt server-side,
+never drop the null-`lastSignIn` bucket, never render a raw issue-type GUID.
 
 Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split is still
-pending (test-basis-only acceptance — no live mount) — see Blockers/Concerns above. Not part
-of v2.3 scope.
+pending (test-basis-only acceptance — no live mount) — see Blockers/Concerns above and the
+v2.4 Seed Pool. Not part of v2.3 scope.
 
 ---
-*Last updated: 2026-07-02 — v2.3 New Graphs roadmap created (Phases 20-23). Next: plan Phase 20.*
+*Last updated: 2026-07-14 — v2.3 New Graphs milestone CLOSED (Phase 23 plan 23-05, FINAL). Next: scope v2.4 when ready.*
 
 ## Session
 
 **Last session:** 2026-07-14
-**Stopped at:** Phase 23 plan 23-04 complete (gate sweep + scope fence) — all 4 ROADMAP Phase 23 success criteria proven with live, re-runnable command output (`23-VERIFICATION.md`, `status: owner_approved`); repo-map dependency-cruiser baseline ratcheted down 6→2 and refreshed; ROADMAP Phase 22 AND Phase 23 checkboxes now `[x]`. Next: `/gsd:execute-phase 23` plan 23-05 (milestone close).
-**Resume file:** .planning/phases/23-workshop-curation-milestone-close/23-05-PLAN.md
+**Stopped at:** Phase 23 plan 23-05 (FINAL) complete — v2.3 New Graphs MILESTONE CLOSED. MILESTONES.md restored + v2.3 entry appended, final self-gate green (rebuild/health/route), milestone archived, PROJECT.md/ROADMAP.md updated with v2.4 seeds. No Phase 23.1. Next: scope v2.4 when the owner is ready.
+**Resume file:** none — milestone closed, no active plan
 
 ## Performance Metrics
 
@@ -465,6 +471,7 @@ of v2.3 scope.
 | Phase 22 P01 | 50min | 3 tasks | 3 files |
 | Phase 22 P02 | ~35min | 2 tasks | 5 files |
 | Phase 23 P04 | ~40min | 3 tasks | 4 files |
+| Phase 23 P05 (FINAL, MILESTONE CLOSE) | ~55min | 3 tasks | 9 files |
 
 ## Operator Next Steps
 
