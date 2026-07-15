@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { RightPanelStack } from "./RightPanelStack";
 import { SliderProvider } from "./SliderContext";
 import { SelectionProvider } from "./SelectionContext";
@@ -36,7 +36,7 @@ function dim(id: string): CatalogDimension {
 }
 const CATALOG = [dim("company"), dim("role")];
 
-function renderStack(useGroupByControls: boolean) {
+function renderStack() {
   render(
     <SliderProvider physics={null} catalog={CATALOG}>
       <SelectionProvider>
@@ -44,7 +44,6 @@ function renderStack(useGroupByControls: boolean) {
           features={[]}
           catalog={CATALOG}
           visibleSelectedIndices={null}
-          useGroupByControls={useGroupByControls}
           groupBy="company"
           onGroupByChange={vi.fn()}
         />
@@ -53,16 +52,22 @@ function renderStack(useGroupByControls: boolean) {
   );
 }
 
-describe("RightPanelStack — sidebar selection", () => {
-  it("renders GroupByControls when useGroupByControls is true", () => {
-    renderStack(true);
+describe("RightPanelStack — base rail views", () => {
+  it("defaults to Grouping and exposes both view tabs", () => {
+    renderStack();
     expect(screen.getByTestId("group-by-controls")).toBeTruthy();
     expect(screen.queryByTestId("catalog-slider-sidebar")).toBeNull();
+    expect(screen.getByRole("tab", { name: "Grouping" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("false");
   });
 
-  it("renders the legacy CatalogSliderSidebar when useGroupByControls is false", () => {
-    renderStack(false);
+  it("opens Catalog preview only after its tab is selected", () => {
+    renderStack();
+    const catalogTab = screen.getByTestId("catalog-preview-tab");
+    fireEvent.mouseDown(catalogTab, { button: 0, ctrlKey: false });
+    fireEvent.click(catalogTab);
     expect(screen.getByTestId("catalog-slider-sidebar")).toBeTruthy();
     expect(screen.queryByTestId("group-by-controls")).toBeNull();
+    expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("true");
   });
 });

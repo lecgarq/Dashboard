@@ -16,6 +16,7 @@
 
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   clampSidebarWidth,
   loadSidebarWidth,
@@ -36,10 +37,8 @@ export interface RightPanelStackProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
   catalog: readonly CatalogDimension[];
   visibleSelectedIndices: ReadonlySet<number> | null;
-  /** Flag-OFF projector map: render the Group-by controls instead of the slider wall. */
-  useGroupByControls?: boolean;
-  groupBy?: string;
-  onGroupByChange?: (id: string) => void;
+  groupBy: string;
+  onGroupByChange: (id: string) => void;
 }
 
 type LayerKind = "user-detail" | "lasso-pie" | "sliders";
@@ -64,12 +63,12 @@ export function RightPanelStack({
   features,
   catalog,
   visibleSelectedIndices,
-  useGroupByControls = false,
   groupBy,
   onGroupByChange,
 }: RightPanelStackProps): React.JSX.Element {
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
   const top = getTopLayer(isolatedNodeIndex, lassoSelection);
+  const [baseView, setBaseView] = useState<"grouping" | "catalog">("grouping");
 
   // ---- Resizable rail width (persisted, drag handle on the left edge) -------
   // Client-only shell (AccessAnalysisShellClient is dynamic ssr:false), so it's
@@ -178,11 +177,29 @@ export function RightPanelStack({
             </motion.div>
           ) : (
             <motion.div key="sliders" className="h-full w-full" {...slide}>
-              {useGroupByControls && groupBy && onGroupByChange ? (
-                <GroupByControls catalog={catalog} features={features} groupBy={groupBy} onGroupByChange={onGroupByChange} />
-              ) : (
-                <CatalogSliderSidebar catalog={catalog} />
-              )}
+              <Tabs
+                value={baseView}
+                onValueChange={(value) => setBaseView(value as "grouping" | "catalog")}
+                className="h-full min-h-0 gap-0"
+              >
+                <div className="sticky top-0 z-20 border-b border-l bg-card p-2">
+                  <TabsList className="h-8 w-full">
+                    <TabsTrigger value="grouping" data-testid="grouping-tab">Grouping</TabsTrigger>
+                    <TabsTrigger value="catalog" data-testid="catalog-preview-tab">Catalog preview</TabsTrigger>
+                  </TabsList>
+                </div>
+                <TabsContent value="grouping" className="mt-0 min-h-0">
+                  <GroupByControls
+                    catalog={catalog}
+                    features={features}
+                    groupBy={groupBy}
+                    onGroupByChange={onGroupByChange}
+                  />
+                </TabsContent>
+                <TabsContent value="catalog" className="mt-0 min-h-0">
+                  <CatalogSliderSidebar catalog={catalog} />
+                </TabsContent>
+              </Tabs>
             </motion.div>
           )}
         </AnimatePresence>

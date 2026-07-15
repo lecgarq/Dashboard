@@ -511,7 +511,6 @@ export function ShellBody({
           features={features}
           catalog={catalog}
           visibleSelectedIndices={visibleSubset}
-          useGroupByControls={!ACC_3D_GRAPH_ENABLED}
           groupBy={groupBy}
           onGroupByChange={onGroupByChange}
         />
