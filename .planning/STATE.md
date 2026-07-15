@@ -5,8 +5,8 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 28
 current_phase_name: Performance Closeout & Verification
 status: ready_to_plan
-stopped_at: "Phase 27 complete and locally deployed at BUILD_ID kZKWbfeAqYW1R4bYrUx2U; Phase 28 has no context yet."
-last_updated: "2026-07-15T13:46:25.5165724-06:00"
+stopped_at: "Phase 28 context captured (28-CONTEXT.md): PERF-01 idle-guard+document the dead-surface DuckDB warm-up (live path already DuckDB-free); PERF-03 verify the DEFAULT 2D lasso (acc-dc-graph.spec.ts:537) green warm-cache under the prod :3100 verify config, route around the broken next-dev infra; PERF-04 re-run measure-spatial-graph-baseline.cjs, ±10% tolerance vs 6193.2ms + one live GPU reading. Next: /lecg-phase 28."
+last_updated: "2026-07-15T14:05:00-06:00"
 ---
 
 # Project State
