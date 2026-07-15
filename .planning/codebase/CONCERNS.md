@@ -464,3 +464,10 @@ no code fix is required.
 - **Constraints:** Statuses appended, original findings preserved; no code changed by this refresh.
 - **Gates:** Docs-only update; no build/tsc gates applicable.
 - **VERIFY:** current DC covered-project count (~550/1,153 per Ph11 correction); whether §5.3 TODO guards were removed by Ph12.
+
+### New concerns from v2.4 Phase 25 (2026-07-15, phase-tagged)
+
+1. **[Ph25] Coverage denominator VERIFY still open.** `dimensionCoverage.ts` ships node-derived `covered/total` and marks provenance ("DC-sourced"/"folder-crawl"), but whether AccDcProject 550 / AccProject 1,153 is the correct *project-level* denominator for DC-sourced dims was never verified. If a future phase wants project-coverage figures in the pickers, verify the denominator first — do not display 550/1,153 unverified.
+2. **[Ph25] Retired legacy filter ids drop silently on rehydrate.** Persisted filters keyed `tier`/`activity`/`signin`/`module` (old `SliderContext.DIMENSIONS` ids) are ignored by the new aperture key gate in `FilterContext.tsx` — a one-time migration loss, invisible to the user. Acceptable now; if users report "my saved filter vanished", this is why.
+3. **[Ph25] `featureValueForDim` legacy switch is near-dead but plan-locked.** After the aperture migration only `role`/`project` (drill-down pies) and harness paths hit the legacy 6-id switch; `tier`/`activity`/`signin` cases survive mostly for the migration-guard tests. Candidate for deletion when SelectionPanel's drill goes aperture-native.
+4. **[Ph25] `SliderContext.DIMENSIONS` has lost its last live UI consumer.** Toolbar/FilterContext/DimensionFilterPopover no longer read it; remaining importers are `featureTargets.ts`/`physicsClustering` (flag-ON physics path) and tests. Fold into the catalog or delete alongside the parked registry-color path in a future cleanup.

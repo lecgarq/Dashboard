@@ -2,11 +2,11 @@
 lecg_state_version: 2
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: 25
-current_phase_name: Dimension Aperture — Group, Color & Filter
-status: executing
-stopped_at: "Phase 25 — 25-01 COMPLETE (committed 662dc0da: dimensionBands + dimensionCoverage + 10 aperture dims in the structural catalog + banded valueKeyLabel; full suite 2553 passed/0 failed, tsc 0, repo-map gate passed; summary written). 25-02 (widened Group-by/Color-by pickers) and 25-03 (add-a-chip filter) remain. Next: /lecg-phase 25 in a FRESH session (resumes at 25-02)."
-last_updated: "2026-07-15T17:45:00.000Z"
+current_phase: 26
+current_phase_name: Catalog Slider Wall
+status: ready_to_plan
+stopped_at: "Phase 25 COMPLETE + DEPLOYED (3/3 plans: 662dc0da, 917a98c9, 7ae2f29a + ponytail cut 0a94d8c8; 25-VERIFICATION.md written; tsc 0, full suite 2565/0 failed, repo-map passed; :3000 rebuilt BUILD_ID Vl7pXM_h_j5j2UrFGYd5Z, /users/spatial-graph probed 200; owner visual UAT of pickers+filter still pending). Phase 26 has NO artifacts yet. Next: /lecg-discuss-phase 26 (CAT-01 flag decouple must precede CAT-02/03/04)."
+last_updated: "2026-07-15T18:45:00.000Z"
 current_plan: null
 ---
 
@@ -22,11 +22,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 24 — Baseline & Dimension ID Unification — **COMPLETE** (2/2 plans).
-- **Plan:** 24-01 complete (baseline measurement, PERF-04). 24-02 complete (DIM-03/DIM-06 id-space unification).
-- **Status:** Phase 24 Plan 02 executed — `dimensionIdSpace.ts` created as the single source for the Group-by/Color-by option lists; `groupByDimensions.ts`/`nodeColors.ts` rewired to it; `dimensionRegistry.ts`'s stale "single source of truth" doc claim corrected. Both invariance-gate tests (`groupByDimensions.test.ts`, `nodeColors.test.ts`) pass with zero diff. `npx tsc --noEmit` 0 errors, `npm test` 2538/2539 (2535 baseline + 3 new).
-- **Next:** Execute Phase 25 (Dimension Aperture — Group, Color & Filter; DIM-01/DIM-02/DIM-04/DIM-05) — 3 plans committed (c3cf53de), waves 1→3: 25-01 substrate (bands/coverage/catalog), 25-02 pickers, 25-03 add-a-chip filter.
-- **Last activity:** 2026-07-14 — Phase 24 Plan 02 (dimension id-space unification) executed and committed. Phase 24 complete.
+- **Phase:** 25 — Dimension Aperture — Group, Color & Filter — **COMPLETE + DEPLOYED** (3/3 plans; DIM-01/02/04/05 shipped; `25-VERIFICATION.md` written; :3000 BUILD_ID `Vl7pXM_h_j5j2UrFGYd5Z`, `/users/spatial-graph` probed 200). Phase 24 also complete (baseline + id-space unification).
+- **Status:** All three spatial-graph controls (Group-by, Color-by, add-a-chip filter) resolve from the single 17-dim themed aperture (`dimensionIdSpace.ts`) with banded tiers (`dimensionBands.ts` via `valueKeyLabel`) and honest node-derived coverage (`dimensionCoverage.ts`) inline at every point of selection. `SliderContext.DIMENSIONS` retired from the filter path. Owner visual UAT of the new pickers/filter still pending on the live build.
+- **Next:** Phase 26 (Catalog Slider Wall; CAT-01–04) — no CONTEXT/plans exist yet → `/lecg-discuss-phase 26`. Locked sequencing: CAT-01 (decouple `CatalogSliderSidebar` from the dead 3D flag) strictly precedes CAT-02/03/04.
+- **Last activity:** 2026-07-15 — Phase 25 executed to completion (25-03 add-a-chip filter `7ae2f29a`, ponytail cut `0a94d8c8`), verified, deployed, and advanced.
 
 ### v2.4 phase map (24–28)
 

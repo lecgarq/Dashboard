@@ -470,7 +470,7 @@ characterization tests (TEST-01/02/03) stay green throughout.
 ## Phases
 
 - [x] **Phase 24: Baseline & Dimension ID Unification** - Measure the honest first-paint baseline before anything else changes, then unify the catalog/registry dimension id-spaces so DIM-01/02 have one source to widen (completed 2026-07-14)
-- [ ] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label
+- [x] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label (completed 2026-07-15; deployed BUILD_ID Vl7pXM_h_j5j2UrFGYd5Z)
 - [ ] **Phase 26: Catalog Slider Wall** - The 208-dim `CatalogSliderSidebar` renders in production decoupled from the dead 3D flag, lazy-loads, is searchable, and greys unavailable dimensions with a reason
 - [ ] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into
 - [ ] **Phase 28: Performance Closeout & Verification** - DuckDB warm-up moves off the critical path, the lasso e2e test passes reliably (fixing the standing dev-server infra bug if it blocks the run), and first paint is re-measured against the Phase 24 baseline to prove no regression
@@ -516,12 +516,12 @@ lists first was the explicitly-flagged trap)
   3. User can filter the graph by any available dimension from the toolbar chips — the chip list no longer reads the separate 12-dim `SliderContext.DIMENSIONS` array; it draws from the same unified aperture Group-by/Color-by use.
   4. Every exposed dimension states its coverage honestly at the point of selection (tooltip/label) — DC-sourced dimensions show their ~550/1,153-project coverage, banded dimensions show their boundaries, and no under-covered dimension is silently presented as complete.
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 
 Plans:
-- [ ] 25-01-PLAN.md — Banded aperture + coverage foundation: add owner-palette dims to the catalog, label continuous tiers, node-derived coverage (wave 1)
-- [ ] 25-02-PLAN.md — Widen the shared aperture; Group-by + Color-by themed pickers, banded swatches + shared legend, inline coverage + active-dim caveat badge (wave 2)
-- [ ] 25-03-PLAN.md — Add-a-chip filter over the unified aperture: multi-select values-to-keep, retire SliderContext.DIMENSIONS, coverage in the dimension menu (wave 3)
+- [x] 25-01-PLAN.md — Banded aperture + coverage foundation: add owner-palette dims to the catalog, label continuous tiers, node-derived coverage (wave 1)
+- [x] 25-02-PLAN.md — Widen the shared aperture; Group-by + Color-by themed pickers, banded swatches + shared legend, inline coverage + active-dim caveat badge (wave 2)
+- [x] 25-03-PLAN.md — Add-a-chip filter over the unified aperture: multi-select values-to-keep, retire SliderContext.DIMENSIONS, coverage in the dimension menu (wave 3)
 
 **UI hint**: yes
 
