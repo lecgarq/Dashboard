@@ -750,15 +750,3 @@ PERF-03 — verify at v2.4 close before re-listing):**
 - **`.planning/` phase-directory archival** — deliberately deferred at the v2.3 close
   because the `.planning/` tree is mid-migration on this branch with ~450 files of
   unrelated dirty WIP. All 6 v2.3 phase directories remain at `.planning/phases/`.
-
-- **`gsd-self-gate.cjs` STATE-count convention mismatch** — the script counts ROADMAP phase
-  checkboxes cumulatively across all milestones while `STATE.md`'s `progress` block is
-  intentionally milestone-scoped. A tooling decision (scope the count to the active
-  milestone, or change the STATE convention), not a product one.
-
-- **`gsd-tools milestone complete` / `state.*` STATE.md frontmatter corruption** —
-  reconfirmed three times during v2.3 (`current_phase` mis-stamped, `status` overwritten
-  with a body-fragment-derived value, `current_phase_name` displaced out of the frontmatter
-  block). Manually repaired each time; `git diff` + hand-repair is the load-bearing safety
-  net for any `gsd-tools` STATE write, including during v2.4. Worth a GSD tooling fix
-  upstream rather than continuing to rely on manual repair every milestone close.

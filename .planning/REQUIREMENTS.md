@@ -183,9 +183,6 @@ Deferred. Tracked, not in this roadmap.
   `--turbopack` corrupts CSS on ~50% of cold boots. E2e specs needing a dev server are blocked
   either way. **This directly threatens PERF-03.**
 
-- **`gsd-tools` STATE.md frontmatter corruption** — corrupted STATE 3× during v2.3. Hand-repair
-  and diff after any `gsd-tools` STATE write.
-
 - **MILESTONES.md v2.1/v2.2 backfill** — both shipped, never logged.
 - **`.planning/` phase-directory archival** — deferred; the tree is mid-migration with ~450
   files of unrelated dirty WIP.

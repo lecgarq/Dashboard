@@ -455,11 +455,11 @@ no code fix is required.
 
 1. **`AccFolderPermissionSummary` freshness is cron-coupled.** The projection only refreshes in the dc-daily-ingest success branch (Ph19 PROJ-03). If the ingest cron fails or is disabled, `/access-analysis` permission summaries silently age; staleness bound is documented in `INTEGRATIONS.md`. No UI staleness indicator exists.
 2. **Terrain still reads the live `folderPermQuery` `$queryRaw`.** Scoped out of v2.2 with evidence; the per-folder terrain projection is a deferred seed if terrain read cost becomes a concern.
-3. **`.planning/` is mid-migration.** `MILESTONES.md`, `RETROSPECTIVE.md`, `milestones/`, and phase dirs 01–08 are deleted in the working tree (history retained in git HEAD); archival is deliberately deferred. Docs referencing those paths (e.g., the retrospective format pointer in the project skill) will not resolve until `/gsd:complete-milestone` regenerates them.
+3. **Planning retention was normalized during repository cleanup.** The working tree retains active-milestone artifacts only; completed milestone evidence remains available from tags and git history. New docs must not rely on removed phase/archive paths.
 
 ### Dashboard Self-Check (2026-07-02 refresh)
 
-- **Context:** `.planning/STATE.md`, `PROJECT.md`, `ROADMAP.md` (v2.2 close, `5974d6f2`), phase artifacts 09–19, current source tree (post-split line counts read from disk), `prisma/schema.prisma`.
+- **Context:** `.planning/STATE.md`, `PROJECT.md`, `ROADMAP.md` (v2.2 close, `5974d6f2`), v2.1/v2.2 phase artifacts from git history, current source tree (post-split line counts read from disk), `prisma/schema.prisma`.
 - **Evidence:** Resolution claims map to recorded phase requirements (DB-01..03, BND-01..04, TRUTH-02..04, QUERY-01, SPLIT-01..04, PROJ-01..03, TEST-01..03) and their commits in ROADMAP.md/STATE.md.
 - **Constraints:** Statuses appended, original findings preserved; no code changed by this refresh.
 - **Gates:** Docs-only update; no build/tsc gates applicable.

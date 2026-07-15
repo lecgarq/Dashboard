@@ -1,20 +1,12 @@
 ---
-gsd_state_version: 1.0
+lecg_state_version: 2
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
 current_phase: 25
 current_phase_name: Dimension Aperture — Group, Color & Filter
 status: ready_to_plan
-stopped_at: "Phase 25 PLANNED — 3 plans committed (c3cf53de): 25-01 (wave 1: banding/coverage/catalog substrate, DIM-01/05), 25-02 (wave 2: widened Group-by + Color-by pickers resolving from unified PRESET_DIMENSION_IDS, DIM-01/02/05), 25-03 (wave 3: add-a-chip filter from the aperture, DIM-04/05). Owner decisions from 25-CONTEXT.md remain locked (banded swatches only, NO ramps, one legend, coverage labels inline; VERIFY real per-dim coverage — the ~48% figure is illustrative). STATE was stale (still said 'Next: plan-phase 25' after plans existed); reconciled with tree. Next: /gsd:execute-phase 25 or /lecg-execute-phase 25."
+stopped_at: "Phase 25 PLANNED — 3 plans committed (c3cf53de): 25-01 (wave 1: banding/coverage/catalog substrate, DIM-01/05), 25-02 (wave 2: widened Group-by + Color-by pickers resolving from unified PRESET_DIMENSION_IDS, DIM-01/02/05), 25-03 (wave 3: add-a-chip filter from the aperture, DIM-04/05). Owner decisions from 25-CONTEXT.md remain locked (banded swatches only, NO ramps, one legend, coverage labels inline; VERIFY real per-dim coverage — the ~48% figure is illustrative). STATE reconciled with the tree. Next: /lecg-phase 25 (resumes at 25-01)."
 last_updated: "2026-07-14T23:20:33.000Z"
-last_activity: 2026-07-14
-last_activity_desc: Phase 25 plans created (3 plans, waves 1-3, committed c3cf53de). STATE reconciled with tree. Ready to execute.
-progress:
-  total_phases: 5
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 20
 current_plan: null
 ---
 
@@ -309,11 +301,6 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   v2.3 continues evolving PROJECT/STATE/REQUIREMENTS/ROADMAP in place, with only its active
   phase artifacts retained under `.planning/phases/`.
 
-- **gsd-tools `phase complete` is unreliable on this repo** — it has previously mangled
-  STATE frontmatter on phase close (wrong milestone label, wrong progress numbers). **Always
-  inspect and repair STATE frontmatter (milestone/status/current_phase/progress) manually
-  after running it**, including during v2.3 phase closes.
-
 - [Phase 20]: PIPE-01 (20-04): ingestFreshnessView loader has no TTL cache (unlike sibling loaders) since CONTEXT.md requires a static per-page-load read; status treated as an open string (unrecognized values map to neutral tone + raw label); 36h stale threshold, strictly-greater-than boundary. Not yet mounted -- plan 20-05 wires it into mainCharts.tsx/AccessAnalysisCharts.tsx.
 
 - [Phase 20]: ISSUE-01 (20-03): extended `lib/server/coordinationByProjectView.ts` in place (consolidation decision, avoids growing `mainCharts.tsx`'s `Promise.all` fan-out) with an additive `issueCoverage` field — raw per-project rows from `AccIssueProjectFetchResult` for the latest `AccIssueFetchRun`, `null` when no run exists, never a raw GUID as project name. New pure transform `summarizeIssueCoverage` (`app/(dashboard)/access-analysis/issueFetchCoverageCounts.ts`) guarantees all 4 buckets (ok/zero_issues/forbidden/error) always present with zeros kept, plus an honest overflow bucket for any unexpected status string. New `IssueFetchCoverageDonut` component: click-to-drill on every bucket, in-progress caption when the latest run is running/unfinished. Not yet mounted -- plan 20-05 places it directly above Model Coordination ("coverage precedes metric").
@@ -355,14 +342,6 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   concentrated risk (ISSUE-04's external APS call + new Prisma migration) resolved cleanly —
   the backfill ran over all 1,153 projects and the lookup table is populated.
 
-- **Known tooling gap (non-blocking, recorded in `23-VERIFICATION.md`):**
-  `scripts/gsd-self-gate.cjs`'s `validateStateAgainstRoadmap()` counts ROADMAP phase checkboxes
-  cumulatively across all 3 milestones (v2.1+v2.2+v2.3 = 17 total) and expects `STATE.md`'s
-  `progress.total_phases`/`completed_phases` to match — but STATE's `progress` block is
-  intentionally milestone-scoped (6/5 for v2.3 alone). This is a pre-existing tool/convention
-  mismatch, not a Phase 23 regression. Plan 23-05 must read the script's `checks[]` array
-  rather than gate on its aggregate `ok` for this specific check.
-
 - **RESOLVED (was "Panel inventory drift") — closed by 23-02.** The live `/access-analysis`
   panel inventory is now authoritatively **23 panels** (recounted from source in
   `23-02-SUMMARY.md`/`23-REVIEW-CHECKLIST.md`; Roles tab has 6 panels, not 5 — "Folder Activity
@@ -393,8 +372,8 @@ Prior (v2.1/v2.2) decisions still relevant as standing constraints:
   Compare-tab consolidation, role-click scroll-jump bug, folder-activity-by-company graph,
   /access-analysis tabbed-IA redesign) plus the 4 Task-3 gap-closure items surfaced at the
   20.1-07 owner re-check (activity-recency clarity, 2x expand-Other, project-GUID leak) are
-  now ALL closed across 20.1-01 through 20.1-07. Phase 20.1 is ready for `/gsd:verify-work` /
-  phase close.
+  now ALL closed across 20.1-01 through 20.1-07. Phase 20.1 is ready for
+  evidence review / phase close.
 
 - **New (non-blocking, from 20.1-07):** the Playwright e2e suite's `webServer.command`
   (`playwright.config.ts`) hardcodes `next dev --webpack`, which currently 500s on every
@@ -433,7 +412,7 @@ whole phase (20.1-05/06/07) are now closed. Verification PASSED (6/7 automated +
 items resolved) and the owner approved live on a `:3100` webpack production build
 (2026-07-04, isolated `.next-uat-20-1` dist — this also served as the successful pre-deploy
 build preflight; `:3000` untouched). Deploy the 20.1 changes to `:3000` when the owner wants
-them live (`scripts/gsd-self-gate.cjs --phase 20.1 --rebuild` or the standard deploy sequence).
+them live (standard deploy sequence).
 
 **Phase 21 (Issue Funnel — Status & Time) is COMPLETE — 4/4 plans.** 21-01 (server data
 layer): `lib/server/issueFunnelView.ts`'s `loadIssueFunnel()` aggregates the full
@@ -481,7 +460,7 @@ APPROVED across two `:3100` production-preflight rounds, closing with the owner-
 Sheets-cluster→Build taxonomy move (5 gap-closure corrections total in
 `lib/acc/activityClassification.ts`, live evidence in `21.1-ATTRIBUTION-DELTA.md`).
 Gates: tsc clean, `npm test` 2477/1/0. See `21.1-04-SUMMARY.md`. Deploy to `:3000` when
-the owner wants 21.1 live (standard deploy sequence / `gsd-self-gate.cjs --rebuild`).
+the owner wants 21.1 live (standard deploy sequence).
 
 **Phase 22 (Issue Type Resolution) is IN PROGRESS — 2 plans complete (22-01, 22-02).**
 `22-01` (data layer, COMPLETE): additive `AccIssueType` Prisma model applied via
@@ -566,11 +545,6 @@ PIPE-01), 6 phases (20, 20.1, 21, 21.1, 22, 23), 28/28 plans. **Next:** start th
 milestone's requirements discussion when the owner is ready — see ROADMAP.md's "v2.4 Seed
 Pool" section for candidates.
 
-**Standing tooling trap (reconfirmed a third time during 23-05):** `gsd-tools milestone
-complete` / `gsd-tools query state.*` corrupt STATE.md frontmatter on this repo — every write
-must be followed by `git diff -- .planning/STATE.md` and manual field-by-field repair; do not
-trust the tool's output blindly. Recorded as a v2.4 tooling seed (worth a genuine upstream fix).
-
 Note for the deploy/e2e lane (recorded in `20.1` deferred-items.md, still open, carried to
 v2.4 Seed Pool): `next dev --turbopack` CSS corruption on this machine is **deterministic
 against the current tree** (4/4 fresh-cache boots, identical 496 parse errors), not ~50%
@@ -634,4 +608,4 @@ v2.4 Seed Pool. Not part of v2.3 scope.
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Start the next milestone with `/lecg-new-milestone`.

@@ -304,5 +304,7 @@ No enforced coverage thresholds. The access-analysis surfaces have the densest u
 - Context: `vitest.config.ts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright/global-setup.ts`, test files in `app/`, `lib/server/`, `server/routers/`, `tests/e2e/`, `package.json` scripts.
 - Evidence: all test files and patterns verified by direct Read and Grep.
 - Constraints: no jest-dom, no real DB in unit tests, e2e on :3100 with NEXT_DIST_DIR=.next-e2e.
-- Gates: `npx tsc --noEmit` before rebuild; `npm test` before commit; `npm run repo-map:check` for boundary changes; `node scripts/gsd-self-gate.cjs --rebuild` for end-of-phase/deploy gates.
+- Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
+  `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
+  sequence for an explicitly requested local rebuild.
 - VERIFY: total unit test count drifts as phases add tests — count cited (2,256 / 302 files) reflects the v2.2 close baseline (2026-07-02).

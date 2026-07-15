@@ -166,7 +166,10 @@
 
 **Deploy mechanism:** rebuild the working tree's `.next` output; NOT a git merge. The running server reads the current checkout's `.next/`.
 
-**GSD gate split (since v2.1):** the GSD `workflow.build_command` in `.planning/config.json` is `npx tsc --noEmit` **only** — the full `npm run build` + Task Scheduler restart + live route probes belong to `node scripts/gsd-self-gate.cjs --phase <N> --rebuild`, which stops `:3000` first. Do not run `npm run build` from a GSD post-merge step while the server is live.
+**Build gate:** run `npx tsc --noEmit` before the full build. A local deploy
+must stop the scheduled task and free `:3000`, run `npm run build`, restart the
+task, and probe the changed routes. See the LECG deploy sequence; never build
+over the live server.
 
 **Dev stack:**
 - `npm run dev` → `python scripts/run_dev_stack.py` — orchestrates Next.js dev + Yjs server

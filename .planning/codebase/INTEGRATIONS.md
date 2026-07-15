@@ -161,7 +161,7 @@ note that role names reflect the live APS state, not the DC snapshot date.
 - Map: `lib/acc/accdsActivityMap.ts` — maps raw ACCDS rows to `AccActivityAccds` Prisma model
 - Prisma model: `AccActivityAccds`
 - Verified coverage: 956 projects / 4.55M rows (4.1× expansion from 231 base); per-project loop via `scratch/accds-fullcrawl.sh`
-- Diagnostic: `scripts/diag-accds-recency.cjs`, `scripts/verify-accds-merge.cjs`
+- Diagnostic: `scripts/verify-accds-merge.cjs`
 
 **Downstream label requirement:** ACCDS has ~12-month history floor; downstream date-range views must label this limitation.
 
