@@ -109,19 +109,23 @@ When all plans are summarized:
 1. **Audit against the roadmap.** Check the phase's ROADMAP success criteria
    and requirement IDs against what actually shipped. Record gaps instead of
    declaring them complete.
-2. **Write `<NN>-VERIFICATION.md`** in the phase directory: per-requirement
+2. **Cut before verifying.** For phases that added shared modules, new
+   abstractions, or refactors, run `/ponytail-review` on the phase diff and
+   apply the deletions that survive scrutiny — the cheapest time to remove
+   over-engineering is before it ships. Skip for pure content/data phases.
+3. **Write `<NN>-VERIFICATION.md`** in the phase directory: per-requirement
    coverage with shipped evidence (files, commits, gate outputs), every gate
    actually run with its exact outcome, deviations carried from summaries, and
    any remaining `VERIFY:` items or recorded gaps.
-3. **Roll debt forward.** Copy durable follow-ups from the phase's SUMMARYs
+4. **Roll debt forward.** Copy durable follow-ups from the phase's SUMMARYs
    into `.planning/codebase/CONCERNS.md` as dated, phase-tagged entries. Debt
    that only lives in a summary is debt that gets lost.
-4. **Deploy per policy.** With `.planning/config.json` `"autoDeploy": true`
+5. **Deploy per policy.** With `.planning/config.json` `"autoDeploy": true`
    and all gates green, run `/lecg-ship` end-to-end (deploy-sequence + route
    probe) and append the probe result to `<NN>-VERIFICATION.md`. On build or
    probe failure: restore the `:3000` task, report, and stop without advancing
    STATE. With `autoDeploy` off, offer the rebuild instead.
-5. **Advance.** Reconcile ROADMAP (check the phase's boxes) and STATE
+6. **Advance.** Reconcile ROADMAP (check the phase's boxes) and STATE
    surgically: next phase, `status: ready_to_plan`, `current_plan: null`, and a
    `stopped_at` naming `/lecg-phase <next>` or `/lecg-discuss-phase <next>`
    based on the next phase's artifacts. If this was the milestone's last phase,
