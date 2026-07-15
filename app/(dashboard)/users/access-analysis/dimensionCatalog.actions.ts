@@ -20,20 +20,24 @@ export function buildActionAvailability(features: readonly NodeFeatureSnapshot[]
 }
 
 export function buildActionDimensions(availableActionIds?: ReadonlySet<string>): CatalogDimension[] {
-  return getActions().map((a) => ({
-    id: a.id,
-    label: a.label,
-    family: "activity" as const,
-    moduleId: a.moduleId,
-    groupId: a.groupId,
-    kind: "ordinal" as const,
-    source: a.source === "admin"
-      ? "AccActivity rawAction (admin, actor-attributed)"
-      : "AccActivity rawAction count",
-    confidence: a.source === "admin" ? ("low" as const) : ("medium" as const),
-    available: availableActionIds ? availableActionIds.has(a.id) : true,
-    surfaces: ["slider", "color"] as ("slider" | "color")[],
-    colorScale: "ordered" as const,
-    extract: (f: NodeFeatureSnapshot): number => f.actionCounts?.[a.id] ?? 0,
-  }));
+  return getActions().map((a) => {
+    const available = availableActionIds ? availableActionIds.has(a.id) : true;
+    return {
+      id: a.id,
+      label: a.label,
+      family: "activity" as const,
+      moduleId: a.moduleId,
+      groupId: a.groupId,
+      kind: "ordinal" as const,
+      source: a.source === "admin"
+        ? "AccActivity rawAction (admin, actor-attributed)"
+        : "AccActivity rawAction count",
+      note: availableActionIds && !available ? "No matching activity in the loaded graph." : undefined,
+      confidence: a.source === "admin" ? ("low" as const) : ("medium" as const),
+      available,
+      surfaces: ["slider", "color"] as ("slider" | "color")[],
+      colorScale: "ordered" as const,
+      extract: (f: NodeFeatureSnapshot): number => f.actionCounts?.[a.id] ?? 0,
+    };
+  });
 }

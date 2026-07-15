@@ -29,9 +29,12 @@ describe("buildActionDimensions", () => {
     const byId = Object.fromEntries(dims.map((d) => [d.id, d]));
     expect(byId["issue-create"].available).toBe(true);
     expect(byId["view-entity"].available).toBe(false);
+    expect(byId["issue-create"].note).toBeUndefined();
+    expect(byId["view-entity"].note).toBe("No matching activity in the loaded graph.");
   });
   it("defaults available=true when no set is supplied", () => {
     expect(buildActionDimensions().every((d) => d.available)).toBe(true);
+    expect(buildActionDimensions().every((d) => d.note == null)).toBe(true);
   });
 });
 

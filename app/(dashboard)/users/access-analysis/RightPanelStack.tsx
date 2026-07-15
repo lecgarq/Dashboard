@@ -14,7 +14,7 @@
  * Slide-in animation: framer-motion AnimatePresence with translateX (RESEARCH Pattern 9).
  */
 
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { lazy, Suspense, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -22,7 +22,6 @@ import {
   loadSidebarWidth,
   saveSidebarWidth,
 } from "./sidebarWidth";
-import { CatalogSliderSidebar } from "./CatalogSliderSidebar";
 import { GroupByControls } from "./GroupByControls";
 import { SelectionPanel } from "./SelectionPanel";
 import { UserProfilePanel } from "../UserProfilePanel";
@@ -32,6 +31,10 @@ import { mergeAccSummaryWithEnrichment, attachDirectoryFields, useOrgDirectoryPe
 import { useSelection } from "./SelectionContext";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
+
+const CatalogSliderSidebar = lazy(() =>
+  import("./CatalogSliderSidebar").then((module) => ({ default: module.CatalogSliderSidebar })),
+);
 
 export interface RightPanelStackProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
@@ -197,7 +200,15 @@ export function RightPanelStack({
                   />
                 </TabsContent>
                 <TabsContent value="catalog" className="mt-0 min-h-0">
-                  <CatalogSliderSidebar catalog={catalog} />
+                  <Suspense
+                    fallback={
+                      <div data-testid="catalog-preview-loading" role="status" className="p-4 text-sm text-muted-foreground">
+                        Loading catalog preview…
+                      </div>
+                    }
+                  >
+                    <CatalogSliderSidebar features={features} />
+                  </Suspense>
                 </TabsContent>
               </Tabs>
             </motion.div>

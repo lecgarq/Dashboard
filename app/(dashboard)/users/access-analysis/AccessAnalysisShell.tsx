@@ -61,7 +61,7 @@ import { createStaticLayer } from "./staticLayer";
 import { ACC_3D_GRAPH_ENABLED } from "./graphModeFlag";
 import { buildCatalogTargets } from "./catalogTargets";
 import { buildCatalogWeights } from "./catalogWeights";
-import { buildDimensionCatalog } from "./dimensionCatalog";
+import { buildStructuralDimensions } from "./dimensionCatalog.structural";
 import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
 import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
@@ -593,7 +593,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
         // Phase E: the catalog drives positioning. Targets/weights are built only
         // for the slider-surfaced + AVAILABLE catalog dims (no data → no force).
         // `snapshot` is aligned to `nodeIds`, so target index === physics node index.
-        const catalog = buildDimensionCatalog(snapshot);
+        // Phase 26: first paint and SliderProvider own only the 19-dimension aperture.
+        // The 176 generated actions are built inside the lazy Catalog preview instead.
+        const catalog = buildStructuralDimensions();
         const sliderDims = curatedSliderDimensions(catalog);
         const targetDimIds = sliderDims.map((d) => d.id);
         const targets = buildCatalogTargets(snapshot, sliderDims);

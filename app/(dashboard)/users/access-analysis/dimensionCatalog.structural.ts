@@ -8,8 +8,7 @@
  * without adding physics sliders or changing the Phase-26 slider wall.
  */
 import type { CatalogDimension } from "./dimensionCatalog.types";
-import { getModuleForEntitlement } from "./accTaxonomy";
-import { ACCESS_LEVELS } from "./accTaxonomyStatic";
+import { ENTITLEMENT_TO_MODULE } from "./accTaxonomyStatic";
 import { inferActivityService } from "@/lib/acc/activityCategories";
 import { dominantActivityCategory } from "./dimensionRegistry";
 
@@ -17,8 +16,8 @@ import { dominantActivityCategory } from "./dimensionRegistry";
 function moduleAccessOf(moduleSignature: string[] | undefined): string[] {
   const ids = new Set<string>();
   for (const key of moduleSignature ?? []) {
-    const m = getModuleForEntitlement(key);
-    if (m) ids.add(m.id);
+    const moduleId = ENTITLEMENT_TO_MODULE[key];
+    if (moduleId) ids.add(moduleId);
   }
   return [...ids].sort();
 }

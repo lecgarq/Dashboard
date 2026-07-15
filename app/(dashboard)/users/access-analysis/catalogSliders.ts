@@ -14,6 +14,11 @@ export function sliderDimensionIds(catalog: readonly CatalogDimension[]): string
   return catalog.filter((d) => d.surfaces.includes("slider")).map((d) => d.id);
 }
 
+/** Browse wall: every slider dimension plus unavailable placeholders that explain missing data. */
+export function catalogPreviewDimensions(catalog: readonly CatalogDimension[]): CatalogDimension[] {
+  return catalog.filter((d) => d.surfaces.includes("slider") || !d.available);
+}
+
 /** Grouping strength applied to the default clustering dimension on first load. */
 export const GROUPING_DEFAULT = 60;
 

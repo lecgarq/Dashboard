@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { sliderDimensions, sliderDimensionIds, catalogDefaultSliders, GROUPING_DEFAULT } from "./catalogSliders";
+import {
+  sliderDimensions,
+  sliderDimensionIds,
+  catalogDefaultSliders,
+  catalogPreviewDimensions,
+  GROUPING_DEFAULT,
+} from "./catalogSliders";
+import { buildDimensionCatalog } from "./dimensionCatalog";
 import type { CatalogDimension } from "./dimensionCatalog.types";
+import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 const dim = (over: Partial<CatalogDimension>): CatalogDimension => ({
   id: "x", label: "X", family: "structure", kind: "categorical", source: "t",
@@ -22,6 +30,14 @@ describe("catalogSliders", () => {
   it("sliderDimensionIds covers ALL slider-surfaced dims incl. greyed (for the UI list)", () => {
     expect(sliderDimensionIds(catalog)).toEqual(["project", "view-entity", "ghost-action"]);
   });
+  it("catalogPreviewDimensions includes unavailable placeholders but excludes available color-only dims", () => {
+    expect(catalogPreviewDimensions(catalog).map((d) => d.id)).toEqual([
+      "project",
+      "view-entity",
+      "ghost-action",
+      "folder:size",
+    ]);
+  });
 
   it("a color-only role is NOT chosen as primary; falls back to the first slider dim (project)", () => {
     // role here is surfaces:["color"] (not a slider) → primary must be an available SLIDER dim.
@@ -30,6 +46,11 @@ describe("catalogSliders", () => {
     expect(d["view-entity"]).toBe(0);
     expect("role" in d).toBe(false); // role isn't a slider dim, so it's not in the default map
   });
+});
+
+it("the full catalog preview vocabulary contains exactly 208 entries", () => {
+  const features = [{ nodeId: "u::p", actionCounts: { "issue-create": 1 } }] as unknown as NodeFeatureSnapshot[];
+  expect(catalogPreviewDimensions(buildDimensionCatalog(features))).toHaveLength(208);
 });
 
 describe("catalogDefaultSliders default grouping", () => {

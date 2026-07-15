@@ -61,12 +61,12 @@ describe("RightPanelStack — base rail views", () => {
     expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("false");
   });
 
-  it("opens Catalog preview only after its tab is selected", () => {
+  it("opens Catalog preview only after its tab is selected", async () => {
     renderStack();
     const catalogTab = screen.getByTestId("catalog-preview-tab");
     fireEvent.mouseDown(catalogTab, { button: 0, ctrlKey: false });
     fireEvent.click(catalogTab);
-    expect(screen.getByTestId("catalog-slider-sidebar")).toBeTruthy();
+    expect(await screen.findByTestId("catalog-slider-sidebar")).toBeTruthy();
     expect(screen.queryByTestId("group-by-controls")).toBeNull();
     expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("true");
   });
