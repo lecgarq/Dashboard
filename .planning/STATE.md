@@ -5,9 +5,9 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 27
 current_phase_name: Layout Engine — Force-Anchor Revival & Reheat Guard
 status: executing
-stopped_at: "Phase 27 plan 27-01 complete in 4cb001be. Next: execute 27-02 live strongest-wins anchor layout."
-last_updated: "2026-07-15T13:06:29.2400399-06:00"
-current_plan: "27-01"
+stopped_at: "Executing Phase 27 plan 27-03: General layout controls and actionable lazy Dimensions."
+last_updated: "2026-07-15T13:15:37.1324950-06:00"
+current_plan: "27-03"
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 27 — Layout Engine — Force-Anchor Revival & Reheat Guard — **READY TO PLAN**. Phases 24–26 are complete; Phase 26 is deployed at BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`.
-- **Status:** 27-01 complete; Phase 27 execution continues with 27-02.
-- **Next:** Execute 27-02, then 27-03.
-- **Last activity:** 2026-07-15 — frozen Cosmos invariant and permission-tier repair shipped in `4cb001be`.
+- **Phase:** 27 — Layout Engine — Force-Anchor Revival & Reheat Guard — **EXECUTING**. Phases 24–26 are complete; Phase 26 is deployed at BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`.
+- **Status:** 27-01 and 27-02 complete; Phase 27 execution continues with 27-03.
+- **Next:** Execute 27-03, then run the phase verification and deployment gate.
+- **Last activity:** 2026-07-15 — live strongest-wins organic catalog-anchor layout shipped in `67d57fc5`.
 
 ### v2.4 phase map (24–28)
 
