@@ -4,9 +4,9 @@ milestone: v2.4
 milestone_name: Spatial Graph Dimensions
 current_phase: 25
 current_phase_name: Dimension Aperture — Group, Color & Filter
-status: ready_to_plan
-stopped_at: "Phase 25 PLANNED — 3 plans committed (c3cf53de): 25-01 (wave 1: banding/coverage/catalog substrate, DIM-01/05), 25-02 (wave 2: widened Group-by + Color-by pickers resolving from unified PRESET_DIMENSION_IDS, DIM-01/02/05), 25-03 (wave 3: add-a-chip filter from the aperture, DIM-04/05). Owner decisions from 25-CONTEXT.md remain locked (banded swatches only, NO ramps, one legend, coverage labels inline; VERIFY real per-dim coverage — the ~48% figure is illustrative). STATE reconciled with the tree. Next: /lecg-phase 25 (resumes at 25-01)."
-last_updated: "2026-07-14T23:20:33.000Z"
+status: executing
+stopped_at: "Phase 25 — 25-01 COMPLETE (committed 662dc0da: dimensionBands + dimensionCoverage + 10 aperture dims in the structural catalog + banded valueKeyLabel; full suite 2553 passed/0 failed, tsc 0, repo-map gate passed; summary written). 25-02 (widened Group-by/Color-by pickers) and 25-03 (add-a-chip filter) remain. Next: /lecg-phase 25 in a FRESH session (resumes at 25-02)."
+last_updated: "2026-07-15T17:45:00.000Z"
 current_plan: null
 ---
 
