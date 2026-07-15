@@ -2,11 +2,11 @@
 lecg_state_version: 2
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: 26
-current_phase_name: Catalog Slider Wall
-status: executing
-stopped_at: "All Phase 26 plans complete and summarized (26-01 d54ace25, 26-02 aaa20f4e). Next: audit CAT-01–04, write 26-VERIFICATION.md, autoDeploy, probe /users/spatial-graph, then advance."
-last_updated: "2026-07-15T18:03:00.000Z"
+current_phase: 27
+current_phase_name: Layout Engine — Force-Anchor Revival & Reheat Guard
+status: ready_to_plan
+stopped_at: "Phase 26 COMPLETE + DEPLOYED (BUILD_ID CwTEecFhqC9yUj_Vm7Koh; HTTP 200 and authenticated catalog e2e passed). Phase 27 has no context. Next: $lecg-discuss-phase 27."
+last_updated: "2026-07-15T18:11:06.464Z"
 current_plan: null
 ---
 
@@ -22,10 +22,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 26 — Catalog Slider Wall — **EXECUTING** (1/2 plans complete). Phases 24–25 are complete; Phase 25 is deployed at BUILD_ID `Vl7pXM_h_j5j2UrFGYd5Z`.
-- **Status:** Both Phase 26 plans complete and summarized; completion audit/deploy remains.
-- **Next:** Audit CAT-01–04, write `26-VERIFICATION.md`, autoDeploy, probe `/users/spatial-graph`, then advance.
-- **Last activity:** 2026-07-15 — Lazy production profile passed; runtime catalog split recorded as 110 available / 98 unavailable.
+- **Phase:** 27 — Layout Engine — Force-Anchor Revival & Reheat Guard — **READY TO DISCUSS**. Phases 24–26 are complete; Phase 26 is deployed at BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`.
+- **Status:** Phase 26 CAT-01–04 audited complete and deployed; live HTTP and authenticated Catalog browser gates passed.
+- **Next:** Run `$lecg-discuss-phase 27` before planning the force-anchor/reheat work.
+- **Last activity:** 2026-07-15 — Phase 26 deployed; runtime catalog split verified as 110 available / 98 unavailable across 208 rows.
 
 ### v2.4 phase map (24–28)
 

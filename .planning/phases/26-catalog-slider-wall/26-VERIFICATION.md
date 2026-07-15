@@ -1,7 +1,7 @@
 ---
 phase: 26-catalog-slider-wall
 verified: 2026-07-15
-status: pending_deploy
+status: passed
 requirements: [CAT-01, CAT-02, CAT-03, CAT-04]
 ---
 
@@ -9,10 +9,9 @@ requirements: [CAT-01, CAT-02, CAT-03, CAT-04]
 
 ## Outcome
 
-Phase 26's browse-only catalog wall is implemented and passes the focused unit,
-type, architecture, design, production-build, and authenticated browser gates. The
-remaining completion gate is the configured local production deploy and live route
-probe.
+Phase 26's browse-only catalog wall is implemented, deployed, and passes the focused
+unit, type, architecture, design, production-build, HTTP, and authenticated browser
+gates.
 
 ## Requirement audit
 
@@ -46,10 +45,16 @@ probe.
 
 ## Deployment
 
-Pending the required local production rebuild, scheduled-task restart, authenticated
-`/users/spatial-graph` browser gate, HTTP probe, timestamp, and `.next/BUILD_ID` capture.
+- Deployed: `2026-07-15T12:11:06.4646669-06:00`.
+- Build: `.next/BUILD_ID` `CwTEecFhqC9yUj_Vm7Koh`.
+- `npm.cmd run build` — PASS; Next.js 16.2.10 production build.
+- `LECG Dashboard Local` — `Running`; port 3000 — 1 listener.
+- `LECG Postgres Local` — `Ready`.
+- `GET http://localhost:3000/users/spatial-graph` — HTTP 200.
+- Authenticated `catalog-preview-lazy.spec.ts` against `http://localhost:3000` — PASS,
+  1 test; observed 208 total / 110 available / 98 unavailable.
 
 ## Remaining VERIFY
 
-- `VERIFY:` Local production deploy and live route probe.
-- No owner visual-approval claim is made; behavior is covered by the production browser gate.
+- None for Phase 26. No owner visual-approval claim is made; behavior is covered by the
+  authenticated production browser gate.

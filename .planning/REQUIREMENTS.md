@@ -84,18 +84,18 @@ The user-visible heart of the milestone: 205 of 208 dimensions are currently unr
 
 The 208-dim sidebar is written, tested, and never rendered.
 
-- [ ] **CAT-01**: The catalog slider sidebar (`CatalogSliderSidebar.tsx`) **renders in
+- [x] **CAT-01**: The catalog slider sidebar (`CatalogSliderSidebar.tsx`) **renders in
       production**, decoupled from `NEXT_PUBLIC_ACC_3D_GRAPH`. That flag currently gates both
       the slider wall and the parked 3D graph — one flag, two unrelated features
       (`RightPanelStack.tsx:180-186`, `AccessAnalysisShell.tsx:492`).
 
-- [ ] **CAT-02**: The 176-action catalog **lazy-loads** — not iterated at graph init when the
+- [x] **CAT-02**: The 176-action catalog **lazy-loads** — not iterated at graph init when the
       sidebar has never been opened. Closes CONCERNS.md §3.3.
 
-- [ ] **CAT-03**: User can **search** the catalog dimension list by name. With ~189 available
+- [x] **CAT-03**: User can **search** the catalog dimension list by name. With ~189 available
       dims, an unsearchable wall is unusable.
 
-- [ ] **CAT-04**: The 19 `available:false` catalog dimensions render **visibly greyed with a
+- [x] **CAT-04**: The 19 `available:false` catalog dimensions render **visibly greyed with a
       reason**, never silently dropped — an unavailable dimension is information, not absence.
 
 ### Layout Engine (LAY)
@@ -216,10 +216,10 @@ Explicitly excluded. Documented to prevent scope creep.
 | DIM-04 | Phase 25 | Pending |
 | DIM-05 | Phase 25 | Pending |
 | DIM-06 | Phase 24 | Complete |
-| CAT-01 | Phase 26 | Pending |
-| CAT-02 | Phase 26 | Pending |
-| CAT-03 | Phase 26 | Pending |
-| CAT-04 | Phase 26 | Pending |
+| CAT-01 | Phase 26 | Complete |
+| CAT-02 | Phase 26 | Complete |
+| CAT-03 | Phase 26 | Complete |
+| CAT-04 | Phase 26 | Complete |
 | LAY-01 | Phase 27 | Pending |
 | LAY-02 | Phase 27 | Pending |
 | LAY-03 | Phase 27 | Pending |
