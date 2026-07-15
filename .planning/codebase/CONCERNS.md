@@ -140,6 +140,7 @@
 - **What it is:** The dimension catalog is generated from 176 ACC action IDs. These are loaded synchronously at graph init when `CatalogSliderSidebar` mounts. The architecture-summary note "Perf watch on ~190 catalog targets at load" refers to this. All 176 actions become dimension slider state entries even if the user never opens the sidebar.
 - **Impact:** Initial state tree creation for the slider sidebar is O(n) over 176 entries. Combined with DuckDB warm-up and cosmos.gl init, this contributes to the first-paint budget on the spatial-graph page.
 - **Guardrail:** Lazy-load `accTaxonomyActions.generated.ts` only when the slider sidebar is opened (dynamic import or deferred state population). Pre-compute a minimal default state (all-zero) as a static constant rather than iterating the full catalog.
+- **Status (2026-07-15): ✅ RESOLVED (v2.4 Phase 26, CAT-02).** The Catalog tab now crosses a `React.lazy` boundary, while initial `SliderProvider` state is built from structural dimensions only. An authenticated production Chromium coverage gate proved the generated action module absent on Grouping first paint and present only after Catalog selection; the persisted slider id set stayed at 9 before and after opening the 208-row preview.
 
 ### 3.4 Lasso e2e test — 120s global budget flake
 
@@ -446,7 +447,7 @@ no code fix is required.
 ### Still open (future-milestone seeds)
 
 - §2.4 `AccDcRole` empty — monitoring/warning still missing (fallback documented only).
-- §3.1–3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, cosmos.gl reheat, 176-action catalog, lasso e2e flake, prefetch regression guard) — deferred spatial-graph milestone.
+- §3.1, §3.2, §3.4, §3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, cosmos.gl reheat, lasso e2e flake, prefetch regression guard) — deferred spatial-graph milestone.
 - §4.1/§4.2 lean-payload trap and filter-type assert.
 - §5.1 ACCDS session expiry alerting; §5.2 DC 403 coverage (DC-01/DC-02); §5.3 stale TODO guards in `acc-admin.ts` (VERIFY: whether Ph12 observability work removed these).
 - §8.2/§8.3 oversized physics/e2e test files.
@@ -471,3 +472,7 @@ no code fix is required.
 2. **[Ph25] Retired legacy filter ids drop silently on rehydrate.** Persisted filters keyed `tier`/`activity`/`signin`/`module` (old `SliderContext.DIMENSIONS` ids) are ignored by the new aperture key gate in `FilterContext.tsx` — a one-time migration loss, invisible to the user. Acceptable now; if users report "my saved filter vanished", this is why.
 3. **[Ph25] `featureValueForDim` legacy switch is near-dead but plan-locked.** After the aperture migration only `role`/`project` (drill-down pies) and harness paths hit the legacy 6-id switch; `tier`/`activity`/`signin` cases survive mostly for the migration-guard tests. Candidate for deletion when SelectionPanel's drill goes aperture-native.
 4. **[Ph25] `SliderContext.DIMENSIONS` has lost its last live UI consumer.** Toolbar/FilterContext/DimensionFilterPopover no longer read it; remaining importers are `featureTargets.ts`/`physicsClustering` (flag-ON physics path) and tests. Fold into the catalog or delete alongside the parked registry-color path in a future cleanup.
+
+### New concerns from v2.4 Phase 26 (2026-07-15, phase-tagged)
+
+1. **[Ph26] Catalog availability counts are snapshot-derived.** The isolated production run observed 110 available / 98 unavailable rows across the 208-entry preview, rather than the roadmap's approximate 189 / 19 split. Never hardcode the observed counts: Phase 27 activation must recompute availability from the loaded feature snapshot so missing action activity remains disclosed truthfully.
