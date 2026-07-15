@@ -109,3 +109,5 @@ scripts/_attic/
 !.tools/repo-map/baselines/**
 !.tools/repo-map/AI-ANALYSIS-PROMPT.md
 !.tools/repo-map/architecture-summary.md
+.impeccable/*
+!.impeccable/config.json

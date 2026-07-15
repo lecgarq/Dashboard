@@ -40,6 +40,11 @@ current tree before relying on them.
 - This is an internal BIM/VDC operational and workshop tool, not a generic SaaS
   product. Read `references/domain-lexicon.md` for ACC, Forma, MTY, and LOD
   language.
+- Root `DESIGN.md` (tokens, type scale, spacing, motion budget, anti-patterns)
+  and `PRODUCT.md` (audience, lane, anti-references) are the design authority
+  for any UI work — read them before touching a visual surface. For design
+  critique, polish, or redesign passes, use the `/impeccable` skill; its
+  detector is the deterministic anti-slop gate.
 - New analytics must be derivable from a verified existing source. Label
   inferred, missing, stale, or under-covered data honestly.
 - Keep data surfaces inspectable and GPU-light. Do not add WebGL to analytics

@@ -41,7 +41,9 @@ Read first:
 
 Treat `CONTEXT.md` decisions as locked. Read every file a plan will touch and
 verify callers, exports, routes, procedures, Prisma models, adjacent tests, and
-commands with codebase-memory plus direct source reads and `rg`.
+commands with codebase-memory plus direct source reads and `rg`. Plans that
+touch a visual surface also read root `DESIGN.md` and include the design gate
+(`impeccable detect`) in their verification tier.
 
 Write the smallest complete set of 1–4 vertical plans. Use the established
 `<NN>-<MM>-PLAN.md` schema:

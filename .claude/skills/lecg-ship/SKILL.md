@@ -44,7 +44,8 @@ After restart, verify before declaring success:
 1. `Get-ScheduledTask -TaskName "LECG Dashboard Local"` shows `Running` and
    port 3000 is listening.
 2. Fetch the changed route(s) (`Invoke-WebRequest http://localhost:3000/<route>`
-   or browser) — a 200 with real content, not an error shell.
+   or browser) — a 200 with real content, not an error shell. (The design
+   gate ran pre-deploy in the Full verification tier; do not repeat it here.)
 3. If invoked from phase completion, append the probe result (route, status,
    timestamp, BUILD_ID from `.next/BUILD_ID`) to the phase's
    `NN-VERIFICATION.md`.
