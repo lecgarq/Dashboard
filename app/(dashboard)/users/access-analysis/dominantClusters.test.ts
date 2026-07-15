@@ -107,6 +107,33 @@ describe("buildDominantClusters", () => {
     const { labels } = buildDominantClusters([snap({}), snap({})], d);
     expect(labels).toEqual(["(none)"]);
   });
+
+  it("bands aperture continuous dims into labeled tiers (never one None bucket)", () => {
+    const risk = dim({ id: "riskScore", label: "Risk score", kind: "ordinal", extract: (f) => f.riskScore ?? null });
+    const feats = [
+      snap({ riskScore: 0 }),
+      snap({ riskScore: 3 }),
+      snap({ riskScore: 5 }),
+      snap({ riskScore: undefined }),
+    ];
+    const { ids, labels } = buildDominantClusters(feats, risk);
+    expect(labels).toEqual(["Low", "Med", "Crit", "Unknown"]);
+    expect(Array.from(ids)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("bands activityVolume grouping by the snapshot buckets, not the actionCounts fallthrough", () => {
+    const vol = dim({
+      id: "activityVolume", label: "Activity volume", kind: "ordinal",
+      extract: (f) => f.activityTotal ?? 0,
+    });
+    const feats = [
+      snap({ activityTotal: 0 }),
+      snap({ activityTotal: 5 }),
+      snap({ activityTotal: 500 }),
+    ];
+    const { labels } = buildDominantClusters(feats, vol);
+    expect(labels).toEqual(["None", "Low", "High"]); // >1 cluster — the old fallthrough collapsed all to "None"
+  });
 });
 
 describe("clusterPositions2D", () => {

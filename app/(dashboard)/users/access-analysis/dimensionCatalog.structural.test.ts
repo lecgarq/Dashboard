@@ -16,74 +16,121 @@ function node(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
 describe("buildStructuralDimensions", () => {
   const byId = Object.fromEntries(buildStructuralDimensions().map((d) => [d.id, d]));
 
-  it("declares the 10 structural dims (incl. User name) + 5 permission tiers", () => {
+  it("declares exactly the 9 slider dims + 10 Phase-25 aperture dims", () => {
     expect(Object.keys(byId).sort()).toEqual(
       [
-        "admin", "company", "internalExternal", "moduleAccess",
-        "permission", "permission:fullController", "permission:viewDownload",
-        "permission:viewDownloadUpload", "permission:viewDownloadUploadEdit", "permission:viewOnly",
-        "project", "role", "status", "tenure", "user",
+        "user",
+        "role",
+        "project",
+        "company",
+        "moduleAccess",
+        "folderAccessPermissions",
+        "activityVolume",
+        "activityByModule",
+        "typeOfActivity",
+        // Phase 25 aperture (color-only)
+        "internalExternal",
+        "adminMember",
+        "permissionTier",
+        "activityRecency",
+        "signinRecency",
+        "membershipTenure",
+        "dominantActivity",
+        "riskScore",
+        "folderBreadth",
+        "accessibleDataTB",
       ].sort(),
     );
   });
 
-  it("user is categorical, grouped/labelled by display name", () => {
-    expect(byId.user.kind).toBe("categorical");
-    expect(byId.user.extract(node({ userName: "Ada Lovelace" }))).toBe("Ada Lovelace");
+  it("extracts Users, Role, Project, Company correctly", () => {
+    const f = node({ userName: "Ada Lovelace" });
+    expect(byId.user.extract(f)).toBe("Ada Lovelace");
     expect(byId.user.extract(node({ userName: undefined }))).toBeNull();
-  });
-
-  it("permission is now color-only (not a slider)", () => {
-    expect(byId.permission.surfaces).toEqual(["color"]);
-    expect(byId.permission.available).toBe(true);
-  });
-
-  it("each permission tier is a slider-only one-hot on permissionStrength", () => {
-    const tiers = [
-      ["permission:viewOnly", 1], ["permission:viewDownload", 2], ["permission:viewDownloadUpload", 3],
-      ["permission:viewDownloadUploadEdit", 4], ["permission:fullController", 5],
-    ] as const;
-    for (const [id, strength] of tiers) {
-      expect(byId[id].surfaces).toEqual(["slider"]);
-      expect(byId[id].extract(node({ permissionStrength: strength }))).toBe(1);
-      expect(byId[id].extract(node({ permissionStrength: strength === 5 ? 4 : strength + 1 }))).toBe(0);
-      expect(byId[id].extract(node({ permissionStrength: 0 }))).toBe(0);
-    }
-  });
-  it("extracts categorical structure values", () => {
-    const f = node();
-    expect(byId.project.extract(f)).toBe("Proj A");
     expect(byId.role.extract(f)).toBe("Architect");
+    expect(byId.project.extract(f)).toBe("Proj A");
     expect(byId.company.extract(f)).toBe("Acme");
-    expect(byId.status.extract(f)).toBe("active");
-    expect(byId.internalExternal.extract(f)).toBe("internal");
   });
-  it("admin is binary admin/member", () => {
-    expect(byId.admin.extract(node({ isAdmin: true }))).toBe("admin");
-    expect(byId.admin.extract(node({ isAdmin: false }))).toBe("member");
-  });
-  it("permission is an ordinal 0..5 strength", () => {
-    expect(byId.permission.kind).toBe("ordinal");
-    expect(byId.permission.extract(node({ permissionStrength: 4 }))).toBe(4);
-    expect(byId.permission.extract(node({ permissionStrength: undefined }))).toBe(0);
-  });
-  it("moduleAccess maps productKeys to excel module ids (cost folds into build), multiHot", () => {
-    expect(byId.moduleAccess.kind).toBe("multiHot");
-    expect(byId.moduleAccess.extract(node({ moduleSignature: ["build", "cost", "modelCoordination"] }))).toEqual(
-      ["build", "modelCoordination"],
-    );
+
+  it("extracts moduleAccess correctly", () => {
+    expect(byId.moduleAccess.extract(node({ moduleSignature: ["build", "cost"] }))).toEqual(["build"]);
     expect(byId.moduleAccess.extract(node({ moduleSignature: [] }))).toEqual([]);
   });
-  it("tenure is ordinal membership age in days (null when unknown)", () => {
-    expect(byId.tenure.kind).toBe("ordinal");
-    expect(byId.tenure.extract(node({ membershipAgeDays: 100 }))).toBe(100);
-    expect(byId.tenure.extract(node({ membershipAgeDays: null }))).toBeNull();
+
+  it("extracts folderAccessPermissions correctly", () => {
+    expect(byId.folderAccessPermissions.extract(node({ permissionStrength: 4 }))).toBe(4);
+    expect(byId.folderAccessPermissions.extract(node({ permissionStrength: undefined }))).toBe(0);
   });
-  it("all dims are available; tiers are slider-only, permission is color-only", () => {
+
+  it("extracts activityVolume correctly", () => {
+    expect(byId.activityVolume.extract(node({ activityTotal: 42 }))).toBe(42);
+    expect(byId.activityVolume.extract(node({ activityTotal: undefined }))).toBe(0);
+  });
+
+  it("extracts activityByModule correctly", () => {
+    expect(
+      byId.activityByModule.extract(
+        node({
+          actionCounts: {
+            "issue-create": 3,
+            "rfi-view": 1,
+            "unknown-action": 10,
+          },
+        })
+      )
+    ).toEqual(["issues", "rfis"]);
+  });
+
+  it("extracts typeOfActivity correctly", () => {
+    expect(
+      byId.typeOfActivity.extract(
+        node({
+          activityMix: {
+            view: 5,
+            upload: 0,
+            edit: 2,
+          },
+        })
+      )
+    ).toEqual(["edit", "view"]);
+  });
+
+  it("verifies all dimensions are available and color-surfaced; only the original 9 are sliders", () => {
+    const sliderIds = [
+      "user", "role", "project", "company", "moduleAccess",
+      "folderAccessPermissions", "activityVolume", "activityByModule", "typeOfActivity",
+    ];
     for (const d of buildStructuralDimensions()) {
       expect(d.available).toBe(true);
-      if (d.id === "permission") expect(d.surfaces).toEqual(["color"]);
-      else expect(d.surfaces.includes("slider")).toBe(true);
+      expect(d.surfaces).toContain("color");
+      // Aperture dims must NOT add physics sliders (anti-ripple, Phase 25).
+      expect(d.surfaces.includes("slider")).toBe(sliderIds.includes(d.id));
     }
+  });
+
+  it("extracts the Phase-25 aperture dims from existing snapshot fields", () => {
+    expect(byId.internalExternal.extract(node({ affiliation: "external" }))).toBe("external");
+    expect(byId.internalExternal.extract(node({ affiliation: "unknown" }))).toBeNull();
+    expect(byId.adminMember.extract(node({ isAdmin: true }))).toBe("Admin");
+    expect(byId.adminMember.extract(node({ isAdmin: false }))).toBe("Member");
+    expect(byId.adminMember.extract(node({ isAdmin: undefined }))).toBeNull();
+    expect(byId.permissionTier.extract(node({ permTier: "edit" }))).toBe("edit");
+    expect(byId.permissionTier.extract(node({ permTier: null }))).toBeNull();
+    expect(byId.activityRecency.extract(node({ activityRecencyBucket: "0-7d" }))).toBe("0-7d");
+    expect(byId.signinRecency.extract(node({ signinBucket: "<7d" }))).toBe("<7d");
+    expect(byId.membershipTenure.extract(node({ membershipBucket: "<1y" }))).toBe("<1y");
+    expect(byId.membershipTenure.extract(node({ membershipBucket: "unknown" }))).toBeNull();
+    expect(byId.dominantActivity.extract(node({ activityMix: { view: 2, edit: 5 } }))).toBe("edit");
+    expect(byId.dominantActivity.extract(node({ activityMix: {} }))).toBeNull();
+    expect(byId.riskScore.extract(node({ riskScore: 3 }))).toBe(3);
+    expect(byId.riskScore.extract(node({ riskScore: undefined }))).toBeNull();
+    expect(
+      byId.folderBreadth.extract(
+        node({ permissionTypeSummary: { folderBreadth: 42, coverage: "known", mixedProfile: false, fullController: false } }),
+      ),
+    ).toBe(42);
+    expect(byId.folderBreadth.extract(node({ permissionTypeSummary: undefined }))).toBeNull();
+    expect(byId.accessibleDataTB.extract(node({ accessibleDataBytes: 1024 }))).toBe(1024);
+    expect(byId.accessibleDataTB.extract(node({ accessibleDataBytes: undefined }))).toBeNull();
   });
 });

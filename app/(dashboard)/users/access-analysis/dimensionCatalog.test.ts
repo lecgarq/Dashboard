@@ -16,13 +16,12 @@ describe("buildDimensionCatalog", () => {
     expect(byId.moduleAccess).toBeTruthy();
     expect(byId["issue-create"]).toBeTruthy();
     expect(byId["folder:folder-size"]).toBeTruthy();
-    // 10 base structural (incl. User name) + 5 per-tier permission sliders (Slice B) + actions
-    // + 4 live folder dims (Slice C reach/controller/mixed + Slice D data-access) + 19 folder placeholders
-    expect(dims.length).toBe(10 + 5 + getActions().length + 4 + 19);
+    // 9 slider dims + 10 Phase-25 aperture dims + action dimensions + 4 folder reach dimensions + 19 folder placeholders
+    expect(dims.length).toBe(19 + getActions().length + 4 + 19);
   });
   it("includes a User name slider dimension grouped/labelled by display name", () => {
     expect(byId.user).toBeTruthy();
-    expect(byId.user.label).toBe("User name");
+    expect(byId.user.label).toBe("Users");
     expect(byId.user.surfaces).toContain("slider");
     expect(byId.user.extract({ userName: "Ada Lovelace" } as unknown as NodeFeatureSnapshot)).toBe("Ada Lovelace");
   });

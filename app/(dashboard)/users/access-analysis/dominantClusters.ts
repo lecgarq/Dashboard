@@ -22,6 +22,26 @@ import {
   bucketForCount,
   type ActionThresholds,
 } from "./actionBuckets";
+import {
+  bandRiskScore,
+  bandPermissionStrength,
+  bandActivityVolume,
+  bandFolderBreadth,
+  bandAccessibleData,
+} from "./dimensionBands";
+
+/**
+ * Continuous aperture dims (Phase 25) band into fixed labeled tiers instead of
+ * the activity-count quantile fallthrough (which would collapse them into one
+ * "None" bucket — they have no actionCounts entry).
+ */
+const APERTURE_BAND_BY_ID: Record<string, (v: number | null | undefined) => string> = {
+  riskScore: bandRiskScore,
+  folderBreadth: bandFolderBreadth,
+  accessibleDataTB: bandAccessibleData,
+  activityVolume: bandActivityVolume,
+  folderAccessPermissions: bandPermissionStrength,
+};
 
 /** Readable bucket names for activity-family ordinal dims (none/low/med/high). */
 const ACTIVITY_BUCKET_LABELS = ["None", "Low", "Med", "High"] as const;
@@ -96,7 +116,14 @@ export function valueKeyLabel(
     }
     case "ordinal": {
       // permission / tenure carry their bucket on dedicated snapshot fields;
+      // aperture continuous dims band into fixed labeled tiers (Phase 25);
       // every other ordinal is an activity-count dim → per-action quantile bucket.
+      const band = APERTURE_BAND_BY_ID[dim.id];
+      if (band) {
+        const v = dim.extract(f);
+        const label = band(typeof v === "number" ? v : null);
+        return { key: label, label };
+      }
       if (dim.id === "permission") {
         const idx = Math.max(0, Math.min(5, Math.round(f.permissionStrength ?? 0)));
         return { key: `p${idx}`, label: `Permission ${idx}` };
