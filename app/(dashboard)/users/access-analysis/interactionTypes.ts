@@ -118,6 +118,8 @@ export interface NodeFeatureSnapshot {
    * (color == spatial group — the TF-Embedding-Projector look). null = unknown.
    */
   cluster?: number | null;
+  /** Project-level status: "active" | "inactive" (from AccProject.status / GraphProjectRow.project_status). */
+  projectStatus?: string;
 }
 
 /**
@@ -161,4 +163,11 @@ export interface PredicateInputs {
    * Only populated on the flag-OFF embedding map.
    */
   neighborIndices?: ReadonlySet<number> | null;
+  /**
+   * Aperture value resolvers (Phase 25 DIM-04): dimId → banded label fn, built
+   * once from the catalog (buildApertureValueResolvers). Lets the filter compare
+   * against the SAME valueKeyLabel tiers Group-by/Color-by show. Dims absent
+   * here fall back to the legacy 6-id switch in featureValueForDim.
+   */
+  valueResolvers?: Readonly<Record<string, (f: NodeFeatureSnapshot) => string>>;
 }

@@ -35,7 +35,7 @@ import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
 import { COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
-import { filterSelectionByPredicate } from "./usePredicateEngine";
+import { filterSelectionByPredicate, buildApertureValueResolvers } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
 import { activeGroupingDimension } from "./activeGrouping";
@@ -301,9 +301,17 @@ export function ShellBody({
     });
   }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors, grouping.showLabels, blobDesc]);
 
+  // Banded aperture labels for the filter (Phase 25 DIM-04): one resolver per
+  // aperture dim, shared by the mask predicate, the visible-subset rule, and
+  // the Toolbar's value chips so a filter tier always matches its blob/swatch.
+  const valueResolvers = useMemo(
+    () => buildApertureValueResolvers(catalog, features),
+    [catalog, features],
+  );
+
   const visibleSubset = useMemo<ReadonlySet<number> | null>(
-    () => filterSelectionByPredicate(lassoSelection, features, activeFilters, searchQuery),
-    [lassoSelection, features, activeFilters, searchQuery],
+    () => filterSelectionByPredicate(lassoSelection, features, activeFilters, searchQuery, valueResolvers),
+    [lassoSelection, features, activeFilters, searchQuery, valueResolvers],
   );
 
   // Similarity neighbors of the clicked node — fetched on-demand (flag-OFF embedding
@@ -415,6 +423,7 @@ export function ShellBody({
             neighborIndices={ACC_3D_GRAPH_ENABLED ? null : neighborIndices}
             lassoSelection={lassoSelection}
             drillDown={drillDown}
+            valueResolvers={valueResolvers}
             rendererReady={rendererReady}
             edges={edges}
           >

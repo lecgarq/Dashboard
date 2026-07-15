@@ -17,18 +17,57 @@
 
 import { useEffect } from "react";
 import type { NodeFeatureSnapshot, PredicateInputs } from "./interactionTypes";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 import { isFacetKey, nodeMatchesFacet } from "./accessFacets";
 import { parseNodeId } from "./sameUserEdges";
+import { valueKeyLabel } from "./dominantClusters";
+import { computeActionThresholds, type ActionThresholds } from "./actionBuckets";
+import { groupByDimensions } from "./groupByDimensions";
+
+/** dimId → banded-label fn over the aperture (see buildApertureValueResolvers). */
+export type ApertureValueResolvers = Readonly<
+  Record<string, (f: NodeFeatureSnapshot) => string>
+>;
+
+/**
+ * One banded-label resolver per aperture dimension (Phase 25 DIM-04): each dim
+ * resolves a node to the SAME valueKeyLabel label Group-by clusters into and
+ * Color-by swatches, so a filter tier always matches its blob/swatch. Build
+ * once per (catalog, features) load and thread through PredicateInputs.
+ */
+export function buildApertureValueResolvers(
+  catalog: readonly CatalogDimension[],
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+): ApertureValueResolvers {
+  const out: Record<string, (f: NodeFeatureSnapshot) => string> = {};
+  for (const dim of groupByDimensions(catalog)) {
+    // Mirrors buildDominantClusters: activity-family ordinals need per-action
+    // quantile thresholds; every other kind ignores the map.
+    const thresholds =
+      dim.family === "activity"
+        ? computeActionThresholds(features, [dim.id])
+        : new Map<string, ActionThresholds>();
+    out[dim.id] = (f) => valueKeyLabel(f, dim, thresholds).label;
+  }
+  return out;
+}
 
 /**
  * Map a filter dimension id to the feature value compared against the allowed set.
+ *
+ * Aperture dims (present in `resolvers`) return their banded valueKeyLabel label;
+ * everything else falls back to the legacy 6-id switch below, so pre-aperture
+ * consumers (drill-down pies, older persisted filters) behave unchanged.
  *
  * Exported so chrome (04-02 Toolbar / SliderSidebar) can stay consistent.
  */
 export function featureValueForDim(
   f: NodeFeatureSnapshot,
   dim: string,
+  resolvers?: ApertureValueResolvers,
 ): string {
+  const resolve = resolvers?.[dim];
+  if (resolve) return resolve(f);
   switch (dim) {
     case "role":
       return f.role;
@@ -63,6 +102,7 @@ export function filterSelectionByPredicate(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   activeFilters: Readonly<Record<string, ReadonlySet<string>>>,
   searchQuery: string,
+  valueResolvers?: ApertureValueResolvers,
 ): ReadonlySet<number> | null {
   if (!lassoSelection) return null;
   const q = searchQuery.toLowerCase();
@@ -80,7 +120,7 @@ export function filterSelectionByPredicate(
         }
         continue;
       }
-      const v = featureValueForDim(f, dim);
+      const v = featureValueForDim(f, dim, valueResolvers);
       if (!allowed.has(v)) {
         ok = false;
         break;
@@ -105,7 +145,7 @@ export function filterSelectionByPredicate(
 export function buildMaskPredicate(
   inputs: Omit<PredicateInputs, "physics">,
 ): (i: number) => number {
-  const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex, neighborIndices } = inputs;
+  const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex, neighborIndices, valueResolvers } = inputs;
 
   // Precompute the isolated user's id once (not per node) so isolate can light the
   // whole same-user footprint, not just the single clicked instance.
@@ -135,7 +175,7 @@ export function buildMaskPredicate(
         if (!nodeMatchesFacet(f, dim, allowed)) return 0.15;
         continue;
       }
-      const v = featureValueForDim(f, dim);
+      const v = featureValueForDim(f, dim, valueResolvers);
       if (!allowed.has(v)) return 0.15;
     }
 
@@ -150,6 +190,8 @@ export function buildMaskPredicate(
     if (lassoSelection) {
       if (!lassoSelection.has(i)) return 0.15;
       if (drillDown) {
+        // Deliberately legacy (no resolvers): SelectionPanel's pie slices are
+        // built from raw snapshot values, not banded aperture labels.
         for (const [dim, value] of Object.entries(drillDown)) {
           if (featureValueForDim(f, dim) !== value) return 0.15;
         }
@@ -178,5 +220,6 @@ export function usePredicateEngine(inputs: PredicateInputs): void {
     inputs.drillDown,
     inputs.isolatedNodeIndex,
     inputs.neighborIndices,
+    inputs.valueResolvers,
   ]);
 }

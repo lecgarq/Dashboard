@@ -24,8 +24,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CONTROLS_STORAGE_KEY, DIMENSIONS } from "./SliderContext";
-import { FACET_KEY_RISK, FACET_KEY_PERM } from "./accessFacets";
+import { CONTROLS_STORAGE_KEY } from "./SliderContext";
+import { FACET_KEY_RISK, FACET_KEY_PERM, isFacetKey } from "./accessFacets";
+import { PRESET_DIMENSION_IDS } from "./dimensionIdSpace";
 
 type Filters = Record<string, ReadonlySet<string>>;
 
@@ -34,22 +35,30 @@ interface FilterContextValue {
   searchQuery: string;
   drillDown: Record<string, string> | null;
   toggleChip: (dimId: string, value: string) => void;
+  /** Add an aperture dimension as an active filter chip (empty set = "any"). */
+  addFilterDim: (dimId: string) => void;
+  /** Remove a dimension chip entirely, clearing its value set with it. */
+  removeFilterDim: (dimId: string) => void;
   clearAll: () => void;
   setSearchQuery: (q: string) => void;
   setDrillDown: (d: Record<string, string> | null) => void;
-  /** True when every set is empty AND search === "" — drives "Clear all" visibility. */
+  /** True when no chip is added, every set is empty AND search === "" — drives "Clear all" visibility. */
   isDefault: boolean;
 }
 
 const FilterCtx = createContext<FilterContextValue | null>(null);
 
+/** Rehydration key gate: the unified aperture (Phase 25 DIM-04) — unknown persisted keys are ignored. */
+const APERTURE_ID_SET = new Set<string>(PRESET_DIMENSION_IDS);
+
+/**
+ * Phase 25 (DIM-04): filter keys are DYNAMIC — whichever aperture dimension ids
+ * the user has added as chips. No key list is seeded from SliderContext.DIMENSIONS
+ * anymore; only the two P7 facet families (no aperture descriptor) are seeded so
+ * they rehydrate from persistence.
+ */
 function makeEmptyFilters(): Record<string, Set<string>> {
-  const out: Record<string, Set<string>> = {};
-  for (const d of DIMENSIONS) out[d.id] = new Set(); // includes the multi-hot "module" key
-  // P7 facet families (no registry descriptor): seed so they rehydrate from persistence.
-  out[FACET_KEY_RISK] = new Set();
-  out[FACET_KEY_PERM] = new Set();
-  return out;
+  return { [FACET_KEY_RISK]: new Set(), [FACET_KEY_PERM]: new Set() };
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +112,12 @@ export function FilterProvider({ children }: { children: ReactNode }): React.JSX
     if (stored.filters) {
       const next = makeEmptyFilters();
       for (const [dim, arr] of Object.entries(stored.filters)) {
-        if (next[dim] && Array.isArray(arr)) next[dim] = new Set(arr);
+        if (!Array.isArray(arr)) continue;
+        // Facet families restore into their seeded sets; aperture keys restore
+        // as added chips (even with no values yet). Anything else — retired
+        // registry dims, tampered keys — is ignored (T-25-03-T).
+        if (dim in next) next[dim] = new Set(arr);
+        else if (APERTURE_ID_SET.has(dim)) next[dim] = new Set(arr);
       }
       setActiveFilters(next);
     }
@@ -137,6 +151,18 @@ export function FilterProvider({ children }: { children: ReactNode }): React.JSX
     });
   }, []);
 
+  const addFilterDim = useCallback((dimId: string): void => {
+    setActiveFilters((prev) => (dimId in prev ? prev : { ...prev, [dimId]: new Set<string>() }));
+  }, []);
+
+  const removeFilterDim = useCallback((dimId: string): void => {
+    setActiveFilters((prev) => {
+      if (!(dimId in prev)) return prev;
+      const { [dimId]: _removed, ...rest } = prev;
+      return rest;
+    });
+  }, []);
+
   const clearAll = useCallback((): void => {
     setActiveFilters(makeEmptyFilters());
     setSearchQueryState("");
@@ -153,8 +179,11 @@ export function FilterProvider({ children }: { children: ReactNode }): React.JSX
 
   const isDefault = useMemo<boolean>(() => {
     if (searchQuery !== "") return false;
-    for (const set of Object.values(activeFilters)) {
+    for (const [dim, set] of Object.entries(activeFilters)) {
       if (set.size > 0) return false;
+      // A dimension chip added but not yet valued is still non-default —
+      // "Clear all" must be able to remove it. Facet keys are always seeded.
+      if (!isFacetKey(dim)) return false;
     }
     return true;
   }, [activeFilters, searchQuery]);
@@ -165,6 +194,8 @@ export function FilterProvider({ children }: { children: ReactNode }): React.JSX
       searchQuery,
       drillDown,
       toggleChip,
+      addFilterDim,
+      removeFilterDim,
       clearAll,
       setSearchQuery,
       setDrillDown,
@@ -175,6 +206,8 @@ export function FilterProvider({ children }: { children: ReactNode }): React.JSX
       searchQuery,
       drillDown,
       toggleChip,
+      addFilterDim,
+      removeFilterDim,
       clearAll,
       setSearchQuery,
       setDrillDown,

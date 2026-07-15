@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Toolbar.test.tsx — Phase 4-02 Task 2 coverage:
- *   - Renders all 6 dimension popover triggers
+ * Toolbar.test.tsx — Phase 4-02 Task 2, reworked in Phase 25 (DIM-04) coverage:
+ *   - No always-visible chip wall: a "+ Filter" menu lists the themed aperture
+ *     with inline coverage; chips render only for ADDED dimensions
+ *   - Adding a dim then multi-selecting banded values toggles activeFilters
+ *   - Removing a chip clears that dimension's filter key
  *   - Typing in search input updates FilterContext.searchQuery
- *   - Clicking a chip inside a popover toggles activeFilters for that dim
  *   - the lasso toggle button is enabled (lasso works in 3D)
  *   - the 2D/3D mode toggle is absent (graph is 3D-only)
  *   - "Clear all" link visible only after a chip toggle; clearing restores isDefault
@@ -13,8 +15,10 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import { FilterProvider, useFilters } from "../FilterContext";
 import { Toolbar } from "../Toolbar";
-import { DIMENSIONS } from "../SliderContext";
+import { buildStructuralDimensions } from "../dimensionCatalog.structural";
 import type { NodeFeatureSnapshot } from "../interactionTypes";
+
+const CATALOG = buildStructuralDimensions();
 
 function mkFeatures(): NodeFeatureSnapshot[] {
   return [
@@ -31,7 +35,7 @@ function mkFeatures(): NodeFeatureSnapshot[] {
       activityCountRaw: 200,
       lastSignInRel: "today",
       permissionCoverage: "known" as const,
-      firmName: "",
+      firmName: "Hermosillo",
       accountStatus: "active",
     },
     {
@@ -47,7 +51,7 @@ function mkFeatures(): NodeFeatureSnapshot[] {
       activityCountRaw: 3,
       lastSignInRel: "10d ago",
       permissionCoverage: "unknown" as const,
-      firmName: "",
+      firmName: "ACME",
       accountStatus: "",
     },
   ];
@@ -68,6 +72,7 @@ function Harness({
     return (
       <Toolbar
         features={features}
+        catalog={CATALOG}
         mode={initialMode}
         onModeChange={() => {}}
         lassoActive={false}
@@ -87,11 +92,61 @@ beforeEach(() => {
 });
 
 describe("Toolbar — Phase 4-02 Task 2", () => {
-  it("renders all 6 dimension popover triggers", () => {
+  it("shows a '+ Filter' aperture menu with inline coverage instead of a chip wall (DIM-04/DIM-05)", () => {
     render(<Harness />);
-    for (const d of DIMENSIONS) {
-      expect(screen.getByTestId(`dim-popover-${d.id}`)).toBeTruthy();
-    }
+    // No always-visible chips: nothing added yet.
+    expect(document.querySelector("[data-testid^='dim-popover-']")).toBeNull();
+    const menu = screen.getByTestId("toolbar-add-filter") as HTMLSelectElement;
+    expect(menu).toBeTruthy();
+    // Themed optgroups over the unified aperture, coverage stated inline.
+    const companyOption = [...menu.querySelectorAll("option")].find((o) => o.value === "company");
+    expect(companyOption).toBeTruthy();
+    expect(companyOption!.textContent).toMatch(/Company · \d/);
+    expect(companyOption!.closest("optgroup")?.label).toBe("Identity");
+  });
+
+  it("adding a dimension renders its chip; multi-selecting banded values toggles activeFilters", () => {
+    let api: ReturnType<typeof useFilters> | null = null;
+    render(<Harness exposeFilters={(a) => (api = a)} />);
+    act(() => {
+      fireEvent.change(screen.getByTestId("toolbar-add-filter"), { target: { value: "company" } });
+    });
+    const chip = screen.getByTestId("dim-popover-company");
+    act(() => {
+      fireEvent.click(chip);
+    });
+    // Values are the aperture's banded/categorical labels derived from features.
+    act(() => {
+      fireEvent.click(screen.getByTestId("chip-company-Hermosillo"));
+    });
+    expect(api!.activeFilters.company?.has("Hermosillo")).toBe(true);
+    act(() => {
+      fireEvent.click(screen.getByTestId("chip-company-ACME"));
+    });
+    expect(api!.activeFilters.company?.has("ACME")).toBe(true);
+    expect(api!.activeFilters.company?.size).toBe(2);
+  });
+
+  it("removing a chip clears that dimension's filter entirely", () => {
+    let api: ReturnType<typeof useFilters> | null = null;
+    render(<Harness exposeFilters={(a) => (api = a)} />);
+    act(() => {
+      fireEvent.change(screen.getByTestId("toolbar-add-filter"), { target: { value: "company" } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("dim-popover-company"));
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("chip-company-Hermosillo"));
+    });
+    expect(api!.activeFilters.company?.has("Hermosillo")).toBe(true);
+
+    act(() => {
+      fireEvent.click(screen.getByTestId("dim-popover-remove-company"));
+    });
+    expect("company" in api!.activeFilters).toBe(false);
+    expect(screen.queryByTestId("dim-popover-company")).toBeNull();
+    expect(api!.isDefault).toBe(true);
   });
 
   it("typing in search input updates FilterContext.searchQuery", () => {
@@ -104,13 +159,14 @@ describe("Toolbar — Phase 4-02 Task 2", () => {
     expect(api!.searchQuery).toBe("lu");
   });
 
-  it("clicking a chip inside a popover toggles activeFilters for that dim", () => {
+  it("clicking a value chip twice toggles it back off (values-to-keep multi-select)", () => {
     let api: ReturnType<typeof useFilters> | null = null;
     render(<Harness exposeFilters={(a) => (api = a)} />);
-    // Open the role popover, then click the "admin" chip.
-    const roleTrigger = screen.getByTestId("dim-popover-role");
     act(() => {
-      fireEvent.click(roleTrigger);
+      fireEvent.change(screen.getByTestId("toolbar-add-filter"), { target: { value: "role" } });
+    });
+    act(() => {
+      fireEvent.click(screen.getByTestId("dim-popover-role"));
     });
     const chip = screen.getByTestId("chip-role-admin");
     act(() => {
@@ -118,7 +174,7 @@ describe("Toolbar — Phase 4-02 Task 2", () => {
     });
     expect(api!.activeFilters.role?.has("admin")).toBe(true);
 
-    // Click again — toggles off.
+    // Click again — toggles off (the chip itself stays added).
     act(() => {
       fireEvent.click(chip);
     });

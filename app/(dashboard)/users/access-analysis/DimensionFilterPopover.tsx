@@ -1,21 +1,24 @@
 "use client";
 
 /**
- * DimensionFilterPopover.tsx — Phase 4-02 Task 2
+ * DimensionFilterPopover.tsx — Phase 4-02 Task 2, reworked in Phase 25 (DIM-04).
  *
- * Per-dimension popover containing chip toggles. Categorical dims derive
- * `availableValues` from the feature snapshot; bucketed dims (activity, signin)
- * use fixed labels in the canonical order defined here.
+ * One popover per ADDED aperture dimension chip: multi-select which banded
+ * values to KEEP. The value list is supplied by the Toolbar as the distinct
+ * valueKeyLabel labels across the loaded snapshot — the same tiers Group-by
+ * clusters into and Color-by swatches, so a filter tier matches its blob.
  */
 
 import { Popover } from "radix-ui";
-import type { DIMENSIONS } from "./SliderContext";
 
 export interface DimensionFilterPopoverProps {
-  dim: (typeof DIMENSIONS)[number];
+  /** Aperture catalog dimension identity (id + display label). */
+  dim: { id: string; label: string };
   availableValues: readonly string[];
   activeValues: ReadonlySet<string>;
   onToggle: (value: string) => void;
+  /** Removes this dimension chip entirely (clearing its filter). */
+  onRemove?: () => void;
 }
 
 export function DimensionFilterPopover({
@@ -23,25 +26,41 @@ export function DimensionFilterPopover({
   availableValues,
   activeValues,
   onToggle,
+  onRemove,
 }: DimensionFilterPopoverProps): React.JSX.Element {
   const count = activeValues.size;
   return (
     <Popover.Root>
-      <Popover.Trigger
-        className={`inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-accent ${
+      <span
+        className={`inline-flex items-center rounded-md border text-sm ${
           count > 0 ? "border-blue-500 text-foreground" : "text-muted-foreground"
         }`}
-        data-testid={`dim-popover-${dim.id}`}
-        aria-label={`${dim.label} filter`}
       >
-        <span>{dim.label}</span>
-        {count > 0 ? (
-          <span className="rounded-full bg-blue-500 px-1.5 text-xs font-medium text-white">
-            {count}
-          </span>
+        <Popover.Trigger
+          className="inline-flex items-center gap-1 px-3 py-1.5 hover:bg-accent"
+          data-testid={`dim-popover-${dim.id}`}
+          aria-label={`${dim.label} filter`}
+        >
+          <span>{dim.label}</span>
+          {count > 0 ? (
+            <span className="rounded-full bg-blue-500 px-1.5 text-xs font-medium text-white">
+              {count}
+            </span>
+          ) : null}
+          <span aria-hidden className="text-xs opacity-60">▾</span>
+        </Popover.Trigger>
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            data-testid={`dim-popover-remove-${dim.id}`}
+            aria-label={`Remove ${dim.label} filter`}
+            className="px-1.5 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            ×
+          </button>
         ) : null}
-        <span aria-hidden className="text-xs opacity-60">▾</span>
-      </Popover.Trigger>
+      </span>
       <Popover.Portal>
         <Popover.Content
           align="start"

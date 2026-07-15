@@ -15,7 +15,13 @@ import { renderHook } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { usePredicateEngine, featureValueForDim, filterSelectionByPredicate } from "../usePredicateEngine";
+import {
+  usePredicateEngine,
+  featureValueForDim,
+  filterSelectionByPredicate,
+  buildApertureValueResolvers,
+} from "../usePredicateEngine";
+import { buildStructuralDimensions } from "../dimensionCatalog.structural";
 import type { NodeFeatureSnapshot, PredicateInputs } from "../interactionTypes";
 import { FACET_KEY_RISK, FACET_KEY_MODULE } from "../accessFacets";
 import type { PhysicsLayer } from "../physicsLayer";
@@ -230,6 +236,74 @@ describe("usePredicateEngine — Pattern 1 single mask", () => {
     expect(src.match(/\bsim\./)).toBeNull();
     expect(src.match(/\.restart\(/)).toBeNull();
     expect(src.match(/\balpha\(/)).toBeNull();
+  });
+});
+
+describe("usePredicateEngine — Phase 25 aperture filter (banded catalog values)", () => {
+  // riskScore 4 bands to "High" (dimensionBands); company reads firmName.
+  const features = [
+    mkFeature({ nodeId: "u1::p1", firmName: "Hermosillo", riskScore: 4 }),
+    mkFeature({ nodeId: "u2::p1", firmName: "Hermosillo", riskScore: 0 }),
+    mkFeature({ nodeId: "u3::p1", firmName: "ACME", riskScore: 5 }),
+  ];
+  const resolvers = buildApertureValueResolvers(buildStructuralDimensions(), features);
+
+  it("resolves an aperture dim to the SAME banded valueKeyLabel tier", () => {
+    expect(featureValueForDim(features[0], "riskScore", resolvers)).toBe("High");
+    expect(featureValueForDim(features[2], "riskScore", resolvers)).toBe("Crit");
+    expect(featureValueForDim(features[0], "company", resolvers)).toBe("Hermosillo");
+    // Legacy ids keep the pre-aperture switch when no resolver covers them.
+    expect(featureValueForDim(features[0], "signin", resolvers)).toBe(features[0].signinBucket);
+  });
+
+  it("mask predicate filters by a banded catalog dim (riskScore High)", () => {
+    const { physics, lastPredicate } = mkPhysics();
+    runHook({
+      physics,
+      features,
+      activeFilters: { riskScore: new Set(["High"]) },
+      searchQuery: "",
+      lassoSelection: null,
+      drillDown: null,
+      isolatedNodeIndex: null,
+      valueResolvers: resolvers,
+    });
+    const p = lastPredicate();
+    expect(p(0)).toBe(1.0);
+    expect(p(1)).toBe(0.15);
+    expect(p(2)).toBe(0.15);
+  });
+
+  it("composes (AND) across two aperture dims", () => {
+    const { physics, lastPredicate } = mkPhysics();
+    runHook({
+      physics,
+      features,
+      activeFilters: {
+        company: new Set(["Hermosillo"]),
+        riskScore: new Set(["High", "Crit"]),
+      },
+      searchQuery: "",
+      lassoSelection: null,
+      drillDown: null,
+      isolatedNodeIndex: null,
+      valueResolvers: resolvers,
+    });
+    const p = lastPredicate();
+    expect(p(0)).toBe(1.0); // Hermosillo AND High
+    expect(p(1)).toBe(0.15); // Hermosillo but Low risk
+    expect(p(2)).toBe(0.15); // Crit but ACME
+  });
+
+  it("filterSelectionByPredicate honors aperture resolvers (visible-subset rule)", () => {
+    const out = filterSelectionByPredicate(
+      new Set([0, 1, 2]),
+      features,
+      { company: new Set(["ACME"]) },
+      "",
+      resolvers,
+    );
+    expect([...(out ?? [])]).toEqual([2]);
   });
 });
 

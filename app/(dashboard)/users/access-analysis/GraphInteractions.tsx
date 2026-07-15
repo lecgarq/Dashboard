@@ -68,6 +68,9 @@ export interface GraphInteractionsProps {
   lassoSelection: ReadonlySet<number> | null;
   drillDown: Record<string, string> | null;
 
+  /** Aperture banded-label resolvers (Phase 25 DIM-04) — see PredicateInputs. */
+  valueResolvers?: Readonly<Record<string, (f: NodeFeatureSnapshot) => string>>;
+
   /** GraphCanvas instance — rendered as a child. */
   children: ReactNode;
 }
@@ -97,6 +100,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     neighborIndices,
     lassoSelection,
     drillDown,
+    valueResolvers,
     rendererReady,
     edges,
     children,
@@ -193,6 +197,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     drillDown,
     isolatedNodeIndex,
     neighborIndices,
+    valueResolvers,
   });
 
   // Union of users in focus: hovered ∪ isolated ∪ lasso selection.

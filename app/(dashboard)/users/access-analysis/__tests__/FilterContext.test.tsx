@@ -53,7 +53,8 @@ describe("FilterContext", () => {
 
     expect(result.current.searchQuery).toBe("");
     expect(result.current.drillDown).toBeNull();
-    expect(result.current.activeFilters.role?.size).toBe(0);
+    // Phase 25: filter keys are dynamic — clearAll removes the chip entirely.
+    expect("role" in result.current.activeFilters).toBe(false);
     expect(result.current.isDefault).toBe(true);
   });
 
@@ -110,6 +111,54 @@ describe("FilterContext", () => {
 
     expect([...(result.current.activeFilters[FACET_KEY_RISK] ?? [])]).toEqual(["externalHighPerm"]);
     expect([...(result.current.activeFilters[FACET_KEY_PERM] ?? [])]).toEqual(["fullController"]);
+  });
+
+  it("addFilterDim adds an aperture chip key; removeFilterDim deletes it (Phase 25 DIM-04)", () => {
+    const { result } = renderHook(() => useFilters(), { wrapper });
+    // No key list is seeded from SliderContext.DIMENSIONS anymore.
+    expect("company" in result.current.activeFilters).toBe(false);
+
+    act(() => {
+      result.current.addFilterDim("company");
+    });
+    expect(result.current.activeFilters.company?.size).toBe(0);
+    // An added-but-unvalued chip is non-default so "Clear all" can remove it.
+    expect(result.current.isDefault).toBe(false);
+
+    act(() => {
+      result.current.toggleChip("company", "Hermosillo");
+    });
+    expect(result.current.activeFilters.company?.has("Hermosillo")).toBe(true);
+
+    act(() => {
+      result.current.removeFilterDim("company");
+    });
+    expect("company" in result.current.activeFilters).toBe(false);
+    expect(result.current.isDefault).toBe(true);
+  });
+
+  it("rehydration restores aperture keys and ignores unknown/retired keys", async () => {
+    window.localStorage.setItem(
+      CONTROLS_STORAGE_KEY,
+      JSON.stringify({
+        filters: {
+          company: ["Hermosillo"],
+          riskScore: [], // added chip, no values yet — must come back as a chip
+          tier: ["edit"], // retired SliderContext dim id — ignored
+          bogusKey: ["x"], // tampered — ignored (T-25-03-T)
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useFilters(), { wrapper });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect([...(result.current.activeFilters.company ?? [])]).toEqual(["Hermosillo"]);
+    expect("riskScore" in result.current.activeFilters).toBe(true);
+    expect("tier" in result.current.activeFilters).toBe(false);
+    expect("bogusKey" in result.current.activeFilters).toBe(false);
   });
 
   it("drillDown is session-only and NOT restored from localStorage", async () => {

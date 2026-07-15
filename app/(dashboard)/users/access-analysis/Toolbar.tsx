@@ -17,21 +17,15 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { DimensionFilterPopover } from "./DimensionFilterPopover";
-import { DIMENSIONS, type DimensionId } from "./SliderContext";
 import { useFilters } from "./FilterContext";
-import { featureValueForDim } from "./usePredicateEngine";
+import { buildApertureValueResolvers } from "./usePredicateEngine";
 import { apertureOptionGroups } from "./GroupByControls";
 import { dimensionCoverage, coverageText, isUnderCovered } from "./dimensionCoverage";
+import { PRESET_DIMENSION_IDS } from "./dimensionIdSpace";
+import { isFacetKey } from "./accessFacets";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { RiskAccessPanel } from "./RiskAccessPanel";
-
-/** Fixed bucket order for the two numeric dims. */
-const BUCKET_VALUES: Partial<Record<DimensionId, readonly string[]>> = {
-  activity: ["None", "Low", "Med", "High"],
-  signin: ["<7d", "<30d", "<90d", ">90d"],
-  internalExternal: ["internal", "external"],
-};
 
 export interface ToolbarProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
@@ -82,31 +76,64 @@ export function Toolbar({
     searchQuery,
     setSearchQuery,
     toggleChip,
+    addFilterDim,
+    removeFilterDim,
     clearAll,
     isDefault,
   } = useFilters();
 
-  // Derive available values for each categorical dim from the feature snapshot.
-  // Bucketed dims use the fixed canonical list (BUCKET_VALUES).
+  // ---- Add-a-chip aperture filter (Phase 25 DIM-04) -----------------------
+  // The same banded-label resolvers the mask predicate compares against, so a
+  // filter tier always matches its Group-by blob / Color-by swatch.
+  const valueResolvers = useMemo(
+    () => buildApertureValueResolvers(catalog, features),
+    [catalog, features],
+  );
+  const dimById = useMemo(
+    () => new Map(catalog.map((d) => [d.id, d] as const)),
+    [catalog],
+  );
+
+  // Added dimension chips = the non-facet keys in activeFilters, aperture order.
+  const activeChipIds = useMemo(() => {
+    const rank = (id: string): number => {
+      const i = PRESET_DIMENSION_IDS.indexOf(id);
+      return i < 0 ? PRESET_DIMENSION_IDS.length : i;
+    };
+    return Object.keys(activeFilters)
+      .filter((id) => !isFacetKey(id) && dimById.has(id))
+      .sort((a, b) => rank(a) - rank(b));
+  }, [activeFilters, dimById]);
+
+  // Distinct banded labels per added dim, most common first (then A→Z).
   const availableValuesByDim = useMemo<Record<string, string[]>>(() => {
-    const out: Record<string, Set<string>> = {};
-    for (const d of DIMENSIONS) out[d.id] = new Set();
-    for (const f of features) {
-      for (const d of DIMENSIONS) {
-        const v = featureValueForDim(f, d.id);
-        if (v) out[d.id].add(v);
+    const out: Record<string, string[]> = {};
+    for (const id of activeChipIds) {
+      const resolve = valueResolvers[id];
+      if (!resolve) {
+        out[id] = [];
+        continue;
       }
-    }
-    const result: Record<string, string[]> = {};
-    for (const d of DIMENSIONS) {
-      if (BUCKET_VALUES[d.id as DimensionId]) {
-        result[d.id] = [...(BUCKET_VALUES[d.id as DimensionId] ?? [])];
-      } else {
-        result[d.id] = Array.from(out[d.id]).sort();
+      const tally = new Map<string, number>();
+      for (const f of features) {
+        const v = resolve(f);
+        tally.set(v, (tally.get(v) ?? 0) + 1);
       }
+      out[id] = [...tally.entries()]
+        .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))
+        .map(([v]) => v);
     }
-    return result;
-  }, [features]);
+    return out;
+  }, [activeChipIds, valueResolvers, features]);
+
+  // "+ Filter" menu: the themed aperture (coverage inline, DIM-05) minus
+  // already-added dims — chips render only after the presenter adds them.
+  const addFilterGroups = useMemo(() => {
+    const added = new Set(activeChipIds);
+    return apertureOptionGroups(catalog, features)
+      .map((g) => ({ ...g, options: g.options.filter((o) => !added.has(o.id)) }))
+      .filter((g) => g.options.length > 0);
+  }, [catalog, features, activeChipIds]);
 
   // Cmd/Ctrl + K focuses the search input (RESEARCH default).
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -188,15 +215,34 @@ export function Toolbar({
       />
 
       <div className="flex flex-wrap items-center gap-1.5">
-        {DIMENSIONS.map((d) => (
+        {activeChipIds.map((id) => (
           <DimensionFilterPopover
-            key={d.id}
-            dim={d}
-            availableValues={availableValuesByDim[d.id] ?? []}
-            activeValues={activeFilters[d.id] ?? new Set<string>()}
-            onToggle={(v) => toggleChip(d.id, v)}
+            key={id}
+            dim={{ id, label: dimById.get(id)?.label ?? id }}
+            availableValues={availableValuesByDim[id] ?? []}
+            activeValues={activeFilters[id] ?? new Set<string>()}
+            onToggle={(v) => toggleChip(id, v)}
+            onRemove={() => removeFilterDim(id)}
           />
         ))}
+        <select
+          value=""
+          onChange={(e) => {
+            if (e.target.value) addFilterDim(e.target.value);
+          }}
+          aria-label="Add dimension filter"
+          data-testid="toolbar-add-filter"
+          className="rounded-md border bg-background px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">+ Filter</option>
+          {addFilterGroups.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.options.map((o) => (
+                <option key={o.id} value={o.id}>{o.text}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
       </div>
 
       <details className="relative">
