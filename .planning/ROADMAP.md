@@ -472,7 +472,7 @@ characterization tests (TEST-01/02/03) stay green throughout.
 - [x] **Phase 24: Baseline & Dimension ID Unification** - Measure the honest first-paint baseline before anything else changes, then unify the catalog/registry dimension id-spaces so DIM-01/02 have one source to widen (completed 2026-07-14)
 - [x] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label (completed 2026-07-15; deployed BUILD_ID Vl7pXM_h_j5j2UrFGYd5Z)
 - [x] **Phase 26: Catalog Slider Wall** - The 208-dim `CatalogSliderSidebar` renders in production decoupled from the dead 3D flag, lazy-loads, is searchable, and greys unavailable dimensions with a reason (completed 2026-07-15; deployed BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`)
-- [ ] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into
+- [x] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into (completed 2026-07-15; deployed BUILD_ID `kZKWbfeAqYW1R4bYrUx2U`)
 - [ ] **Phase 28: Performance Closeout & Verification** - DuckDB warm-up moves off the critical path, the lasso e2e test passes reliably (fixing the standing dev-server infra bug if it blocks the run), and first paint is re-measured against the Phase 24 baseline to prove no regression
 
 ## Phase Details
@@ -572,9 +572,9 @@ driving `catalogTargets`/`catalogWeights`)
   5. A slider change or clustering call cannot accidentally reheat the frozen cosmos.gl simulation (`enableSimulation:false` contract) — guarded by an explicit invariant check, closing CONCERNS.md §3.2 specifically because this phase's LAY-01/LAY-02 work reaches directly into that fragile mechanism.
 
 **Plans**:
-- [ ] 27-01-PLAN.md — Frozen Cosmos handle invariant + existing-data permission-tier repair (wave 1)
-- [ ] 27-02-PLAN.md — Strongest-wins organic anchor projection + live target/weight consumption (wave 2)
-- [ ] 27-03-PLAN.md — General/curated Layout UI + lazy actionable Dimensions catalog (wave 3)
+- [x] 27-01-PLAN.md — Frozen Cosmos handle invariant + existing-data permission-tier repair (wave 1)
+- [x] 27-02-PLAN.md — Strongest-wins organic anchor projection + live target/weight consumption (wave 2)
+- [x] 27-03-PLAN.md — General/curated Layout UI + lazy actionable Dimensions catalog (wave 3)
 **UI hint**: yes
 
 **Plan-sequencing note (locked, risk mitigation):** build the PERF-02 reheat guard as an
@@ -637,9 +637,9 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 22. Issue Type Resolution | 3/3 | Complete (live-evidence close) | 2026-07-14 |
 | 23. Workshop Curation & Milestone Close | 5/5 | Complete | 2026-07-14 |
 | 24. Baseline & Dimension ID Unification | 2/2 | Complete    | 2026-07-14 |
-| 25. Dimension Aperture — Group, Color & Filter | 0/TBD | Not started | - |
-| 26. Catalog Slider Wall | 0/TBD | Not started | - |
-| 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 0/TBD | Not started | - |
+| 25. Dimension Aperture — Group, Color & Filter | 3/3 | Complete | 2026-07-15 |
+| 26. Catalog Slider Wall | 2/2 | Complete | 2026-07-15 |
+| 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 3/3 | Complete | 2026-07-15 |
 | 28. Performance Closeout & Verification | 0/TBD | Not started | - |
 
 ---

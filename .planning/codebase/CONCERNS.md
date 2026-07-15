@@ -132,7 +132,8 @@
 - **Files:** `app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx` (imports `@cosmos.gl/graph`); `app/(dashboard)/users/access-analysis/clusterTransitionLayer.ts`; `app/(dashboard)/users/access-analysis/physicsLayer.ts`
 - **What it is:** The 2D cosmos.gl renderer runs in frozen mode (`enableSimulation:false`) but can be accidentally reheated when `applySliders` or `setClustering` is called without guarding against the `clusterActive` flag. The bug was patched (commits `95187af`, `e9dcaed`, `b2e4098`) but `clusterTransitionLayer.ts` still has EPSILON and TAU tuning comments that reveal the mechanism is fragile around reheat timing. The `SKIP_THRESHOLD` was reduced from `0.02` to `0.005` to fix dead zones.
 - **Impact:** Single-step slider input may still produce visible lag or frozen frames on lower-end GPUs. The lasso e2e test has a documented 120s timeout flake under machine load.
-- **Guardrail:** Add a `PERF-01` invariant test asserting that `applySliders` with a delta < `SKIP_THRESHOLD` does not call `setClusterPositions` or trigger a GPU upload. Document the `enableSimulation:false` + `setConfigPartial`-only contract in a code comment at the top of `GraphCanvas2D.tsx`.
+- **Guardrail:** Add a `PERF-02` invariant test asserting that frozen layout-control calls do not start/reseed the simulation or upload cluster/anchor/config mutations. Document the `enableSimulation:false` contract at the renderer boundary.
+- **Status (2026-07-15): ✅ RESOLVED (v2.4 Phase 27, PERF-02).** The frozen Cosmos handle invariant exercises `applySliders`, `setClustering`, `setClusters`, and `setClusterPositions` with `gpuSimulation:false` and proves zero simulation starts, reseeds, cluster-position writes, anchor writes, or config mutations. The live flag-off layout morph remains on the CPU/rAF static-layer path and never starts the worker simulation.
 
 ### 3.3 176+ action catalog entries loaded at graph init
 
@@ -447,7 +448,7 @@ no code fix is required.
 ### Still open (future-milestone seeds)
 
 - §2.4 `AccDcRole` empty — monitoring/warning still missing (fallback documented only).
-- §3.1, §3.2, §3.4, §3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, cosmos.gl reheat, lasso e2e flake, prefetch regression guard) — deferred spatial-graph milestone.
+- §3.1, §3.4, §3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, lasso e2e flake, prefetch regression guard) — Phase 28 owns §3.1/§3.4; §3.5 remains a future regression-hardening seed. §3.2 closed in Phase 27.
 - §4.1/§4.2 lean-payload trap and filter-type assert.
 - §5.1 ACCDS session expiry alerting; §5.2 DC 403 coverage (DC-01/DC-02); §5.3 stale TODO guards in `acc-admin.ts` (VERIFY: whether Ph12 observability work removed these).
 - §8.2/§8.3 oversized physics/e2e test files.
@@ -476,3 +477,8 @@ no code fix is required.
 ### New concerns from v2.4 Phase 26 (2026-07-15, phase-tagged)
 
 1. **[Ph26] Catalog availability counts are snapshot-derived.** The isolated production run observed 110 available / 98 unavailable rows across the 208-entry preview, rather than the roadmap's approximate 189 / 19 split. Never hardcode the observed counts: Phase 27 activation must recompute availability from the loaded feature snapshot so missing action activity remains disclosed truthfully.
+
+### New concerns from v2.4 Phase 27 (2026-07-15, phase-tagged)
+
+1. **[Ph27→Ph28] First Dimensions activation still needs a measured hitch budget.** Generated action targets are intentionally built and registered only when the user first opens Dimensions, over the loaded 22,279 membership-node snapshot. Production Playwright and authenticated browser gates passed, but Phase 27 did not isolate main-thread time for that first activation. Phase 28 should measure it alongside the first-paint closeout before claiming workshop responsiveness.
+2. **[Ph27] Historical embedding residue is maintenance-only.** The current embedding join covered all 22,279 loaded membership nodes; 983 additional stored embedding rows were stale historical residue and are ignored by the node-id join. This has no current layout correctness impact, but a future embedding maintenance job may prune them.

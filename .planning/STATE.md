@@ -2,12 +2,11 @@
 lecg_state_version: 2
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: 27
-current_phase_name: Layout Engine — Force-Anchor Revival & Reheat Guard
-status: executing
-stopped_at: "Executing Phase 27 plan 27-03: General layout controls and actionable lazy Dimensions."
-last_updated: "2026-07-15T13:15:37.1324950-06:00"
-current_plan: "27-03"
+current_phase: 28
+current_phase_name: Performance Closeout & Verification
+status: ready_to_plan
+stopped_at: "Phase 27 complete and locally deployed at BUILD_ID kZKWbfeAqYW1R4bYrUx2U; Phase 28 has no context yet."
+last_updated: "2026-07-15T13:46:25.5165724-06:00"
 ---
 
 # Project State
@@ -17,15 +16,15 @@ current_plan: "27-03"
 See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.4 Spatial Graph Dimensions (opened 2026-07-14) — expose the already-computed node dimensions on `/users/spatial-graph`, revive the discarded force-anchor layout engine, close the deferred spatial-graph perf debt. Defining requirements.
+**Current focus:** v2.4 Spatial Graph Dimensions (opened 2026-07-14) — close the remaining spatial-graph performance debt and verify first-paint and lasso reliability against the completed dimension/layout surface.
 
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 27 — Layout Engine — Force-Anchor Revival & Reheat Guard — **EXECUTING**. Phases 24–26 are complete; Phase 26 is deployed at BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`.
-- **Status:** 27-01 and 27-02 complete; Phase 27 execution continues with 27-03.
-- **Next:** Execute 27-03, then run the phase verification and deployment gate.
-- **Last activity:** 2026-07-15 — live strongest-wins organic catalog-anchor layout shipped in `67d57fc5`.
+- **Phase:** 28 — Performance Closeout & Verification — **READY TO PLAN**. Phases 24–27 are complete; Phase 27 is deployed at BUILD_ID `kZKWbfeAqYW1R4bYrUx2U`.
+- **Status:** Phase 27 passed its focused unit, type, architecture, production-build, authenticated Playwright, and browser gates. Phase 28 has no context yet.
+- **Next:** Run `$lecg-discuss-phase 28` before planning or executing the performance closeout.
+- **Last activity:** 2026-07-15 — Phase 27 completed and deployed: frozen reheat guard, strongest-wins organic anchor layout, General default, curated Layout controls, and actionable lazy Dimensions.
 
 ### v2.4 phase map (24–28)
 

@@ -103,17 +103,17 @@ The 208-dim sidebar is written, tested, and never rendered.
 Today a dimension can only recolor and re-clump nodes around a fixed projection. Owner chose to
 change that.
 
-- [ ] **LAY-01**: Selecting a dimension **restructures the graph organically** via force
+- [x] **LAY-01**: Selecting a dimension **restructures the graph organically** via force
       anchors — it does not merely recolor a static projection.
 
-- [ ] **LAY-02**: `catalogTargets` / `catalogWeights` are **consumed by the live render path**.
+- [x] **LAY-02**: `catalogTargets` / `catalogWeights` are **consumed by the live render path**.
       Today they are built every page load (`AccessAnalysisShell.tsx:575-579`) and thrown away
       when the code returns early at `:611-632`. Dead compute becomes live compute.
 
-- [ ] **LAY-03**: Dimension sliders **morph the layout continuously** between structures — no
+- [x] **LAY-03**: Dimension sliders **morph the layout continuously** between structures — no
       teleport, no frozen frames.
 
-- [ ] **LAY-04**: The layout **stays organic — never a fixed grid**, at any slider position or
+- [x] **LAY-04**: The layout **stays organic — never a fixed grid**, at any slider position or
       dimension combination. Standing owner constraint, previously violated and corrected.
 
 ### Performance & Fragility (PERF)
@@ -124,7 +124,7 @@ page demoed live.
 - [ ] **PERF-01**: DuckDB-Wasm warm-up is **off the render critical path** (idle-time or
       server-precomputed, not a blocking mount-time `useEffect`). Closes CONCERNS.md §3.1.
 
-- [ ] **PERF-02**: The cosmos.gl simulation **cannot be accidentally reheated** by a slider
+- [x] **PERF-02**: The cosmos.gl simulation **cannot be accidentally reheated** by a slider
       change or clustering call. Closes CONCERNS.md §3.2 — the known-fragile area, and the one
       LAY-01/LAY-02 deliberately reach into.
 
@@ -220,12 +220,12 @@ Explicitly excluded. Documented to prevent scope creep.
 | CAT-02 | Phase 26 | Complete |
 | CAT-03 | Phase 26 | Complete |
 | CAT-04 | Phase 26 | Complete |
-| LAY-01 | Phase 27 | Pending |
-| LAY-02 | Phase 27 | Pending |
-| LAY-03 | Phase 27 | Pending |
-| LAY-04 | Phase 27 | Pending |
+| LAY-01 | Phase 27 | Complete |
+| LAY-02 | Phase 27 | Complete |
+| LAY-03 | Phase 27 | Complete |
+| LAY-04 | Phase 27 | Complete |
 | PERF-01 | Phase 28 | Pending |
-| PERF-02 | Phase 27 | Pending |
+| PERF-02 | Phase 27 | Complete |
 | PERF-03 | Phase 28 | Pending |
 | PERF-04 | Phase 28 | Pending (baseline captured Phase 24) |
 
