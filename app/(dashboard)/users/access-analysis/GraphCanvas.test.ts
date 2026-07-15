@@ -323,6 +323,28 @@ describe("GraphCanvas2DHandle — REND-01 alpha mask", () => {
     // setConfig (not setConfigPartial) must have been called 0 times after mount
     expect(_setConfigCalls).toHaveLength(0);
   });
+
+  it("frozen slider and clustering methods cannot reheat or mutate Cosmos", async () => {
+    const handle = await setupHandle(3);
+    _startCalls = [];
+    _setPointPositionsCalls = [];
+    _clusterCalls = [];
+    _clusterPosCalls = [];
+    _clusterStrengthCalls = [];
+    _setConfigPartialCalls = [];
+
+    handle.applySliders({ role: 1 });
+    handle.setClustering(new Int32Array([0, 1, 0]), new Float32Array([10, 0, 20, 0]));
+    handle.setClusters([0, 1, 0]);
+    handle.setClusterPositions([10, 0, 20, 0]);
+
+    expect(_startCalls).toEqual([]);
+    expect(_setPointPositionsCalls).toEqual([]);
+    expect(_clusterCalls).toEqual([]);
+    expect(_clusterPosCalls).toEqual([]);
+    expect(_clusterStrengthCalls).toEqual([]);
+    expect(_setConfigPartialCalls).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------

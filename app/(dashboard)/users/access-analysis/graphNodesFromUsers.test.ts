@@ -104,6 +104,24 @@ describe("buildGraphNodesFromUsers", () => {
     expect(features[0].role).toBe("Unknown");
   });
 
+  it.each([
+    [0, null, "Unknown"],
+    [1, "view", "View"],
+    [2, "download", "Download"],
+    [3, "upload", "Upload"],
+    [4, "edit", "Edit"],
+    [5, "control", "Full Control"],
+  ] as const)("maps permission strength %i to %s (%s)", (permissionStrength, expected, _label) => {
+    const users = [
+      mkUser({
+        email: "a@x.com",
+        projects: [mkProject({ id: "p1", permissionStrength })],
+      }),
+    ];
+
+    expect(buildGraphNodesFromUsers(users).features[0].permTier).toBe(expected);
+  });
+
   it("emits no nodes for a user with no projects", () => {
     const users = [mkUser({ email: "nobody@x.com", projects: [] })];
     const { nodeIds, features } = buildGraphNodesFromUsers(users);
