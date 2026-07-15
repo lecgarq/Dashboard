@@ -122,3 +122,9 @@ lecg lifecycle:
 Report exact changes and checks. Separate regressions from pre-existing
 failures. Do not claim deploy, UAT, performance, or owner approval without
 direct evidence.
+
+Token discipline: chat reports stay terse (caveman/ponytail voice — outcome,
+files, gates, done). Planning artifacts are the opposite: SUMMARY,
+VERIFICATION, CONTEXT, and STATE stay complete and specific — they are the
+durable memory that makes fresh-session resume free. Never compress an
+artifact to save chat tokens.
