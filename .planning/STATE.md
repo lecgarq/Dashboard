@@ -2,11 +2,12 @@
 lecg_state_version: 2
 milestone: v2.4
 milestone_name: Spatial Graph Dimensions
-current_phase: 28
-current_phase_name: Performance Closeout & Verification
-status: ready_to_plan
-stopped_at: "Phase 28 context captured (28-CONTEXT.md): PERF-01 idle-guard+document the dead-surface DuckDB warm-up (live path already DuckDB-free); PERF-03 verify the DEFAULT 2D lasso (acc-dc-graph.spec.ts:537) green warm-cache under the prod :3100 verify config, route around the broken next-dev infra; PERF-04 re-run measure-spatial-graph-baseline.cjs, ±10% tolerance vs 6193.2ms + one live GPU reading. Next: /lecg-phase 28."
-last_updated: "2026-07-15T14:05:00-06:00"
+current_phase: 28.1
+current_phase_name: Spatial-Graph Regression Debug
+status: executing
+current_plan: "28.1-02"
+stopped_at: "Phase 28.1: 28.1-01 (PERF-03) ✅ COMPLETE + verified (commit 716ee966). Root cause: LassoOverlay pointer-listener effect deps on onComplete = fresh inline arrow every shell render (AccessAnalysisShell.tsx:457); any mid-drag re-render re-ran the effect, cleanup reset drawingRef/pathRef, onUp early-returned, selection never committed. LATENT (identical in baseline 33d6e58f; Phase 27 never touched the file) — Phase 27 post-freeze re-renders newly trigger it warm-cache. Fix: latest-ref pattern, effect keyed on [active] only. Proof: red-first unit test (RED→GREEN) + :3100 lasso e2e 3/3 GREEN (4795/4747/4747 of 22279) — the identical run that FAILED 3/3 in 28-02, spec unmodified. :3000 BUILD_ID kZKWbfeAqYW1R4bYrUx2U unchanged. REMAINING: 28.1-02 (PERF-04, +42% time-to-graph 8822 vs 6193.2ms) NOT STARTED — discovery-first plan written (28.1-02-PLAN.md): instrument boot boundaries (bulkUsers→snapshot→dims→targets→staticLayer→first render), build+measure ONCE on :3100 to localize, then fix, then re-measure N=5 ≤ ~6812ms gate. buildCatalogTargets/Weights already EXONERATED by source. Needs the :3100 build cycle — FRESH SESSION recommended (context deep). Next: /lecg-phase 28.1 (executes 28.1-02) or /lecg-resume-work."
+last_updated: "2026-07-15T17:35:00-06:00"
 ---
 
 # Project State
