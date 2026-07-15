@@ -24,7 +24,6 @@ import type { GraphEventHandlers, NodeFeatureSnapshot } from "./interactionTypes
 import type { DeriveResult } from "./sameUserEdges";
 import { computeAxisRanges, computeClusteringRatio } from "./layoutStats";
 import { categoryValue, type TargetDimensionId } from "./featureTargets";
-import type { ColorMode } from "./nodeColors";
 import { gridCells, pickDensestCell } from "./lassoProbe";
 
 function isGraphTestEnabled(): boolean {
@@ -40,8 +39,9 @@ interface ShellState {
   mode: "2d" | "3d";
   selection: ReadonlySet<number> | null;
   isolated: number | null;
-  /** Active semantic color mode + the live RGBA buffer fed to BOTH renderers. */
-  colorMode: ColorMode;
+  /** Active semantic color dim (catalog id-space, Phase 25) + the live RGBA
+   *  buffer fed to BOTH renderers. */
+  colorMode: string;
   nodeColors: Float32Array | null;
   /** Projector-map grouping (flag-OFF): per-node cluster id + per-cluster label, so a
    *  test can verify each name chip sits on its cluster's LIVE on-screen centroid. */
@@ -280,7 +280,7 @@ interface GraphTestApi {
     crossMean: number;
     sampledPairs: number;
   };
-  getColorMode(): ColorMode;
+  getColorMode(): string;
   getColorStats(): {
     length: number;
     nodeCount: number;

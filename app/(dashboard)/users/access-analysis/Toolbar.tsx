@@ -20,7 +20,9 @@ import { DimensionFilterPopover } from "./DimensionFilterPopover";
 import { DIMENSIONS, type DimensionId } from "./SliderContext";
 import { useFilters } from "./FilterContext";
 import { featureValueForDim } from "./usePredicateEngine";
-import { COLOR_MODES, COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
+import { apertureOptionGroups } from "./GroupByControls";
+import { dimensionCoverage, coverageText, isUnderCovered } from "./dimensionCoverage";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { RiskAccessPanel } from "./RiskAccessPanel";
 
@@ -39,10 +41,15 @@ export interface ToolbarProps {
   onLassoToggle: () => void;
   // Optional so existing harnesses can mount the Toolbar without the color
   // controls; the shell always supplies both, so production is fully wired.
-  colorMode?: ColorMode;
-  onColorModeChange?: (m: ColorMode) => void;
+  // Phase 25: catalog id-space (dimensionIdSpace aperture), not registry ColorMode.
+  colorMode?: string;
+  onColorModeChange?: (m: string) => void;
+  /** Aperture catalog — drives the themed Color-by optgroups (shell supplies it). */
+  catalog?: readonly CatalogDimension[];
   /** Display label of the active grouping dimension (e.g. "Role"). */
   groupedByLabel?: string;
+  /** Catalog id of the active grouping dimension — drives the coverage caveat chip. */
+  groupedByDimId?: string;
   /** True when color is auto-following the grouping dim (no manual override). */
   colorIsAuto?: boolean;
   /** Clears a manual color override, returning color to auto-follow. */
@@ -63,7 +70,9 @@ export function Toolbar({
   onLassoToggle,
   colorMode = "role",
   onColorModeChange,
+  catalog = [],
   groupedByLabel = "",
+  groupedByDimId = "",
   colorIsAuto = true,
   onColorReset,
   show3DToggle = false,
@@ -116,6 +125,19 @@ export function Toolbar({
   // Lasso now works in 3D (screen-space projection), so it is always enabled.
   const lassoDisabled = false;
 
+  // Themed Color-by optgroups over the SAME widened aperture Group-by uses
+  // (single id-space), each option carrying its inline coverage (DIM-05).
+  const colorGroups = useMemo(() => apertureOptionGroups(catalog, features), [catalog, features]);
+
+  // Persistent caveat on the ACTIVE grouping dim: coverage chip + ⚠ when a
+  // material share of nodes lack the value. Node-derived figure only —
+  // VERIFY: the DC-project denominator (550/1,153) is deliberately NOT shown.
+  const groupedByCoverage = useMemo(
+    () => (groupedByDimId ? dimensionCoverage(features, groupedByDimId) : null),
+    [features, groupedByDimId],
+  );
+  const groupedByUnderCovered = groupedByCoverage !== null && isUnderCovered(groupedByCoverage);
+
   return (
     <header
       data-testid="toolbar"
@@ -141,8 +163,17 @@ export function Toolbar({
         </div>
       ) : null}
       {groupedByLabel ? (
-        <span data-testid="toolbar-grouped-by" className="text-sm text-muted-foreground">
+        <span data-testid="toolbar-grouped-by" className="flex items-center gap-1.5 text-sm text-muted-foreground">
           Grouped by: <b className="text-foreground">{groupedByLabel}</b>
+          {groupedByUnderCovered && groupedByCoverage ? (
+            <span
+              data-testid="toolbar-grouped-by-coverage"
+              title={`${groupedByCoverage.note ? `${groupedByCoverage.note} — ` : ""}nodes with a real value for this dimension`}
+              className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-500"
+            >
+              ⚠ {coverageText(groupedByCoverage)}
+            </span>
+          ) : null}
         </span>
       ) : null}
       <input
@@ -199,15 +230,17 @@ export function Toolbar({
         <span className="hidden sm:inline">Color</span>
         <select
           value={colorMode}
-          onChange={(e) => onColorModeChange?.(e.target.value as ColorMode)}
+          onChange={(e) => onColorModeChange?.(e.target.value)}
           aria-label="Color nodes by"
           data-testid="toolbar-color-mode"
           className="rounded-md border bg-background px-2 py-1.5 text-sm text-foreground focus:border-blue-500 focus:outline-none"
         >
-          {COLOR_MODES.map((m) => (
-            <option key={m} value={m}>
-              {COLOR_MODE_LABELS[m]}
-            </option>
+          {colorGroups.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.options.map((o) => (
+                <option key={o.id} value={o.id}>{o.text}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>

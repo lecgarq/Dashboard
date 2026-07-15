@@ -179,7 +179,7 @@ export function RightPanelStack({
           ) : (
             <motion.div key="sliders" className="h-full w-full" {...slide}>
               {useGroupByControls && groupBy && onGroupByChange ? (
-                <GroupByControls catalog={catalog} groupBy={groupBy} onGroupByChange={onGroupByChange} />
+                <GroupByControls catalog={catalog} features={features} groupBy={groupBy} onGroupByChange={onGroupByChange} />
               ) : (
                 <CatalogSliderSidebar catalog={catalog} />
               )}

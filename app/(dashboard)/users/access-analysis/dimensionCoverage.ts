@@ -62,6 +62,22 @@ const PRESENT_OVERRIDES: Record<string, (f: NodeFeatureSnapshot) => boolean> = {
 const STRUCTURAL_BY_ID = new Map(buildStructuralDimensions().map((d) => [d.id, d]));
 
 /**
+ * A dim is "under-covered" when a material share of loaded nodes lack a real
+ * value — the pickers then carry a persistent ⚠ (DIM-05: label, don't hide).
+ * ponytail: fixed 90% threshold; make per-dim if a dim ever needs its own bar.
+ */
+export const UNDER_COVERAGE_RATIO = 0.9;
+
+export function isUnderCovered(c: DimensionCoverage): boolean {
+  return c.total > 0 && c.covered / c.total < UNDER_COVERAGE_RATIO;
+}
+
+/** "14,201/16,942" — the honest node-derived figure both pickers display. */
+export function coverageText(c: DimensionCoverage): string {
+  return `${c.covered.toLocaleString("en-US")}/${c.total.toLocaleString("en-US")}`;
+}
+
+/**
  * Honest coverage for one aperture dimension over the loaded snapshot.
  * Unknown dim ids report zero covered; an empty snapshot reports {0, 0}.
  */

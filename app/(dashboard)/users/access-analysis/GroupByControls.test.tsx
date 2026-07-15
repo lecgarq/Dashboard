@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { GroupByControls } from "./GroupByControls";
 import { SliderProvider } from "./SliderContext";
 import type { CatalogDimension } from "./dimensionCatalog.types";
+import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // Radix Slider uses ResizeObserver, which is absent in jsdom.
 beforeAll(() => {
@@ -30,10 +31,14 @@ function dim(id: string): CatalogDimension {
 }
 const CATALOG = [dim("company"), dim("role"), dim("project")];
 
-function renderControls(groupBy: string, onGroupByChange = vi.fn()) {
+function renderControls(
+  groupBy: string,
+  onGroupByChange = vi.fn(),
+  features: ReadonlyArray<NodeFeatureSnapshot> = [],
+) {
   render(
     <SliderProvider physics={null} catalog={CATALOG}>
-      <GroupByControls catalog={CATALOG} groupBy={groupBy} onGroupByChange={onGroupByChange} />
+      <GroupByControls catalog={CATALOG} features={features} groupBy={groupBy} onGroupByChange={onGroupByChange} />
     </SliderProvider>,
   );
   return { onGroupByChange };
@@ -41,22 +46,34 @@ function renderControls(groupBy: string, onGroupByChange = vi.fn()) {
 
 describe("GroupByControls", () => {
   it("renders a Group-by option per groupable dim, with the current one selected", () => {
-    // The picker now offers ONLY role / project / user (three presets). "company" is no
-    // longer in the preset list even though it is in the test catalog, so it is excluded.
+    // Phase 25: the picker offers the full aperture — company is now included,
+    // grouped into themed optgroups (Baseline / Identity).
     renderControls("role");
     const select = screen.getByTestId("group-by-select") as HTMLSelectElement;
     expect(select.value).toBe("role");
-    // Company is intentionally not a preset — assert it is absent.
-    expect(screen.queryByRole("option", { name: "Company" })).toBeNull();
+    expect(screen.getByRole("option", { name: "Company" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Role" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Project" })).toBeTruthy();
+    // Themed optgroups wrap the options.
+    expect(screen.getByRole("group", { name: "Baseline" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Identity" })).toBeTruthy();
   });
 
   it("calls onGroupByChange when the picker changes", () => {
-    // Use a valid preset option ("project") instead of the removed "company".
     const { onGroupByChange } = renderControls("role");
-    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "project" } });
-    expect(onGroupByChange).toHaveBeenCalledWith("project");
+    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "company" } });
+    expect(onGroupByChange).toHaveBeenCalledWith("company");
+  });
+
+  it("shows honest node-derived coverage inline, with ⚠ when under-covered", () => {
+    // Real structural extractors drive coverage: company reads firmName.
+    const features = [
+      { firmName: "Hermosillo" },
+      { firmName: "" },
+    ] as unknown as NodeFeatureSnapshot[];
+    renderControls("role", vi.fn(), features);
+    // 1/2 covered (50% < 90% threshold) → coverage + caveat marker.
+    expect(screen.getByRole("option", { name: "Company · 1/2 ⚠" })).toBeTruthy();
   });
 
   it("shows the strength value badge for the selected dim (defaults 0)", () => {

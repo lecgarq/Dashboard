@@ -27,7 +27,6 @@ import {
   dimensionHasSurface,
   type DimensionId,
 } from "./dimensionRegistry";
-import { PRESET_DIMENSION_IDS, colorModeIdForCatalogId } from "./dimensionIdSpace";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
@@ -58,13 +57,11 @@ const EXTRA_COLOR_MODES = ["cluster", "status", "user"] as const;
 
 export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
-// Exactly three presets for the projector map: Role (default), Project, User name.
-// Other dims remain valid for the helpers below but are no longer offered in the UI.
-// Derived from the unified catalog id-space (dimensionIdSpace.ts, Phase 24) via the
-// catalog→registry bridge. Cast is safe: today's resolved ids ("role", "project" =
-// registry DimensionIds; "user" = EXTRA mode) are all valid ColorMode members.
-export const COLOR_MODES: readonly ColorMode[] =
-  PRESET_DIMENSION_IDS.map(colorModeIdForCatalogId) as readonly ColorMode[];
+// PINNED to the original three presets (Phase 25): the live picker went
+// catalog-native (dimensionIdSpace.PRESET_DIMENSION_IDS + bucketedColorsFromClustering),
+// so this list no longer derives from it — it only serves the parked registry-color
+// path (flag-ON 3D graph) and must not widen when the catalog aperture does.
+export const COLOR_MODES: readonly ColorMode[] = ["role", "project", "user"];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {

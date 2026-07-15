@@ -40,6 +40,7 @@ import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUse
 import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
 import { activeGroupingDimension } from "./activeGrouping";
 import { buildBucketedColors, bucketedColorsFromClustering } from "./bucketedColors";
+import { buildDominantClusters } from "./dominantClusters";
 import { buildUserBlobDescriptor } from "./blobDescriptor";
 import { descriptorTarget } from "./layoutDescriptor";
 import { clusterMemberCentroids } from "./clusterPacking";
@@ -234,13 +235,14 @@ export function ShellBody({
     [blobDesc, getLiveValues],
   );
 
-  // Color is an independent picker (role / project / user), defaulting to Role; it is
-  // never "auto" — the dropdown always drives color.
-  const [colorOverride, setColorOverride] = useState<ColorMode | null>("role");
+  // Color is an independent picker over the full catalog aperture (Phase 25,
+  // dimensionIdSpace id-space), defaulting to Role; it is never "auto" — the
+  // dropdown always drives color.
+  const [colorOverride, setColorOverride] = useState<string | null>("role");
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = grouping.colorMode;
-  const colorMode: ColorMode = colorOverride ?? autoColorMode;
-  const setColorMode = (m: ColorMode): void => setColorOverride(m);
+  const colorMode: string = colorOverride ?? autoColorMode;
+  const setColorMode = (m: string): void => setColorOverride(m);
   const resetColor = (): void => setColorOverride("role");
   // While actively grouping on the projector map, the toolbar's "Grouped by" label
   // names the real group-by dimension (the catalog label), which is accurate even for
@@ -250,23 +252,32 @@ export function ShellBody({
       ? groupDim.label
       : COLOR_MODE_LABELS[autoColorMode] ?? autoColorMode;
 
-  // Node colors + legend. Three sources, in priority order:
-  //  1. A manual color override (toolbar dropdown) always wins.
+  // Node colors + legend. Sources, in priority order:
+  //  1. The color picker (catalog id) resolves to a CatalogDimension and colors by
+  //     the SAME banded clustering Group-by uses (valueKeyLabel + dimensionBands via
+  //     buildDominantClusters) → BANDED categorical swatches + one shared legend for
+  //     EVERY aperture dim. The sequential-ramp path is never taken (DIM-02).
   //  2. Actively grouping on the projector map (flag-OFF, strength > 0): color by the
-  //     SAME dominant clustering that drives the blobs + footprint labels, so color,
-  //     layout, and labels stay consistent for ANY group-by dim — including catalog
-  //     dims (permission/tenure/status/…) absent from the color registry.
+  //     dominant clustering that drives the blobs + footprint labels.
   //  3. Otherwise (rest scatter → cluster galaxy, or the flag-ON graph): the auto mode.
   // NOTE: colorOverride is never null now (inits to "role", resets to "role"), so
   // branch 1 always wins — branches 2–3 (auto-follow / cluster galaxy) are currently
   // unreachable. Kept for the parked flag-ON 3D route; prune in a future cleanup.
+  const colorDim = useMemo(
+    () => (colorOverride ? (catalog.find((d) => d.id === colorOverride) ?? null) : null),
+    [catalog, colorOverride],
+  );
   const bucketed = useMemo(() => {
-    if (colorOverride) return buildBucketedColors(features, colorOverride, 12);
+    if (colorDim) {
+      return bucketedColorsFromClustering(buildDominantClusters(features, colorDim), 12);
+    }
+    // Unknown/stale picker id (no catalog dim): legacy registry path, safe fallback.
+    if (colorOverride) return buildBucketedColors(features, colorOverride as ColorMode, 12);
     if (!ACC_3D_GRAPH_ENABLED && grouping.showLabels && blobDesc) {
       return bucketedColorsFromClustering(blobDesc.clustering, 12);
     }
     return buildBucketedColors(features, autoColorMode, 12);
-  }, [features, colorOverride, autoColorMode, blobDesc, grouping.showLabels]);
+  }, [features, colorDim, colorOverride, autoColorMode, blobDesc, grouping.showLabels]);
   const nodeColors = bucketed.colors;
   const nodeSizes = useMemo<Float32Array>(() => buildNodeSizes(features), [features]);
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
@@ -378,7 +389,9 @@ export function ShellBody({
         onLassoToggle={() => setLassoActive(!lassoActive)}
         colorMode={colorMode}
         onColorModeChange={setColorMode}
+        catalog={catalog}
         groupedByLabel={groupedByLabel}
+        groupedByDimId={groupDim?.id ?? ""}
         colorIsAuto={colorIsAuto}
         onColorReset={resetColor}
         show3DToggle={ACC_3D_GRAPH_ENABLED}
