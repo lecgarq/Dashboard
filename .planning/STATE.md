@@ -4,9 +4,9 @@ milestone: v2.4
 milestone_name: Spatial Graph Dimensions
 current_phase: 26
 current_phase_name: Catalog Slider Wall
-status: ready_to_plan
-stopped_at: "Phase 26 planned as 26-01 (CAT-01 rail seam) then 26-02 (CAT-02/03/04 lazy browse wall). Both plans self-checked; no execution started. Next: $lecg-phase 26."
-last_updated: "2026-07-15T17:44:12.354Z"
+status: executing
+stopped_at: "Plan 26-01 complete in d54ace25 and summarized. CAT-01 rail seam is green. Next: execute 26-02 for lazy browse-only catalog, search, and unavailable reasons."
+last_updated: "2026-07-15T17:49:00.000Z"
 current_plan: null
 ---
 
@@ -22,10 +22,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 ## Current Position
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
-- **Phase:** 26 — Catalog Slider Wall — **READY TO PLAN** (CAT-01–04; `26-CONTEXT.md` captured). Phases 24–25 are complete; Phase 25 is deployed at BUILD_ID `Vl7pXM_h_j5j2UrFGYd5Z`.
-- **Status:** Two execution plans written and self-checked: 26-01 owns CAT-01; 26-02 owns CAT-02/03/04. No product execution started.
-- **Next:** `$lecg-phase 26` — execute 26-01, then 26-02.
-- **Last activity:** 2026-07-15 — Phase 26 planned as two dependency-ordered vertical slices.
+- **Phase:** 26 — Catalog Slider Wall — **EXECUTING** (1/2 plans complete). Phases 24–25 are complete; Phase 25 is deployed at BUILD_ID `Vl7pXM_h_j5j2UrFGYd5Z`.
+- **Status:** 26-01 / CAT-01 complete (`d54ace25`); 26-02 remains pending.
+- **Next:** Execute 26-02 for CAT-02/03/04.
+- **Last activity:** 2026-07-15 — Grouping-default / Catalog-preview rail seam shipped and summarized.
 
 ### v2.4 phase map (24–28)
 

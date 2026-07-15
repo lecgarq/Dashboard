@@ -541,10 +541,10 @@ dimension vocabulary)
   3. User can search the ~189 available catalog dimensions by name in the sidebar and the list narrows to matches.
   4. The 19 `available:false` catalog dimensions render visibly greyed with a stated reason (never silently dropped from the list).
 
-**Plans**: 0/2 plans complete
+**Plans**: 1/2 plans complete
 
 Plans:
-- [ ] 26-01-PLAN.md — Production rail seam: Grouping default + explicit Catalog preview, independent of the 3D flag (wave 1)
+- [x] 26-01-PLAN.md — Production rail seam: Grouping default + explicit Catalog preview, independent of the 3D flag (wave 1)
 - [ ] 26-02-PLAN.md — Lazy browse-only 208-entry wall: deferred actions, search, and inline unavailable reasons (wave 2)
 **UI hint**: yes
 
