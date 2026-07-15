@@ -8,11 +8,9 @@
  * owner-chosen aperture (17 catalog dims), organized by theme for the optgroups.
  *
  * The registry (dimensionRegistry.ts) is a DIFFERENT id-space that happens to share
- * some names. REGISTRY_ID_BY_CATALOG_ID is the explicit bridge; ids without an entry
- * pass through unchanged (they are either shared names or nodeColors EXTRA modes).
+ * some names; the parked flag-ON registry-color path keeps its own pinned list
+ * (nodeColors.COLOR_MODES) and no longer bridges through this module.
  */
-import type { DimensionId } from "./dimensionRegistry";
-
 export interface ApertureThemeGroup {
   /** Optgroup label shown in both pickers. */
   label: string;
@@ -44,18 +42,3 @@ export const APERTURE_THEME_GROUPS: readonly ApertureThemeGroup[] = [
 export const PRESET_DIMENSION_IDS: readonly string[] = APERTURE_THEME_GROUPS.flatMap(
   (g) => [...g.ids],
 );
-
-/**
- * Catalog id → registry id, for catalog dims whose registry descriptor uses a
- * different name. Only VERIFIED-equivalent pairs belong here. Phase 25 moved the
- * pickers' color path catalog-native (bucketedColorsFromClustering), so the bridge
- * is no longer on the picker path; it remains for the parked registry-color helpers.
- */
-export const REGISTRY_ID_BY_CATALOG_ID: Readonly<Partial<Record<string, DimensionId>>> = {
-  // e.g. moduleAccess: "module" — do NOT add until semantic equivalence is verified.
-};
-
-/** Resolve a catalog id to the id nodeColors consumes (registry id or extra-mode name). */
-export function colorModeIdForCatalogId(catalogId: string): string {
-  return REGISTRY_ID_BY_CATALOG_ID[catalogId] ?? catalogId;
-}

@@ -1,12 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  PRESET_DIMENSION_IDS,
-  APERTURE_THEME_GROUPS,
-  REGISTRY_ID_BY_CATALOG_ID,
-  colorModeIdForCatalogId,
-} from "./dimensionIdSpace";
+import { PRESET_DIMENSION_IDS, APERTURE_THEME_GROUPS } from "./dimensionIdSpace";
 import { buildStructuralDimensions } from "./dimensionCatalog.structural";
-import { getDimension } from "./dimensionRegistry";
 
 describe("dimensionIdSpace", () => {
   it("PRESET_DIMENSION_IDS is the widened 17-dim aperture, role first", () => {
@@ -26,18 +20,6 @@ describe("dimensionIdSpace", () => {
       const d = byId.get(id);
       expect(d, `missing catalog dim: ${id}`).toBeTruthy();
       expect(d!.available, `unavailable catalog dim: ${id}`).toBe(true);
-    }
-  });
-
-  it("colorModeIdForCatalogId is identity for every aperture id (no bridge entries)", () => {
-    for (const id of PRESET_DIMENSION_IDS) {
-      expect(colorModeIdForCatalogId(id)).toBe(id);
-    }
-  });
-
-  it("every REGISTRY_ID_BY_CATALOG_ID value is a real registry id", () => {
-    for (const registryId of Object.values(REGISTRY_ID_BY_CATALOG_ID)) {
-      expect(getDimension(registryId!)).not.toBeUndefined();
     }
   });
 });
