@@ -5,8 +5,8 @@ milestone_name: Spatial Graph Dimensions
 current_phase: 27
 current_phase_name: Layout Engine — Force-Anchor Revival & Reheat Guard
 status: ready_to_plan
-stopped_at: "Phase 27 context captured with General similarity, curated Layout/Dimensions controls, strongest-dimension force anchors, 600ms morphing, permission-tier mapping, and reheat guard locked. Next: $lecg-phase 27."
-last_updated: "2026-07-15T12:41:51.7717322-06:00"
+stopped_at: "Phase 27 planned as 27-01 (reheat guard/data repair), 27-02 (live strongest-wins anchor layout), and 27-03 (Layout/Dimensions UI). Next: $lecg-phase 27 executes 27-01."
+last_updated: "2026-07-15T13:02:04.3284122-06:00"
 current_plan: null
 ---
 
@@ -23,9 +23,9 @@ See: `.planning/PROJECT.md` (updated 2026-07-14)
 
 - **Milestone:** v2.4 — **Spatial Graph Dimensions.** Opened + roadmapped 2026-07-14. **5 phases (24–28)**, 18 requirements, 18/18 mapped. Phase numbering continues sequentially from v2.3's Phase 23.
 - **Phase:** 27 — Layout Engine — Force-Anchor Revival & Reheat Guard — **READY TO PLAN**. Phases 24–26 are complete; Phase 26 is deployed at BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`.
-- **Status:** Phase 27 owner decisions are locked in `27-CONTEXT.md`; no product execution has begun.
-- **Next:** Run `$lecg-phase 27` to plan and execute the force-anchor/reheat work.
-- **Last activity:** 2026-07-15 — Phase 27 context captured after embedding/data audit and Impeccable critique.
+- **Status:** Phase 27 is planned in three dependency waves; no product execution has begun.
+- **Next:** Run `$lecg-phase 27` to execute 27-01, then continue through 27-03.
+- **Last activity:** 2026-07-15 — Phase 27 plans written and self-checked against LAY-01–04/PERF-02.
 
 ### v2.4 phase map (24–28)
 

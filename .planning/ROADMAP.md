@@ -571,7 +571,10 @@ driving `catalogTargets`/`catalogWeights`)
   4. The layout stays organic at every slider position and dimension combination — never a fixed grid, at any point (standing owner constraint, previously violated and corrected).
   5. A slider change or clustering call cannot accidentally reheat the frozen cosmos.gl simulation (`enableSimulation:false` contract) — guarded by an explicit invariant check, closing CONCERNS.md §3.2 specifically because this phase's LAY-01/LAY-02 work reaches directly into that fragile mechanism.
 
-**Plans**: TBD
+**Plans**:
+- [ ] 27-01-PLAN.md — Frozen Cosmos handle invariant + existing-data permission-tier repair (wave 1)
+- [ ] 27-02-PLAN.md — Strongest-wins organic anchor projection + live target/weight consumption (wave 2)
+- [ ] 27-03-PLAN.md — General/curated Layout UI + lazy actionable Dimensions catalog (wave 3)
 **UI hint**: yes
 
 **Plan-sequencing note (locked, risk mitigation):** build the PERF-02 reheat guard as an
