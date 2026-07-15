@@ -20,7 +20,7 @@ import { DimensionFilterPopover } from "./DimensionFilterPopover";
 import { useFilters } from "./FilterContext";
 import { buildApertureValueResolvers } from "./usePredicateEngine";
 import { apertureOptionGroups } from "./GroupByControls";
-import { dimensionCoverage, coverageText, isUnderCovered } from "./dimensionCoverage";
+import { dimensionCoverage, coverageText } from "./dimensionCoverage";
 import { PRESET_DIMENSION_IDS } from "./dimensionIdSpace";
 import { isFacetKey } from "./accessFacets";
 import type { CatalogDimension } from "./dimensionCatalog.types";
@@ -156,14 +156,12 @@ export function Toolbar({
   // (single id-space), each option carrying its inline coverage (DIM-05).
   const colorGroups = useMemo(() => apertureOptionGroups(catalog, features), [catalog, features]);
 
-  // Persistent caveat on the ACTIVE grouping dim: coverage chip + ⚠ when a
-  // material share of nodes lack the value. Node-derived figure only —
+  // Persistent explanation for the active grouping dim. Node-derived figure only —
   // VERIFY: the DC-project denominator (550/1,153) is deliberately NOT shown.
   const groupedByCoverage = useMemo(
     () => (groupedByDimId ? dimensionCoverage(features, groupedByDimId) : null),
     [features, groupedByDimId],
   );
-  const groupedByUnderCovered = groupedByCoverage !== null && isUnderCovered(groupedByCoverage);
 
   return (
     <header
@@ -191,14 +189,14 @@ export function Toolbar({
       ) : null}
       {groupedByLabel ? (
         <span data-testid="toolbar-grouped-by" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          Grouped by: <b className="text-foreground">{groupedByLabel}</b>
-          {groupedByUnderCovered && groupedByCoverage ? (
+          Position: Similarity · Group into: <b className="text-foreground">{groupedByLabel}</b>
+          {groupedByCoverage && groupedByCoverage.total > 0 ? (
             <span
               data-testid="toolbar-grouped-by-coverage"
               title={`${groupedByCoverage.note ? `${groupedByCoverage.note} — ` : ""}nodes with a real value for this dimension`}
-              className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-500"
+              className="rounded border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
             >
-              ⚠ {coverageText(groupedByCoverage)}
+              {groupedByLabel} data · {coverageText(groupedByCoverage)}
             </span>
           ) : null}
         </span>

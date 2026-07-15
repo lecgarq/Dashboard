@@ -31,7 +31,9 @@ import type { CatalogDimension } from "../dimensionCatalog.types";
 const captured: {
   graphCanvasProps: Record<string, unknown> | null;
   mapLabelProps: Record<string, unknown> | null;
-} = { graphCanvasProps: null, mapLabelProps: null };
+  toolbarProps: Record<string, unknown> | null;
+  rightPanelProps: Record<string, unknown> | null;
+} = { graphCanvasProps: null, mapLabelProps: null, toolbarProps: null, rightPanelProps: null };
 let sliderApi: ReturnType<typeof useSliders> | null = null;
 
 // ---- Child + dependency mocks ----------------------------------------------
@@ -59,11 +61,21 @@ vi.mock("../MapClusterLabels", () => ({
 
 // Stub the heavy sibling children so we don't drag their dependency trees in;
 // none participate in the position seam under test.
-vi.mock("../Toolbar", () => ({ Toolbar: () => null }));
+vi.mock("../Toolbar", () => ({
+  Toolbar: (props: Record<string, unknown>) => {
+    captured.toolbarProps = props;
+    return null;
+  },
+}));
 vi.mock("../GraphInteractions", () => ({
   GraphInteractions: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock("../RightPanelStack", () => ({ RightPanelStack: () => null }));
+vi.mock("../RightPanelStack", () => ({
+  RightPanelStack: (props: Record<string, unknown>) => {
+    captured.rightPanelProps = props;
+    return null;
+  },
+}));
 vi.mock("../Legend", () => ({ Legend: () => null }));
 vi.mock("../NeighborMatchesPanel", () => ({ NeighborMatchesPanel: () => null }));
 vi.mock("../SimilarityWebOverlay", () => ({
@@ -233,6 +245,23 @@ describe("flag-OFF embedding-map seam", () => {
       sliderApi!.setSliderValue("project", 80);
     });
     expect(layoutTarget()[0]).toBeLessThan(0);
+  });
+
+  it("uses one primary transfer path for Group into, Color, and General reset", () => {
+    renderBody();
+    const onGroupByChange = captured.rightPanelProps!.onGroupByChange as (id: string) => void;
+    const onColorModeChange = captured.toolbarProps!.onColorModeChange as (id: string) => void;
+
+    act(() => onGroupByChange("role"));
+    expect(sliderApi!.getLiveValues().role).toBe(60);
+
+    act(() => onColorModeChange("project"));
+    expect(sliderApi!.getLiveValues().role).toBe(0);
+    expect(sliderApi!.getLiveValues().project).toBe(60);
+
+    act(() => onGroupByChange("general"));
+    expect(sliderApi!.getLiveValues().role).toBe(0);
+    expect(sliderApi!.getLiveValues().project).toBe(0);
   });
 
   it("feeds MapClusterLabels no blob footprints (null centers, empty labels)", () => {

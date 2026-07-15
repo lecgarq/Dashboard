@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { GroupByControls } from "./GroupByControls";
+import { PRIMARY_GROUP_DIMENSION_IDS } from "./groupByDimensions";
 import { SliderProvider } from "./SliderContext";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
-// Radix Slider uses ResizeObserver, which is absent in jsdom.
 beforeAll(() => {
   globalThis.ResizeObserver = class {
     observe() {}
@@ -15,21 +15,36 @@ beforeAll(() => {
   } as unknown as typeof ResizeObserver;
 });
 
-// Prevent SliderProvider's catalogDefaultSliders from pre-seeding "role" = 60
-// (the primary-dim default). Test dims use surfaces:["color"] so they are not
-// slider-surfaced — values[groupBy] is undefined, the ?? 0 fallback yields 0.
-beforeEach(() => {
-  window.localStorage.clear();
-});
+beforeEach(() => window.localStorage.clear());
+
+const LABELS: Record<string, string> = {
+  role: "Role",
+  company: "Company",
+  user: "Users",
+  project: "Project name",
+  activityRecency: "Last activity",
+  activityVolume: "Activity volume",
+  permissionTier: "Folder permission type",
+  folderBreadth: "Folder access",
+  typeOfActivity: "Activity type",
+  moduleAccess: "Modules",
+};
 
 function dim(id: string): CatalogDimension {
   return {
-    id, label: id[0].toUpperCase() + id.slice(1), family: "structure", kind: "categorical",
-    source: "test", confidence: "high", available: true, surfaces: ["color"],
-    extract: () => null,
-  } as unknown as CatalogDimension;
+    id,
+    label: LABELS[id] ?? id,
+    family: "structure",
+    kind: "categorical",
+    source: "test",
+    confidence: "high",
+    available: true,
+    surfaces: ["color"],
+    extract: (feature) => id === "role" ? feature.role : "covered",
+  } as CatalogDimension;
 }
-const CATALOG = [dim("company"), dim("role"), dim("project")];
+
+const CATALOG = [...PRIMARY_GROUP_DIMENSION_IDS.map(dim), dim("riskScore")];
 
 function renderControls(
   groupBy: string,
@@ -38,46 +53,59 @@ function renderControls(
 ) {
   render(
     <SliderProvider physics={null} catalog={CATALOG}>
-      <GroupByControls catalog={CATALOG} features={features} groupBy={groupBy} onGroupByChange={onGroupByChange} />
+      <GroupByControls
+        catalog={CATALOG}
+        features={features}
+        groupBy={groupBy}
+        onGroupByChange={onGroupByChange}
+        activeLayoutLabel={groupBy === "general" ? "General" : LABELS[groupBy]}
+        colorLabel="Role"
+      />
     </SliderProvider>,
   );
   return { onGroupByChange };
 }
 
 describe("GroupByControls", () => {
-  it("renders a Group-by option per groupable dim, with the current one selected", () => {
-    // Phase 25: the picker offers the full aperture — company is now included,
-    // grouped into themed optgroups (Baseline / Identity).
-    renderControls("role");
-    const select = screen.getByTestId("group-by-select") as HTMLSelectElement;
-    expect(select.value).toBe("role");
-    expect(screen.getByRole("option", { name: "Company" })).toBeTruthy();
-    expect(screen.getByRole("option", { name: "Role" })).toBeTruthy();
-    expect(screen.getByRole("option", { name: "Project" })).toBeTruthy();
-    // Themed optgroups wrap the options.
-    expect(screen.getByRole("group", { name: "Baseline" })).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Identity" })).toBeTruthy();
+  it("renders General first and only the ten curated primary dimensions after it", () => {
+    renderControls("general");
+    const options = screen.getAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual([
+      "General · Similarity",
+      ...PRIMARY_GROUP_DIMENSION_IDS.map((id) => LABELS[id]),
+    ]);
+    expect((screen.getByTestId("group-by-select") as HTMLSelectElement).value).toBe("general");
+    expect(screen.queryByRole("option", { name: "riskScore" })).toBeNull();
   });
 
-  it("calls onGroupByChange when the picker changes", () => {
+  it("selecting General calls the shell reset path and hides grouping strength", () => {
     const { onGroupByChange } = renderControls("role");
-    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "company" } });
-    expect(onGroupByChange).toHaveBeenCalledWith("company");
+    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "general" } });
+    expect(onGroupByChange).toHaveBeenCalledWith("general");
+
+    cleanup();
+    renderControls("general");
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(screen.queryByText("Grouping strength")).toBeNull();
   });
 
-  it("shows honest node-derived coverage inline, with ⚠ when under-covered", () => {
-    // Real structural extractors drive coverage: company reads firmName.
+  it("shows a real dimension strength and the plain encoding model", () => {
+    renderControls("role");
+    expect(screen.getByRole("slider", { name: "Grouping strength thumb" })).toBeTruthy();
+    expect(screen.getByText("Position: Similarity")).toBeTruthy();
+    expect(screen.getByText("Group into: Role · 0")).toBeTruthy();
+    expect(screen.getByText("Color: Role")).toBeTruthy();
+  });
+
+  it("uses neutral selected-dimension coverage and separates memberships from people", () => {
     const features = [
-      { firmName: "Hermosillo" },
-      { firmName: "" },
+      { nodeId: "u1::p1", role: "admin" },
+      { nodeId: "u1::p2", role: null },
+      { nodeId: "u2::p1", role: "viewer" },
     ] as unknown as NodeFeatureSnapshot[];
     renderControls("role", vi.fn(), features);
-    // 1/2 covered (50% < 90% threshold) → coverage + caveat marker.
-    expect(screen.getByRole("option", { name: "Company · 1/2 ⚠" })).toBeTruthy();
-  });
-
-  it("shows the strength value badge for the selected dim (defaults 0)", () => {
-    renderControls("role");
-    expect(screen.getByTestId("slider-value-role").textContent).toBe("0");
+    expect(screen.getByText("Role data · 2/3 memberships")).toBeTruthy();
+    expect(screen.getByText("3 membership nodes · 2 distinct people")).toBeTruthy();
+    expect(screen.queryByText(/⚠/)).toBeNull();
   });
 });

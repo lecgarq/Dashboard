@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { RightPanelStack } from "./RightPanelStack";
 import { SliderProvider } from "./SliderContext";
 import { SelectionProvider } from "./SelectionContext";
 import type { CatalogDimension } from "./dimensionCatalog.types";
+import type { PhysicsLayer } from "./physicsLayer";
 
-// Radix Slider uses ResizeObserver, which is absent in jsdom.
 beforeAll(() => {
   globalThis.ResizeObserver = class {
     observe() {}
@@ -15,7 +15,6 @@ beforeAll(() => {
   } as unknown as typeof ResizeObserver;
 });
 
-// trpc queries used by RightPanelStack must not hit the network in a unit test.
 vi.mock("@/lib/core/trpc", () => ({
   trpc: {
     accDcGraph: { bulkUsers: { useQuery: () => ({ data: [] }) } },
@@ -29,23 +28,39 @@ vi.mock("@/lib/core/trpc", () => ({
 
 function dim(id: string): CatalogDimension {
   return {
-    id, label: id[0].toUpperCase() + id.slice(1), family: "structure", kind: "categorical",
-    source: "test", confidence: "high", available: true, surfaces: ["slider", "color"],
+    id,
+    label: id === "role" ? "Role" : "Company",
+    family: "structure",
+    kind: "categorical",
+    source: "test",
+    confidence: "high",
+    available: true,
+    surfaces: ["slider", "color"],
     extract: () => null,
-  } as unknown as CatalogDimension;
+  } as CatalogDimension;
 }
-const CATALOG = [dim("company"), dim("role")];
 
-function renderStack() {
+const CATALOG = [dim("company"), dim("role")];
+const physics = {
+  getTargets: () => ({}),
+  getDimWeights: () => ({}),
+  registerTargets: vi.fn(),
+  updateSliders: vi.fn(),
+  setActiveInput: vi.fn(),
+} as unknown as PhysicsLayer;
+
+function renderStack(): void {
   render(
-    <SliderProvider physics={null} catalog={CATALOG}>
+    <SliderProvider physics={physics} catalog={CATALOG}>
       <SelectionProvider>
         <RightPanelStack
           features={[]}
+          physics={physics}
           catalog={CATALOG}
           visibleSelectedIndices={null}
-          groupBy="company"
+          groupBy="general"
           onGroupByChange={vi.fn()}
+          colorLabel="Role"
         />
       </SelectionProvider>
     </SliderProvider>,
@@ -53,21 +68,21 @@ function renderStack() {
 }
 
 describe("RightPanelStack — base rail views", () => {
-  it("defaults to Grouping and exposes both view tabs", () => {
+  it("defaults to Layout and keeps Dimensions lazy", () => {
     renderStack();
     expect(screen.getByTestId("group-by-controls")).toBeTruthy();
     expect(screen.queryByTestId("catalog-slider-sidebar")).toBeNull();
-    expect(screen.getByRole("tab", { name: "Grouping" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("false");
+    expect(screen.getByRole("tab", { name: "Layout" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Dimensions" }).getAttribute("aria-selected")).toBe("false");
   });
 
-  it("opens Catalog preview only after its tab is selected", async () => {
+  it("loads Dimensions only after its tab is selected", async () => {
     renderStack();
-    const catalogTab = screen.getByTestId("catalog-preview-tab");
-    fireEvent.mouseDown(catalogTab, { button: 0, ctrlKey: false });
-    fireEvent.click(catalogTab);
+    const dimensionsTab = screen.getByTestId("dimensions-tab");
+    fireEvent.mouseDown(dimensionsTab, { button: 0, ctrlKey: false });
+    fireEvent.click(dimensionsTab);
     expect(await screen.findByTestId("catalog-slider-sidebar")).toBeTruthy();
     expect(screen.queryByTestId("group-by-controls")).toBeNull();
-    expect(screen.getByRole("tab", { name: "Catalog preview" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Dimensions" }).getAttribute("aria-selected")).toBe("true");
   });
 });

@@ -1,17 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CatalogPreviewRow, CatalogTreeSection } from "./CatalogTreeSection";
 import { DimensionSearchBox } from "./DimensionSearchBox";
 import { filterSections } from "./catalogSearch";
-import { catalogPreviewDimensions } from "./catalogSliders";
+import { catalogPreviewDimensions, sliderDimensions } from "./catalogSliders";
 import { buildDimensionCatalog, getCatalogSections } from "./dimensionCatalog";
+import { buildCatalogTargets } from "./catalogTargets";
+import { buildCatalogWeights } from "./catalogWeights";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import type { PhysicsLayer } from "./physicsLayer";
 
 export function CatalogSliderSidebar({
   features,
+  physics,
+  onCatalogReady,
 }: {
   features: ReadonlyArray<NodeFeatureSnapshot>;
+  physics: PhysicsLayer | null;
+  onCatalogReady?: (catalog: readonly CatalogDimension[]) => void;
 }): React.JSX.Element {
   const [query, setQuery] = useState("");
   const catalog = useMemo(
@@ -21,6 +29,18 @@ export function CatalogSliderSidebar({
   const unavailableCount = useMemo(() => catalog.filter((dim) => !dim.available).length, [catalog]);
   const sections = useMemo(() => filterSections(getCatalogSections(catalog), query), [catalog, query]);
   const searching = query.trim() !== "";
+
+  useEffect(() => {
+    onCatalogReady?.(catalog);
+    if (!physics?.registerTargets) return;
+    const existing = physics.getTargets();
+    const missing = sliderDimensions(catalog).filter((dimension) => !existing[dimension.id]);
+    if (missing.length === 0) return;
+    physics.registerTargets(
+      buildCatalogTargets(features, missing),
+      buildCatalogWeights(features, missing),
+    );
+  }, [catalog, features, onCatalogReady, physics]);
 
   const structural = sections.find((section) => section.kind === "structural");
   const activity = sections.find((section) => section.kind === "activity");
@@ -38,8 +58,8 @@ export function CatalogSliderSidebar({
       className="flex w-full shrink-0 flex-col border-l bg-card"
     >
       <header className="border-b p-4">
-        <h2 className="text-sm font-semibold">Catalog preview</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Browse dimensions before layout activation in Phase 27.</p>
+        <h2 className="text-sm font-semibold">Dimensions</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Adjust advanced anchors intentionally. The strongest active dimension sets the layout.</p>
       </header>
       <div className="border-b p-4">
         <DimensionSearchBox query={query} onChange={setQuery} />

@@ -31,6 +31,7 @@ import { mergeAccSummaryWithEnrichment, attachDirectoryFields, useOrgDirectoryPe
 import { useSelection } from "./SelectionContext";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
+import type { PhysicsLayer } from "./physicsLayer";
 
 const CatalogSliderSidebar = lazy(() =>
   import("./CatalogSliderSidebar").then((module) => ({ default: module.CatalogSliderSidebar })),
@@ -38,10 +39,15 @@ const CatalogSliderSidebar = lazy(() =>
 
 export interface RightPanelStackProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
+  physics: PhysicsLayer;
   catalog: readonly CatalogDimension[];
   visibleSelectedIndices: ReadonlySet<number> | null;
   groupBy: string;
   onGroupByChange: (id: string) => void;
+  activeLayoutId?: string;
+  activeLayoutLabel?: string;
+  colorLabel?: string;
+  onCatalogReady?: (catalog: readonly CatalogDimension[]) => void;
 }
 
 type LayerKind = "user-detail" | "lasso-pie" | "sliders";
@@ -64,14 +70,19 @@ const slide = {
 
 export function RightPanelStack({
   features,
+  physics,
   catalog,
   visibleSelectedIndices,
   groupBy,
   onGroupByChange,
+  activeLayoutId,
+  activeLayoutLabel,
+  colorLabel,
+  onCatalogReady,
 }: RightPanelStackProps): React.JSX.Element {
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
   const top = getTopLayer(isolatedNodeIndex, lassoSelection);
-  const [baseView, setBaseView] = useState<"grouping" | "catalog">("grouping");
+  const [baseView, setBaseView] = useState<"layout" | "dimensions">("layout");
 
   // ---- Resizable rail width (persisted, drag handle on the left edge) -------
   // Client-only shell (AccessAnalysisShellClient is dynamic ssr:false), so it's
@@ -182,32 +193,39 @@ export function RightPanelStack({
             <motion.div key="sliders" className="h-full w-full" {...slide}>
               <Tabs
                 value={baseView}
-                onValueChange={(value) => setBaseView(value as "grouping" | "catalog")}
+                onValueChange={(value) => setBaseView(value as "layout" | "dimensions")}
                 className="h-full min-h-0 gap-0"
               >
                 <div className="sticky top-0 z-20 border-b border-l bg-card p-2">
                   <TabsList className="h-8 w-full">
-                    <TabsTrigger value="grouping" data-testid="grouping-tab">Grouping</TabsTrigger>
-                    <TabsTrigger value="catalog" data-testid="catalog-preview-tab">Catalog preview</TabsTrigger>
+                    <TabsTrigger value="layout" data-testid="layout-tab">Layout</TabsTrigger>
+                    <TabsTrigger value="dimensions" data-testid="dimensions-tab">Dimensions</TabsTrigger>
                   </TabsList>
                 </div>
-                <TabsContent value="grouping" className="mt-0 min-h-0">
+                <TabsContent value="layout" className="mt-0 min-h-0">
                   <GroupByControls
                     catalog={catalog}
                     features={features}
                     groupBy={groupBy}
                     onGroupByChange={onGroupByChange}
+                    activeLayoutId={activeLayoutId}
+                    activeLayoutLabel={activeLayoutLabel}
+                    colorLabel={colorLabel}
                   />
                 </TabsContent>
-                <TabsContent value="catalog" className="mt-0 min-h-0">
+                <TabsContent value="dimensions" className="mt-0 min-h-0">
                   <Suspense
                     fallback={
                       <div data-testid="catalog-preview-loading" role="status" className="p-4 text-sm text-muted-foreground">
-                        Loading catalog preview…
+                        Loading dimensions…
                       </div>
                     }
                   >
-                    <CatalogSliderSidebar features={features} />
+                    <CatalogSliderSidebar
+                      features={features}
+                      physics={physics}
+                      onCatalogReady={onCatalogReady}
+                    />
                   </Suspense>
                 </TabsContent>
               </Tabs>

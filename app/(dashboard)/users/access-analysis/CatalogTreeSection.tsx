@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { CatalogCollapse } from "./CatalogCollapse";
+import { DimensionSlider } from "./DimensionSlider";
+import { useSliders } from "./SliderContext";
 import type { CatalogActivityModule } from "./dimensionCatalog";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 
@@ -35,13 +37,19 @@ export function DisabledRow({ label, reason }: { label: string; reason?: string 
 }
 
 export function CatalogPreviewRow({ dim }: { dim: CatalogDimension }): React.JSX.Element {
+  const { values, setSliderValue, resetOne } = useSliders();
   if (!dim.available) {
     return <DisabledRow label={dim.label} reason={dim.note ?? dim.source} />;
   }
   return (
-    <div data-testid="catalog-preview-row" className="flex items-center justify-between gap-3 py-1">
-      <span className="text-sm font-medium text-foreground">{dim.label}</span>
-      <span className="shrink-0 text-[10px] text-muted-foreground">Activates in Phase 27</span>
+    <div data-testid="catalog-preview-row" className="rounded-md border bg-background/40 p-2.5">
+      <DimensionSlider
+        dimId={dim.id}
+        label={dim.label}
+        value={values[dim.id] ?? 0}
+        onChange={(value) => setSliderValue(dim.id, value)}
+        onReset={() => resetOne(dim.id)}
+      />
     </div>
   );
 }

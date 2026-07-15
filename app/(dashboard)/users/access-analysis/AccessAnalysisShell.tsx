@@ -34,7 +34,7 @@ import {
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
-import { COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
+import type { ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate, buildApertureValueResolvers } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
@@ -51,7 +51,12 @@ import { SimilarityWebOverlay } from "./SimilarityWebOverlay";
 import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
 import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
-import { defaultGroupBy, groupByDimensions } from "./groupByDimensions";
+import {
+  defaultGroupBy,
+  GENERAL_GROUP_ID,
+  groupByDimensions,
+  primaryGroupLabel,
+} from "./groupByDimensions";
 import { resolveMapGrouping } from "./mapGrouping";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
@@ -61,7 +66,7 @@ import { ACC_3D_GRAPH_ENABLED } from "./graphModeFlag";
 import { buildCatalogTargets } from "./catalogTargets";
 import { buildCatalogWeights } from "./catalogWeights";
 import { buildStructuralDimensions } from "./dimensionCatalog.structural";
-import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
+import { GROUPING_DEFAULT, sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
 import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getDuckDbClient } from "./duckdbClient";
@@ -135,35 +140,73 @@ export function ShellBody({
   const [rendererReady, setRendererReady] = useState(0);
 
   const { resolvedTheme } = useTheme();
-  const { values: sliderValues, getLiveValues, setSliderValue, isPreviewActive } = useSliders();
+  const {
+    values: sliderValues,
+    getLiveValues,
+    setSliderValue,
+    resetAll,
+    isPreviewActive,
+  } = useSliders();
 
-  // Projector map (flag-OFF): ONE controlled grouping dim + a single strength slider.
-  // The picker defaults to Role (defaultGroupBy), and the projector seeds every slider
-  // to 0 (see SliderContext), so the map LOADS as the free embedding scatter — the user
-  // drags the strength slider up to morph into Role/Project/User blobs.
-  // Changing the picker transfers the current strength to the new dim (zeroing the old).
+  // The common path starts at the synthetic General baseline. Group into and Color both
+  // establish one primary anchor; advanced Dimensions strengths remain intentional extras.
   const [groupBy, setGroupBy] = useState<string>(() => defaultGroupBy(catalog));
+  const primaryLayoutIdRef = useRef<string>(GENERAL_GROUP_ID);
+  const [layoutCatalog, setLayoutCatalog] = useState<readonly CatalogDimension[]>(catalog);
+  useEffect(() => setLayoutCatalog(catalog), [catalog]);
+  const onCatalogReady = useCallback((fullCatalog: readonly CatalogDimension[]): void => {
+    setLayoutCatalog(fullCatalog);
+  }, []);
   // `strength` reads the COMMITTED (rAF-throttled ~60ms) slider value on purpose — it
   // only drives the color-mode/labels switch, which shouldn't strobe mid-drag. The
   // MOTION reads the live value via getLiveValues() inside layoutTarget (every frame),
   // so the morph itself is immediate; do NOT switch this to a live read (it would put
   // per-frame React churn back on the critical path).
   const strength = sliderValues[groupBy] ?? 0;
+  const activatePrimary = useCallback(
+    (next: string): void => {
+      if (next === GENERAL_GROUP_ID) {
+        resetAll();
+        primaryLayoutIdRef.current = GENERAL_GROUP_ID;
+        return;
+      }
+      const previous = primaryLayoutIdRef.current;
+      if (previous === next) return;
+      const live = getLiveValues();
+      const carry = previous === GENERAL_GROUP_ID
+        ? GROUPING_DEFAULT
+        : (live[previous] ?? 0);
+      if (previous !== GENERAL_GROUP_ID) setSliderValue(previous, 0);
+      setSliderValue(next, carry);
+      primaryLayoutIdRef.current = next;
+    },
+    [getLiveValues, resetAll, setSliderValue],
+  );
   const onGroupByChange = useCallback(
     (next: string): void => {
-      const carry = sliderValues[groupBy] ?? 0;
-      setSliderValue(groupBy, 0);
-      setSliderValue(next, carry);
+      activatePrimary(next);
       setGroupBy(next);
     },
-    [groupBy, sliderValues, setSliderValue],
+    [activatePrimary],
   );
 
   // Flag-ON: dominant slider dim (unchanged). Flag-OFF: the picker selection.
-  const groupingOrder = useMemo(() => catalog.map((d) => d.id), [catalog]);
+  const groupingOrder = useMemo(() => layoutCatalog.map((d) => d.id), [layoutCatalog]);
   const groupingDim = useMemo(
     () => activeGroupingDimension(sliderValues, groupingOrder, "role"),
     [sliderValues, groupingOrder],
+  );
+  const activeLayoutId = useMemo(
+    () => activeGroupingDimension(sliderValues, groupingOrder, GENERAL_GROUP_ID),
+    [sliderValues, groupingOrder],
+  );
+  const activeLayoutDimension = useMemo(
+    () => layoutCatalog.find((dimension) => dimension.id === activeLayoutId),
+    [activeLayoutId, layoutCatalog],
+  );
+  const activeLayoutLabel = primaryGroupLabel(
+    activeLayoutId,
+    activeLayoutDimension?.label ?? activeLayoutId,
   );
   const grouping = useMemo(
     () =>
@@ -238,15 +281,14 @@ export function ShellBody({
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = grouping.colorMode;
   const colorMode: string = colorOverride ?? autoColorMode;
-  const setColorMode = (m: string): void => setColorOverride(m);
-  const resetColor = (): void => setColorOverride("role");
-  // While actively grouping on the projector map, the toolbar's "Grouped by" label
-  // names the real group-by dimension (the catalog label), which is accurate even for
-  // dims with no color-registry entry; otherwise it mirrors the auto color mode.
-  const groupedByLabel =
-    !ACC_3D_GRAPH_ENABLED && grouping.showLabels && groupDim
-      ? groupDim.label
-      : COLOR_MODE_LABELS[autoColorMode] ?? autoColorMode;
+  const setColorMode = useCallback((next: string): void => {
+    activatePrimary(next);
+    setColorOverride(next);
+  }, [activatePrimary]);
+  const resetColor = useCallback((): void => {
+    activatePrimary("role");
+    setColorOverride("role");
+  }, [activatePrimary]);
 
   // Node colors + legend. Sources, in priority order:
   //  1. The color picker (catalog id) resolves to a CatalogDimension and colors by
@@ -263,6 +305,7 @@ export function ShellBody({
     () => (colorOverride ? (catalog.find((d) => d.id === colorOverride) ?? null) : null),
     [catalog, colorOverride],
   );
+  const colorLabel = primaryGroupLabel(colorMode, colorDim?.label ?? colorMode);
   const bucketed = useMemo(() => {
     if (colorDim) {
       return bucketedColorsFromClustering(buildDominantClusters(features, colorDim), 12);
@@ -394,8 +437,8 @@ export function ShellBody({
         colorMode={colorMode}
         onColorModeChange={setColorMode}
         catalog={catalog}
-        groupedByLabel={groupedByLabel}
-        groupedByDimId={groupDim?.id ?? ""}
+        groupedByLabel={activeLayoutLabel}
+        groupedByDimId={activeLayoutId === GENERAL_GROUP_ID ? "" : activeLayoutId}
         colorIsAuto={colorIsAuto}
         onColorReset={resetColor}
         show3DToggle={ACC_3D_GRAPH_ENABLED}
@@ -500,10 +543,15 @@ export function ShellBody({
         </div>
         <RightPanelStack
           features={features}
+          physics={physics}
           catalog={catalog}
           visibleSelectedIndices={visibleSubset}
           groupBy={groupBy}
           onGroupByChange={onGroupByChange}
+          activeLayoutId={activeLayoutId}
+          activeLayoutLabel={activeLayoutLabel}
+          colorLabel={colorLabel}
+          onCatalogReady={onCatalogReady}
         />
       </div>
     </div>

@@ -1,56 +1,59 @@
-import { describe, it, expect } from "vitest";
-import { groupByDimensions, defaultGroupBy } from "./groupByDimensions";
-import { PRESET_DIMENSION_IDS, APERTURE_THEME_GROUPS } from "./dimensionIdSpace";
+import { describe, expect, it } from "vitest";
+import {
+  defaultGroupBy,
+  GENERAL_GROUP_ID,
+  groupByDimensions,
+  PRIMARY_GROUP_DIMENSION_IDS,
+} from "./groupByDimensions";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 
-function dim(id: string, kind: CatalogDimension["kind"], available = true): CatalogDimension {
+function dim(id: string, available = true): CatalogDimension {
   return {
-    id, label: id[0].toUpperCase() + id.slice(1), family: "structure", kind,
-    source: "test", confidence: "high", available, surfaces: ["slider", "color"],
+    id,
+    label: id,
+    family: "structure",
+    kind: "categorical",
+    source: "test",
+    confidence: "high",
+    available,
+    surfaces: ["slider", "color"],
     extract: () => null,
-  } as unknown as CatalogDimension;
+  } as CatalogDimension;
 }
 
 describe("groupByDimensions", () => {
-  it("offers the widened themed aperture and drops non-aperture dims", () => {
-    const catalog = [
-      ...PRESET_DIMENSION_IDS.map((id) => dim(id, "categorical")),
-      dim("activityByModule", "multiHot"),  // catalog dim, not in the aperture → dropped
-      dim("typeOfActivity", "multiHot"),    // dropped
-      dim("notADim", "categorical"),        // dropped
-    ];
-    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual([...PRESET_DIMENSION_IDS]);
-  });
-
-  it("the aperture is the flattened theme groups (single source, role first)", () => {
-    expect(PRESET_DIMENSION_IDS).toEqual(APERTURE_THEME_GROUPS.flatMap((g) => [...g.ids]));
-    expect(PRESET_DIMENSION_IDS[0]).toBe("role");
-    // Baseline presets still lead the list, in order.
-    expect(PRESET_DIMENSION_IDS.slice(0, 3)).toEqual(["role", "project", "user"]);
-    // No duplicates across theme groups.
-    expect(new Set(PRESET_DIMENSION_IDS).size).toBe(PRESET_DIMENSION_IDS.length);
-  });
-
-  it("drops an unavailable aperture dim", () => {
-    const catalog = [dim("role", "categorical"), dim("user", "categorical", false)];
-    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual(["role"]);
-  });
-
-  it("orders by aperture display order, regardless of catalog order", () => {
-    const catalog = [
-      dim("riskScore", "ordinal"),
-      dim("user", "categorical"),
-      dim("company", "categorical"),
-      dim("project", "categorical"),
-      dim("role", "categorical"),
-    ];
-    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual([
-      "role", "project", "user", "company", "riskScore",
+  it("locks the owner-approved primary order", () => {
+    expect(PRIMARY_GROUP_DIMENSION_IDS).toEqual([
+      "role",
+      "company",
+      "user",
+      "project",
+      "activityRecency",
+      "activityVolume",
+      "permissionTier",
+      "folderBreadth",
+      "typeOfActivity",
+      "moduleAccess",
     ]);
   });
 
-  it("defaultGroupBy returns 'role' when present, or 'role' when empty", () => {
-    expect(defaultGroupBy([dim("project", "categorical"), dim("role", "categorical"), dim("user", "categorical")])).toBe("role");
-    expect(defaultGroupBy([])).toBe("role");
+  it("returns only available primary dimensions in locked order", () => {
+    const catalog = [
+      dim("riskScore"),
+      ...[...PRIMARY_GROUP_DIMENSION_IDS].reverse().map((id) => dim(id)),
+      dim("activityByModule"),
+    ];
+    expect(groupByDimensions(catalog).map((item) => item.id)).toEqual(PRIMARY_GROUP_DIMENSION_IDS);
+  });
+
+  it("keeps unavailable and non-primary dimensions out of the menu", () => {
+    expect(groupByDimensions([dim("role", false), dim("company"), dim("riskScore")]).map((item) => item.id))
+      .toEqual(["company"]);
+  });
+
+  it("defaults to the synthetic General similarity baseline", () => {
+    expect(GENERAL_GROUP_ID).toBe("general");
+    expect(defaultGroupBy([dim("role")])).toBe("general");
+    expect(defaultGroupBy([])).toBe("general");
   });
 });

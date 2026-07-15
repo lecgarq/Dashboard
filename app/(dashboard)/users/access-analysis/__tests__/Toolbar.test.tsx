@@ -105,6 +105,26 @@ describe("Toolbar — Phase 4-02 Task 2", () => {
     expect(companyOption!.closest("optgroup")?.label).toBe("Identity");
   });
 
+  it("states the similarity position and active coverage without warning styling", () => {
+    render(
+      <FilterProvider>
+        <Toolbar
+          features={mkFeatures()}
+          catalog={CATALOG}
+          mode="2d"
+          onModeChange={() => {}}
+          lassoActive={false}
+          onLassoToggle={() => {}}
+          groupedByLabel="Role"
+          groupedByDimId="role"
+        />
+      </FilterProvider>,
+    );
+    expect(screen.getByTestId("toolbar-grouped-by").textContent).toContain("Position: Similarity · Group into: Role");
+    expect(screen.getByTestId("toolbar-grouped-by-coverage").textContent).toBe("Role data · 2/2");
+    expect(screen.queryByText(/⚠/)).toBeNull();
+  });
+
   it("adding a dimension renders its chip; multi-selecting banded values toggles activeFilters", () => {
     let api: ReturnType<typeof useFilters> | null = null;
     render(<Harness exposeFilters={(a) => (api = a)} />);
