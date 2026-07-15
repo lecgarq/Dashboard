@@ -16,14 +16,20 @@ export interface ClusterTransitionLayer {
 // TAU_MS / EPSILON tuned for FAST settle: each ease frame forces a full cosmos
 // re-upload (~250ms on 16,942 nodes), so the fewer frames the transition takes,
 // the shorter the low-fps window before pushPositions' dirty-check parks the pump.
-// At ~5fps (dt clamped to 50ms) this settles in ~5 frames (~1s) instead of ~24
-// (~5s). EPSILON 0.75 is sub-pixel in cosmos's ≈±350 space, so it's imperceptible.
-const TAU_MS = 35;        // time constant — quick ease (was 90)
+// The default preserves the legacy quick settle; callers can request the workshop
+// transition window while the per-frame dt clamp still absorbs background-tab gaps.
 const MAX_DT_MS = 50;     // clamp after tab-background pauses (matches previewLayer)
-const EPSILON = 0.75;     // settle threshold in cosmos space units (was 1e-3)
+const DEFAULT_DURATION_MS = 105; // preserves the prior 35ms time constant
 
-export function createClusterTransitionLayer(opts: { nodeCount: number }): ClusterTransitionLayer {
+export function createClusterTransitionLayer(opts: {
+  nodeCount: number;
+  /** Perceptual settle window; exponential time constant is one third of this. */
+  durationMs?: number;
+}): ClusterTransitionLayer {
   const n = opts.nodeCount;
+  const durationMs = opts.durationMs ?? DEFAULT_DURATION_MS;
+  const tauMs = Math.max(1, durationMs / 3);
+  const epsilon = opts.durationMs == null ? 0.75 : 0.25;
   const displayed = new Float32Array(n * 3);
   const target = new Float32Array(n * 3);
 
@@ -40,11 +46,11 @@ export function createClusterTransitionLayer(opts: { nodeCount: number }): Clust
     },
     step(dtMs: number): boolean {
       const dt = Math.min(MAX_DT_MS, Math.max(0, dtMs));
-      const alpha = 1 - Math.exp(-dt / TAU_MS);
+      const alpha = 1 - Math.exp(-dt / tauMs);
       let moved = false;
       for (let i = 0; i < displayed.length; i++) {
         const d = (target[i] - displayed[i]) * alpha;
-        if (Math.abs(d) > EPSILON) { displayed[i] += d; moved = true; }
+        if (Math.abs(d) > epsilon) { displayed[i] += d; moved = true; }
         else displayed[i] = target[i];
       }
       return !moved;

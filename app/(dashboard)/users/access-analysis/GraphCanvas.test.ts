@@ -833,7 +833,10 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
 describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
   // Helper: mount GraphCanvas with packed positions at a given GPU mode, drive one
   // rAF, and return. Caller asserts on the shared _pauseCalls/_setPointPositionsCalls.
-  async function mountPacked(gpuSimulation: boolean): Promise<() => void> {
+  async function mountPacked(
+    gpuSimulation: boolean,
+    reducedMotion = false,
+  ): Promise<{ cleanup: () => void; packed: Float32Array }> {
     const { GraphCanvas } = await import("./GraphCanvas");
     const { SliderProvider } = await import("./SliderContext");
     const { render, act } = await import("@testing-library/react");
@@ -848,6 +851,11 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
     vi.stubGlobal("cancelAnimationFrame", () => {
       rafCallbacks = [];
     });
+    vi.stubGlobal("matchMedia", () => ({
+      matches: reducedMotion,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
     const drainRaf = (timestamp = 16): void => {
       const pending = [...rafCallbacks];
       rafCallbacks = [];
@@ -886,13 +894,13 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
       drainRaf();
       await Promise.resolve();
     });
-    return () => vi.unstubAllGlobals();
+    return { cleanup: () => vi.unstubAllGlobals(), packed };
   }
 
   // GPU-OFF fallback (e2e + WebGL-incapable machines): packed positions ARE the
   // source of truth and get uploaded (dontRescale=true upload from the cluster path).
   it("GPU-OFF: packed positions are pushed to cosmos (deterministic fallback)", async () => {
-    const cleanup = await mountPacked(false);
+    const { cleanup } = await mountPacked(false);
     expect(_setPointPositionsCalls.some((c) => c.dontRescale === true)).toBe(true);
     cleanup();
   });
@@ -903,9 +911,18 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
   // force sim and are uploaded with dontRescale=true (keeps spaceToScreen correct
   // so ClusterLabels track the blobs).
   it("GPU-ON: packed positions pause the force sim (packed layout authoritative)", async () => {
-    const cleanup = await mountPacked(true);
+    const { cleanup } = await mountPacked(true);
     expect(_pauseCalls).toBeGreaterThanOrEqual(1);
     expect(_setPointPositionsCalls.some((c) => c.dontRescale === true)).toBe(true);
+    cleanup();
+  });
+
+  it("reduced motion pushes the settled target on the first frame", async () => {
+    const { cleanup, packed } = await mountPacked(false, true);
+    const pushed = _setPointPositionsCalls.find((call) => call.dontRescale)?.xy;
+    expect(Array.from(pushed ?? [])).toEqual([
+      packed[0], packed[1], packed[3], packed[4], packed[6], packed[7],
+    ]);
     cleanup();
   });
 });

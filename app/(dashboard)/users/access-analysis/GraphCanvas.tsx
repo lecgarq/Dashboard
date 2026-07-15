@@ -158,6 +158,20 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   const previewRef = useRef<PreviewLayer | null>(null);
   const previewActiveLocalRef = useRef<boolean>(false);
   const lastFrameTsRef = useRef<number>(0);
+  const reducedMotionRef = useRef(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = (): void => { reducedMotionRef.current = media.matches; };
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
 
   // Handle refs for each renderer
   const handle2D = useRef<GraphCanvas2DHandle | null>(null);
@@ -251,6 +265,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     const layer = clusterLayerRef.current;
     if (!layer || !props.layoutTarget) return null;
     const target = props.layoutTarget();
+    if (reducedMotionRef.current) return target;
     try {
       layer.setTarget(target);
     } catch {
@@ -267,7 +282,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // (Re)create the layer when node count changes; seed from current visible positions.
   useEffect(() => {
     const xyz = props.physics.getPositions();
-    const layer = createClusterTransitionLayer({ nodeCount: xyz.length / 3 });
+    const layer = createClusterTransitionLayer({ nodeCount: xyz.length / 3, durationMs: 600 });
     layer.seedFrom(xyz);
     clusterLayerRef.current = layer;
     return () => { clusterLayerRef.current = null; };

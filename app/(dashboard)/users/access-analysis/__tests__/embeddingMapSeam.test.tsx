@@ -21,7 +21,7 @@
 
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { PhysicsLayer } from "../physicsLayer";
 import type { NodeFeatureSnapshot } from "../interactionTypes";
 import type { CatalogDimension } from "../dimensionCatalog.types";
@@ -32,6 +32,7 @@ const captured: {
   graphCanvasProps: Record<string, unknown> | null;
   mapLabelProps: Record<string, unknown> | null;
 } = { graphCanvasProps: null, mapLabelProps: null };
+let sliderApi: ReturnType<typeof useSliders> | null = null;
 
 // ---- Child + dependency mocks ----------------------------------------------
 
@@ -89,7 +90,7 @@ vi.mock("@/lib/core/trpc", () => ({
 }));
 
 import { ShellBody } from "../AccessAnalysisShell";
-import { SliderProvider } from "../SliderContext";
+import { SliderProvider, useSliders } from "../SliderContext";
 import { FilterProvider } from "../FilterContext";
 import { SelectionProvider } from "../SelectionContext";
 
@@ -112,8 +113,22 @@ function mkPhysics(n: number): PhysicsLayer {
     setMask: vi.fn(),
     setActiveInput: vi.fn(),
     getPositions: () => xyz,
-    getTargets: () => ({}),
-    getDimWeights: () => ({}),
+    getTargets: () => ({
+      role: {
+        x: new Float32Array(n).fill(100),
+        y: new Float32Array(n),
+        z: new Float32Array(n),
+      },
+      project: {
+        x: new Float32Array(n).fill(-100),
+        y: new Float32Array(n),
+        z: new Float32Array(n),
+      },
+    }),
+    getDimWeights: () => ({
+      role: new Float32Array(n).fill(1),
+      project: new Float32Array(n).fill(1),
+    }),
     getSliders: () => ({}),
     syncPositions: vi.fn(),
     dispose: vi.fn(),
@@ -139,15 +154,31 @@ function mkFeatures(n: number): NodeFeatureSnapshot[] {
   })) as unknown as NodeFeatureSnapshot[];
 }
 
-const catalog: CatalogDimension[] = [];
+const catalog: CatalogDimension[] = [
+  {
+    id: "role", label: "Role", family: "structure", kind: "categorical",
+    source: "test", confidence: "high", available: true, surfaces: ["slider", "color"],
+    extract: (feature) => feature.role,
+  },
+  {
+    id: "project", label: "Project", family: "structure", kind: "categorical",
+    source: "test", confidence: "high", available: true, surfaces: ["slider", "color"],
+    extract: (feature) => feature.project,
+  },
+] as CatalogDimension[];
 
 function renderBody(): void {
   const physics = mkPhysics(4);
   const features = mkFeatures(4);
+  const SliderProbe = (): null => {
+    sliderApi = useSliders();
+    return null;
+  };
   const Wrapper: React.FC = () => {
     const graphRef = React.useRef(null);
     return (
       <SliderProvider physics={physics as never} catalog={catalog}>
+        <SliderProbe />
         <FilterProvider>
           <SelectionProvider>
             <ShellBody
@@ -185,6 +216,23 @@ describe("flag-OFF embedding-map seam", () => {
     captured.graphCanvasProps = null;
     renderBody();
     expect(captured.graphCanvasProps!.gpuSimulation).toBe(false);
+  });
+
+  it("returns the exact embedding at zero and lets the strongest catalog target win", () => {
+    renderBody();
+    const layoutTarget = captured.graphCanvasProps!.layoutTarget as () => Float32Array;
+    expect(Array.from(layoutTarget())).toEqual([
+      0, 0, 0,
+      11, 13, 0,
+      22, 26, 0,
+      33, 39, 0,
+    ]);
+
+    act(() => {
+      sliderApi!.setSliderValue("role", 60);
+      sliderApi!.setSliderValue("project", 80);
+    });
+    expect(layoutTarget()[0]).toBeLessThan(0);
   });
 
   it("feeds MapClusterLabels no blob footprints (null centers, empty labels)", () => {

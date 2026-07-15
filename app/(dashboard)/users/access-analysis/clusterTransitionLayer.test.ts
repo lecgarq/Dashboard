@@ -41,6 +41,20 @@ describe("clusterTransitionLayer", () => {
     expect(layer.snapshot()[0]).toBeLessThan(100); // did not snap to target
   });
 
+  it("is materially settled inside a configured 600ms transition window", () => {
+    const layer = createClusterTransitionLayer({ nodeCount: 1, durationMs: 600 });
+    layer.seedFrom(new Float32Array([0, 0, 0]));
+    layer.setTarget(new Float32Array([100, 0, 0]));
+    for (let elapsed = 0; elapsed < 96; elapsed += 16) layer.step(16);
+    expect(layer.snapshot()[0]).toBeGreaterThan(0);
+    expect(layer.snapshot()[0]).toBeLessThan(50);
+    for (let elapsed = 96; elapsed < 480; elapsed += 16) layer.step(16);
+    expect(layer.snapshot()[0]).toBeLessThan(100);
+    for (let elapsed = 480; elapsed < 600; elapsed += 16) layer.step(16);
+    expect(layer.snapshot()[0]).toBeGreaterThanOrEqual(94);
+    expect(layer.snapshot()[0]).toBeLessThanOrEqual(100);
+  });
+
   it("reports settled=false while moving and true once at rest", () => {
     const layer = createClusterTransitionLayer({ nodeCount: 1 });
     layer.seedFrom(new Float32Array([0, 0, 0]));

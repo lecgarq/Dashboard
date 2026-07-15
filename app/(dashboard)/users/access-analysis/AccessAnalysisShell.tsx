@@ -51,13 +51,12 @@ import { SimilarityWebOverlay } from "./SimilarityWebOverlay";
 import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
 import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
-import { buildEmbeddingBlobDescriptor } from "./embeddingBlobDescriptor";
-import { defaultGroupBy } from "./groupByDimensions";
+import { defaultGroupBy, groupByDimensions } from "./groupByDimensions";
 import { resolveMapGrouping } from "./mapGrouping";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { createPhysicsLayerWorker } from "./physicsLayerWorker";
-import { createStaticLayer } from "./staticLayer";
+import { catalogAnchorTarget, createStaticLayer } from "./staticLayer";
 import { ACC_3D_GRAPH_ENABLED } from "./graphModeFlag";
 import { buildCatalogTargets } from "./catalogTargets";
 import { buildCatalogWeights } from "./catalogWeights";
@@ -187,33 +186,30 @@ export function ShellBody({
     [catalog, grouping.groupDimId],
   );
 
-  // Static layer's positions ARE the embedding scatter (flag-OFF). Downproject to
-  // stride-2 once; used as the morph's s=0 endpoint.
-  const embeddingXy = useMemo<Float32Array | null>(() => {
-    if (ACC_3D_GRAPH_ENABLED) return null;
-    const xyz = physics.getPositions();
-    const n = xyz.length / 3;
-    const xy = new Float32Array(n * 2);
-    for (let i = 0; i < n; i++) {
-      xy[i * 2] = xyz[i * 3];
-      xy[i * 2 + 1] = xyz[i * 3 + 1];
-    }
-    return xy;
-  }, [physics]);
+  const embeddingXyz = useMemo(() => physics.getPositions(), [physics]);
 
-  // LAYOUT descriptor: flag-ON keeps the loose→tight footprint morph; flag-OFF morphs
-  // the embedding scatter (s=0) → grouped clump (s=1), normalized to the embedding bbox.
+  // The parked flag-ON path keeps its packed descriptor. The default frozen map
+  // now reads catalog targets/weights directly below.
   const blobDesc = useMemo(() => {
-    if (!groupDim) return null;
-    if (ACC_3D_GRAPH_ENABLED) return buildUserBlobDescriptor(features, groupDim);
-    return embeddingXy ? buildEmbeddingBlobDescriptor(features, groupDim, embeddingXy) : null;
-  }, [features, groupDim, embeddingXy]);
+    if (!ACC_3D_GRAPH_ENABLED || !groupDim) return null;
+    return buildUserBlobDescriptor(features, groupDim);
+  }, [features, groupDim]);
 
   const layoutOutRef = useRef<Float32Array>(new Float32Array(features.length * 3));
   const layoutTarget = useCallback((): Float32Array => {
-    if (!blobDesc) return layoutOutRef.current;
+    if (!ACC_3D_GRAPH_ENABLED) {
+      return catalogAnchorTarget({
+        baseline: embeddingXyz,
+        targets: physics.getTargets(),
+        dimWeights: physics.getDimWeights(),
+        live: getLiveValues(),
+        order: groupingOrder,
+        out: layoutOutRef.current,
+      });
+    }
+    if (!blobDesc) return embeddingXyz;
     return descriptorTarget(blobDesc, getLiveValues(), layoutOutRef.current);
-  }, [blobDesc, getLiveValues]);
+  }, [blobDesc, embeddingXyz, getLiveValues, groupingOrder, physics]);
 
   // Per-cluster REST centroids — the centroid of each cluster's members at the morph's
   // s=0 (scatter) endpoint. The cluster chips lerp these → footprint centers by the live
@@ -438,14 +434,9 @@ export function ShellBody({
               // renderer eases toward it with the GPU sim paused, so clusters are
               // STRUCTURALLY separated — not left to the d3 force (which piles centrally).
               //
-              // Flag-OFF (similarity-embedding projector map, default): the STATIC layer
-              // seeds the precomputed embedding coords, and we ALSO pass a layoutTarget so
-              // the Group-by + Strength morph runs (clusterActive=true → the
-              // clusterTransitionLayer eases toward the embedding-blob descriptor). At rest
-              // (strength 0) that descriptor RETURNS the embedding scatter, so the displayed
-              // positions equal the seed until the user raises the slider. gpuSimulation
-              // stays false: there is NO GPU force sim — positions come purely from the
-              // eased descriptor, so the morph is real-time with nothing to lag or jump.
+              // Flag-OFF (similarity projector): the static layer owns the exact embedding
+              // plus catalog targets/weights. layoutTarget selects one strongest anchor field
+              // and the renderer eases toward it while Cosmos remains frozen.
               layoutTarget={layoutTarget}
               gpuSimulation={ACC_3D_GRAPH_ENABLED ? undefined : false}
               onRendererReady={() => setRendererReady((v) => v + 1)}
@@ -597,9 +588,14 @@ export function AccessAnalysisShell(): React.JSX.Element {
         // The 176 generated actions are built inside the lazy Catalog preview instead.
         const catalog = buildStructuralDimensions();
         const sliderDims = curatedSliderDimensions(catalog);
-        const targetDimIds = sliderDims.map((d) => d.id);
-        const targets = buildCatalogTargets(snapshot, sliderDims);
-        const dimWeights = buildCatalogWeights(snapshot, sliderDims);
+        const targetDims = [...sliderDims];
+        const targetIds = new Set(targetDims.map((dim) => dim.id));
+        for (const dim of groupByDimensions(catalog)) {
+          if (!targetIds.has(dim.id)) targetDims.push(dim);
+        }
+        const targetDimIds = targetDims.map((d) => d.id);
+        const targets = buildCatalogTargets(snapshot, targetDims);
+        const dimWeights = buildCatalogWeights(snapshot, targetDims);
         // catalogDefaultSliders is in 0..100 (SliderContext scale); physics wants 0..1.
         // localStorage overrides per known catalog id, mirroring SliderContext hydration
         // so UI + physics stay in lockstep. The override loop also divides by 100.
@@ -625,11 +621,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
         }
 
         // EMBEDDING MAP (flag-OFF default): feed the precomputed 2D coords through
-        // a STATIC PhysicsLayer so the renderer/rAF/mask/color pipeline runs
-        // unchanged — and never construct the d3-force worker. The static layer's
-        // updateSliders is a no-op, but the Group-by + Strength morph does NOT go
-        // through it: ShellBody builds an embedding-blob descriptor and drives the
-        // morph via the per-frame layoutTarget (positions) + getLiveValues (strength).
+        // a frozen PhysicsLayer so the renderer/rAF/mask/color pipeline runs unchanged
+        // without constructing the d3 worker. It retains catalog targets/weights for the
+        // strongest-wins layoutTarget above; updateSliders remains simulation-inert.
         // Joins embedding coords to nodeIds by nodeId.
         if (!ACC_3D_GRAPH_ENABLED) {
           const emb = embeddingQuery.data;
@@ -646,7 +640,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
             if (snapshot[i]) snapshot[i].cluster = e && e.cluster != null ? e.cluster : null;
           }
           if (missing > 0) console.warn(`[embedding] ${missing} nodes missing coords (origin fallback)`);
-          const layer = createStaticLayer(nodeIds, xy);
+          const layer = createStaticLayer(nodeIds, xy, targets, dimWeights);
           createdPhysics = layer;
           if (cancelled) return;
           setFeatures(snapshot);
