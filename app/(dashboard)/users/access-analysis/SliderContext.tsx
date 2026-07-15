@@ -285,8 +285,10 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
     stateRafRef.current = requestAnimationFrame(tick);
   }, []);
 
-  // Two-pass mount — hydrate from localStorage AFTER initial render.
+  // The projector always opens at General · Similarity, so persisted layout strengths
+  // are intentionally ignored there. The parked flag-ON graph retains legacy hydration.
   useEffect(() => {
+    if (!ACC_3D_GRAPH_ENABLED) return;
     const stored = readPersisted();
     if (!stored || !stored.sliders) return;
     const migrated = migratePersistedSliders(stored.sliders as Record<string, number>, ids);

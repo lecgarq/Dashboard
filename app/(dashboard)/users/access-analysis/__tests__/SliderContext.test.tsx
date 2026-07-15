@@ -199,7 +199,7 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     expect(result.current.values.signin).toBe(60);
   });
 
-  it("localStorage round-trip restores stored values for known ids on mount", async () => {
+  it("projector mount ignores persisted strengths so General opens at exact zero", async () => {
     window.localStorage.setItem(
       CONTROLS_STORAGE_KEY,
       JSON.stringify({ sliders: { activity: 42, signin: 11 } }),
@@ -212,11 +212,11 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
       await new Promise<void>((r) => requestAnimationFrame(() => r()));
     });
 
-    expect(result.current.values.activity).toBe(42);
-    expect(result.current.values.signin).toBe(11);
+    expect(result.current.values.activity).toBe(0);
+    expect(result.current.values.signin).toBe(0);
   });
 
-  it("localStorage hydration drops persisted ids that are not in the catalog", async () => {
+  it("projector mount keeps the zero catalog shape and drops stale persisted ids", async () => {
     window.localStorage.setItem(
       CONTROLS_STORAGE_KEY,
       JSON.stringify({ sliders: { activity: 30, staleDim: 90 } }),
@@ -229,7 +229,7 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
       await new Promise<void>((r) => requestAnimationFrame(() => r()));
     });
 
-    expect(result.current.values.activity).toBe(30);
+    expect(result.current.values.activity).toBe(0);
     // unknown id never enters the value map
     expect(result.current.values).not.toHaveProperty("staleDim");
   });
