@@ -103,6 +103,20 @@ and record the probe result in `NN-VERIFICATION.md`.
 - Mid-phase or ad-hoc rebuilds still require explicit intent (`/lecg-ship`).
 - With `autoDeploy` absent or false, offer the rebuild instead of running it.
 
+## Process-skill ownership (superpowers)
+
+The superpowers plugin is installed and complements — never replaces — the
+lecg lifecycle:
+
+- **Bugs, failing gates, unexpected behavior** during any phase: use
+  `superpowers:systematic-debugging` before proposing a fix. This is the
+  lifecycle's debugging discipline; there is deliberately no lecg-debug skill.
+- **Lifecycle stages stay lecg-owned**: `lecg-discuss-phase` supersedes
+  `brainstorming`, `lecg-phase` planning supersedes `writing-plans`, and
+  `NN-VERIFICATION.md` supersedes `verification-before-completion` for phase
+  work. Use the superpowers variants only for work outside the phase
+  lifecycle (ad-hoc requests, spikes).
+
 ## Completion
 
 Report exact changes and checks. Separate regressions from pre-existing
