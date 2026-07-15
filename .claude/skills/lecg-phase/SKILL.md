@@ -96,6 +96,12 @@ For each task:
 Continue dependency waves until every plan has a summary or a real blocker
 requires owner input.
 
+Context hygiene: if context is already deep when the next plan starts,
+finish the current plan's SUMMARY and STATE update, then recommend resuming
+in a fresh session (`/lecg-resume-work` restores position from artifacts at
+no cost) instead of pushing one long session through the whole phase —
+execution quality degrades with context depth.
+
 ## Phase completion
 
 When all plans are summarized:
