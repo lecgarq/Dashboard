@@ -437,6 +437,7 @@ export function ShellBody({
         colorMode={colorMode}
         onColorModeChange={setColorMode}
         catalog={catalog}
+        coverageCatalog={layoutCatalog}
         groupedByLabel={activeLayoutLabel}
         groupedByDimId={activeLayoutId === GENERAL_GROUP_ID ? "" : activeLayoutId}
         colorIsAuto={colorIsAuto}

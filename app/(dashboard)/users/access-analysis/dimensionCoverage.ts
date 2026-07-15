@@ -11,6 +11,7 @@
  * Pure: no React/DOM/IO.
  */
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 import { buildStructuralDimensions } from "./dimensionCatalog.structural";
 
 export interface DimensionCoverage {
@@ -84,14 +85,22 @@ export function coverageText(c: DimensionCoverage): string {
 export function dimensionCoverage(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   dimId: string,
+  catalog: readonly CatalogDimension[] = [],
 ): DimensionCoverage {
   const total = features.length;
   const override = PRESENT_OVERRIDES[dimId];
-  const dim = STRUCTURAL_BY_ID.get(dimId);
+  const structural = STRUCTURAL_BY_ID.get(dimId);
+  const dim = structural ?? catalog.find((dimension) => dimension.id === dimId);
+  const generatedActivity = !structural && dim?.family === "activity";
   let covered = 0;
   if (override || dim) {
     for (const f of features) {
-      if (override ? override(f) : presentValue(dim!.extract(f))) covered += 1;
+      const present = override
+        ? override(f)
+        : generatedActivity
+          ? Number(dim!.extract(f) ?? 0) > 0
+          : presentValue(dim!.extract(f));
+      if (present) covered += 1;
     }
   }
   const note = APERTURE_SOURCE_NOTES[dimId];

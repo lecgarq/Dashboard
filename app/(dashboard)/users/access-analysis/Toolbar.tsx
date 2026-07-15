@@ -40,6 +40,8 @@ export interface ToolbarProps {
   onColorModeChange?: (m: string) => void;
   /** Aperture catalog — drives the themed Color-by optgroups (shell supplies it). */
   catalog?: readonly CatalogDimension[];
+  /** Full lazy catalog used only for active-layout coverage truth. */
+  coverageCatalog?: readonly CatalogDimension[];
   /** Display label of the active grouping dimension (e.g. "Role"). */
   groupedByLabel?: string;
   /** Catalog id of the active grouping dimension — drives the coverage caveat chip. */
@@ -65,6 +67,7 @@ export function Toolbar({
   colorMode = "role",
   onColorModeChange,
   catalog = [],
+  coverageCatalog = catalog,
   groupedByLabel = "",
   groupedByDimId = "",
   colorIsAuto = true,
@@ -159,8 +162,8 @@ export function Toolbar({
   // Persistent explanation for the active grouping dim. Node-derived figure only —
   // VERIFY: the DC-project denominator (550/1,153) is deliberately NOT shown.
   const groupedByCoverage = useMemo(
-    () => (groupedByDimId ? dimensionCoverage(features, groupedByDimId) : null),
-    [features, groupedByDimId],
+    () => (groupedByDimId ? dimensionCoverage(features, groupedByDimId, coverageCatalog) : null),
+    [coverageCatalog, features, groupedByDimId],
   );
 
   return (

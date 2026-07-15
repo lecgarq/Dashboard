@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { dimensionCoverage, APERTURE_SOURCE_NOTES } from "./dimensionCoverage";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 
 function node(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
   return {
@@ -47,6 +48,25 @@ describe("dimensionCoverage", () => {
 
   it("reports zero covered for an unknown dim id instead of throwing", () => {
     expect(dimensionCoverage([node()], "not-a-dim")).toEqual({ covered: 0, total: 1 });
+  });
+
+  it("uses the supplied lazy catalog to cover a generated action by positive membership count", () => {
+    const action = {
+      id: "issue-create",
+      label: "Issue Create",
+      family: "activity",
+      kind: "ordinal",
+      source: "ACC activity",
+      confidence: "high",
+      available: true,
+      surfaces: ["slider"],
+      extract: (feature: NodeFeatureSnapshot) => feature.actionCounts?.["issue-create"] ?? 0,
+    } as CatalogDimension;
+    const features = [
+      node({ actionCounts: { "issue-create": 3 } }),
+      node({ actionCounts: { "issue-create": 0 } }),
+    ];
+    expect(dimensionCoverage(features, action.id, [action])).toEqual({ covered: 1, total: 2 });
   });
 
   it("carries DC provenance notes for DC-sourced dims only", () => {
