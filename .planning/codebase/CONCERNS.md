@@ -161,6 +161,20 @@
 - **Guardrail:** Add a Vitest unit test that asserts the prefetch input shapes for `accMembers.getBulkUsers` and `accFolders.getMatrix` match the client query inputs exactly (same `select` fields, same `where` clauses). Document the prefetch contract in a comment at the top of `AccessAnalysisShell.tsx`.
 - **Status (2026-07-16): 🔁 REFRAMED by v2.4 Ph28.1.** The historical "hydration-key mismatch" was root-caused as the app-wide superjson-wrapped-dehydrate bug (see the Ph28.1 section below): `createServerSideHelpers({transformer: superjson}).dehydrate()` returns `{json, meta}`, which `<HydrationBoundary>` cannot hydrate, so *every* prefetch on affected routes silently refetched. Fixed on `app/(dashboard)/users/spatial-graph/page.tsx` only (commit 9fb54cb8). This §3.5 regression-guard seed is subsumed by the Ph28.1 item: fix the two remaining call sites and add a shared `deserializeHydrationState` helper with a test.
 
+### 3.6 PaCMAP projection tuned at package defaults (2026-07-16, Phase 29)
+
+- **Files:** `scripts/compute_instance_embeddings.py`
+- **What it is:** Phase 29 shipped the hybrid PaCMAP embedding with `MN_ratio`/`FP_ratio` at pacmap 0.9.1 defaults (0.5/2.0). The tight-islands look landed and the trustworthiness gate passed (0.9388 → 0.9597) without tuning.
+- **Impact:** None today. If the owner's eyeball UAT asks for tighter/looser cluster separation, these two knobs are the intended lever — record any change against the same trustworthiness gate.
+- **Guardrail:** Gate is built into the pipeline (exits 1 before upsert on trustworthiness regression); any re-tune re-runs it for free.
+
+### 3.7 Embedding python entrypoint needs env vars in-process (2026-07-16, Phase 29)
+
+- **Files:** `scripts/compute_instance_embeddings.py`, `scripts/build-instance-features.ts`
+- **What it is:** The TS feature builder self-loads `.env`/`.env.local`; the python projector does not — it reads `DIRECT_URL`/`DATABASE_URL` from the process env. The nightly `dc-daily-ingest.cjs` path works (execSync inherits ingest's env); bare manual `python scripts/compute_instance_embeddings.py` fails fast with "DIRECT_URL or DATABASE_URL must be set".
+- **Impact:** Manual-run friction only; failure is loud and non-destructive.
+- **Guardrail:** Run manually with env pre-loaded (or via the ingest wrapper). Adding a dotenv loader to the python script is a 10-line fix if the friction recurs.
+
 ---
 
 ## 4. `/users` — Lean Payload Trap

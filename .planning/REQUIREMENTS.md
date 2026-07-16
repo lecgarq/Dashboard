@@ -95,7 +95,7 @@ Data authority for all EMB requirements: `getCachedAccDcBulkUsers` →
 `buildGraphNodesFromUsers` → `featureSnapshot.ts` (all fields already computed from existing
 Prisma tables); output stored in the existing `AccInstanceEmbedding` model.
 
-- [ ] **EMB-01**: The embedding feature vector includes the **full node-dimension set** —
+- [x] **EMB-01**: The embedding feature vector includes the **full node-dimension set** —
       today-dropped numerics (folderBreadth, accessibleDataBytes, activityTotal, membership
       tenure, riskScore, permissionCoverage) join the existing categorical signals (role,
       company, permission tier, activity/recency/sign-in buckets, affiliation, admin,
@@ -103,30 +103,30 @@ Prisma tables); output stored in the existing `AccInstanceEmbedding` model.
       with a one-line rationale (project identity stays excluded per the standing D5 spec
       unless re-decided).
 
-- [ ] **EMB-02**: **Numeric magnitude survives into distance.** Ordinal/numeric dims are
+- [x] **EMB-02**: **Numeric magnitude survives into distance.** Ordinal/numeric dims are
       scaled/normalized (documented per-dimension: log-scale for bytes/counts, rank or
       min-max for bounded scores) so permissionStrength 5 is *closer* to 4 than to 0 —
       no more equidistant one-hot tokens for ordered quantities. Normalization choices are
       unit-tested at the feature-builder boundary.
 
-- [ ] **EMB-03**: Projection is **PaCMAP** (`pacmap` PyPI package; cosine-family metric,
+- [x] **EMB-03**: Projection is **PaCMAP** (`pacmap` PyPI package; cosine-family metric,
       fixed seed for reproducibility) replacing t-SNE; the stale "features → UMAP" ingest
       log becomes true as "features → PaCMAP". Small-N fallback (<10 unique points)
       preserved. **AMENDED 2026-07-16 (Phase-29 discussion): owner swapped the projector
       from UMAP/umap-learn to PaCMAP — see `29-CONTEXT.md`; pacmap (+ faiss-cpu) is now
       the milestone's only dependency change.**
 
-- [ ] **EMB-04**: **Archetype collapse is measurably reduced.** With numeric features in the
+- [x] **EMB-04**: **Archetype collapse is measurably reduced.** With numeric features in the
       vector, the duplicate-profile rate (~87% today) is re-measured and reported by the
       pipeline; within-archetype placement reflects real numeric variation, with jitter
       retained only as a residual for still-identical profiles.
 
-- [ ] **EMB-05**: The pipeline emits a **quantitative quality gate**: trustworthiness /
+- [x] **EMB-05**: The pipeline emits a **quantitative quality gate**: trustworthiness /
       neighbor-purity metrics (old vs new embedding, same input snapshot) recorded in the run
       output; the new embedding ships only if it beats or matches the baseline on the chosen
       metrics — the comparison is recorded evidence, not vibes.
 
-- [ ] **EMB-06**: The recompute is **run against the live DB** and lands on the graph:
+- [x] **EMB-06**: The recompute is **run against the live DB** and lands on the graph:
       `embeddingRunId` recorded, `dc-daily-ingest.cjs` wiring unchanged and still non-fatal,
       graph renders the new coordinates with v2.4's Group-by/slider morphs still functional
       on the new baseline (anchor-morph smoke check).

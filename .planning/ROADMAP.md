@@ -824,7 +824,7 @@ motion rides the CPU/rAF static-layer path, never the GPU simulation. `prefers-r
 
 ## Phases
 
-- [ ] **Phase 29: Embedding v2 — Feature Fidelity & UMAP** - Node positions derive from the full snapshot dimension set with magnitude-aware distances, projected by UMAP, quality-gated against the old embedding, and live on the graph
+- [x] **Phase 29: Embedding v2 — Feature Fidelity & PaCMAP** - Node positions derive from the full snapshot dimension set with magnitude-aware distances, projected by PaCMAP (owner amendment 2026-07-16, was UMAP), quality-gated against the old embedding, and live on the graph — VERIFIED 2026-07-16 (run 20260716T173543Z-345c0e14; dup-rate 84.3%→20.4%, trustworthiness 0.9388→0.9597)
 - [ ] **Phase 30: Similarity Intelligence** - Neighbors recomputed on the enriched vector, twin-saturation fixed, and every match explains why it is similar
 - [ ] **Phase 31: Click & Hover Choreography** - Clicking a node becomes a choreographed focus (camera ease, neighbor lighting, enriched animated panel); hover gains edge emphasis and a headline-dimension tooltip
 - [ ] **Phase 32: Ambient Life & Link Expression** - Every node carries recency-modulated organic life at rest behind a hard ≥50fps gate with a designed degradation rule; similarity links get intentional strength/hover/morph rendering

@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.5
 milestone_name: "Living Graph"
-current_phase: 29
-current_phase_name: "Embedding v2 — Feature Fidelity & PaCMAP"
-status: executing
-current_plan: "29-01"
-stopped_at: "Phase 29 planned 2026-07-16: 3 plans (29-01 TS hybrid feature export EMB-01/02; 29-02 python PaCMAP hybrid pipeline + quality gate EMB-02..05; 29-03 live-DB run + EMB-06 smoke). Waves 1→2→3, sequential. Executing 29-01. Resume: /lecg-phase 29."
-last_updated: "2026-07-16T13:40:00-06:00"
+current_phase: 30
+current_phase_name: "Similarity Intelligence"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 29 COMPLETE + VERIFIED 2026-07-16 (3/3 plans, 29-VERIFICATION.md written; run 20260716T173543Z-345c0e14, dup-rate 84.3%→20.4%, trustworthiness 0.9388→0.9597 GATE PASS, EMB-06 morph smoke green, deploy = recorded no-op: zero app-runtime diff, new coords already live on :3000). EMB-01..06 checked, ROADMAP box ticked. Phase 30 has NO CONTEXT yet. Next: /lecg-discuss-phase 30."
+last_updated: "2026-07-16T14:45:00-06:00"
 ---
 
 # Project State
@@ -27,13 +27,16 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 29 — Embedding v2 — Feature Fidelity & PaCMAP — **READY TO PLAN**, CONTEXT
-  captured 2026-07-16 (`.planning/phases/29-embedding-v2-feature-fidelity/29-CONTEXT.md`).
-- **Status:** owner decisions locked: **PaCMAP supersedes UMAP** (EMB-03 amended in
-  REQUIREMENTS.md; pacmap 0.9.1 + faiss-cpu dry-run-verified on python 3.12.10),
-  balanced-hybrid vector, tight-islands look, trustworthiness+twin-rate gate, full-set
-  projection (dedupe retired).
-- **Next:** `/lecg-phase 29`.
+- **Phase:** 30 — Similarity Intelligence — **READY TO PLAN**, no CONTEXT yet.
+- **Phase 29 SHIPPED 2026-07-16** (3/3 plans, `29-VERIFICATION.md`): hybrid vector
+  (tokens + 6 raw numerics + `cov:` token), PaCMAP 0.9.1 full-set projection (angular,
+  seed 42, SVD-100), duplicate rate **84.3% → 20.4%**, trustworthiness **0.9388 →
+  0.9597 GATE PASS**, live run `20260716T173543Z-345c0e14` (22,279 rows, 12 clusters,
+  20.9 s), EMB-06 morph smoke + PERF-02 green. Deploy = recorded no-op (zero app-runtime
+  diff; coords are data, already live on :3000). Commits: 31ecc672, 12140386.
+  **Phase 30 planners note:** `neighbors` Json is now hybrid-matrix kNN (same
+  {nodeId, score} shape); twin-collapse/explanations still unbuilt (SIM-01..03).
+- **Next:** `/lecg-discuss-phase 30`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -217,11 +220,10 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Run `/lecg-phase 29`** (Embedding v2 — Feature Fidelity & PaCMAP). All gray areas
-settled in `29-CONTEXT.md`: PaCMAP projection (owner amendment over UMAP), balanced-hybrid
-categorical/numeric block scaling, tight-islands look (seed 42), trustworthiness(k=10)
-new≥old + duplicate-rate-drop ship gate, full ~22k-node projection with residual jitter
-only for byte-identical rows. Python env verified live (3.12.10, sklearn 1.8.0; pacmap
-0.9.1 + faiss-cpu 1.14.3 resolve cleanly, not yet installed). Two `VERIFY:` items for the
-planner: PaCMAP 0.9.1 seed/metric/apply_pca API from the installed package; hybrid-matrix
-memory shape at 22k × vocab (SVD-reduce fallback expected).
+**Run `/lecg-discuss-phase 30`** (Similarity Intelligence — SIM-01..03). Phase 29 landed
+the enriched hybrid vector and PaCMAP map; Phase 30 owns twin collapsing/tiering in
+`neighbors`, per-match "why similar" explanations (coverage-labeled), and the similarity-web
+rebuild on the new neighbor sets. Grounding for the discussion: neighbors are ALREADY
+recomputed on the hybrid matrix (Phase 29 kept the {nodeId, score} shape); duplicate rate
+is now 20.4%, so twin saturation is much reduced but same-score twins still exist within
+the 17,732 unique profiles' duplicate groups.
