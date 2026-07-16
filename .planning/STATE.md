@@ -6,8 +6,8 @@ current_phase: 30
 current_phase_name: "Similarity Intelligence"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 29 COMPLETE + VERIFIED 2026-07-16 (3/3 plans, 29-VERIFICATION.md written; run 20260716T173543Z-345c0e14, dup-rate 84.3%→20.4%, trustworthiness 0.9388→0.9597 GATE PASS, EMB-06 morph smoke green, deploy = recorded no-op: zero app-runtime diff, new coords already live on :3000). EMB-01..06 checked, ROADMAP box ticked. Phase 30 has NO CONTEXT yet. Next: /lecg-discuss-phase 30."
-last_updated: "2026-07-16T14:45:00-06:00"
+stopped_at: "Phase 30 CONTEXT captured 2026-07-16 (30-CONTEXT.md, 4 owner decisions locked: exact-vector twin collapse, count+capped-list twin affordance, hybrid why-similar (python exact keys + client label/coverage rendering), de-twinned-only similarity web with evidence-backed reserve re-tune). Status ready_to_plan. Next: /lecg-phase 30."
+last_updated: "2026-07-16T15:30:00-06:00"
 ---
 
 # Project State
@@ -27,7 +27,8 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 30 — Similarity Intelligence — **READY TO PLAN**, no CONTEXT yet.
+- **Phase:** 30 — Similarity Intelligence — **READY TO PLAN**, CONTEXT captured
+  2026-07-16 (`.planning/phases/30-similarity-intelligence/30-CONTEXT.md`).
 - **Phase 29 SHIPPED 2026-07-16** (3/3 plans, `29-VERIFICATION.md`): hybrid vector
   (tokens + 6 raw numerics + `cov:` token), PaCMAP 0.9.1 full-set projection (angular,
   seed 42, SVD-100), duplicate rate **84.3% → 20.4%**, trustworthiness **0.9388 →
@@ -220,10 +221,11 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 30`** (Similarity Intelligence — SIM-01..03). Phase 29 landed
-the enriched hybrid vector and PaCMAP map; Phase 30 owns twin collapsing/tiering in
-`neighbors`, per-match "why similar" explanations (coverage-labeled), and the similarity-web
-rebuild on the new neighbor sets. Grounding for the discussion: neighbors are ALREADY
-recomputed on the hybrid matrix (Phase 29 kept the {nodeId, score} shape); duplicate rate
-is now 20.4%, so twin saturation is much reduced but same-score twins still exist within
-the 17,732 unique profiles' duplicate groups.
+**Run `/lecg-phase 30`** (Similarity Intelligence — SIM-01..03). Context is locked in
+`30-CONTEXT.md`: exact-vector twin collapse (count + capped ~10-id expandable list in the
+neighbors Json), hybrid why-similar (python computes exact top contributing dimension keys
+from the real hybrid vector; client resolves labels/values/coverage from snapshots it
+already holds), similarity web rebuilt from de-twinned match lists only (twin edges gone;
+`interReserveFrac`/budget re-tuned with measured post-collapse score distributions).
+Shape-change trap: `neighbors` goes bare-array → structured payload — pipeline, proc, and
+panel ship together and the proc must normalize old-shape rows.
