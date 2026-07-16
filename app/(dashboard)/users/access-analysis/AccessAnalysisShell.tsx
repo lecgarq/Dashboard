@@ -386,7 +386,7 @@ export function ShellBody({
 
   const neighborIndices = useMemo(() => {
     const s = new Set<number>();
-    for (const nb of neighborsQuery.data ?? []) {
+    for (const nb of neighborsQuery.data?.matches ?? []) {
       const idx = indexByNodeId.get(nb.nodeId);
       if (idx !== undefined) s.add(idx);
     }
@@ -528,7 +528,7 @@ export function ShellBody({
                 features[isolatedNodeIndex]?.nodeId ??
                 "Selected"
               }
-              matches={neighborsQuery.data ?? []}
+              matches={neighborsQuery.data?.matches ?? []}
               indexByNodeId={indexByNodeId}
               features={features}
               // Profile for the centre node is already the top RightPanelStack
