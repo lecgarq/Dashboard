@@ -34,6 +34,20 @@ let _clusterPosCalls: Array<(number | undefined)[]> = [];
 let _clusterStrengthCalls: Array<Float32Array> = [];
 let _startCalls: Array<number | undefined> = [];
 let _pauseCalls = 0;
+let _zoomPointCalls: Array<{
+  index: number;
+  duration: number;
+  scale: number;
+  canZoomOut: boolean;
+  enableSimulation: boolean;
+}> = [];
+let _zoomTransformCalls: Array<{
+  positions: number[];
+  duration: number;
+  scale: number;
+  padding: number;
+  enableSimulation: boolean;
+}> = [];
 
 vi.mock("@cosmos.gl/graph", () => {
   class MockGraph {
@@ -60,6 +74,36 @@ vi.mock("@cosmos.gl/graph", () => {
       (g as any).unpause = vi.fn();
       (g as any).fitView = vi.fn();
       (g as any).fitViewByPointPositions = vi.fn();
+      (g as any).screenToSpacePosition = vi.fn(([x, y]: [number, number]) => [x - 10, y - 20]);
+      (g as any).getZoomLevel = vi.fn(() => 4);
+      (g as any).zoomToPointByIndex = vi.fn(
+        (
+          index: number,
+          duration: number,
+          scale: number,
+          canZoomOut: boolean,
+          enableSimulation: boolean,
+        ) => {
+          _zoomPointCalls.push({ index, duration, scale, canZoomOut, enableSimulation });
+        },
+      );
+      (g as any).setZoomTransformByPointPositions = vi.fn(
+        (
+          positions: Float32Array,
+          duration: number,
+          scale: number,
+          padding: number,
+          enableSimulation: boolean,
+        ) => {
+          _zoomTransformCalls.push({
+            positions: Array.from(positions),
+            duration,
+            scale,
+            padding,
+            enableSimulation,
+          });
+        },
+      );
       (g as any).destroy = vi.fn();
       (g as any).ready = Promise.resolve();
       _capturedGraph = g;
@@ -152,6 +196,8 @@ function makeFakePhysics(opts?: {
  */
 function makeFakeRef(): { current: HTMLDivElement } {
   const div = document.createElement("div");
+  Object.defineProperty(div, "clientWidth", { value: 800 });
+  Object.defineProperty(div, "clientHeight", { value: 600 });
   document.body.appendChild(div);
   return { current: div };
 }
@@ -171,6 +217,8 @@ beforeEach(() => {
   _clusterStrengthCalls = [];
   _startCalls = [];
   _pauseCalls = 0;
+  _zoomPointCalls = [];
+  _zoomTransformCalls = [];
 });
 
 // ---------------------------------------------------------------------------
@@ -268,6 +316,31 @@ describe("GraphCanvas2DHandle — REND-05 tick path", () => {
     expect(call!.xy[3]).toBe(50);
     // dontRescale must be true on tick path
     expect(call!.dontRescale).toBe(true);
+  });
+});
+
+describe("GraphCanvas2DHandle — reversible frozen camera focus", () => {
+  it("captures center+zoom and focuses/restores with simulation disabled", async () => {
+    const handle = await setupHandle(3);
+    const view = handle.captureView();
+    expect(view).toEqual({ center: [390, 280], zoom: 4 });
+
+    handle.focusPoint(2, 180);
+    handle.restoreView(view, 180);
+
+    expect(_zoomPointCalls).toEqual([
+      { index: 2, duration: 180, scale: 2.25, canZoomOut: false, enableSimulation: false },
+    ]);
+    expect(_zoomTransformCalls).toEqual([
+      {
+        positions: [390, 280],
+        duration: 180,
+        scale: 4,
+        padding: 0,
+        enableSimulation: false,
+      },
+    ]);
+    expect(_startCalls).toEqual([]);
   });
 });
 

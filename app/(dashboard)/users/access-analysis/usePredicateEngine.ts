@@ -9,7 +9,7 @@
  *   The filter/search/lasso path is structurally walled off from physics ticks.
  *
  * Behavior contract:
- *   - isolatedNodeIndex !== null    → that index + its same-user footprint return 1.0; all others 0.15.
+ *   - isolatedNodeIndex !== null    → that index + supplied similarity matches return 1.0; all others 0.15.
  *   - global filters (categorical + numeric buckets) → AND across dimensions.
  *   - searchQuery (already lowercased upstream) → prefix match on name OR email.
  *   - lassoSelection !== null       → only members lit; drillDown filters WITHIN the lasso.
@@ -19,7 +19,6 @@ import { useEffect } from "react";
 import type { NodeFeatureSnapshot, PredicateInputs } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { isFacetKey, nodeMatchesFacet } from "./accessFacets";
-import { parseNodeId } from "./sameUserEdges";
 import { valueKeyLabel } from "./dominantClusters";
 import { computeActionThresholds, type ActionThresholds } from "./actionBuckets";
 import { groupByDimensions } from "./groupByDimensions";
@@ -147,24 +146,15 @@ export function buildMaskPredicate(
 ): (i: number) => number {
   const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex, neighborIndices, valueResolvers } = inputs;
 
-  // Precompute the isolated user's id once (not per node) so isolate can light the
-  // whole same-user footprint, not just the single clicked instance.
-  let isolatedUserId: string | null = null;
-  if (isolatedNodeIndex !== null) {
-    const fi = features[isolatedNodeIndex];
-    isolatedUserId = fi ? parseNodeId(fi.nodeId)?.userId ?? null : null;
-  }
-
   return (i: number): number => {
     const f = features[i];
     if (!f) return 0.15;
 
-    // 1) Click-isolate wins outright — light the clicked node, its same-user
-    //    footprint, AND its similarity neighbors (closest matches on the map).
+    // 1) Click-isolate wins outright — light exactly the clicked node and its
+    //    supplied distinct similarity matches.
     if (isolatedNodeIndex !== null) {
       if (i === isolatedNodeIndex) return 1.0;
       if (neighborIndices && neighborIndices.has(i)) return 1.0;
-      if (isolatedUserId && parseNodeId(f.nodeId)?.userId === isolatedUserId) return 1.0;
       return 0.15;
     }
 

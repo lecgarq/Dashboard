@@ -106,6 +106,12 @@ export interface GraphCanvas2DHandle {
   getPointPositions?(): number[];
   /** Test/diagnostic: cosmos's current zoom level (camera scale). */
   getZoomLevel?(): number;
+  /** Capture the exact 2D camera center + zoom for a reversible focus session. */
+  captureView?(): GraphCanvas2DView;
+  /** Center the camera on one point without reheating the frozen simulation. */
+  focusPoint?(index: number, durationMs: number): void;
+  /** Restore a previously captured 2D camera view without simulation. */
+  restoreView?(view: GraphCanvas2DView, durationMs: number): void;
   /**
    * LOD: atomically switch the rendered point SET to a new count — positions (stride-2),
    * colors (RGBA, len = count*4), and optional sizes (len = count). Keeps the camera
@@ -134,6 +140,11 @@ export interface GraphCanvas2DHandle {
   setSelectedIndices?(indices: number[]): void;
   /** Focus a point with a blue ring when hovered. */
   setHoveredIndex?(index: number | null): void;
+}
+
+export interface GraphCanvas2DView {
+  center: [number, number];
+  zoom: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -638,6 +649,52 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         getZoomLevel(): number {
           return (g as unknown as { getZoomLevel?: () => number }).getZoomLevel?.() ?? NaN;
+        },
+
+        captureView(): GraphCanvas2DView {
+          const center = (
+            g as unknown as {
+              screenToSpacePosition: (xy: [number, number]) => [number, number];
+            }
+          ).screenToSpacePosition([div.clientWidth / 2, div.clientHeight / 2]);
+          return {
+            center,
+            zoom: (g as unknown as { getZoomLevel: () => number }).getZoomLevel(),
+          };
+        },
+
+        focusPoint(index: number, durationMs: number): void {
+          (
+            g as unknown as {
+              zoomToPointByIndex: (
+                index: number,
+                duration: number,
+                scale: number,
+                canZoomOut: boolean,
+                enableSimulation: boolean,
+              ) => void;
+            }
+          ).zoomToPointByIndex(index, durationMs, 2.25, false, false);
+        },
+
+        restoreView(view: GraphCanvas2DView, durationMs: number): void {
+          (
+            g as unknown as {
+              setZoomTransformByPointPositions: (
+                positions: Float32Array,
+                duration: number,
+                scale: number,
+                padding: number,
+                enableSimulation: boolean,
+              ) => void;
+            }
+          ).setZoomTransformByPointPositions(
+            new Float32Array(view.center),
+            durationMs,
+            view.zoom,
+            0,
+            false,
+          );
         },
 
         // LOD — atomic point-SET switch (different count). Keep the camera (dontRescale=

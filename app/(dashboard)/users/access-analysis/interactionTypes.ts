@@ -158,8 +158,9 @@ export interface PredicateInputs {
   isolatedNodeIndex: number | null;
   /**
    * Similarity neighbors of the isolated node (cosmos node indices). When set,
-   * these are lit alongside the clicked node + its same-user footprint so the
-   * embedding map's "closest matches" stand out. null/empty = no extra highlight.
+   * these are lit alongside the clicked node so the embedding map's distinct
+   * closest matches stand out. Same-user memberships and twins are deliberately
+   * excluded. null/empty = no extra highlight.
    * Only populated on the flag-OFF embedding map.
    */
   neighborIndices?: ReadonlySet<number> | null;

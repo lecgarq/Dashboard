@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import type { PhysicsLayer } from "./physicsLayer";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { GraphCanvasHandle } from "./GraphCanvas";
+import type { GraphCanvas2DView } from "./GraphCanvas2D";
 import { usePredicateEngine } from "./usePredicateEngine";
 import { findPointsIn3DLasso } from "./lasso3d";
 import { LassoOverlay } from "./LassoOverlay";
@@ -54,6 +55,8 @@ export interface GraphInteractionsProps {
    * clicked node. Empty/undefined on the flag-ON physics graph (no embedding).
    */
   neighborIndices?: ReadonlySet<number> | null;
+  /** Immediate hover notification for the Canvas2D similarity-edge layer. */
+  onHoverChange?: (index: number | null) => void;
 
   /**
    * Increments when the underlying renderer handle becomes available. Used to
@@ -98,6 +101,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     isolatedNodeIndex,
     onIsolate,
     neighborIndices,
+    onHoverChange,
     lassoSelection,
     drillDown,
     valueResolvers,
@@ -108,13 +112,30 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
 
   // ---- Local UI state ---------------------------------------------------
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [tooltipIndex, setTooltipIndex] = useState<number | null>(null);
   const [tooltipAnchor, setTooltipAnchor] = useState<[number, number] | null>(null);
+  const [tooltipOrigin, setTooltipOrigin] = useState<[number, number] | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusViewRef = useRef<GraphCanvas2DView | null>(null);
+  const focusedIndexRef = useRef<number | null>(null);
 
   // Stable handler refs so we install once per mode change, never per render.
   const onIsolateRef = useRef(onIsolate);
+  const onHoverChangeRef = useRef(onHoverChange);
   useEffect(() => {
     onIsolateRef.current = onIsolate;
   }, [onIsolate]);
+  useEffect(() => {
+    onHoverChangeRef.current = onHoverChange;
+  }, [onHoverChange]);
+
+  const clearTooltipTimer = useCallback((): void => {
+    if (tooltipTimerRef.current !== null) {
+      clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = null;
+    }
+  }, []);
 
   // ---- Wire click/hover into the active mode's handle ----------------
   useEffect(() => {
@@ -132,12 +153,27 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
       },
       onPointHover: (index: number, screenPos: [number, number]): void => {
         setHoveredIndex(index);
-        setTooltipAnchor(screenPos);
+        onHoverChangeRef.current?.(index);
         handle.setHoveredIndex?.(index);
+        clearTooltipTimer();
+        setTooltipIndex(null);
+        setTooltipAnchor(null);
+        setTooltipOrigin(null);
+        tooltipTimerRef.current = setTimeout(() => {
+          const rect = wrapperRef.current?.getBoundingClientRect();
+          setTooltipIndex(index);
+          setTooltipAnchor(screenPos);
+          setTooltipOrigin(rect ? [rect.left, rect.top] : [0, 0]);
+          tooltipTimerRef.current = null;
+        }, 80);
       },
       onPointHoverEnd: (): void => {
+        clearTooltipTimer();
         setHoveredIndex(null);
+        setTooltipIndex(null);
         setTooltipAnchor(null);
+        setTooltipOrigin(null);
+        onHoverChangeRef.current?.(null);
         handle.setHoveredIndex?.(null);
       },
     };
@@ -145,15 +181,51 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     // Test-only: expose the SAME production handlers so the bridge's fallback
     // hover/click path invokes them directly (no separate fake path).
     setInteractionTestState({ handlers });
-    // No cleanup needed — handlersRef inside the handle simply gets replaced on
-    // the next mount or remains noop on unmount.
     // rendererReady: re-run once the async renderer handle exists.
-  }, [graphRef, mode, rendererReady]);
+    return clearTooltipTimer;
+  }, [graphRef, mode, rendererReady, clearTooltipTimer]);
 
   // Test-only: mirror hover/tooltip state into the observation bridge.
   useEffect(() => {
     setInteractionTestState({ hoveredIndex, tooltipAnchor });
   }, [hoveredIndex, tooltipAnchor]);
+
+  // ---- Reversible native 2D focus session -----------------------------
+  useEffect(() => {
+    if (mode !== "2d") {
+      if (isolatedNodeIndex === null) {
+        focusViewRef.current = null;
+        focusedIndexRef.current = null;
+      }
+      return;
+    }
+    const root = graphRef.current;
+    const handle = root?.mode === "2d" ? root.handle : null;
+    if (!handle?.captureView || !handle.focusPoint || !handle.restoreView) return;
+    const duration =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 0
+        : 180;
+
+    if (isolatedNodeIndex === null) {
+      if (focusViewRef.current) {
+        handle.restoreView(focusViewRef.current, duration);
+      }
+      focusViewRef.current = null;
+      focusedIndexRef.current = null;
+      return;
+    }
+
+    if (!focusViewRef.current) {
+      focusViewRef.current = handle.captureView();
+    }
+    if (focusedIndexRef.current !== isolatedNodeIndex) {
+      handle.focusPoint(isolatedNodeIndex, duration);
+      focusedIndexRef.current = isolatedNodeIndex;
+    }
+  }, [graphRef, isolatedNodeIndex, mode, rendererReady]);
 
   // Derive selection array and push to active handle
   const selectedIndices = useMemo(() => {
@@ -252,10 +324,10 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     if (root?.mode === "3d") root.handle?.setControlsEnabled(true);
   }, [graphRef]);
 
-  const hoveredFeature = hoveredIndex !== null ? features[hoveredIndex] ?? null : null;
+  const hoveredFeature = tooltipIndex !== null ? features[tooltipIndex] ?? null : null;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div ref={wrapperRef} style={{ position: "relative", width: "100%", height: "100%" }}>
       {children}
       {lassoActive ? (
         <LassoOverlay
@@ -266,7 +338,11 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
           onDragEnd={onLassoDragEnd}
         />
       ) : null}
-      <NodeTooltip anchorScreenXY={tooltipAnchor} feature={hoveredFeature} />
+      <NodeTooltip
+        anchorScreenXY={tooltipAnchor}
+        feature={hoveredFeature}
+        canvasOriginXY={tooltipOrigin ?? undefined}
+      />
     </div>
   );
 }

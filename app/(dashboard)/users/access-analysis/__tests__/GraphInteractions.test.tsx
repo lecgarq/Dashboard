@@ -7,8 +7,8 @@
  *   - usePredicateEngine routes through to physics.setMask.
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent, act } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { render, fireEvent, act, screen } from "@testing-library/react";
 import { useRef } from "react";
 import { GraphInteractions } from "../GraphInteractions";
 import type { NodeFeatureSnapshot } from "../interactionTypes";
@@ -49,6 +49,9 @@ function mkPhysics(): PhysicsLayer {
 interface Captured {
   set2D: any;
   capturedHandlers: { current: ReturnType<typeof makeHandlers> | null };
+  captureView?: NonNullable<GraphCanvas2DHandle["captureView"]>;
+  focusPoint?: NonNullable<GraphCanvas2DHandle["focusPoint"]>;
+  restoreView?: NonNullable<GraphCanvas2DHandle["restoreView"]>;
 }
 
 function makeHandlers(): {
@@ -67,6 +70,7 @@ function Harness(props: {
   onIsolate: (i: number | null) => void;
   isolatedNodeIndex: number | null;
   captured: Captured;
+  onHoverChange?: (index: number | null) => void;
 }): React.JSX.Element {
   // Initialize the ref EAGERLY (lazy initializer) so GraphInteractions sees
   // graphRef.current populated on the very first mount-effect pass.
@@ -87,6 +91,11 @@ function Harness(props: {
       setLinks: vi.fn(),
       setLinkColors: vi.fn(),
       getRenderState: vi.fn(() => ({ renderLinks: true, linkCount: 0 })),
+      captureView:
+        props.captured.captureView ??
+        vi.fn(() => ({ center: [5, 6] as [number, number], zoom: 3 })),
+      focusPoint: props.captured.focusPoint ?? vi.fn(),
+      restoreView: props.captured.restoreView ?? vi.fn(),
     };
     graphRef.current = { mode: "2d", handle: fakeHandle2D };
   }
@@ -103,6 +112,7 @@ function Harness(props: {
       onLassoComplete={() => {}}
       isolatedNodeIndex={props.isolatedNodeIndex}
       onIsolate={props.onIsolate}
+      onHoverChange={props.onHoverChange}
       lassoSelection={null}
       drillDown={null}
       rendererReady={1}
@@ -112,6 +122,11 @@ function Harness(props: {
     </GraphInteractions>
   );
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("GraphInteractions — Phase 4-01 Task 3 wiring", () => {
   it("installs setEventHandlers on the active handle", async () => {
@@ -172,5 +187,86 @@ describe("GraphInteractions — Phase 4-01 Task 3 wiring", () => {
     });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onIsolate).toHaveBeenCalledWith(null);
+  });
+
+  it("snapshots once, focuses each selected node, then restores the original view", async () => {
+    const captureView = vi.fn(() => ({ center: [5, 6] as [number, number], zoom: 3 }));
+    const focusPoint = vi.fn();
+    const restoreView = vi.fn();
+    const captured: Captured = {
+      set2D: vi.fn(),
+      capturedHandlers: { current: null },
+      captureView,
+      focusPoint,
+      restoreView,
+    };
+    const { rerender } = render(
+      <Harness onIsolate={() => {}} isolatedNodeIndex={null} captured={captured} />,
+    );
+
+    rerender(<Harness onIsolate={() => {}} isolatedNodeIndex={2} captured={captured} />);
+    expect(captureView).toHaveBeenCalledTimes(1);
+    expect(focusPoint).toHaveBeenLastCalledWith(2, 180);
+
+    rerender(<Harness onIsolate={() => {}} isolatedNodeIndex={3} captured={captured} />);
+    expect(captureView).toHaveBeenCalledTimes(1);
+    expect(focusPoint).toHaveBeenLastCalledWith(3, 180);
+
+    rerender(<Harness onIsolate={() => {}} isolatedNodeIndex={null} captured={captured} />);
+    expect(restoreView).toHaveBeenCalledWith({ center: [5, 6], zoom: 3 }, 180);
+  });
+
+  it("snaps camera focus under reduced motion", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const focusPoint = vi.fn();
+    const captured: Captured = {
+      set2D: vi.fn(),
+      capturedHandlers: { current: null },
+      focusPoint,
+    };
+    render(<Harness onIsolate={() => {}} isolatedNodeIndex={2} captured={captured} />);
+    expect(focusPoint).toHaveBeenCalledWith(2, 0);
+  });
+
+  it("raises hover immediately but delays and cancels the tooltip", async () => {
+    vi.useFakeTimers();
+    const onHoverChange = vi.fn();
+    const captured: Captured = {
+      set2D: vi.fn(),
+      capturedHandlers: { current: null },
+    };
+    render(
+      <Harness
+        onIsolate={() => {}}
+        isolatedNodeIndex={null}
+        captured={captured}
+        onHoverChange={onHoverChange}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const handlers = captured.capturedHandlers.current!;
+
+    act(() => handlers.onPointHover(1, [10, 20]));
+    expect(onHoverChange).toHaveBeenLastCalledWith(1);
+    expect(screen.queryByTestId("node-tooltip")).toBeNull();
+    act(() => vi.advanceTimersByTime(79));
+    expect(screen.queryByTestId("node-tooltip")).toBeNull();
+
+    act(() => handlers.onPointHover(2, [30, 40]));
+    act(() => vi.advanceTimersByTime(80));
+    expect(screen.getByTestId("node-tooltip").textContent).toContain("N2");
+
+    act(() => handlers.onPointHoverEnd());
+    expect(onHoverChange).toHaveBeenLastCalledWith(null);
+    expect(screen.queryByTestId("node-tooltip")).toBeNull();
   });
 });

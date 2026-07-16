@@ -65,6 +65,76 @@ export interface EdgePaint {
   palette: Float32Array;
 }
 
+export interface FocusMatchIndex {
+  index: number;
+  score: number;
+}
+
+export interface FocusEdge {
+  src: number;
+  dst: number;
+  score: number;
+  /** Existing global-web edge index, or null when synthesized from the match payload. */
+  webIndex: number | null;
+}
+
+export interface FocusEdges {
+  selected: FocusEdge[];
+  hovered: FocusEdge[];
+}
+
+function pairKey(a: number, b: number): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
+}
+
+/**
+ * Resolve the two transient focus layers without changing the ambient edge set.
+ * Selected edges follow the authoritative on-demand match payload and therefore
+ * synthesize a direct curve when the capped global web omitted one. Hover remains
+ * fetch-free and only raises incident edges already present in the global web.
+ */
+export function resolveFocusEdges(
+  web: IndexedWeb,
+  selectedIndex: number | null,
+  selectedMatches: readonly FocusMatchIndex[],
+  hoveredIndex: number | null,
+): FocusEdges {
+  const webIndexByPair = new Map<string, number>();
+  for (let i = 0; i < web.src.length; i++) {
+    webIndexByPair.set(pairKey(web.src[i], web.dst[i]), i);
+  }
+
+  const selected: FocusEdge[] = [];
+  const seenSelected = new Set<number>();
+  if (selectedIndex !== null) {
+    for (const match of selectedMatches) {
+      if (match.index < 0 || match.index === selectedIndex || seenSelected.has(match.index)) continue;
+      seenSelected.add(match.index);
+      selected.push({
+        src: selectedIndex,
+        dst: match.index,
+        score: match.score,
+        webIndex: webIndexByPair.get(pairKey(selectedIndex, match.index)) ?? null,
+      });
+    }
+  }
+
+  const hovered: FocusEdge[] = [];
+  if (hoveredIndex !== null) {
+    for (let i = 0; i < web.src.length; i++) {
+      if (web.src[i] !== hoveredIndex && web.dst[i] !== hoveredIndex) continue;
+      hovered.push({
+        src: web.src[i],
+        dst: web.dst[i],
+        score: Number.isFinite(web.strength[i]) ? web.strength[i] : 1,
+        webIndex: i,
+      });
+    }
+  }
+
+  return { selected, hovered };
+}
+
 /** Base-alpha ceiling per theme — translucent, but legible (not halftone-faint). */
 function baseAlpha(theme: "light" | "dark"): number {
   return theme === "dark" ? 0.38 : 0.3;

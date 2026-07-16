@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { mapEdgesToIndices, computeEdgeColors, solveAffine, project, quadControl, stepOpacity } from "./similarityWeb";
+import {
+  mapEdgesToIndices,
+  computeEdgeColors,
+  resolveFocusEdges,
+  solveAffine,
+  project,
+  quadControl,
+  stepOpacity,
+} from "./similarityWeb";
 
 const idx = new Map<string, number>([
   ["a", 0],
@@ -92,6 +100,33 @@ describe("computeEdgeColors", () => {
     const { bucket, palette } = computeEdgeColors(web, nodeColors, "dark");
     expect(bucket[0]).toBe(bucket[1]);
     expect(palette.length).toBe(4); // exactly one bucket
+  });
+});
+
+describe("resolveFocusEdges", () => {
+  it("uses all selected matches, synthesizes omitted pairs, and keeps hover fetch-free", () => {
+    const web = {
+      src: Int32Array.from([0, 1]),
+      dst: Int32Array.from([1, 2]),
+      strength: Float32Array.from([0.8, 0.6]),
+      dropped: 0,
+    };
+    const focus = resolveFocusEdges(
+      web,
+      0,
+      [
+        { index: 1, score: 0.91 },
+        { index: 3, score: 0.87 },
+        { index: 3, score: 0.87 },
+      ],
+      1,
+    );
+
+    expect(focus.selected).toEqual([
+      { src: 0, dst: 1, score: 0.91, webIndex: 0 },
+      { src: 0, dst: 3, score: 0.87, webIndex: null },
+    ]);
+    expect(focus.hovered.map((edge) => edge.webIndex)).toEqual([0, 1]);
   });
 });
 

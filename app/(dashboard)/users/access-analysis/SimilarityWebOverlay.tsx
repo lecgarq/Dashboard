@@ -17,7 +17,17 @@
 
 import { useEffect, useRef } from "react";
 import type { GraphCanvasHandle } from "./GraphCanvas";
-import { solveAffine, project, quadControl, stepOpacity, type Affine } from "./similarityWeb";
+import {
+  solveAffine,
+  project,
+  quadControl,
+  resolveFocusEdges,
+  stepOpacity,
+  type Affine,
+  type FocusEdge,
+  type FocusEdges,
+  type FocusMatchIndex,
+} from "./similarityWeb";
 
 export interface SimilarityWebOverlayProps {
   graphRef: React.RefObject<GraphCanvasHandle | null>;
@@ -32,12 +42,23 @@ export interface SimilarityWebOverlayProps {
   opacity: number;
   /** Live morph state — true while the slider drags; the web fades out. */
   isMorphing: () => boolean;
+  /** Node palette used for selected-edge fallback colors. */
+  nodeColors?: Float32Array;
+  /** Click focus and its authoritative Phase-30 matches. */
+  selectedIndex?: number | null;
+  selectedMatches?: readonly FocusMatchIndex[];
+  /** Immediate hover focus; does not fetch neighbors. */
+  hoveredIndex?: number | null;
   /** Bow factor as a fraction of segment length. Default 0.14. */
   curve?: number;
 }
 
 const FRAME_MS = 33; // ~30Hz, matches MapClusterLabels
 const LINE_WIDTH = 1.0;
+const SELECTED_LINE_WIDTH = 2.25;
+const HOVERED_LINE_WIDTH = 2.75;
+const EMPTY_STRENGTH = new Float32Array(0);
+const EMPTY_MATCHES: readonly FocusMatchIndex[] = [];
 
 export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JSX.Element | null {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -57,6 +78,11 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
     let curOpacity = 0;
     let prevAff: Affine | null = null;
     let prevSrc: Int32Array | null = null;
+    let prevPalette: Float32Array | null = null;
+    let prevSelectedMatches: readonly FocusMatchIndex[] | null = null;
+    let prevSelectedIndex: number | null | undefined;
+    let prevHoveredIndex: number | null | undefined;
+    let focusCache: FocusEdges = { selected: [], hovered: [] };
 
     const ctx = canvas.getContext("2d");
 
@@ -71,11 +97,31 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
       }
       last = ts;
 
-      const { graphRef, src, dst, bucket, palette, opacity, isMorphing, curve = 0.14 } =
-        dataRef.current;
+      const {
+        graphRef,
+        src,
+        dst,
+        bucket,
+        palette,
+        opacity,
+        isMorphing,
+        curve = 0.14,
+        nodeColors,
+        selectedIndex = null,
+        selectedMatches = EMPTY_MATCHES,
+        hoveredIndex = null,
+      } = dataRef.current;
       const morphing = isMorphing();
-      const dataChanged = src !== prevSrc;
+      const dataChanged = src !== prevSrc || palette !== prevPalette;
+      const focusChanged =
+        selectedIndex !== prevSelectedIndex ||
+        hoveredIndex !== prevHoveredIndex ||
+        selectedMatches !== prevSelectedMatches;
       prevSrc = src;
+      prevPalette = palette;
+      prevSelectedIndex = selectedIndex;
+      prevHoveredIndex = hoveredIndex;
+      prevSelectedMatches = selectedMatches;
 
       const root = graphRef.current;
       const handle = root && root.mode === "2d" ? root.handle : null;
@@ -96,7 +142,7 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         const opacitySettled = curOpacity === target;
 
         // Skip the whole redraw when nothing changed (idle = zero cost).
-        if (!moved && opacitySettled && !morphing && !dataChanged) {
+        if (!moved && opacitySettled && !morphing && !dataChanged && !focusChanged) {
           raf = requestAnimationFrame(tick);
           return;
         }
@@ -106,9 +152,9 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, cw, ch);
+        const pts = handle.getPointPositions(); // stride-2 cosmos space coords
 
         if (curOpacity > 0.005 && src.length > 0) {
-          const pts = handle.getPointPositions(); // stride-2 cosmos space coords
           const bucketCount = palette.length / 4;
           const paths: Path2D[] = [];
           for (let b = 0; b < bucketCount; b++) paths.push(new Path2D());
@@ -124,7 +170,7 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
             p.quadraticCurveTo(cx, cy, bx, by);
           }
 
-          ctx.globalAlpha = curOpacity;
+          ctx.globalAlpha = curOpacity * (selectedIndex === null ? 1 : 0.15);
           ctx.lineWidth = LINE_WIDTH;
           for (let b = 0; b < bucketCount; b++) {
             const o = b * 4;
@@ -135,6 +181,54 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
           }
           ctx.globalAlpha = 1;
         }
+
+        if (dataChanged || focusChanged) {
+          focusCache = resolveFocusEdges(
+            { src, dst, strength: EMPTY_STRENGTH, dropped: 0 },
+            selectedIndex,
+            selectedMatches,
+            hoveredIndex,
+          );
+        }
+
+        const strokeFor = (edge: FocusEdge, alpha: number): string => {
+          if (edge.webIndex !== null) {
+            const paletteOffset = bucket[edge.webIndex] * 4;
+            return `rgba(${Math.round(palette[paletteOffset] * 255)},${Math.round(
+              palette[paletteOffset + 1] * 255,
+            )},${Math.round(palette[paletteOffset + 2] * 255)},${alpha})`;
+          }
+          if (nodeColors) {
+            const a = edge.src * 4;
+            const b = edge.dst * 4;
+            return `rgba(${Math.round(((nodeColors[a] + nodeColors[b]) * 0.5) * 255)},${Math.round(
+              ((nodeColors[a + 1] + nodeColors[b + 1]) * 0.5) * 255,
+            )},${Math.round(((nodeColors[a + 2] + nodeColors[b + 2]) * 0.5) * 255)},${alpha})`;
+          }
+          return `rgba(78,140,203,${alpha})`;
+        };
+
+        const drawFocus = (edges: readonly FocusEdge[], width: number, alpha: number): void => {
+          if (!ctx || edges.length === 0) return;
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = width;
+          for (const edge of edges) {
+            const a = edge.src * 2;
+            const b = edge.dst * 2;
+            const [ax, ay] = project(aff, pts[a], pts[a + 1]);
+            const [bx, by] = project(aff, pts[b], pts[b + 1]);
+            const [cx, cy] = quadControl(ax, ay, bx, by, curve);
+            const path = new Path2D();
+            path.moveTo(ax, ay);
+            path.quadraticCurveTo(cx, cy, bx, by);
+            ctx.strokeStyle = strokeFor(edge, alpha);
+            ctx.stroke(path);
+          }
+        };
+
+        // Deliberate draw priority: ambient < persistent selected < temporary hover.
+        drawFocus(focusCache.selected, SELECTED_LINE_WIDTH, 0.9);
+        drawFocus(focusCache.hovered, HOVERED_LINE_WIDTH, 1);
       }
 
       raf = requestAnimationFrame(tick);

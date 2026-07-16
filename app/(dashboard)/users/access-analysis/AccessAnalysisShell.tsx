@@ -140,6 +140,7 @@ export function ShellBody({
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
+  const [hoveredNodeIndex, setHoveredNodeIndex] = useState<number | null>(null);
 
   const { resolvedTheme } = useTheme();
   const {
@@ -404,6 +405,14 @@ export function ShellBody({
     }
     return s;
   }, [neighborsQuery.data, indexByNodeId]);
+  const selectedMatches = useMemo(
+    () =>
+      (neighborsQuery.data?.matches ?? []).flatMap((match) => {
+        const index = indexByNodeId.get(match.nodeId);
+        return index === undefined ? [] : [{ index, score: match.score }];
+      }),
+    [neighborsQuery.data, indexByNodeId],
+  );
 
   // Same-user edges are a physics-graph (flag-ON) affordance only. On the flag-OFF
   // embedding map we render NO edges: edges/links/baseLinkColors stay EMPTY so
@@ -473,6 +482,7 @@ export function ShellBody({
             isolatedNodeIndex={isolatedNodeIndex}
             onIsolate={setIsolated}
             neighborIndices={ACC_3D_GRAPH_ENABLED ? null : neighborIndices}
+            onHoverChange={setHoveredNodeIndex}
             lassoSelection={lassoSelection}
             drillDown={drillDown}
             valueResolvers={valueResolvers}
@@ -531,6 +541,10 @@ export function ShellBody({
               // that fades in the cluster labels. Fades fully out during the morph.
               opacity={Math.min(1, 0.5 + (strength / 100) * 0.5)}
               isMorphing={isPreviewActive}
+              nodeColors={nodeColors}
+              selectedIndex={isolatedNodeIndex}
+              selectedMatches={selectedMatches}
+              hoveredIndex={hoveredNodeIndex}
             />
           )}
           {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
