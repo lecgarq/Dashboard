@@ -139,7 +139,7 @@ async function main() {
         log('person-graph rebuild failed (non-fatal): ' + e.message);
       }
       try {
-        log('Building per-instance embedding (features → UMAP)...');
+        log('Building per-instance embedding (features → PaCMAP)...');
         const { execSync } = require('node:child_process');
         execSync('npx tsx scripts/build-instance-features.ts', { stdio: 'inherit' });
         execSync('python scripts/compute_instance_embeddings.py', { stdio: 'inherit' });
