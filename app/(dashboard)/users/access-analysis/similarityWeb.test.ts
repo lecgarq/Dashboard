@@ -7,6 +7,9 @@ import {
   project,
   quadControl,
   stepOpacity,
+  strengthBand,
+  linkBandStyle,
+  morphOpacityTarget,
 } from "./similarityWeb";
 
 const idx = new Map<string, number>([
@@ -77,6 +80,16 @@ describe("computeEdgeColors", () => {
     expect(palette[b * 4 + 2]).toBeLessThan(0.2); // ~no blue
   });
 
+  it("assigns exact weak, medium, and strong boundaries with ordered styles", () => {
+    expect([0, 1 / 3 - 1e-6, 1 / 3, 2 / 3 - 1e-6, 2 / 3, 1].map(strengthBand)).toEqual([
+      0, 0, 1, 1, 2, 2,
+    ]);
+    expect(linkBandStyle(0).width).toBeLessThan(linkBandStyle(1).width);
+    expect(linkBandStyle(1).width).toBeLessThan(linkBandStyle(2).width);
+    expect(linkBandStyle(0).alpha).toBeLessThan(linkBandStyle(1).alpha);
+    expect(linkBandStyle(1).alpha).toBeLessThan(linkBandStyle(2).alpha);
+  });
+
   it("stronger edges get higher alpha than weaker ones of the same hue", () => {
     const web = {
       src: Int32Array.from([0, 0]),
@@ -84,10 +97,11 @@ describe("computeEdgeColors", () => {
       strength: Float32Array.from([1, 0]), // strong, weak
       dropped: 0,
     };
-    const { bucket, palette } = computeEdgeColors(web, nodeColors, "dark");
+    const { bucket, band, palette } = computeEdgeColors(web, nodeColors, "dark");
     const aStrong = palette[bucket[0] * 4 + 3];
     const aWeak = palette[bucket[1] * 4 + 3];
     expect(aStrong).toBeGreaterThan(aWeak);
+    expect(Array.from(band)).toEqual([2, 0]);
   });
 
   it("reuses one palette bucket for identical edge colors", () => {
@@ -147,8 +161,12 @@ describe("geometry + opacity helpers", () => {
     expect(quadControl(0, 0, 10, 0, 0.1)).toEqual([5, 1]);
   });
 
-  it("stepOpacity eases toward the target and snaps when close", () => {
-    expect(stepOpacity(0, 1, 0.25)).toBeCloseTo(0.25);
-    expect(stepOpacity(0.999, 1, 0.25)).toBe(1); // within epsilon -> snap
+  it("keeps a 25% morph floor and settles opacity over about 180ms", () => {
+    expect(morphOpacityTarget(0.8, true)).toBeCloseTo(0.2);
+    expect(morphOpacityTarget(0.8, false)).toBeCloseTo(0.8);
+    let opacity = 0;
+    for (let elapsed = 0; elapsed < 198; elapsed += 33) opacity = stepOpacity(opacity, 1, 33);
+    expect(opacity).toBeGreaterThan(0.99);
+    expect(stepOpacity(0.999, 1, 33)).toBe(1);
   });
 });

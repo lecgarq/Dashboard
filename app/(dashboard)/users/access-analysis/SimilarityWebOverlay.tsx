@@ -7,9 +7,9 @@
  * tracks pan/zoom. cosmos.gl can't draw curves, so we draw them here.
  *
  * Lag-free: positions come from one getPointPositions() read + one solved affine
- * (not N spaceToScreen calls); edges are batched into one Path2D per color bucket;
- * the layer fades OUT during slider morphs (isMorphing) and skips redraw entirely
- * when the view is unchanged and the opacity has settled.
+ * (not N spaceToScreen calls); edges are batched by color + strength band; during a
+ * slider morph the web follows the nodes at a 25% opacity floor, then parks again
+ * when positions and opacity are unchanged.
  *
  * Purity: imports only React + the GraphCanvasHandle type + the pure similarityWeb
  * helpers. No data/math-layer imports.
@@ -23,6 +23,9 @@ import {
   quadControl,
   resolveFocusEdges,
   stepOpacity,
+  strengthBand,
+  linkBandStyle,
+  morphOpacityTarget,
   type Affine,
   type FocusEdge,
   type FocusEdges,
@@ -37,11 +40,15 @@ export interface SimilarityWebOverlayProps {
   dst: Int32Array;
   /** Per-edge palette bucket + flat RGBA palette (from computeEdgeColors). */
   bucket: Uint16Array;
+  strength: Float32Array;
+  band: Uint8Array;
   palette: Float32Array;
   /** Committed grouping-strength fade target [0,1] (faint when scattered). */
   opacity: number;
-  /** Live morph state — true while the slider drags; the web fades out. */
+  /** Live morph state — true while the slider drags; the web stays at 25%. */
   isMorphing: () => boolean;
+  /** Monotonic version from the ambient/layout compositor; lets static frames park. */
+  getPositionVersion?: () => number;
   /** Node palette used for selected-edge fallback colors. */
   nodeColors?: Float32Array;
   /** Click focus and its authoritative Phase-30 matches. */
@@ -54,10 +61,6 @@ export interface SimilarityWebOverlayProps {
 }
 
 const FRAME_MS = 33; // ~30Hz, matches MapClusterLabels
-const LINE_WIDTH = 1.0;
-const SELECTED_LINE_WIDTH = 2.25;
-const HOVERED_LINE_WIDTH = 2.75;
-const EMPTY_STRENGTH = new Float32Array(0);
 const EMPTY_MATCHES: readonly FocusMatchIndex[] = [];
 
 export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JSX.Element | null {
@@ -78,11 +81,17 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
     let curOpacity = 0;
     let prevAff: Affine | null = null;
     let prevSrc: Int32Array | null = null;
+    let prevBand: Uint8Array | null = null;
     let prevPalette: Float32Array | null = null;
+    let prevPositionVersion = -1;
     let prevSelectedMatches: readonly FocusMatchIndex[] | null = null;
     let prevSelectedIndex: number | null | undefined;
     let prevHoveredIndex: number | null | undefined;
     let focusCache: FocusEdges = { selected: [], hovered: [] };
+    const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    let reducedMotion = media?.matches ?? false;
+    const onMotionChange = (): void => { reducedMotion = media?.matches ?? false; };
+    media?.addEventListener?.("change", onMotionChange);
 
     const ctx = canvas.getContext("2d");
 
@@ -95,6 +104,7 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         raf = requestAnimationFrame(tick);
         return;
       }
+      const dt = last ? ts - last : FRAME_MS;
       last = ts;
 
       const {
@@ -102,9 +112,12 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         src,
         dst,
         bucket,
+        strength,
+        band,
         palette,
         opacity,
         isMorphing,
+        getPositionVersion,
         curve = 0.14,
         nodeColors,
         selectedIndex = null,
@@ -112,13 +125,17 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         hoveredIndex = null,
       } = dataRef.current;
       const morphing = isMorphing();
-      const dataChanged = src !== prevSrc || palette !== prevPalette;
+      const positionVersion = getPositionVersion?.() ?? 0;
+      const positionsChanged = positionVersion !== prevPositionVersion;
+      const dataChanged = src !== prevSrc || band !== prevBand || palette !== prevPalette;
       const focusChanged =
         selectedIndex !== prevSelectedIndex ||
         hoveredIndex !== prevHoveredIndex ||
         selectedMatches !== prevSelectedMatches;
       prevSrc = src;
+      prevBand = band;
       prevPalette = palette;
+      prevPositionVersion = positionVersion;
       prevSelectedIndex = selectedIndex;
       prevHoveredIndex = hoveredIndex;
       prevSelectedMatches = selectedMatches;
@@ -136,18 +153,18 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
           canvas.height = Math.round(ch * dpr);
         }
 
-        const target = morphing ? 0 : Math.max(0, Math.min(1, opacity));
+        const target = morphOpacityTarget(opacity, morphing);
         const aff = solveAffine(handle.spaceToScreen);
         const moved = affChanged(aff, prevAff);
         const opacitySettled = curOpacity === target;
 
         // Skip the whole redraw when nothing changed (idle = zero cost).
-        if (!moved && opacitySettled && !morphing && !dataChanged && !focusChanged) {
+        if (!moved && !positionsChanged && opacitySettled && !morphing && !dataChanged && !focusChanged) {
           raf = requestAnimationFrame(tick);
           return;
         }
 
-        curOpacity = stepOpacity(curOpacity, target, 0.2);
+        curOpacity = reducedMotion ? target : stepOpacity(curOpacity, target, dt);
         prevAff = aff;
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -157,34 +174,39 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         if (curOpacity > 0.005 && src.length > 0) {
           const bucketCount = palette.length / 4;
           const paths: Path2D[] = [];
-          for (let b = 0; b < bucketCount; b++) paths.push(new Path2D());
+          for (let b = 0; b < bucketCount * 3; b++) paths.push(new Path2D());
 
           for (let i = 0; i < src.length; i++) {
             const a = src[i] * 2;
             const d = dst[i] * 2;
-            const [ax, ay] = project(aff, pts[a], pts[a + 1]);
-            const [bx, by] = project(aff, pts[d], pts[d + 1]);
-            const [cx, cy] = quadControl(ax, ay, bx, by, curve);
-            const p = paths[bucket[i]];
+            const ax = pts[a] * aff.sx + aff.ox;
+            const ay = pts[a + 1] * aff.sy + aff.oy;
+            const bx = pts[d] * aff.sx + aff.ox;
+            const by = pts[d + 1] * aff.sy + aff.oy;
+            const cx = (ax + bx) / 2 - (by - ay) * curve;
+            const cy = (ay + by) / 2 + (bx - ax) * curve;
+            const p = paths[bucket[i] * 3 + band[i]];
             p.moveTo(ax, ay);
             p.quadraticCurveTo(cx, cy, bx, by);
           }
 
           ctx.globalAlpha = curOpacity * (selectedIndex === null ? 1 : 0.15);
-          ctx.lineWidth = LINE_WIDTH;
           for (let b = 0; b < bucketCount; b++) {
             const o = b * 4;
             ctx.strokeStyle = `rgba(${Math.round(palette[o] * 255)},${Math.round(
               palette[o + 1] * 255,
             )},${Math.round(palette[o + 2] * 255)},${palette[o + 3]})`;
-            ctx.stroke(paths[b]);
+            for (let edgeBand = 0; edgeBand < 3; edgeBand++) {
+              ctx.lineWidth = linkBandStyle(edgeBand as 0 | 1 | 2).width;
+              ctx.stroke(paths[b * 3 + edgeBand]);
+            }
           }
           ctx.globalAlpha = 1;
         }
 
         if (dataChanged || focusChanged) {
           focusCache = resolveFocusEdges(
-            { src, dst, strength: EMPTY_STRENGTH, dropped: 0 },
+            { src, dst, strength, dropped: 0 },
             selectedIndex,
             selectedMatches,
             hoveredIndex,
@@ -208,11 +230,15 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
           return `rgba(78,140,203,${alpha})`;
         };
 
-        const drawFocus = (edges: readonly FocusEdge[], width: number, alpha: number): void => {
+        const drawFocus = (edges: readonly FocusEdge[], widthLift: number, alphaLift: number): void => {
           if (!ctx || edges.length === 0) return;
           ctx.globalAlpha = 1;
-          ctx.lineWidth = width;
           for (const edge of edges) {
+            const edgeBand = edge.webIndex === null
+              ? strengthBand(edge.score)
+              : (band[edge.webIndex] as 0 | 1 | 2);
+            const style = linkBandStyle(edgeBand);
+            ctx.lineWidth = style.width + widthLift;
             const a = edge.src * 2;
             const b = edge.dst * 2;
             const [ax, ay] = project(aff, pts[a], pts[a + 1]);
@@ -221,14 +247,14 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
             const path = new Path2D();
             path.moveTo(ax, ay);
             path.quadraticCurveTo(cx, cy, bx, by);
-            ctx.strokeStyle = strokeFor(edge, alpha);
+            ctx.strokeStyle = strokeFor(edge, Math.min(1, 0.7 + style.alpha * 0.2 + alphaLift));
             ctx.stroke(path);
           }
         };
 
         // Deliberate draw priority: ambient < persistent selected < temporary hover.
-        drawFocus(focusCache.selected, SELECTED_LINE_WIDTH, 0.9);
-        drawFocus(focusCache.hovered, HOVERED_LINE_WIDTH, 1);
+        drawFocus(focusCache.selected, 0.9, 0.08);
+        drawFocus(focusCache.hovered, 1.2, 0.12);
       }
 
       raf = requestAnimationFrame(tick);
@@ -238,6 +264,7 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
     return () => {
       active = false;
       cancelAnimationFrame(raf);
+      media?.removeEventListener?.("change", onMotionChange);
     };
   }, [props.mode]);
 

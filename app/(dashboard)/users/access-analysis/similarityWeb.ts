@@ -61,8 +61,27 @@ export function mapEdgesToIndices(
 export interface EdgePaint {
   /** Per-edge palette index (Uint16: distinct community-blend × alpha combos). */
   bucket: Uint16Array;
+  /** Per-edge weak/medium/strong width band. */
+  band: Uint8Array;
   /** Flat RGBA palette (length = bucketCount * 4), values in [0,1]. */
   palette: Float32Array;
+}
+
+export type LinkStrengthBand = 0 | 1 | 2;
+
+const LINK_BAND_STYLES = [
+  { width: 0.65, alpha: 0.45 },
+  { width: 1.05, alpha: 0.7 },
+  { width: 1.55, alpha: 1 },
+] as const;
+
+export function strengthBand(strength: number): LinkStrengthBand {
+  if (!Number.isFinite(strength) || strength < 1 / 3) return 0;
+  return strength < 2 / 3 ? 1 : 2;
+}
+
+export function linkBandStyle(band: LinkStrengthBand): Readonly<{ width: number; alpha: number }> {
+  return LINK_BAND_STYLES[band];
 }
 
 export interface FocusMatchIndex {
@@ -153,6 +172,7 @@ export function computeEdgeColors(
 ): EdgePaint {
   const n = web.src.length;
   const bucket = new Uint16Array(n);
+  const band = new Uint8Array(n);
   const a0 = baseAlpha(theme);
   const keyToBucket = new Map<number, number>();
   const palette: number[] = [];
@@ -169,8 +189,9 @@ export function computeEdgeColors(
       g *= 0.85;
       b *= 0.85;
     }
-    // Alpha rises with similarity strength: weak = half the ceiling, strong = ceiling.
-    const aFrac = 0.5 + 0.5 * web.strength[i];
+    const edgeBand = strengthBand(web.strength[i]);
+    band[i] = edgeBand;
+    const aFrac = linkBandStyle(edgeBand).alpha;
 
     // Quantize: 5-bit RGB + 3-bit alpha. Safe for up to ~127 distinct community hues
     // (cosmos.gl caps at ~12, giving <=624 buckets — well within Uint16).
@@ -189,7 +210,7 @@ export function computeEdgeColors(
     bucket[i] = bi;
   }
 
-  return { bucket, palette: Float32Array.from(palette) };
+  return { bucket, band, palette: Float32Array.from(palette) };
 }
 
 export interface Affine {
@@ -243,8 +264,17 @@ export function quadControl(
   return [mx - dy * k, my + dx * k];
 }
 
-/** Ease `cur` toward `target` by `rate`; snap when within epsilon. */
-export function stepOpacity(cur: number, target: number, rate: number): number {
+/** The web stays at one quarter of its normal expression during a layout morph. */
+export function morphOpacityTarget(opacity: number, morphing: boolean): number {
+  const base = Math.max(0, Math.min(1, opacity));
+  return morphing ? base * 0.25 : base;
+}
+
+/** Dt-driven exponential settle; tau puts the visual return at about durationMs. */
+export function stepOpacity(cur: number, target: number, dtMs: number, durationMs = 180): number {
+  if (durationMs <= 0) return target;
+  const dt = Math.min(50, Math.max(0, dtMs));
+  const rate = 1 - Math.exp(-dt / (durationMs / 5));
   const next = cur + (target - cur) * rate;
   return Math.abs(target - next) < 0.005 ? target : next;
 }

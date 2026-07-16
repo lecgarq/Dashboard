@@ -11,6 +11,8 @@ describe("SimilarityWebOverlay", () => {
     src: new Int32Array(0),
     dst: new Int32Array(0),
     bucket: new Uint16Array(0),
+    strength: new Float32Array(0),
+    band: new Uint8Array(0),
     palette: new Float32Array(0),
   };
 

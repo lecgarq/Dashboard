@@ -6,8 +6,8 @@ current_phase: 32
 current_phase_name: "Ambient Life & Link Expression"
 status: executing
 current_plan: "32-02"
-stopped_at: "32-01 complete with 22,279 nodes at 60.04fps Tier 0. Execute 32-02 strength-banded, visible-during-morph links."
-last_updated: "2026-07-16T16:57:50-06:00"
+stopped_at: "32-02 complete. Final full path measured 22,279 nodes / 14,200 links / 20.68fps and visibly degraded Tier 0→1→2; phase verification and deploy pending."
+last_updated: "2026-07-16T17:09:53-06:00"
 ---
 
 # Project State
@@ -38,6 +38,12 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   production evidence shipped. Isolated full-data gate: 22,279 nodes / 14,200 mapped
   links / 60.04fps for 10.010s / Tier 0 / 22,279 animated; Playwright 3/3 and focused
   Vitest 33/33 passed. Next: execute `32-02`.
+- **Phase 32-02 COMPLETE 2026-07-16:** real-score weak/medium/strong link bands,
+  palette+band batching, focus draw priority, and a position-attached 25%-floor
+  morph shipped. Focused Vitest 46/46, TEST-01/02/03 21/21, tsc, isolated build,
+  and Playwright 4/4 passed. Final full path measured 22,279 nodes / 14,200 links /
+  20.68fps and visibly degraded Tier 0→1→2; this truthful Canvas2D ceiling is
+  recorded for Phase-33 profiling rather than masked by the pre-link 60.04fps run.
 - **Phase 32 CONTEXT LOCKED 2026-07-16:** deterministic anchor-relative
   recency micro-orbits with semantic node sizes unchanged; hover and
   selected+ten-match foreground freeze over softer background life; ambient

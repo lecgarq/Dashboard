@@ -116,4 +116,33 @@ test.describe("Phase 32 ambient life", () => {
     );
     await expect(page.getByTestId("similarity-web")).toBeAttached();
   });
+
+  test("grouping morph keeps the web mounted, pauses ambient, and resumes cleanly", async ({ page }) => {
+    const consoleErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    await gotoGraph(page);
+    await page.getByTestId("group-by-select").selectOption("role");
+    const slider = page.getByRole("slider", { name: "Grouping strength thumb" });
+    await expect(slider).toBeVisible();
+    const box = await slider.boundingBox();
+    expect(box).toBeTruthy();
+    await page.mouse.move(box!.x + box!.width * 0.35, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.8, box!.y + box!.height / 2, { steps: 8 });
+    await page.waitForFunction(
+      () =>
+        (window.__ACC_GRAPH_TEST__ as unknown as Phase32Bridge).getAmbientStats()?.animatedNodeCount === 0,
+    );
+    await expect(page.getByTestId("similarity-web")).toBeAttached();
+    await page.mouse.up();
+    await page.waitForFunction(
+      () =>
+        ((window.__ACC_GRAPH_TEST__ as unknown as Phase32Bridge).getAmbientStats()?.animatedNodeCount ?? 0) > 0,
+      undefined,
+      { timeout: 3_000 },
+    );
+    expect(consoleErrors).toEqual([]);
+  });
 });

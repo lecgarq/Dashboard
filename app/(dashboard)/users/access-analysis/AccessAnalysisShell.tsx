@@ -432,6 +432,10 @@ export function ShellBody({
     for (const match of selectedMatches) mask[match.index] = 1;
     return mask;
   }, [features.length, hoveredNodeIndex, isolatedNodeIndex, selectedMatches]);
+  const getAmbientPositionVersion = useCallback(
+    () => ambientLayer?.getStats().positionVersion ?? 0,
+    [ambientLayer],
+  );
 
   // Same-user edges are a physics-graph (flag-ON) affordance only. On the flag-OFF
   // embedding map we render NO edges: edges/links/baseLinkColors stay EMPTY so
@@ -561,11 +565,14 @@ export function ShellBody({
               src={simWeb.src}
               dst={simWeb.dst}
               bucket={simPaint.bucket}
+              strength={simWeb.strength}
+              band={simPaint.band}
               palette={simPaint.palette}
               // Faint when scattered, clearer as the grouping tightens — same lever
               // that fades in the cluster labels. Fades fully out during the morph.
               opacity={Math.min(1, 0.5 + (strength / 100) * 0.5)}
               isMorphing={isPreviewActive}
+              getPositionVersion={getAmbientPositionVersion}
               nodeColors={nodeColors}
               selectedIndex={isolatedNodeIndex}
               selectedMatches={selectedMatches}
