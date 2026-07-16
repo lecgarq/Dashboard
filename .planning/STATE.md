@@ -6,8 +6,8 @@ current_phase: 32
 current_phase_name: "Ambient Life & Link Expression"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 32 context locked: micro-orbits, focus freeze, three-tier FPS degradation, and banded visible-during-morph links. Run $lecg-phase 32."
-last_updated: "2026-07-16T15:01:59-06:00"
+stopped_at: "Phase 32 planned as 32-01 ambient/FPS and 32-02 link expression. Run $lecg-phase 32 to execute 32-01."
+last_updated: "2026-07-16T16:40:28-06:00"
 ---
 
 # Project State
@@ -27,8 +27,12 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 32 — Ambient Life & Link Expression — **ready to plan**
-  (`32-CONTEXT.md` locked; next command `$lecg-phase 32`).
+- **Phase:** 32 — Ambient Life & Link Expression — **planned**
+  (`32-01` ambient/FPS then `32-02` link expression; next command `$lecg-phase 32`).
+- **Phase 32 PLANNED 2026-07-16:** `32-01` adds deterministic recency micro-orbits,
+  foreground freeze, morph pause/resume, the three-tier FPS controller, and full-data
+  bridge evidence; `32-02` adds three strength bands and the visible 25%-floor morphing
+  similarity web. Both stay on the frozen flag-OFF rAF/Canvas2D path.
 - **Phase 32 CONTEXT LOCKED 2026-07-16:** deterministic anchor-relative
   recency micro-orbits with semantic node sizes unchanged; hover and
   selected+ten-match foreground freeze over softer background life; ambient
