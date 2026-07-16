@@ -1,7 +1,7 @@
 # Coding Conventions
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-02 — post v2.1/v2.2 update (boundary fix, shared-query/projection/characterization conventions)
+**Refreshed:** 2026-07-16 — post v2.4 close (canonical EChart wrapper, commit conventions, guard-bash hook). Previous refresh 2026-07-02.
 
 ## TypeScript & Next.js App Router Idioms
 
@@ -10,7 +10,7 @@
 - Interactive client components require `"use client"` as the first line.
 - Server actions (data mutations / heavy server reads triggered lazily) use `"use server"` as the first line. Examples: `app/(dashboard)/access-analysis/coordinationActions.ts`, `folderTerrainActions.ts`, `folderActivityActions.ts`.
 - Pure transform/compute modules (`roleCounts.ts`, `companyCounts.ts`, etc.) carry no directive — they are safe for both client and server imports.
-- The `EChart` wrapper (`app/(dashboard)/access-analysis/components/EChart.tsx`) is `"use client"` because `echarts-for-react` relies on the DOM.
+- Both `EChart` wrappers (`components/ui/EChart.tsx` — canonical; `app/(dashboard)/access-analysis/components/EChart.tsx` — legacy, consumers not yet migrated) are `"use client"` because `echarts-for-react` relies on the DOM.
 
 **RSC data loading pattern (`access-analysis`, `template-mty`):**
 ```tsx
@@ -129,15 +129,20 @@ export function ActivityTimelineChart({ summary }) {
 }
 ```
 
-**Do not hardcode chart colors for a single theme.** Always derive from `resolvedTheme`. The `EChart` wrapper itself (`components/ui/EChart.tsx`) is theme-agnostic — callers build the option.
+**Do not hardcode chart colors for a single theme.** Always derive from `resolvedTheme`.
 
-**EChart wrapper signature:**
+**Two EChart wrappers exist (verified 2026-07-16):**
+- `components/ui/EChart.tsx` — **canonical.** Reads `resolvedTheme` once, injects axis/text/tooltip chrome via `mergeEChartsTheme` (`lib/colors/echartsTheme.ts`, pure fn), and passes `key={resolvedTheme}` to force a clean canvas remount on theme switch. Callers still build the data/series option; the wrapper merges theme chrome.
+- `app/(dashboard)/access-analysis/components/EChart.tsx` — legacy wrapper, stays intact until its consumers migrate (per the SCOPE GUARD comment in the canonical file).
+
+**EChart wrapper signature (same prop surface on both):**
 ```tsx
 <EChart
   option={option}           // EChartsOption
-  height={280}              // pixels
+  height={280}              // pixels (default 280)
   onEvents={handlers}       // optional
   notMerge={true}           // default; pass false to animate diffs
+  className={...}           // optional (canonical wrapper only)
 />
 ```
 
@@ -226,7 +231,7 @@ await db.accProjectRole.groupBy({
 ## Comments
 
 **When to comment:**
-- Architectural decisions and tradeoffs (e.g., why `MainCharts` is a single Suspense boundary, why `coordinationActions.ts` imports `db` directly).
+- Architectural decisions and tradeoffs (e.g., why `MainCharts` is a single Suspense boundary, the SCOPE GUARD note in `components/ui/EChart.tsx` explaining the legacy-wrapper coexistence).
 - Gotchas and traps (e.g., lean-payload trap on `/users`, `next build` typechecking test files).
 - Non-obvious data authority (e.g., "AccDcRole is permanently empty — source from AccRole").
 
@@ -244,10 +249,22 @@ await db.accProjectRole.groupBy({
 
 Blank line between groups. No barrel `index.ts` re-exports observed in route-level code.
 
+## Git & Commit Conventions
+
+**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-16:
+- Types in active use: `feat`, `fix`, `refactor`, `docs`.
+- Scope is either the phase number (`fix(28.1): ...`, `docs(27-02): ...`), the surface (`feat(spatial-graph): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.4 milestone`).
+- Subject is imperative, lowercase, no trailing period. Plan/requirement IDs appear in the subject when relevant (`(26-02)`, `(PERF-03)`).
+
+**Surgical staging is mandatory.** Stage explicit paths only, then inspect `git diff --cached --name-only` before committing. Bulk staging (`git add -A`, `git add .`, `git add -u`, `git commit -a`) is **denied at the tool level** by the PreToolUse hook `.claude/hooks/guard-bash.cjs` — the working tree is permanently WIP-heavy and bulk staging sweeps unrelated edits/deletions into commits.
+
+**Build guard:** the same hook denies `npm run build` / `next build` while `:3000` is live (probes the port), unless the command sets `NEXT_DIST_DIR` to a non-default dir (e.g. `.next-e2e`) — isolated-dist builds never touch the live `.next`. These denials are intentional; do not retry the same command.
+
 ---
 
 **Dashboard self-check:**
-- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, direct file reads.
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `git log`, direct file reads (refresh 2026-07-16).
 - Evidence: all patterns verified from actual source files listed above.
-- Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root.
+- Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root, explicit-path staging enforced by hook.
+- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (users/ directory components deleted, access-analysis modules reworked) — route-level file examples in this doc reflect the committed tree.
 - VERIFY: none — all claims grounded in verified source.

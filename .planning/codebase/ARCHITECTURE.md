@@ -1,8 +1,10 @@
-<!-- refreshed: 2026-07-02 -->
+<!-- refreshed: 2026-07-16 -->
 # Architecture
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 update (repo-map basis unchanged, 2026-06-19)
+**Refreshed:** 2026-07-16 — targeted post-v2.3 (charts/panels) + v2.4 (spatial-graph dimension widening) update; repo-map basis 2026-07-14 (gate passing)
+
+> **In-flight note (2026-07-16):** branch `feat/access-analysis-redesign` carries ~222 uncommitted working-tree entries (a `/users` directory redesign that deletes `PersonCard.tsx`, `PersonRow.tsx`, `PersonDetailModal.tsx`, etc.). This document describes the **committed** architecture; do not treat working-tree deletions/edits as landed.
 
 ## System Overview
 
@@ -24,8 +26,8 @@
 │  API Boundary (server/routers/ — tRPC App Router handler)                    │
 │                                                                              │
 │  accDcGraph   accActivity  accMembers  accFolders  accGraph  accPersonGraph  │
-│  accSync      users        project     clash       lod       gmail/calendar  │
-│  chat         kpi          workspace   ...                                   │
+│  accSync      accCoordination  users   project     clash     lod             │
+│  gmail/calendar  chat      kpi         workspace   ...       (23 routers)    │
 └─────────────────────────┬────────────────────────────────────────────────────┘
                           │ server-only imports
 ┌─────────────────────────▼────────────────────────────────────────────────────┐
@@ -119,17 +121,21 @@
 ### Primary RSC Page Path (e.g., `/access-analysis`)
 
 1. `app/(dashboard)/access-analysis/page.tsx` renders `<Suspense><MainCharts /></Suspense>`
-2. `MainCharts` (RSC) calls eight `lib/server/*View` helpers in `Promise.all` — each queries Prisma directly
-3. Props passed as-is into `<AccessAnalysisCharts>` (client boundary)
-4. `AccessAnalysisCharts` owns cross-filter Zustand/useState, renders ECharts donuts + timeline + terrain
+2. `MainCharts` (RSC) runs a **10-loader eager `Promise.all`** of `lib/server/*View` helpers (instance view, module activity, activity-by-actor, coordination, coverage, terrain projects, timeline, dcCoverage, ingestFreshness, provisionedModules) — each queries Prisma directly
+3. **Lazy per-tab loaders** (v2.3): activity-recency, permission-level, permission-users, folder-scoped-activity, issue-funnel, workflow-tools, folder-ranking/detail/action-matrix are passed to the client as server-action **function props** and fetched on first tab activation, keeping first paint on the eager fan-out only
+4. Props passed into `<AccessAnalysisCharts>` (client boundary), which owns state + wiring and renders a **6-tab Radix `<Tabs>` layout** (Overview / Roles / Users / Companies / Projects / Compare) — each tab is a sibling `*TabPanel` component
 5. Drill interactions open `<DrillSheet>` with `<PeopleDrillList>` or `<FolderPermissionTerrain>`
 
 ### Hydrated TanStack Page Path (e.g., `/users`, `/users/spatial-graph`)
 
 1. RSC page calls `createAccRouteHelpers()` → `prefetch*RouteData(helpers)` → multiple `helpers.<router>.<proc>.prefetch()`
-2. `<HydrationBoundary state={helpers.dehydrate()}>` serializes cache into HTML
+2. `<HydrationBoundary state={...}>` serializes cache into HTML
 3. Client component (`UsersDirectoryClient`, `AccessAnalysisShellClient`) reads from React Query cache — no re-fetch on mount
 4. Subsequent user interactions trigger `trpc.<proc>.useQuery()` calls with stale-while-revalidate
+
+**superjson hydration trap (v2.4 PERF-04):** `createServerSideHelpers({ transformer: superjson })` makes `helpers.dehydrate()` return a superjson-**wrapped** `{ json, meta }` envelope (a pages-router idiom). App Router's `<HydrationBoundary>` expects a **raw** `DehydratedState`, so passing the wrapper hydrates nothing and the client silently re-fetches the multi-MB payload on mount. Fix: `superjson.deserialize(dehydrated)` before the boundary, guarded on the `{ json }` shape.
+- **Fixed:** `app/(dashboard)/users/spatial-graph/page.tsx` (commit 9fb54cb8)
+- **Still raw (live hydration miss):** `app/(dashboard)/layout.tsx` (6 layout-level prefetches) and `app/(dashboard)/users/page.tsx` — both pass `helpers.dehydrate()` straight to `<HydrationBoundary>`
 
 ### 3D Physics Graph Path (`/users/spatial-graph` → `AccessAnalysisShell`)
 
@@ -159,10 +165,12 @@
 - Used by: `AccessAnalysisShell`, `GraphCanvas`, `GraphInteractions`
 
 **DimensionCatalog (`dimensionCatalog.ts`):**
-- Purpose: Single source of truth for all graph dimensions (structural + ~176 ACC taxonomy actions + folder dims). Pure, replaces legacy `dimensionRegistry.ts` / `dimensionGroups.ts`.
+- Purpose: Single source of truth for the full graph dimension vocabulary (structural + ACC taxonomy actions + folder dims). Pure.
 - Location: `app/(dashboard)/users/access-analysis/dimensionCatalog.ts`
 - Sub-modules: `dimensionCatalog.structural.ts`, `dimensionCatalog.actions.ts`, `dimensionCatalog.folder.ts`, `dimensionCatalog.folderLive.ts`
 - Built from: `accTaxonomy.ts` → `accTaxonomyStatic.ts` + `accTaxonomyActions.generated.ts`
+- **v2.4 widening:** the catalog preview vocabulary is **208 entries** (pinned by `catalogSliders.test.ts`); v2.4 exposed **205 of 208** already-computed dimensions as user-facing group-by/color-by/slider targets (an unlock, not a rebuild — the prior UI capped at 3 presets: User/Project/Role). Supporting modules: `catalogSliders.ts` (lazy-loaded preview), `catalogSearch.ts`, `catalogTargets.ts`, `groupByDimensions.ts` + `GroupByControls.tsx`, `activeGrouping.ts`, `dimensionCoverage.ts`, `dimensionIdSpace.ts`, `DimensionFilterPopover.tsx`.
+- **`dimensionRegistry.ts` / `dimensionGroups.ts` are NOT dead** (resolves prior VERIFY): the registry still owns the runtime slider/physics dimension set — imported by `SliderContext.tsx`, `AccessAnalysisShell.tsx`, `nodeColors.ts`, `featureTargets.ts`, `bucketedColors.ts`, `sliderPresets.ts`, `featureSnapshot.ts`, and `dimensionCatalog.structural.ts` itself. Catalog = full vocabulary; registry = runtime slider subset.
 
 **accTaxonomy (`accTaxonomy.ts`):**
 - Purpose: ACC action/module/group taxonomy canonical lookups. Source of truth for 9 modules, ~176 actions. `GENERATED_ACTIONS` come from `accTaxonomyActions.generated.ts`.
@@ -182,7 +190,7 @@
 - VERIFY: accessFacets (risk/perm facets) are seeded into FilterContext but do not have CatalogDimension descriptors — P7 pattern.
 
 **AccessAnalysisCharts (cross-filter hub):**
-- Purpose: Owns all `/access-analysis` page state — `sliceFilters`, `selected` project set, drill sheet. Locked single-component decision: splitting would require lifting state (Rule 4 in page comments).
+- Purpose: Owns all `/access-analysis` page state — cross-filters, `selected` project set, active tab, drill sheet. Since v2.3 it is **state + wiring only**: rendering is delegated to six sibling tab panels (`OverviewTabPanel`, `RolesTabPanel`, `UsersTabPanel`, `CompaniesTabPanel`, `ProjectsTabPanel`, `CompareTabPanel`) under a Radix `<Tabs>` root, with `ProjectPicker` + `FilterBanner` pinned above.
 - Location: `app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx`
 
 **PremiumSurface / DrillSheet / EChart (UI primitives):**
@@ -213,17 +221,21 @@
 
 ## Entry Points
 
-**`/access-analysis` route:**
+**`/access-analysis` route (ECharts charts page — NOT the spatial graph):**
 - Location: `app/(dashboard)/access-analysis/page.tsx`
-- Pattern: async RSC → `<Suspense><MainCharts /></Suspense>` → `MainCharts` calls 7 parallel `lib/server/*View` helpers → `AccessAnalysisCharts` client component
+- Pattern: async RSC (`dynamic = "force-dynamic"`) → `<Suspense><MainCharts /></Suspense>` → 10 eager parallel `lib/server/*View` helpers + lazy per-tab server-action loaders → `AccessAnalysisCharts` client component (6-tab layout)
 
 **`/users` route:**
 - Location: `app/(dashboard)/users/page.tsx`
-- Pattern: RSC prefetch via `prefetchUsersRouteAccData` → `<HydrationBoundary>` → `UsersDirectoryClient` (Zustand + DataTable)
+- Pattern: RSC prefetch via `prefetchUsersRouteAccData` → `<HydrationBoundary>` → `UsersDirectoryClient` (Zustand + DataTable). Passes raw `helpers.dehydrate()` — known live superjson hydration miss (see Data Flow).
 
 **`/users/spatial-graph` route:**
 - Location: `app/(dashboard)/users/spatial-graph/page.tsx`
-- Pattern: RSC prefetch via `prefetchAccessAnalysisRouteData` → `<HydrationBoundary h-screen>` → `AccessAnalysisShellClient` → dynamic `AccessAnalysisShell` (ssr:false)
+- Pattern: RSC prefetch via `prefetchAccessAnalysisRouteData` → `superjson.deserialize(helpers.dehydrate())` → `<HydrationBoundary h-screen>` → `AccessAnalysisShellClient` → dynamic `AccessAnalysisShell` (ssr:false). Route-level `loading.tsx` skeleton.
+
+**`/users/access-analysis` route (redirect only):**
+- Location: `app/(dashboard)/users/access-analysis/page.tsx`
+- Pattern: `redirect("/users/spatial-graph")` — the directory hosts the graph *module* (~150 committed files), but the served route is `/users/spatial-graph`. Do not conflate this directory with the top-level `/access-analysis` charts page.
 
 **`/template-mty` route:**
 - Location: `app/(dashboard)/template-mty/page.tsx`
@@ -277,10 +289,11 @@
 
 ## Dashboard Self-Check
 
-- **Context:** architecture-summary.md (2026-06-19), root.ts, page.tsx for all 4 routes, key component files read directly from source; 2026-07-02 refresh grounded in v2.1/v2.2 phase artifacts (STATE.md, ROADMAP.md) and post-split source reads.
-- **Evidence:** All paths, routers, components, and patterns verified from source files. Prisma models verified from `prisma/schema.prisma` (incl. `AccFolderPermissionSummary`, Ph18). tRPC procedures verified from `server/routers/root.ts`.
+- **Context:** architecture-summary.md (2026-07-14, gate passing), root.ts, page.tsx/layout.tsx for the workshop routes, `mainCharts.tsx`, and key spatial-graph modules read directly from committed source; 2026-07-16 refresh grounded in v2.3/v2.4 milestone artifacts.
+- **Evidence:** All paths, routers, components, and patterns verified from source files (`git ls-files` for committed truth on the WIP-heavy tree). 23 tRPC routers verified from `server/routers/root.ts` (incl. `accCoordination`). superjson hydration state verified per-file (spatial-graph/page.tsx fixed; layout.tsx + users/page.tsx still raw). 208-entry catalog vocabulary verified from `catalogSliders.test.ts`.
 - **Constraints:** zinc theme, MASK bus invariant, no-Prisma-in-UI, page scroll ownership documented explicitly.
 - **Gates:** No compilation run (map-only artifact). `npx tsc --noEmit` required before any edits.
-- **VERIFY:** Whether `dimensionRegistry.ts` / `dimensionGroups.ts` are fully unwired or still active consumers remain (SliderContext still imported both as of the 2026-06-23 source read).
+- **Resolved prior VERIFY:** `dimensionRegistry.ts` / `dimensionGroups.ts` remain actively imported (SliderContext, nodeColors, featureTargets, etc.) — registry is the runtime slider subset, not dead legacy.
+- **VERIFY:** the exact 3 unexposed dimensions in the 205-of-208 v2.4 split (count from milestone close; not re-derived from source).
 
-*Architecture analysis: 2026-06-23; targeted refresh 2026-07-02 (post v2.1 Concerns Hardening + v2.2 Structural Refactors)*
+*Architecture analysis: 2026-06-23; targeted refresh 2026-07-16 (post v2.3 New Graphs + v2.4 Spatial Graph Dimensions)*

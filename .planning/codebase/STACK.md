@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-02 — pins re-verified against `package.json`; deploy-gate note updated
+**Refreshed:** 2026-07-16 — pins re-verified against `package.json` after the full dependency refresh (commit `0bfe0962`, 2026-07-14): cosmos.gl 3.3.0, three 0.185, googleapis 173, csv-parse 7, fast-check 4, electron 43, Tiptap 3.27; `ws`/`y-protocols` no longer direct deps; Task Scheduler task name corrected to `LECG Dashboard Local`
 
 ---
 
@@ -30,7 +30,7 @@
 
 **Core:**
 - Next.js `^16.2.6` (App Router, webpack build mode) — all UI routing and SSR. Build command: `next build --webpack`
-- React `19.2.6` — UI component library
+- React `19.2.7` — UI component library
 - tRPC `^11.17.0` (`@trpc/server`, `@trpc/client`, `@trpc/react-query`) — type-safe API boundary; routers at `server/routers/`; composed by `server/routers/root.ts`
 - NextAuth `^5.0.0-beta.31` (`next-auth`) — session auth; providers in `server/auth.ts`; edge config in `auth.config.ts`
 - Prisma `^7.8.0` + `@prisma/adapter-pg ^7.8.0` — ORM with PostgreSQL driver adapter; schema at `prisma/schema.prisma`; client at `server/db.ts`
@@ -39,7 +39,7 @@
 - Vitest `^4.1.6` — unit and integration tests (`npm run test`, excludes `**/tests/e2e/**`)
 - Playwright `^1.59.1` — E2E tests (`npm run test:e2e`); targets `:3100` via `NEXT_DIST_DIR` isolation; cookie-auth minted for ACC graph tests
 - `@testing-library/react ^16.3.2` — React component test helpers
-- `fast-check ^3.23.2` — property-based testing used in some lib/acc modules
+- `fast-check ^4.9.0` — property-based testing used in some lib/acc modules
 
 **Build / Dev:**
 - Webpack (via `next build --webpack` and `next dev --webpack`) — explicit webpack flag (not Turbopack) due to DuckDB WASM alias requirements
@@ -67,8 +67,8 @@
 - `next-themes ^0.4.6` — theme provider for zinc dark/light toggle
 
 **3D / Graph (spatial-graph — explicitly in-scope):**
-- `three ^0.184.0` — Three.js; used in `GraphCanvas3D.tsx` via InstancedMesh + OrbitControls (NOT via R3F)
-- `@cosmos.gl/graph 3.0.0-beta.9` — GPU physics simulation for 2D layout in `AccessAnalysisShell.tsx`; NOTE: cosmos.gl v3 progress value is INVERTED (`1 - progress = alpha`)
+- `three ^0.185.1` — Three.js; used in `GraphCanvas3D.tsx` via InstancedMesh + OrbitControls (NOT via R3F)
+- `@cosmos.gl/graph 3.3.0` (exact pin; upgraded from `3.0.0-beta.9` in the 2026-07-14 dep refresh) — GPU physics simulation for 2D layout in `AccessAnalysisShell.tsx`; NOTE: cosmos.gl v3 progress value is INVERTED (`1 - progress = alpha`) — version-sensitive, re-verify on any further cosmos.gl bump
 - `d3-force-3d ^3.0.6` — 3D force simulation driving `physicsLayer.ts` PHYSICS BUS; note TWO-BUS ARCHITECTURE (physics bus vs mask bus — see `physicsLayer.ts`)
 - `d3-force ^3.0.0` — 2D force helpers
 - `d3-hierarchy ^3.1.2` — tree layout for `/forma-proposal` hierarchy view
@@ -80,9 +80,9 @@
 **Collaboration:**
 - `@hocuspocus/server ^4.0.0` + `@hocuspocus/extension-database ^4.0.0` + `@hocuspocus/extension-logger ^4.0.0` — Yjs CRDT server; started by `scripts/start-local.ps1` on `ws://localhost:4444`; logs to `logs/yjs.log`
 - `@hocuspocus/provider ^4.0.0` — client Yjs provider
-- `yjs ^13.6.30` + `y-protocols ^1.0.7` — CRDT document model
-- `@tiptap/react ^3.23.1` + full Tiptap extension suite — rich-text wiki editor
-- `ws ^8.20.0` — WebSocket transport for Yjs server
+- `yjs ^13.6.30` — CRDT document model (`y-protocols` no longer a direct dependency — transitive via Hocuspocus)
+- `@tiptap/react ^3.27.4` + full Tiptap extension suite (all pinned `^3.27.4`; exact-peer deadlock during upgrades — purge the lockfile subtree) — rich-text wiki editor
+- WebSocket transport for the Yjs server is transitive via `@hocuspocus/server` (`ws` no longer a direct dependency)
 
 **Autodesk / ACC:**
 - `@aps_sdk/authentication ^1.0.1` — APS OAuth 2-leg token acquisition
@@ -90,7 +90,7 @@
 - `@aps_sdk/oss ^1.3.3` — Object Storage Service (bucket/file access)
 
 **Google:**
-- `googleapis ^171.4.0` — Chat, Gmail, Calendar, Directory, Drive, Sheets; listed as `serverExternalPackages` in `next.config.ts` (not bundled client-side)
+- `googleapis ^173.0.0` — Chat, Gmail, Calendar, Directory, Drive, Sheets; listed as `serverExternalPackages` in `next.config.ts` (not bundled client-side)
 
 **Other Infrastructure:**
 - `pg ^8.20.0` — raw `pg` Pool for Prisma adapter; also used directly in some scripts
@@ -98,7 +98,7 @@
 - `uploadthing ^7.7.4` + `@uploadthing/react ^7.3.3` — file upload; wired at `lib/server/uploadthing.ts`
 - `openai ^6.37.0` — OpenAI API client; used in search/AI features
 - `bcryptjs ^3.0.3` — password hashing for credentials auth provider
-- `csv-parse ^6.2.1` — CSV parsing for DC ingest pipeline
+- `csv-parse ^7.0.1` — CSV parsing for DC ingest pipeline
 - `unzipper ^0.12.3` — ZIP extraction for Data Connector CSV archives
 - `xlsx` (SheetJS CDN `0.20.3`) — spreadsheet export (installed from `https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz`)
 - `sonner ^2.0.7` — toast notifications
@@ -109,9 +109,12 @@
 - `d3-scale-chromatic ^3.1.0` — color scales for chart dimension coloring
 - `@dnd-kit/core ^6.3.1` + `@dnd-kit/sortable ^10.0.0` — drag-and-drop for form and table reordering
 - `class-variance-authority ^0.7.1` + `clsx ^2.1.1` + `tailwind-merge ^3.6.0` — Tailwind class utilities
+- `tsx ^4.21.0` — direct TS script execution (e.g. `scripts/sync-acc-users.ts`, `scripts/build-instance-features.ts`)
+- `server-only ^0.0.1` — build-time guard against server modules leaking into client bundles
+- `playwright ^1.59.1` — also a runtime dependency (ACCDS session login `scripts/accds-login.cjs`), not just the test runner
 
 **Electron (dev/optional):**
-- `electron ^42.1.0` — desktop packaging; entrypoint `electron/main.cjs`; dev command `npm run desktop`
+- `electron ^43.1.0` — desktop packaging; entrypoint `electron/main.cjs`; dev command `npm run desktop`
 
 **Overrides:**
 - `@hono/node-server` pinned to `1.19.14`
@@ -129,11 +132,11 @@
 - `next build` typechecks the ENTIRE tree including test files (no `ignoreBuildErrors`); run `npx tsc --noEmit` before rebuilding
 
 **ESLint:**
-- Config: `eslint.config.mjs` (VERIFY: exact filename; `eslint ^10.3.0` uses flat config format)
+- Config: `eslint.config.mjs` (flat config; verified at repo root)
 - Extends `eslint-config-next`
 
 **Tailwind:**
-- Config: `tailwind.config.*` (VERIFY: exact filename; `^4.x` uses CSS-based config)
+- No `tailwind.config.*` file exists — Tailwind `^4.3.0` uses CSS-based configuration
 - PostCSS: `@tailwindcss/postcss ^4.3.0`
 
 **Next.js:**
@@ -141,7 +144,7 @@
 - Key settings: webpack mode forced, DuckDB WASM alias, `serverExternalPackages` for Google libs, `optimisticClientCache`, `removeConsole` in production
 
 **Prisma:**
-- Schema: `prisma/schema.prisma` (64 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection)
+- Schema: `prisma/schema.prisma` (65 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection and the newer `AccIssueType` + `AccInstanceEmbedding` models)
 - Generator: `prisma-client-js` + `prisma-erd-generator` (ERD → `docs/erd.md`)
 - Client generation in `postinstall` hook: `prisma generate && patch-package && node scripts/copy-duckdb-wasm.cjs`
 - Note (Ph18 deviation): `prisma migrate dev` chokes on the pgvector extension — the Ph18 projection shipped via a raw SQL migration; long server-side `INSERT .. SELECT` writes need the `$transaction` timeout widened (300s used)
@@ -151,7 +154,7 @@
 - Command: `vitest run --exclude "**/tests/e2e/**"`
 
 **Playwright:**
-- Config: `playwright.config.*` (VERIFY: exact path)
+- Config: `playwright.config.ts` (repo root)
 - Runs against `:3100` with `NEXT_DIST_DIR=.next-e2e`; uses `NEXT_PUBLIC_ACC_GRAPH_TEST` flag
 
 ---
@@ -159,7 +162,7 @@
 ## Build / Deploy
 
 **Local Deploy (primary):**
-1. Stop Task Scheduler `LECG Dashboard` task (prevents port conflict — NEVER build while `:3000` is live)
+1. Stop Task Scheduler `LECG Dashboard Local` task (prevents port conflict — NEVER build while `:3000` is live)
 2. `npx tsc --noEmit` — typecheck gate (must pass before build)
 3. `npm run build` (`next build --webpack`) — compiles to `.next/`
 4. Restart Task Scheduler task → `scripts/start-local.ps1` starts Next.js on `:3000` + Yjs on `:4444`
@@ -191,14 +194,14 @@ over the live server.
 - Python 3.x (for `services/lod-engine/` and `scripts/run_dev_stack.py`)
 - PyTorch + HuggingFace Transformers (for LOD engine SigLIP model)
 - Local PostgreSQL 18 (trust auth localhost; managed via `scripts/postgres-local.js`)
-- Task Scheduler task `LECG Dashboard` (boot on logon)
+- Task Scheduler task `LECG Dashboard Local` (boot on logon)
 - Task Scheduler task `LECG Postgres Local` (Postgres boot on logon)
 
 **Production / Serving:**
 - Same machine (`localhost:3000`) — no Railway, no remote deployment; `start-local.ps1` IS production
 - Yjs collaboration server on `ws://localhost:4444`
-- LOD engine on `http://127.0.0.1:8091` (default; `LOD_ENGINE_PORT` env var)
+- LOD engine on `http://127.0.0.1:8091` (default; port override env var is `LOD_QUERY_ENCODER_PORT` in `services/lod-engine/server.py`)
 
 ---
 
-*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02: all dependency pins re-checked against `package.json` (one correction: knip ^6.12.2).*
+*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-16: all pins re-checked against `package.json` after the 2026-07-14 dependency refresh (commit `0bfe0962`); config filenames, Prisma model count (65), and Task Scheduler task name verified against the tree.*

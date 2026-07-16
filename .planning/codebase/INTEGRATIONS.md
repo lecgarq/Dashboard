@@ -1,7 +1,7 @@
 # External Integrations
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-02 — stamp corrected (the `AccFolderPermissionSummary` projection section was appended in v2.2 Ph19); DC coverage framing and resolved warnings updated
+**Refreshed:** 2026-07-16 — unified activity source (`lib/server/unifiedActivitySource.ts`, accds-primary + DC-backfill merge) documented; DC admin-snapshot weekly refresh + `DC_SKIP_ADMIN_SNAPSHOT` added; ACCDS session env vars resolved; Task Scheduler task name corrected to `LECG Dashboard Local`; several stale VERIFY items closed
 
 ---
 
@@ -26,9 +26,9 @@
 - Sync script: `scripts/sync-acc-users.ts` (TypeScript), cron wrapper `scripts/sync-acc-users-cron.ps1`
 
 **ACC Issues API:**
-- Router: `server/routers/acc-*.ts` (VERIFY: exact router filename for issues)
-- Backfill script: `scripts/acc-issues-backfill.cjs`
-- Prisma models: `AccIssue`, `AccIssueFetchRun`, `AccIssueProjectFetchResult`
+- No dedicated issues router; `AccIssue` data is read via `lib/server/issueFunnelView.ts`, `lib/server/coordinationByProjectView.ts`, and `lib/server/projectClashView.ts` (consumed from existing routers)
+- Backfill scripts: `scripts/acc-issues-backfill.cjs`, `scripts/acc-issue-types-backfill.cjs`, `scripts/acc-issues-validate-clashes.cjs`
+- Prisma models: `AccIssue`, `AccIssueFetchRun`, `AccIssueProjectFetchResult`, `AccIssueType` (added via raw migration `prisma/migrations-raw/2026-07-10-acc-issue-type.sql`)
 - Grant scripts: `scripts/acc-grant-model-coordination.cjs`, `scripts/acc-grant-project-admin.cjs`
 
 **APS Object Storage (OSS):**
@@ -50,7 +50,9 @@
 - Access limited to projects where `luis` is project-scoped admin. Historical framing was "428/1,152 extractable; 724 locked (403)"; the v2.1 Ph11 data-truthfulness pass rejected that headline (coverage had grown to roughly ~550/1,153). VERIFY the current covered-project count from `AccDcBackfillProgress` before citing a figure in UI or docs.
 - Env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET` (same APS app)
 - Feature flag: `DC_PRIORITY_BACKFILL` — priority ordering mode
-- Feature flag: `DC_RESUME` — resume a failed ingest batch after 429 quota hit
+- Feature flag: `DC_403_BISECT` — bisect-on-403 salvage mode
+- Feature flag: `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips the admin snapshot rebuild (the daily MTY-allowlisted extract covers too few projects and trips the `dcAnomalyChecks` user-drop guard; the full-universe weekly refresh owns admin snapshots instead)
+- Feature flag: `DC_RESUME` — resume pending/running rows only (lives in `scripts/dc-ingest-where-i-admin.cjs`, not the daily ingest)
 - Pool config: `PG_POOL_MAX` (default 10 dev / 5 prod)
 
 **Ingest pipeline:**
@@ -61,6 +63,7 @@
 - CSV parsing: `lib/acc/dcActivityCsvIngest.ts`, `lib/acc/dcAdminCsvIngest.ts`
 - CSV schema: 46 files per-module (`activities_<mod>_activities.csv`) + 15+ admin CSVs per 2-yr backfill
 - Quota tracking: `lib/acc/dcQuota.ts`
+- Admin snapshot refresh: `scripts/dc-admin-snapshot-refresh.cjs` (+ `.ps1` wrapper) — full-universe DC admin extract run weekly; exists because the daily ingest only extracts MTY-allowlisted projects (~183 of ~527 admin projects), whose partial admin CSVs would otherwise be quarantined by the anomaly guard
 - Prisma models written: `AccDataConnectorJob`, `AccDcIngestRun`, `AccDcBackfillProgress`, `AccDcProject`, `AccDcProjectUser`, `AccDcProjectRole`, `AccDcProjectProduct`, `AccDcProjectService`, `AccDcProjectCompany`, `AccDcUser`, `AccDcRole`, `AccDcAccount`, `AccDcAccountService`, `AccDcBusinessUnit`, `AccDcCompany`, `AccDcProjectUserRole`, `AccDcProjectUserProduct`, `AccDcProjectUserService`, `AccDcProjectUserCompany`
 - Known gap: `AccDcRole` permanently empty (DC never sends `admin_roles.csv`); role names sourced from live `AccRole` via `mergeRoleNames`
 - Known gap: `AccDcIngestRun.rowsByModule` always 0 (telemetry skipped); measure from `AccActivity` directly
@@ -102,8 +105,7 @@ DC delivers `admin_roles.csv`. Downstream views that present role-derived metric
 note that role names reflect the live APS state, not the DC snapshot date.
 
 **Folder crawl:**
-- Script: `scripts/folder-crawl-cron.cjs` (cron job)
-- Dry-run: `scripts/dry-run-folder-crawl.cjs`
+- Script: `scripts/folder-crawl-cron.cjs` (cron job); recovery helper `scripts/folder-perms-recover.cjs` (the old `dry-run-folder-crawl.cjs` is gone from `scripts/`)
 - Prisma models: `AccFolder`, `AccFolderPermission`
 - Verified: 111,308 folders / 3.49TB crawled (FOLD-04 gate passed)
 - 6 folder attrs (size, version, last-updated, updated-by, added-by, description) are available in crawl response
@@ -140,6 +142,13 @@ note that role names reflect the live APS state, not the DC snapshot date.
 - Activity attribution: `lib/acc/activityAttribution.ts`
 - Role name fix: `lib/acc/activityActorClassification.ts`
 
+**Unified activity source (accds-primary + DC-backfill; SHIPPED, LIVE):**
+- Module: `lib/server/unifiedActivitySource.ts` (tested in `lib/server/unifiedActivitySource.test.ts`)
+- `mergeActivitySources({ dcRows, accdsRows })` — ACCDS rows are primary; per project, DC (`AccActivity`) rows are kept only when they predate that project's earliest ACCDS row (DC acts as historical backfill before the ~12-month ACCDS window)
+- Query helpers: `listUnifiedActivityRows`, `countUnifiedActivityRows`, `groupUnifiedActivityByUserProjectAction`, `groupUnifiedAdminActionsByActor`, `groupUnifiedActivityByRawAction`, `getLastUnifiedActivityByEmail` (same file)
+- Consumers: `lib/server/acc-hot-cache.ts`, `lib/server/activityByActorView.ts`, `lib/server/activityRecencyView.ts`, `lib/server/activityTimelineView.ts`, `lib/server/moduleActivityView.ts`, `lib/server/folderActivityView.ts`, `lib/server/folderActivityByCompanyView.ts`, `lib/server/workflowToolsView.ts`
+- EXCEPTION (`lib/server/workflowToolsView.ts`): ACCDS never emits `rfi-`/`submittal-` family verbs, so RFI/submittal rows are taken from `AccActivity` (DC) unconditionally — the naive merge would undercount those workflows ~20×
+
 ---
 
 ## ACC Data Store (ACCDS) — Free Web-Session Crawl
@@ -152,24 +161,25 @@ note that role names reflect the live APS state, not the DC snapshot date.
 
 **Login / Session:**
 - Login script: `scripts/accds-login.cjs`
-- Token module: `lib/acc/accdsToken.ts` — reads Playwright `storageState` JSON; builds `Cookie:` header; throws `SessionExpiredError` when cookies invalid
-- Session file path: read from env/config (VERIFY: exact env var; not found in surface scan)
+- Token module: `lib/acc/accdsToken.ts` — reads Playwright `storageState` JSON; builds `Cookie:` header; throws `SessionExpiredError` when cookies invalid; exports `getSessionHealth()` (`healthy`/`expiring`/`expired`/`missing`, warn threshold `SESSION_WARN_HOURS = 12`)
+- Session file path: `ACC_SESSION_PATH` env var, default `scratch/acc-session.json` (`scripts/accds-activity-ingest.cjs`)
 
 **Ingest:**
 - Script: `scripts/accds-activity-ingest.cjs`
+- Env vars: `ACCDS_PROJECT`, `ACCDS_NAME_LIKE`, `ACCDS_MONTHS_BACK`, `ACCDS_CONCURRENCY`, `ACCDS_PAGE_CONCURRENCY`, `ACCDS_RESUME`
 - Domain module: `lib/acc/accdsActivity.ts` — paginated fetch with 30-day window splits
 - Map: `lib/acc/accdsActivityMap.ts` — maps raw ACCDS rows to `AccActivityAccds` Prisma model
 - Prisma model: `AccActivityAccds`
 - Verified coverage: 956 projects / 4.55M rows (4.1× expansion from 231 base); per-project loop via `scratch/accds-fullcrawl.sh`
 - Diagnostic: `scripts/verify-accds-merge.cjs`
 
-**Downstream label requirement:** ACCDS has ~12-month history floor; downstream date-range views must label this limitation.
+**Downstream label requirement:** ACCDS has ~12-month history floor; downstream date-range views must label this limitation. Pre-window history comes from the DC backfill via the unified activity source (see "Unified activity source" above).
 
 ---
 
 ## Google Workspace APIs
 
-**SDK:** `googleapis ^171.4.0` — server-only; declared in `next.config.ts` `serverExternalPackages`
+**SDK:** `googleapis ^173.0.0` — server-only; declared in `next.config.ts` `serverExternalPackages`
 
 **Auth modes:**
 - OAuth (user-delegated): `lib/google/oauth.ts`, `lib/google/oauth-connect.ts`
@@ -197,7 +207,7 @@ note that role names reflect the live APS state, not the DC snapshot date.
 **Auth file split:**
 - Edge config (middleware): `auth.config.ts` — route protection, public routes list
 - Server config + providers: `server/auth.ts` — Google provider, Google Chat provider, Autodesk provider, Credentials provider (bcrypt), admin email helpers
-- Middleware: `middleware.ts` (VERIFY: file exists at root)
+- No root `middleware.ts` exists (verified against `git ls-files`); `auth.config.ts` is consumed by `server/auth.ts`, not by an edge middleware file
 
 **Providers configured in `server/auth.ts`:**
 1. `GoogleProvider` — standard Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
@@ -274,9 +284,9 @@ note that role names reflect the live APS state, not the DC snapshot date.
 
 **SDK:** `openai ^6.37.0`
 
-**Env vars:** `OPENAI_API_KEY`, `OPENAI_MODEL`
+**Env vars:** `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`)
 
-**Usage:** Search/AI features (VERIFY: exact tRPC router or route using OpenAI)
+**Usage:** `lib/server/integrations/ai.ts` (streaming chat completions) and `server/routers/lod.ts`
 
 ---
 
@@ -288,15 +298,13 @@ note that role names reflect the live APS state, not the DC snapshot date.
 
 **Model:** Google SigLIP (`google/siglip-base-patch16-224` default; override via `LOD_SIGLIP_MODEL_ID`)
 
-**Host/Port:** `127.0.0.1:8091` default; `LOD_ENGINE_PORT` env var
+**Host/Port:** `127.0.0.1:8091` default (`DEFAULT_PORT = 8091`); port override env var: `LOD_QUERY_ENCODER_PORT`
 
 **Start:** `npm run lod:engine` → `python services/lod-engine/server.py`
 
 **Next.js proxy route:** `app/api/lod-img/[fileId]/route.ts` — proxies image requests to LOD engine
 
-**tRPC router:** `server/routers/lod.ts` → `lod` namespace
-
-**Data migration:** `npm run lod:migrate` → `scripts/migrate-lod-data.cjs`
+**tRPC router:** `server/routers/lod.ts` → `lod` namespace (also calls OpenAI for query handling)
 
 **Prisma models:** `LodCategory`, `LodEmbedding`, `LodFamily`, `LodGraphNode`
 
@@ -338,16 +346,20 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 | Task | Script | Trigger | Purpose |
 |------|--------|---------|---------|
-| `LECG Dashboard` | `scripts/start-local.ps1` | At logon | Boot Next.js :3000 + Yjs :4444 |
+| `LECG Dashboard Local` | `scripts/start-local.ps1` | At logon | Boot Next.js :3000 + Yjs :4444 (this task name is what the deploy sequence stops/starts) |
 | `LECG Postgres Local` | `scripts/postgres-local.js start` | At logon | Start PostgreSQL 18 |
-| DC Daily Ingest | `scripts/dc-daily-cron.ps1` → `scripts/dc-daily-ingest.cjs` | Daily (UTC midnight window) | ACC Data Connector ingest; quota ~25 req/UTC-day |
+| DC Daily Ingest | `scripts/dc-daily-cron.ps1` → `scripts/dc-daily-ingest.cjs` | Daily (UTC midnight window) | ACC Data Connector ingest; quota ~25 req/UTC-day; runs with `DC_SKIP_ADMIN_SNAPSHOT=1` |
+| DC Admin Snapshot Refresh | `scripts/dc-admin-snapshot-refresh.ps1` → `scripts/dc-admin-snapshot-refresh.cjs` | Weekly | Full-universe DC admin snapshot (daily allowlisted extract is too partial for admin tables) |
 | Folder Crawl | `scripts/folder-crawl-cron.cjs` | Periodic | ACC folder metadata crawl |
 | ACC User Sync | `scripts/sync-acc-users-cron.ps1` → `scripts/sync-acc-users.ts` | Periodic | Sync ACC member cache from live ACC API |
 
 **DC daily ingest env flags:**
 - `DC_PRIORITY_BACKFILL=1` — enable priority ordering (set in `.env`)
-- `DC_RESUME=1` — resume after 429 quota hit without restart
-- `RESERVE=4`, `SAFE_BUDGET=20` — fairness/budget params
+- `DC_SKIP_ADMIN_SNAPSHOT=1` — skip the admin snapshot rebuild in the daily run
+- `RESERVE` — quota reserve param in `scripts/dc-daily-ingest.cjs` (`SAFE_BUDGET` no longer appears outside `scripts/_attic/`)
+
+**Progress monitor (read-only ops UI):**
+- `node scripts/progress-monitor.cjs` → `http://localhost:4321` (override with `PORT`) — standalone monitor for DC activity extraction and folder/permission crawl progress
 
 ---
 
@@ -363,11 +375,13 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 ## Trello
 
-**Module:** `lib/trello/` (VERIFY: exact integration files)
+**Module:** `lib/trello/client.ts`
+
+**Env vars:** `TRELLO_API_KEY`, `TRELLO_TOKEN`
 
 **tRPC router:** `server/routers/trello.ts` → `trello` namespace
 
-**Component:** `components/trello/CardDialog.tsx` (40KB monolith)
+**Components:** `components/trello/` — `CardDialog.tsx` (40KB monolith), `KanbanBoard.tsx`, `CalendarView.tsx`, `ActivitySheet.tsx`, `ArchiveSheet.tsx`
 
 ---
 
@@ -388,7 +402,7 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 **Google:**
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — standard Google OAuth app
 - `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` — Google Chat OAuth app (separate client)
-- `GOOGLE_ID`, `GOOGLE_SECRET` — VERIFY: may be legacy aliases for GOOGLE_CLIENT_ID/SECRET
+- (`GOOGLE_ID`/`GOOGLE_SECRET` legacy aliases: no longer referenced anywhere in source — removed from this reference)
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` — service account for Directory/Drive/Sheets
 - `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_BLACKLIST_RANGE` — approved email sheet config
 - `GOOGLE_DRIVE_FOLDER_ID` — Drive folder for wiki media
@@ -403,7 +417,20 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 **Data Connector:**
 - `DC_PRIORITY_BACKFILL` — enable priority backfill mode (`1` = on)
-- `DC_RESUME` — resume ingest after quota hit
+- `DC_403_BISECT` — bisect-on-403 salvage mode
+- `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips admin snapshot rebuild
+- `DC_RESUME` — resume pending/running rows only (`scripts/dc-ingest-where-i-admin.cjs`)
+- `RESERVE` — quota reserve (daily ingest)
+
+**ACCDS:**
+- `ACC_SESSION_PATH` — Playwright storageState path (default `scratch/acc-session.json`)
+- `ACCDS_PROJECT`, `ACCDS_NAME_LIKE` — project scoping for the crawl
+- `ACCDS_MONTHS_BACK` — history window
+- `ACCDS_CONCURRENCY`, `ACCDS_PAGE_CONCURRENCY` — crawl parallelism
+- `ACCDS_RESUME` — resume mode
+
+**Trello:**
+- `TRELLO_API_KEY`, `TRELLO_TOKEN`
 
 **OpenAI:**
 - `OPENAI_API_KEY`, `OPENAI_MODEL`
@@ -426,11 +453,11 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 **LOD Engine:**
 - `LOD_SIGLIP_MODEL_ID` — HuggingFace model ID override
-- `LOD_ENGINE_PORT` (VERIFY: exact name; `DEFAULT_PORT=8091` in `services/lod-engine/server.py`)
+- `LOD_QUERY_ENCODER_PORT` — port override (`DEFAULT_PORT = 8091` in `services/lod-engine/server.py`); the previously documented `LOD_ENGINE_PORT` name does not exist in source
 
 **Build / Deploy:**
 - `NEXT_DIST_DIR` — alternate `.next` output directory (used for E2E isolation: `.next-e2e`)
 
 ---
 
-*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted.*
+*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree.*

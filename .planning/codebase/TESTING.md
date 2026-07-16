@@ -1,7 +1,7 @@
 # Testing Patterns
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-02 — post v2.1/v2.2 update (test counts, characterization suites)
+**Refreshed:** 2026-07-16 — post v2.4 close (e2e spec inventory, guard-bash build gate, verify-config corrections). Previous refresh 2026-07-02.
 
 ## Test Framework
 
@@ -30,13 +30,17 @@ npm run repo-map:check           # Architecture boundary check
 **Before any `next build` / deploy:**
 1. `npx tsc --noEmit` — typechecks the WHOLE tree including test files. `next build` also typechecks tests; a failing test type error blocks the `:3000` build.
 2. `npm test` — Vitest unit suite.
-3. `npm run repo-map:check` — dependency boundary check (for architecture/import changes).
+3. `npm run repo-map:check` — dependency boundary check (for architecture/import changes). Narrow check without regenerating the map: `node scripts/repo-map/check.cjs`.
 4. `npm run build` — produces `.next/`, used by Task Scheduler restart.
+
+**Never build while `:3000` is live** — this is now **enforced at the tool level**: the PreToolUse hook `.claude/hooks/guard-bash.cjs` probes port 3000 and denies `npm run build` / `next build` while it is up. Exemption: commands that set `NEXT_DIST_DIR` to a non-default dir (e.g. `.next-e2e`) build to an isolated dist and are allowed. Denials are intentional; do not retry — stop the `LECG Dashboard Local` scheduled task first (see `.claude/skills/lecg-dashboard/references/deploy-sequence.md`) or use `/lecg-ship`.
 
 **Deploy = rebuild + restart:**
 Task Scheduler on Luis's PC stops the process, runs `npm run build`, then restarts `next start` on `:3000`. Never use `next dev` for the live workshop server.
 
-**E2E isolation:** Playwright starts its own `next dev` on port `3100` (env `E2E_PORT=3100`) with `NEXT_DIST_DIR=.next-e2e` so it never touches the production `.next` directory. The prod server on `:3000` can stay running.
+**E2E isolation:** the default `playwright.config.ts` starts its own `next dev --webpack` on port `3100` (env `E2E_PORT`, default 3100) with `NEXT_DIST_DIR=.next-e2e` so it never touches the production `.next` directory. The prod server on `:3000` can stay running. The webServer env also sets `NEXT_PUBLIC_ACC_GRAPH_TEST=1` and `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1`.
+
+**Prod-build e2e variant (`playwright.verify.config.ts`):** no `webServer` block — a production `next start` on `:3100` is started **out-of-band** (build with `NEXT_DIST_DIR=.next-e2e` or an isolated dist, then start it), and tests point at it via `E2E_BASE_URL`. Its own header comment notes this exists because some suites need code paths that differ under the dev server (e.g. `pg` externalization). Recent full verification runs (dep update 2026-07-14) used this isolated prod-build harness.
 
 ## Vitest Setup (`vitest.setup.ts`)
 
@@ -50,8 +54,12 @@ process.env.NODE_ENV = "test";
 // Prevent 'server-only' module from throwing
 vi.mock('server-only', () => ({}));
 
+// Minimal NextResponse.json shim (next/server)
+vi.mock('next/server', () => ({ NextResponse: { json: (body, init) => new Response(JSON.stringify(body), ...) } }));
+
 // Stub next-auth so router tests don't need real auth wiring
-vi.mock('next-auth', () => ({ default: () => ({ handlers: {}, auth: vi.fn(), ... }) }));
+vi.mock('next-auth', () => ({ default: () => ({ handlers: {}, auth: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }) }));
+vi.mock('next-auth/next', () => ({ default: vi.fn() }));
 
 // No-op IntersectionObserver for framer-motion whileInView
 class IntersectionObserverStub { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } }
@@ -86,16 +94,23 @@ lib/server/
   accessInstanceView.test.ts      # co-located
 ```
 
-**E2E layout:**
+**E2E layout (full inventory, verified 2026-07-16):**
 ```
 tests/e2e/
-  acc-dc-graph.spec.ts      # spatial graph (16,942 nodes, bridge assertions)
-  acc-3d-lasso.spec.ts
+  acc-dc-graph.spec.ts             # spatial graph bridge assertions
+  acc-3d-lasso.spec.ts             # gated on NEXT_PUBLIC_ACC_3D_GRAPH=1
   acc-cluster-blobs.spec.ts
-  uat-workshop.spec.ts      # 38-test Phase 7 UAT harness
-  uat-helpers.ts            # shared helpers (parseTrpcBatch, toggleTheme, etc.)
+  acc-cluster-labels.spec.ts
+  acc-person-graph.spec.ts
+  acc-positioning.spec.ts
+  access-analysis-scroll.spec.ts
+  catalog-preview-lazy.spec.ts     # v2.4 Phase 26 lazy catalog preview
   folder-activity-by-role.spec.ts
   forma-proposal.spec.ts
+  sidebar-resize.spec.ts
+  spatial-graph-baseline.spec.ts   # v2.4 perf baseline harness
+  uat-workshop.spec.ts             # 38-test Phase 7 UAT harness
+  uat-helpers.ts                   # shared helpers (parseTrpcBatch, toggleTheme, etc.)
 playwright/
   global-setup.ts           # mints NextAuth session cookie
   .auth/storageState.json   # written by global-setup, gitignored
@@ -244,11 +259,12 @@ async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<
 ```
 Always attach a `proofShot` at the end of assertions that exercise real UI. Config has `trace: "on"` and `screenshot: "on"` globally.
 
-**Timeouts:**
+**Timeouts (both configs):**
 - Global test timeout: `120_000ms`
 - `expect` timeout: `20_000ms`
 - Workers: 1 (no parallel tests — graph tests are memory-heavy)
 - Retries: 0
+- Viewport: `1600×1000`
 
 **waitForFreeze vs smoke:**
 ```ts
@@ -265,16 +281,16 @@ NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but 
 
 - URL under test: `GRAPH_URL = "/users/spatial-graph"`.
 - `gotoGraph(page)` helper: navigates, waits for bridge ready + finite non-NaN positions.
-- Node count constant: `EXPECTED_NODE_COUNT = 16_942`. Asserted exactly — bump only if the DC dataset changes.
+- Node count constant: `EXPECTED_NODE_COUNT = 16_942` (still in `tests/e2e/acc-dc-graph.spec.ts:17` as of 2026-07-16). Asserted exactly — bump only if the DC dataset changes. VERIFY: the 2026-07-14 dependency-update verification observed the live dataset at 22,279 nodes, so the exact-count assertions currently fail as pre-existing drift (not a regression) until the constant is re-baselined.
 - 3D tests skip when `NEXT_PUBLIC_ACC_3D_GRAPH !== "1"` via `test.skip(!ACC_3D_GRAPH, ...)`.
 - Slider interactions use `page.keyboard.press("End")` (Radix Slider keyboard API) not drag.
 
 ## UAT Workshop Tests (`tests/e2e/uat-workshop.spec.ts`)
 
-- Run under `playwright.verify.config.ts` (no `webServer` block — owner starts server manually).
+- Run under `playwright.verify.config.ts` (no `webServer` block — a prod `next start` on `:3100` is started out-of-band).
 - Quick run: `E2E_BASE_URL=http://localhost:3100 npx playwright test uat-workshop --config playwright.verify.config.ts`
-- Viewport override: `1280×800` (workshop projector size).
-- Static gate inside Playwright: runs `npx tsc --noEmit` via `execSync` as a test case.
+- Viewport: `1600×1000` (same as the default config; the earlier `1280×800` claim is stale).
+- Static gate inside Playwright: test `tsc-0` runs `npx tsc --noEmit` via `execSync` as a test case.
 - Helpers in `tests/e2e/uat-helpers.ts`: `parseTrpcBatch`, `injectAxeAndRunContrast`, `toggleTheme`, `assertNoHorizontalOverflow`, `uatScreenshot`.
 
 ## Characterization Test Suites (v2.1 Ph14 + v2.2)
@@ -283,7 +299,7 @@ Central to the v2.2 refactor strategy: pin behavior byte-identically **before** 
 
 - **TEST-01** — `AccFolderPermissionSummary` projection / OOM-guard suite (12/12): pins the aggregate path that serves `includePermissionSummary` in `lib/server/acc-hot-cache.ts`; guards against re-introducing the raw 5M-row scan.
 - **TEST-02** — `lib/server/__tests__/folderPermissionTerrainView.test.ts`: byte-identical pin of the `/access-analysis` terrain view output across the Ph15 shared-query extraction and Ph16 terrain split.
-- **TEST-03** — `templateFolderTerrain.sharedQuery.test.ts`: byte-identical pin of the `/template-mty` terrain output over `lib/server/folderPermQuery.ts`.
+- **TEST-03** — `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`: byte-identical pin of the `/template-mty` terrain output over `lib/server/folderPermQuery.ts`.
 - **`HybridAnalyticsSurface.mainQuery.test.tsx`** — pins the `/users/access-analysis` surface's main query behavior across the Ph17 split.
 
 Convention: any future split of a large module (or query-owner change) must add equivalent characterization pins first — see `CONVENTIONS.md`.
@@ -296,7 +312,7 @@ Convention: any future split of a large module (or query-owner change) must add 
 
 ## Coverage
 
-No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. Run count: **2,256 passed / 1 skipped across 302 test files** (v2.2 close baseline, 2026-07-02; supersedes the ~1400 Phase 8 figure).
+No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **330 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-16; 114 live under `__tests__/` directories). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 passed at the 2026-07-14 dependency-update verification. VERIFY: current pass count not re-run for this refresh.
 
 ---
 
@@ -307,4 +323,5 @@ No enforced coverage thresholds. The access-analysis surfaces have the densest u
 - Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
   `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
   sequence for an explicitly requested local rebuild.
-- VERIFY: total unit test count drifts as phases add tests — count cited (2,256 / 302 files) reflects the v2.2 close baseline (2026-07-02).
+- VERIFY: (1) total unit test pass count drifts as phases add tests — file count (330) verified 2026-07-16, pass count not re-run; (2) EXPECTED_NODE_COUNT 16,942 vs live 22,279 drift — constant verified in-tree, live count from the 2026-07-14 verification run, not re-measured here.
+- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (several `app/(dashboard)/users/` components and their tests deleted in the working tree); counts above are from tracked files (`git ls-files`).

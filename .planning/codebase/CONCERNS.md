@@ -2,8 +2,9 @@
 
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 status update (repo-map basis unchanged, 2026-06-19)
-**Repo-map date:** 2026-06-19 (architecture-summary.md)
-**Branch:** feat/access-analysis-redesign
+**Refreshed:** 2026-07-16 — post-v2.4 close (d3768490) status sweep; repo-map re-run (`node scripts/repo-map/check.cjs` PASS: 2 dependency-cruiser warnings, 236 ast-grep findings, 0 blocking). See the "2026-07-16 Refresh" section at the end.
+**Repo-map date:** 2026-07-14 (ast-grep-report.json `generatedAt`)
+**Branch:** feat/access-analysis-redesign (⚠️ 222 uncommitted WIP entries — see 2026-07-16 Refresh §D)
 
 > **Reading note (2026-07-02):** v2.1 Concerns Hardening (Phases 09–14) and
 > v2.2 Structural Refactors (Phases 15–19) were built directly against this
@@ -98,6 +99,7 @@
 - **Impact:** Silent data correctness risk. If `AccRole` sync breaks, role counts drop to 0 with no user-visible error. No alert or monitoring exists for `AccRole` row count.
 - **Guardrail:** Add an observable to `acc-hot-cache.ts` that logs a warning when `AccDcRole` is still empty after a cache refresh. Document the fallback in `INTEGRATIONS.md`. VERIFY: whether `AccRole` sync (APS account-roles API) runs on a reliable schedule.
 - **Status (2026-07-02): 🟡 PARTIALLY ADDRESSED (v2.1 Ph11 TRUTH-04).** The fallback is documented in `INTEGRATIONS.md`. Row-count monitoring / empty-`AccDcRole` warning remains open.
+- **Status (2026-07-16): ✅ RESOLVED (v2.1 Ph12, per 12-02-SUMMARY).** `lib/server/accessInstanceView.ts` now emits a `console.warn` on the *effective-empty* merged role map (both `AccDcRole` AND `AccRole` empty — the real silent failure), not on the by-design `AccDcRole`-empty state. Covered by `lib/server/accessInstanceView.test.ts` ("returns true when both AccDcRole and AccRole are empty").
 
 ### 2.5 Activity `service` field ignored — module donut misattribution
 
@@ -149,6 +151,7 @@
 - **What it is:** The 3D lasso Playwright test times out at the 120s global budget under machine load on Luis's PC. The lasso projection logic itself is correct (`findPointsIn3DLasso`), but the test depends on the full physics graph warming up and rendering at `:3100` within the timeout window.
 - **Impact:** CI-equivalent runs on a loaded machine will fail intermittently, creating false negatives.
 - **Guardrail:** Add a `test.slow()` Playwright annotation or increase the specific test timeout beyond 120s. Pin the test to a smaller node set or use a `NEXT_PUBLIC_ACC_GRAPH_TEST=1` fixture that limits node count, similar to the existing e2e flag pattern.
+- **Status (2026-07-16): still open.** `tests/e2e/acc-3d-lasso.spec.ts` line 24 still uses the 120_000 ms budget. Note also the pre-existing e2e drift recorded at the 2026-07-14 dependency update: `acc-dc-graph` 14 fails (node count 16,942→22,279 + physics-shell sidebar testids gone) — separate from the lasso flake but on the same suite.
 
 ### 3.5 Hydration-key mismatch history — prefetch cache miss
 
@@ -156,6 +159,7 @@
 - **What it is:** A prior hydration-key mismatch (server prefetch returned `undefined` for `{permSummary, activityMix}` while the client expected a real shape) caused a redundant heavy refetch on mount (fixed per memory 2026-06-03). The fix was applied but there are no regression tests to guard against a re-introduction of mismatched prefetch keys.
 - **Impact:** If a new tRPC query is added to the shell with a different prefetch shape than the server component returns, the silent cache miss re-triggers the 77s+ OOM-risk query path.
 - **Guardrail:** Add a Vitest unit test that asserts the prefetch input shapes for `accMembers.getBulkUsers` and `accFolders.getMatrix` match the client query inputs exactly (same `select` fields, same `where` clauses). Document the prefetch contract in a comment at the top of `AccessAnalysisShell.tsx`.
+- **Status (2026-07-16): 🔁 REFRAMED by v2.4 Ph28.1.** The historical "hydration-key mismatch" was root-caused as the app-wide superjson-wrapped-dehydrate bug (see the Ph28.1 section below): `createServerSideHelpers({transformer: superjson}).dehydrate()` returns `{json, meta}`, which `<HydrationBoundary>` cannot hydrate, so *every* prefetch on affected routes silently refetched. Fixed on `app/(dashboard)/users/spatial-graph/page.tsx` only (commit 9fb54cb8). This §3.5 regression-guard seed is subsumed by the Ph28.1 item: fix the two remaining call sites and add a shared `deserializeHydrationState` helper with a test.
 
 ---
 
@@ -167,6 +171,7 @@
 - **What it is:** The `/users` lean bulk call intentionally strips per-project roles and modules to keep the payload manageable. Consumers that expect roles or modules (e.g., `lastActivity`, per-project role displays) must source from separate endpoints (`lastFileActivityByEmailAll`, `bulkUser`, hover-prefetch). Two `TODO` comments in `dataLayer.ts` explicitly defer the "Replace with activity_in_module / total_activity once DC CSV join is wired" fix.
 - **Impact:** New features that consume `bulkUsers` and expect populated `roles` or `modules` fields will silently receive empty arrays. This has bitten previous phases (lean payload trap, memory 2026-06-18).
 - **Guardrail:** Add a TypeScript type comment on the `bulkUsers` return type marking `roles` and `modules` as `never[] // lean payload — always empty; use bulkUser or hover-prefetch for per-project data`. Resolve the two `dataLayer.ts` TODOs when DC CSV join is available.
+- **Status (2026-07-16): still open.** Both TODOs confirmed at `app/(dashboard)/users/access-analysis/dataLayer.ts` lines 41 and 112. These are the likely source of the 2 remaining `unsafe-todo` ast-grep findings (baseline was 5; VERIFY exact finding locations if it matters).
 
 ### 4.2 `accGraphFilters.ts` — compile-time assert deferred
 
@@ -174,6 +179,7 @@
 - **What it is:** A `TODO` comment notes that if two union types ever drift, a compile-time assert helper should be added. No assert exists. If the filter type unions diverge, the mismatch is silent at compile time.
 - **Impact:** Low — only affects type safety in the filter composition path. Not a runtime risk.
 - **Guardrail:** Add a `type AssertExtends<A, B extends A> = B` or `satisfies` narrowing assertion when the next change touches `accGraphFilters.ts`.
+- **Status (2026-07-16): ✅ RESOLVED (v2.1 Ph13 TYPE-02, commit 965993fd).** One-directional subset drift assert added to `accGraphFilters.ts`; the TODO is gone.
 
 ---
 
@@ -185,6 +191,7 @@
 - **What it is:** ACCDS API access uses a Playwright-recorded browser session (`storageState` cookies). The `fetchFreshToken()` function refreshes the short-lived access token from the cookie, but the cookie itself is not automatically renewed — it must be re-captured by running `scripts/accds-login.cjs` manually. A `SessionExpiredError` from ACCDS stops all Phase 8 activity crawls silently unless the cron log is inspected.
 - **Impact:** Activity extraction fails silently if the session expires. There is no alerting or health-check endpoint that surfaces ACCDS session health.
 - **Guardrail:** Add a ACCDS session health check to the progress monitor (`scripts/progress-monitor.cjs`). Emit a log warning (`[WARN] ACCDS session expires in <N> hours`) before the token refresh path is attempted. VERIFY: what the cookie TTL is for autodesk.com ACC sessions.
+- **Status (2026-07-16): 🟡 PARTIALLY ADDRESSED.** `scripts/progress-monitor.cjs` now surfaces ACCDS session health (reads `accdsToken.ts`, renders a session-health panel, reports "ACCDS session health could not be read" on failure) — the localhost:4321 monitor is the alerting surface. Proactive expiry-in-N-hours warning and cookie-TTL knowledge remain open (`VERIFY:` TTL).
 
 ### 5.2 APS 2-leg client credentials — Data Connector locked to 428/1152 projects
 
@@ -200,6 +207,7 @@
 - **What it is:** Two `TODO[02.5]` comments mark temporary defensive logging that was supposed to be removed "after first sync confirms field names." These are AST `unsafe-todo` findings from the repo-map scan. The sync has run; the guards are stale.
 - **Impact:** Extra logging noise per admin sync run. Low risk, but clutters the signal when diagnosing real sync issues.
 - **Guardrail:** Remove the two `TODO[02.5]` guards after confirming the live field names match the expected shape (a one-time manual check).
+- **Status (2026-07-16): ✅ RESOLVED (v2.1 Ph12 OBS-03, commit 72b4079d).** Stale `TODO[02.5]` diagnostics removed. Path correction: the file is `lib/server/acc-admin.ts` (not `lib/acc/`); it now contains zero TODOs.
 
 ---
 
@@ -251,6 +259,7 @@
 - **What it is:** Two test files together exceed 100 KB. They are the largest test files in the repo. They likely mock the cosmos.gl and Three.js internals and test the physics simulation loop, making them slow and fragile to upstream library changes.
 - **Impact:** Slow test suite iteration; any cosmos.gl upgrade risks breaking large swaths of tests that test library internals rather than Dashboard logic.
 - **Guardrail:** Profile test runtime with `--reporter=verbose`. Refactor to test only the pure physics math (force computation, position deltas) with no canvas/GPU mocking. Move canvas-dependent tests to the existing Playwright e2e suite.
+- **Status (2026-07-16): still open.** Current sizes: `physicsLayer.test.ts` 1,346 lines, `GraphCanvas3D.test.ts` 1,218 lines, `GraphCanvas.test.ts` 928 lines — still the largest test files under `app/`.
 
 ### 8.3 `acc-dc-graph.spec.ts` e2e test is 62 KB
 
@@ -258,6 +267,7 @@
 - **What it is:** Largest single e2e file. Likely covers the full graph surface including node selection, cluster transitions, 3D lasso, and filter interaction.
 - **Impact:** High-maintenance; any refactor of the graph surface requires touching a 62 KB test file. Test failures are hard to isolate.
 - **Guardrail:** Split into topical spec files by interaction surface: `acc-graph-clusters.spec.ts`, `acc-graph-filters.spec.ts`, `acc-graph-3d.spec.ts`. Keep each under 500 lines.
+- **Status (2026-07-16): still open, and drifted.** File is 63,741 bytes; the 2026-07-14 dependency-update run recorded 14 pre-existing failures in this suite (node count 16,942→22,279 drift + physics-shell sidebar testids gone). The suite needs a re-baseline pass before it can gate anything.
 
 ---
 
@@ -447,11 +457,11 @@ no code fix is required.
 
 ### Still open (future-milestone seeds)
 
-- §2.4 `AccDcRole` empty — monitoring/warning still missing (fallback documented only).
-- §3.1, §3.4, §3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, lasso e2e flake, prefetch regression guard) — Phase 28 owns §3.1/§3.4; §3.5 remains a future regression-hardening seed. §3.2 closed in Phase 27.
-- §4.1/§4.2 lean-payload trap and filter-type assert.
-- §5.1 ACCDS session expiry alerting; §5.2 DC 403 coverage (DC-01/DC-02); §5.3 stale TODO guards in `acc-admin.ts` (VERIFY: whether Ph12 observability work removed these).
-- §8.2/§8.3 oversized physics/e2e test files.
+- §2.4 `AccDcRole` empty — monitoring/warning still missing (fallback documented only). *(2026-07-16: RESOLVED — effective-empty warning shipped in Ph12; see §2.4.)*
+- §3.1, §3.4, §3.5 `/users/spatial-graph` performance and fragility (DuckDB warm-up, lasso e2e flake, prefetch regression guard) — Phase 28 owns §3.1/§3.4; §3.5 remains a future regression-hardening seed. §3.2 closed in Phase 27. *(2026-07-16: §3.4 still open; §3.5 reframed into the Ph28.1 hydration item.)*
+- §4.1/§4.2 lean-payload trap and filter-type assert. *(2026-07-16: §4.1 still open; §4.2 RESOLVED — Ph13 TYPE-02, 965993fd.)*
+- §5.1 ACCDS session expiry alerting; §5.2 DC 403 coverage (DC-01/DC-02); §5.3 stale TODO guards in `acc-admin.ts` (VERIFY: whether Ph12 observability work removed these). *(2026-07-16: §5.1 partially addressed via progress-monitor session health; §5.2 still open; §5.3 RESOLVED — Ph12 OBS-03, 72b4079d.)*
+- §8.2/§8.3 oversized physics/e2e test files. *(2026-07-16: both still open; §8.3 additionally has 14 pre-existing failures from post-dep-update drift.)*
 
 ### New concerns introduced or made visible by v2.2 (2026-07-02)
 
@@ -487,3 +497,74 @@ no code fix is required.
 
 1. **[Ph28.1] App-wide SSR-hydration miss — only the spatial-graph route is fixed.** Root cause of PERF-04: `createServerSideHelpers({ transformer: superjson }).dehydrate()` returns a superjson-**wrapped** `{ json, meta }` state (a Pages-Router idiom), but the App Router passes it straight to `<HydrationBoundary state={…}>`, which expects a raw `DehydratedState` — so the boundary hydrates nothing and every prefetched query refetches on mount wherever it is consumed. Fixed only in `app/(dashboard)/users/spatial-graph/page.tsx` (`superjson.deserialize` before the boundary, guarded on the `{ json }` wrapper). **The same bug still affects `app/(dashboard)/layout.tsx` (families/kpi/clash/sim/exam/trello prefetches) and `app/(dashboard)/users/page.tsx`** — their prefetched queries silently refetch wherever read. Candidate for a shared `deserializeHydrationState(helpers)` helper applied at all `HydrationBoundary` call sites in a dedicated pass. Superseded/explains the "hydration-key mismatch" note in `project_spatial_graph_load_speed` and the deferred `project_users_data_freshness_phase4` caching debt.
 2. **[Ph28.1] The `dynamic()` shell-chunk parse gap (~4 s) is the remaining time-to-graph cost.** After the hydration fix, median time-to-graph-rendered is 4360 ms (well under gate); the dominant remaining stage is downloading+parsing the large `AccessAnalysisShell` chunk (cosmos.gl, framer-motion, duckdb client, ~60 static imports) before the shell mounts. Not pursued (gate met, higher risk); a future perf pass could code-split heavy static imports out of the shell's initial chunk.
+
+---
+
+## 2026-07-16 Refresh — post-v2.4 close, pre-redesign baseline
+
+All evidence below re-verified against the working tree on 2026-07-16 (v2.4 closed at d3768490; branch `feat/access-analysis-redesign`).
+
+### A. SSR-hydration miss — CONFIRMED STILL LIVE at two call sites
+
+The Ph28.1 bug (superjson-wrapped `dehydrate()` passed raw to `<HydrationBoundary>`, so prefetched queries silently refetch) remains unfixed at:
+
+- `app/(dashboard)/layout.tsx` line 45 — `<HydrationBoundary state={helpers.dehydrate()}>` (helpers created with `transformer: superjson` at line 29; prefetches families/kpi/clash/sim/exam/trello per Ph28.1 notes)
+- `app/(dashboard)/users/page.tsx` line 13 — same raw `helpers.dehydrate()` pattern
+
+The fixed reference implementation lives in `app/(dashboard)/users/spatial-graph/page.tsx` lines 22–26 (commit 9fb54cb8): `superjson.deserialize` guarded on the `{ json }` wrapper. Fix seed: extract a shared `deserializeHydrationState(helpers)` helper and apply at all three call sites.
+
+### B. Repo-map status (re-run 2026-07-16)
+
+`node scripts/repo-map/check.cjs` → PASS. Composition:
+
+- **2 dependency-cruiser warnings**, both `no-scripts-to-app` from `scripts/build-instance-features.ts` → `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts` and `.../instanceFeatureTokens.ts`. These are the known deferred spatial-graph edges (BND-03 group 2 family); down from 6 at the 2026-06 baseline.
+- **236 ast-grep findings** (report generated 2026-07-14): `large-use-effect` 146 (baseline 143 — +3 drift), `no-console-log` 88 (baseline 121 — improved), `unsafe-todo` 2 (baseline 5 — likely the two `dataLayer.ts` TODOs, see §4.1), `direct-prisma-in-ui` 0 (the only blocking rule; baseline 1, cleared by BND-01).
+- The 5 documented-deferred `lib → app` edges (BND-03 group 2) are unchanged: `lib/acc/activityAggregate.ts`, `lib/acc/activityClassification.ts` (×2 targets), `lib/acc/dcUserAssembly.ts`, `lib/server/acc-route-hydration.ts` — all importing route-owned modules under `app/(dashboard)/users/access-analysis/` or `app/(dashboard)/users/`. Still blocked on spatial-graph scope; the redesign in flight (§D) may be the window to move `accTaxonomy.ts` / `accNormalize.ts` / `internalDomains.ts` to `lib/acc/`.
+
+### C. Two distinct "access-analysis" surfaces — do not conflate
+
+**TRAP (recurring):** `app/(dashboard)/access-analysis/` is the ECharts **charts page** (donuts, terrain, coordination panels). `app/(dashboard)/users/access-analysis/` is the **spatial-graph shell** (cosmos.gl graph, DuckDB, catalog sliders) served at `/users/spatial-graph` (route split in 4cb09b97). They share nothing but the name. Any concern, plan, or grep that says "access-analysis" must state which surface it means. The current redesign branch (§D) touches BOTH surfaces.
+
+### D. Working tree — redesign in flight; committed state is this doc's baseline
+
+`git status --short` = **222 entries**: 74 modified, 120 deleted, 28 untracked. Notably the deletions include the `/users` directory-list component family: `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` (all under `app/(dashboard)/users/`), plus root docs (`CHANGELOG.md`, `GSD-STYLE.md`, `PROJECT_RULES.md`). This is the access-analysis redesign in progress — **every file-level claim in this document is verified against the committed tree (HEAD d3768490), not the WIP**. Line counts and paths may shift when the redesign lands; re-verify before acting on any §2/§3 file reference.
+
+### E. Large-module hotspots (current line counts, committed tree)
+
+Post-v2.2 splits, no file exceeds 1,700 lines, but a second generation of large modules has grown:
+
+| File | Lines | Note |
+|---|---|---|
+| `lib/acc/dcIngest.ts` | 1,672 | largest source file in repo; DC CSV ingest state machine |
+| `app/(dashboard)/users/dashboard/DashboardSidePanel.tsx` | 1,150 | UI monolith |
+| `lib/acc/quick-sync-extraction.ts` | 1,021 | |
+| `lib/google/chat.ts` | 979 | |
+| `app/(dashboard)/users/AccProfileSection.tsx` | 979 | modified in WIP — likely shrinking/moving |
+| `lib/server/acc-hot-cache.ts` | 972 | central cache; high blast radius |
+| `lib/server/email.ts` | 850 | |
+| `app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx` | 792 | |
+| `app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx` | 774 | also the Ph28.1 chunk-size culprit |
+
+None currently blocks work; `dcIngest.ts` and `acc-hot-cache.ts` are the two where a bug has the widest blast radius (ingest correctness, all cached analytics). Flag, don't split speculatively.
+
+### F. ACC / DC / accds data-coupling ceilings (unchanged, restated as standing constraints)
+
+These are *source* ceilings, not bugs — new analytics must disclose them rather than hide them:
+
+- **accds ingest coverage:** crawls only ~236/957 projects (`VERIFY:` current count — memory-sourced, see `project_accds_ingest_coverage_trap`); accds never emits `rfi-`/`submittal-` verbs, so DC `AccActivity` is the sole source for those donuts (naive merge undercounts ~20×).
+- **DC retention wall:** APS DC retains only ~18 months; historical backfill is moot (proven).
+- **DC access universe:** ~724 of ~1,152 projects return 403 (luis is project-scoped, not Account Admin) — §5.2 remains open; VERIFY current covered count (~550/1,153 per Ph11) before surfacing any coverage figure in UI.
+- **`AccActivity.service` ignored:** `classifyActivity()` still derives module from `rawAction` only (~40.7% disagreement with Autodesk's own attribution); UI-labeled (§2.5) but the SVC-01 refinement stays deferred.
+- **`AccDcRole` permanently empty:** by design (DC never sends `admin_roles.csv`); role names come from the `AccRole` merge, with the effective-empty warning now guarding the real failure mode (§2.4 resolved).
+
+### Dashboard Self-Check (2026-07-16 refresh)
+
+- **Context:** committed tree at d3768490 + `git status` snapshot; `.tools/repo-map/dependency-cruiser.json`, `ast-grep-report.json` (2026-07-14), `baselines/ast-grep-baseline.json`; `app/(dashboard)/layout.tsx`, `app/(dashboard)/users/page.tsx`, `app/(dashboard)/users/spatial-graph/page.tsx`; `lib/server/accessInstanceView.ts` + test; `lib/server/acc-admin.ts`; `scripts/progress-monitor.cjs`; `tests/e2e/acc-3d-lasso.spec.ts`; `git log` for resolution commits (72b4079d, 965993fd, 9fb54cb8, 116941af).
+- **Evidence:** dependency-cruiser warnings extracted directly from the JSON (2 edges, both named above); ast-grep counts from `ruleScan.ruleCounts`; hydration call sites grepped with line numbers; line counts from `wc -l` over `git ls-files`.
+- **Gates:** docs-only update; repo-map check re-run (PASS); no code changed.
+- **VERIFY (carried + new):**
+  - accds crawled-project count (236/957 is memory-sourced).
+  - Current DC covered-project count before any UI display (~550/1,153 per Ph11).
+  - Exact file locations of the 2 remaining `unsafe-todo` findings (presumed `dataLayer.ts:41,112`).
+  - ACCDS session cookie TTL (for §5.1 proactive expiry warning).
+  - Account Admin provisioning status (§5.2).
