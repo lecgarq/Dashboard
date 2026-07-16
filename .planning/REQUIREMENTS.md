@@ -73,8 +73,9 @@ Verified from source 2026-07-16 (full detail in `STATE.md` "v2.5 grounding facts
 
 **Overarching guardrails:** no new data source, no new Prisma table or migration
 (`AccInstanceEmbedding.neighbors` is already Json — richer neighbor payloads are additive, not
-schema changes). **One new offline python dependency (umap-learn) is the only dependency change;
-zero new npm dependencies.** Zinc theme preserved; no new WebGL on data surfaces (the spatial
+schema changes). **One new offline python dependency (pacmap, + its faiss-cpu dependency; amended from
+umap-learn at the Phase-29 discussion) is the only dependency change; zero new npm
+dependencies.** Zinc theme preserved; no new WebGL on data surfaces (the spatial
 graph already runs cosmos.gl). `prefers-reduced-motion` honored everywhere — reduced-motion
 renders a static graph. Under-covered data labeled, never hidden. Existing characterization
 tests (TEST-01/02/03) and the PERF-02 frozen-handle invariant stay green. `npx tsc --noEmit`
@@ -108,9 +109,12 @@ Prisma tables); output stored in the existing `AccInstanceEmbedding` model.
       no more equidistant one-hot tokens for ordered quantities. Normalization choices are
       unit-tested at the feature-builder boundary.
 
-- [ ] **EMB-03**: Projection is **UMAP** (umap-learn, cosine or the metric the feature design
-      justifies, fixed seed for reproducibility) replacing t-SNE; the stale "features → UMAP"
-      ingest log becomes true. Small-N fallback (<10 unique points) preserved.
+- [ ] **EMB-03**: Projection is **PaCMAP** (`pacmap` PyPI package; cosine-family metric,
+      fixed seed for reproducibility) replacing t-SNE; the stale "features → UMAP" ingest
+      log becomes true as "features → PaCMAP". Small-N fallback (<10 unique points)
+      preserved. **AMENDED 2026-07-16 (Phase-29 discussion): owner swapped the projector
+      from UMAP/umap-learn to PaCMAP — see `29-CONTEXT.md`; pacmap (+ faiss-cpu) is now
+      the milestone's only dependency change.**
 
 - [ ] **EMB-04**: **Archetype collapse is measurably reduced.** With numeric features in the
       vector, the duplicate-profile rate (~87% today) is re-measured and reported by the

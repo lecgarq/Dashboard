@@ -3,11 +3,11 @@ lecg_state_version: 2
 milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 29
-current_phase_name: "Embedding v2 — Feature Fidelity & UMAP"
+current_phase_name: "Embedding v2 — Feature Fidelity & PaCMAP"
 status: ready_to_plan
 current_plan: null
-stopped_at: "milestone v2.5 Living Graph opened 2026-07-16 (16 requirements EMB/SIM/LIFE/PERF, phases 29-33, 16/16 mapped, owner approved breakdown + UMAP + full-ambient + perf fold-in). Phase 29 has no CONTEXT yet — next: /lecg-discuss-phase 29 (recommended; the phase carries real gray areas: feature weighting design, UMAP params, quality-metric choice)."
-last_updated: "2026-07-16T12:00:00-06:00"
+stopped_at: "Phase 29 CONTEXT captured 2026-07-16 (.planning/phases/29-embedding-v2-feature-fidelity/29-CONTEXT.md). Owner locked: PaCMAP (AMENDS the milestone-open UMAP/umap-learn choice — pacmap 0.9.1 + faiss-cpu, dry-run-verified installable on the pipeline python 3.12.10), balanced-hybrid vector mix, tight-islands look, trustworthiness+twin-rate ship gate, dedupe-then-expand retired (project full ~22k). REQUIREMENTS.md EMB-03 amended. Next: /lecg-phase 29."
+last_updated: "2026-07-16T13:00:00-06:00"
 ---
 
 # Project State
@@ -27,11 +27,13 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 29 — Embedding v2 — Feature Fidelity & UMAP — **READY TO PLAN**, no CONTEXT yet.
-- **Status:** planning artifacts written (PROJECT/REQUIREMENTS/ROADMAP/STATE), committed at
-  milestone open.
-- **Next:** `/lecg-discuss-phase 29` — the phase carries real design gray areas (per-dimension
-  normalization/weighting, UMAP hyperparameters, which quality metrics gate the swap).
+- **Phase:** 29 — Embedding v2 — Feature Fidelity & PaCMAP — **READY TO PLAN**, CONTEXT
+  captured 2026-07-16 (`.planning/phases/29-embedding-v2-feature-fidelity/29-CONTEXT.md`).
+- **Status:** owner decisions locked: **PaCMAP supersedes UMAP** (EMB-03 amended in
+  REQUIREMENTS.md; pacmap 0.9.1 + faiss-cpu dry-run-verified on python 3.12.10),
+  balanced-hybrid vector, tight-islands look, trustworthiness+twin-rate gate, full-set
+  projection (dedupe retired).
+- **Next:** `/lecg-phase 29`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -58,7 +60,7 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 
 | Decision | Chosen |
 |---|---|
-| Projection | **UMAP** (umap-learn — the milestone's only dependency change, offline python pipeline only). Fixed seed, small-N fallback kept. |
+| Projection | **PaCMAP** (amended from UMAP at the Phase-29 discussion 2026-07-16 — `pacmap` + faiss-cpu, the milestone's only dependency change, offline python pipeline only). Fixed seed, small-N fallback kept. |
 | Ambient motion | **Full ambient** — every node carries recency-modulated life at rest. Owner chose over the recommended "subtle". Safety net: hard ≥50fps gate at ~22k nodes + mandated auto-degradation rule (LIFE-03), reduced-motion → static. |
 | Perf debt | **Both folded in** — PERF-05 app-wide SSR-hydration fix (layout.tsx + users/page.tsx via shared helper + test), PERF-06 shell-chunk code-split + re-measure vs 28.1 median 4,360 ms. |
 | Phases | 5 (29–33) approved as proposed. |
@@ -215,11 +217,11 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 29`** (Embedding v2 — Feature Fidelity & UMAP). Gray areas the
-CONTEXT should settle before planning: per-dimension normalization + weighting scheme
-(log-scale vs rank; categorical-vs-numeric weight balance), UMAP hyperparameters
-(n_neighbors / min_dist / metric, fixed seed), which quality metrics gate the swap
-(trustworthiness / neighbor-purity / both) and their thresholds, whether
-dedupe-then-project survives once numeric features shrink the duplicate rate, and the
-python environment (`VERIFY:` umap-learn installability in the same python that
-`dc-daily-ingest.cjs` invokes for scikit-learn today).
+**Run `/lecg-phase 29`** (Embedding v2 — Feature Fidelity & PaCMAP). All gray areas
+settled in `29-CONTEXT.md`: PaCMAP projection (owner amendment over UMAP), balanced-hybrid
+categorical/numeric block scaling, tight-islands look (seed 42), trustworthiness(k=10)
+new≥old + duplicate-rate-drop ship gate, full ~22k-node projection with residual jitter
+only for byte-identical rows. Python env verified live (3.12.10, sklearn 1.8.0; pacmap
+0.9.1 + faiss-cpu 1.14.3 resolve cleanly, not yet installed). Two `VERIFY:` items for the
+planner: PaCMAP 0.9.1 seed/metric/apply_pca API from the installed package; hybrid-matrix
+memory shape at 22k × vocab (SVD-reduce fallback expected).
