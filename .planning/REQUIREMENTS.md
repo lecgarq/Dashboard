@@ -158,13 +158,13 @@ The interaction surface. All motion ≤200ms for interaction responses, `prefers
 → static, and the PERF-02 frozen-handle invariant stays green (no GPU-sim starts, ambient
 motion rides the existing CPU/rAF `pushPositions` path).
 
-- [ ] **LIFE-01**: **Click choreography** — clicking a node eases the camera/focus to it,
+- [x] **LIFE-01**: **Click choreography** — clicking a node eases the camera/focus to it,
       lights its neighbor set (nodes + their similarity edges emphasized), and dims
       non-neighbors; background click / Esc reverses it. Builds on the existing
       isolate → `UserProfilePanel` + `NeighborMatchesPanel` flow, replacing the current
       hard cut.
 
-- [ ] **LIFE-02**: **Hover life** — hovering a node emphasizes its own similarity edges and
+- [x] **LIFE-02**: **Hover life** — hovering a node emphasizes its own similarity edges and
       upgrades the tooltip (`NodeTooltip`) with the node's headline dimensions (tier,
       recency, breadth) beyond the current identity fields.
 
@@ -176,7 +176,7 @@ motion rides the existing CPU/rAF `pushPositions` path).
       auto-degrades (fewer animated nodes / interaction-only) rather than shipping jank —
       the degradation rule is part of the requirement, not an excuse to skip the gate.
 
-- [ ] **LIFE-04**: **Click panel enriched** — the node-click experience integrates the SIM-02
+- [x] **LIFE-04**: **Click panel enriched** — the node-click experience integrates the SIM-02
       "why similar" explanations and the profile rail into one coherent, animated reveal
       (entrance/exit within the motion budget), keeping the existing
       user-detail > lasso > sliders panel precedence.

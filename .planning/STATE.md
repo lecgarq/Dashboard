@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.5
 milestone_name: "Living Graph"
-current_phase: 31
-current_phase_name: "Click & Hover Choreography"
-status: executing
+current_phase: 32
+current_phase_name: "Ambient Life & Link Expression"
+status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 31 implementation complete: 31-01 and 31-02 summarized. Running phase completion audit, full gates, isolated browser verification, deploy, and advance."
-last_updated: "2026-07-16T13:12:00-06:00"
+stopped_at: "Phase 31 verified and deployed. Phase 32 has no context artifact; run $lecg-discuss-phase 32."
+last_updated: "2026-07-16T13:32:28-06:00"
 ---
 
 # Project State
@@ -27,8 +27,14 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 31 — Click & Hover Choreography — **implementation complete,
-  verification in progress** (`31-01` and `31-02` summarized).
+- **Phase:** 32 — Ambient Life & Link Expression — **ready for discussion**
+  (no `32-CONTEXT.md` yet; owner decisions required before planning).
+- **Phase 31 SHIPPED 2026-07-16** (`31-VERIFICATION.md`, deployed BUILD_ID
+  `YTIBgQ4sRBXlonyphxjTq`): reversible 180ms / 2.25× frozen-Cosmos focus,
+  selected + ten-distinct-match lighting, selected/hover edge priority with
+  fallback curves, truthful 80ms tier/recency/breadth tooltip, and one
+  matches-first ACC profile rail. Isolated Phase-31 Playwright 2/2 and live
+  authenticated route smoke 1/1 passed; impeccable found zero issues.
 - **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
   BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
   payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
@@ -61,7 +67,7 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   right rail. Honest loading/empty/error states; one concurrent 180ms rail
   transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
   impeccable zero findings.
-- **Next:** `/lecg-phase 31`.
+- **Next:** `/lecg-discuss-phase 32`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -245,6 +251,6 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Continue `/lecg-phase 31`** with phase audit, full verification, deploy, and
-advance. Phase 32 still owns ambient motion and the general
-strength/width/morph link redesign.
+**Run `/lecg-discuss-phase 32`.** Gather the remaining owner decisions for full
+ambient recency-modulated motion, the ≥50fps degradation rule, and general
+strength/width/morph link expression before Phase 32 is planned.
