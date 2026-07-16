@@ -582,3 +582,19 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   - Exact file locations of the 2 remaining `unsafe-todo` findings (presumed `dataLayer.ts:41,112`).
   - ACCDS session cookie TTL (for §5.1 proactive expiry warning).
   - Account Admin provisioning status (§5.2).
+
+## Phase 30 debt roll-forward (2026-07-16 — Similarity Intelligence)
+
+- **[Ph30] Stale AccInstanceEmbedding rows never pruned.** 983 rows carry
+  old-shape (bare-array) neighbors and nodeIds absent from the current 22,279-row
+  snapshot (leftovers from a prior larger run). Harmless today —
+  `normalizeNeighborsPayload` tolerates them and they match no client feature —
+  but the pipeline upsert never deletes; add a prune step (delete rows whose
+  nodeId is not in the current run's set) next time the pipeline is touched.
+- **[Ph30] e2e slider selectors dead.** `tests/e2e/acc-dc-graph.spec.ts` drives
+  "User name thumb" — v2.4's GroupByControls replaced curated sliders (real path:
+  `group-by-select` + "Grouping strength thumb", proven by the 30-04 morph smoke).
+  Fold into the standing e2e re-baseline (STATE Deferred #4).
+- **[Ph30] Panel "100%" scores for near-identical distinct profiles.** Cosine
+  0.99995+ renders as 100% next to genuinely distinct matches; if workshop UAT
+  reads it as "clone", show one more decimal in Phase 31's panel polish.

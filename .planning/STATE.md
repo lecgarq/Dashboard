@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.5
 milestone_name: "Living Graph"
-current_phase: 30
-current_phase_name: "Similarity Intelligence"
-status: executing
-current_plan: "30-01"
-stopped_at: "Phase 30 planned 2026-07-16 (4 plans: 30-01 python twin-collapse+why keys, 30-02 proc normalization+de-twinned edges, 30-03 panel redesign, 30-04 live run+edge evidence). Executing 30-01. Resume: /lecg-phase 30."
-last_updated: "2026-07-16T16:10:00-06:00"
+current_phase: 31
+current_phase_name: "Click & Hover Choreography"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 30 SHIPPED 2026-07-16 (4/4 plans, 30-VERIFICATION.md, deployed BUILD_ID SkA5J8kUu0LgER4NcyiJr, live run 20260716T182623Z-e6fab986). Phase 31 has no CONTEXT yet. Next: /lecg-discuss-phase 31."
+last_updated: "2026-07-16T19:30:00-06:00"
 ---
 
 # Project State
@@ -27,17 +27,23 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 30 — Similarity Intelligence — **READY TO PLAN**, CONTEXT captured
-  2026-07-16 (`.planning/phases/30-similarity-intelligence/30-CONTEXT.md`).
-- **Phase 29 SHIPPED 2026-07-16** (3/3 plans, `29-VERIFICATION.md`): hybrid vector
-  (tokens + 6 raw numerics + `cov:` token), PaCMAP 0.9.1 full-set projection (angular,
-  seed 42, SVD-100), duplicate rate **84.3% → 20.4%**, trustworthiness **0.9388 →
-  0.9597 GATE PASS**, live run `20260716T173543Z-345c0e14` (22,279 rows, 12 clusters,
-  20.9 s), EMB-06 morph smoke + PERF-02 green. Deploy = recorded no-op (zero app-runtime
-  diff; coords are data, already live on :3000). Commits: 31ecc672, 12140386.
-  **Phase 30 planners note:** `neighbors` Json is now hybrid-matrix kNN (same
-  {nodeId, score} shape); twin-collapse/explanations still unbuilt (SIM-01..03).
-- **Next:** `/lecg-discuss-phase 30`.
+- **Phase:** 31 — Click & Hover Choreography — **needs CONTEXT**
+  (`/lecg-discuss-phase 31`; no `.planning/phases/31-*/` directory yet).
+- **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
+  BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
+  payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
+  k=10 DISTINCT matches via kNN over exact-vector twin-group representatives;
+  `instanceNeighbors` returns the typed normalized shape (old bare-array rows
+  tolerated via `lib/acc/embedding/neighborPayload.ts`); panel shows twin chip +
+  why chips (labels/values/coverage resolved client-side in `whySimilar.ts`);
+  `similarityEdges` built from matches only, `interReserveFrac=0.4`/18k KEPT with
+  recorded evidence. Live run `20260716T182623Z-e6fab986` (22,279 rows, trust
+  0.9598 PASS, twin groups max 313 / p95 2). Commits: 2467f0a9, 6d52e7e9,
+  9666da74, eef5eaa9.
+  **Phase 31 planners note:** panel is content-complete and chrome-modest by
+  design — LIFE-04's animated reveal wraps it without content rework; neighbor
+  lighting should light `matches` only (twins are position clumps, not lit).
+- **Next:** `/lecg-discuss-phase 31`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
