@@ -9,12 +9,14 @@ from compute_instance_embeddings import (
     cluster_coords,
     dedupe_docs,
     hybrid_dup_keys,
-    knn_neighbors,
     normalize_coords,
     normalize_numerics,
     project_pacmap,
     residual_jitter,
+    structured_neighbors,
     tfidf_matrix,
+    top_contribution_keys,
+    twin_groups,
 )
 
 def test_normalize_coords_fits_box():
@@ -31,13 +33,89 @@ def test_tfidf_matrix_shapes():
     assert m.shape[1] == len(vocab)
     assert "role:a" in vocab
 
-def test_knn_neighbors_excludes_self_and_ranks():
-    docs = [["role:a", "mod:x"], ["role:a", "mod:x"], ["role:b"]]
+# --- Phase 30 twin-collapsed structured neighbors ---
+
+def test_twin_groups_exact_vector_only():
+    # same tokens, different numerics -> DISTINCT groups (exact-vector rule)
+    docs = [["role:a"], ["role:a"], ["role:a"], ["role:b"]]
+    rows = [{"activityTotal": 1}, {"activityTotal": 1}, {"activityTotal": 2}, {}]
+    group_of, members = twin_groups(hybrid_dup_keys(docs, rows))
+    assert list(group_of) == [0, 0, 1, 2]
+    assert members == [[0, 1], [2], [3]]
+
+
+def test_structured_neighbors_distinct_matches_and_twin_summary():
+    docs = [
+        ["role:a", "mod:x"],  # group 0 (3 twins)
+        ["role:a", "mod:x"],
+        ["role:a", "mod:x"],
+        ["role:b"],           # group 1
+        ["role:a", "mod:y"],  # group 2
+    ]
+    rows = [{}] * 5
+    ids = [f"n{i}" for i in range(5)]
     m, _ = tfidf_matrix(docs)
-    nbrs = knn_neighbors(m, ["n0", "n1", "n2"], k=1)
-    assert nbrs["n0"][0]["nodeId"] == "n1"
-    assert nbrs["n0"][0]["nodeId"] != "n0"
-    assert 0.0 <= nbrs["n0"][0]["score"] <= 1.0
+    nbrs = structured_neighbors(m, ids, hybrid_dup_keys(docs, rows), k=10)
+    p0 = nbrs["n0"]
+    # matches: only distinct-group representatives, never a same-group twin
+    match_ids = [mt["nodeId"] for mt in p0["matches"]]
+    assert set(match_ids) == {"n3", "n4"}  # k fill = min(k, groups-1) = 2
+    assert "n1" not in match_ids and "n2" not in match_ids and "n0" not in match_ids
+    # ranked: n4 shares role:a with n0, n3 shares nothing
+    assert match_ids[0] == "n4"
+    assert all(0.0 <= mt["score"] <= 1.0 for mt in p0["matches"])
+    # twins: self excluded, count exact, all members share the group match list
+    assert p0["twins"] == {"count": 2, "ids": ["n1", "n2"]}
+    assert nbrs["n1"]["twins"] == {"count": 2, "ids": ["n0", "n2"]}
+    assert nbrs["n1"]["matches"] == p0["matches"]
+    # a singleton node has no twins
+    assert nbrs["n3"]["twins"] == {"count": 0, "ids": []}
+
+
+def test_structured_neighbors_twin_cap():
+    n_twins = 13
+    docs = [["role:a"]] * n_twins + [["role:b"]]
+    rows = [{}] * (n_twins + 1)
+    ids = [f"n{i}" for i in range(n_twins + 1)]
+    m, _ = tfidf_matrix(docs)
+    nbrs = structured_neighbors(m, ids, hybrid_dup_keys(docs, rows), k=10, twin_cap=10)
+    p = nbrs["n0"]
+    assert p["twins"]["count"] == n_twins - 1  # count stays exact (12)
+    assert len(p["twins"]["ids"]) == 10        # ids capped
+    assert "n0" not in p["twins"]["ids"]
+
+
+def test_top_contribution_keys_math():
+    keys = ["role:a", "mod:x", "cov:known", "act:High", "membershipAgeDays_missing"]
+    a = np.array([[0.5, 0.3, 0.4, 0.2, 1.0]])
+    b = np.array([[0.5, 0.0, 0.4, 0.2, 1.0]])
+    # manual: products = [0.25, 0, 0.16, 0.04, 1.0]; cov:/_missing excluded; zero excluded
+    out = top_contribution_keys(a, b, keys)
+    assert out == ["role:a", "act:High"]
+    # top bound respected
+    keys2 = ["k1", "k2", "k3", "k4"]
+    ones = np.array([[4.0, 3.0, 2.0, 1.0]])
+    assert top_contribution_keys(ones, ones, keys2, top=3) == ["k1", "k2", "k3"]
+
+
+def test_structured_neighbors_payload_shape():
+    docs = [["role:a", "mod:x"], ["role:b", "mod:x"], ["role:c"]]
+    rows = [{}] * 3
+    ids = ["n0", "n1", "n2"]
+    m, vocab = tfidf_matrix(docs)
+    nbrs = structured_neighbors(m, ids, hybrid_dup_keys(docs, rows),
+                                k=10, dim_keys=list(vocab))
+    for p in nbrs.values():
+        assert p["v"] == 2
+        assert set(p.keys()) == {"v", "matches", "twins"}
+        for mt in p["matches"]:
+            assert set(mt.keys()) == {"nodeId", "score", "why"}
+            assert mt["score"] == round(mt["score"], 4)
+            assert len(mt["why"]) <= 3
+    # n0-n1 share mod:x -> it must surface as a why key
+    p0 = nbrs["n0"]
+    top = next(mt for mt in p0["matches"] if mt["nodeId"] == "n1")
+    assert "mod:x" in top["why"]
 
 def test_dedupe_docs_collapses_identical_profiles():
     docs = [["role:a"], ["role:a"], ["role:b"], ["role:a"]]

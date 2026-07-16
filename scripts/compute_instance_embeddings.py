@@ -9,7 +9,9 @@ comparable influence — then:
     numeric variation (EMB-04);
   - applies residual jitter ONLY to rows still byte-identical after numerics;
   - KMeans-clusters the 2D positions so color can == spatial group;
-  - computes cosine kNN on the hybrid matrix (payload shape unchanged);
+  - computes twin-collapsed cosine kNN on the hybrid matrix (Phase 30 v2
+    payload: k distinct matches with per-match top-contribution "why" keys,
+    plus an exact twin summary {count, capped ids} per node);
   - emits the EMB-05 quality gate: duplicate-profile rate old/new definition and
     trustworthiness(k=10) of the OLD stored coords vs the NEW coords against the
     same hybrid matrix — upsert only when new >= old.
@@ -36,6 +38,8 @@ from sklearn.neighbors import NearestNeighbors
 RANDOM_STATE = 42
 HALF_EXTENT = 1000.0
 K_NEIGHBORS = 10
+TWIN_ID_CAP = 10              # max twin nodeIds stored per node (count stays exact)
+WHY_KEYS = 3                  # top contributing dimension keys per match
 N_CLUSTERS = 12
 JITTER_FRAC = 0.012
 SVD_COMPONENTS = 100          # densification width before PaCMAP
@@ -191,22 +195,83 @@ def normalize_coords(xy, half_extent=HALF_EXTENT):
     return xy * (half_extent / max_abs)
 
 
-def knn_neighbors(matrix, node_ids, k=K_NEIGHBORS):
-    """Cosine kNN. Returns {nodeId: [{nodeId, score}, ...]} excluding self."""
-    n = matrix.shape[0]
-    kk = min(k + 1, n)
-    nn = NearestNeighbors(n_neighbors=kk, metric="cosine").fit(matrix)
-    dist, idx = nn.kneighbors(matrix)
-    out = {}
-    for i, nid in enumerate(node_ids):
+def twin_groups(dup_keys):
+    """Exact-vector twin groups from hybrid dup keys (tokens + raw numerics).
+    Returns (group_of_row int64[n], members list[list[row_idx]]). Deterministic
+    (first-seen order), same grouping residual_jitter uses."""
+    first, uidx = dedupe_docs(dup_keys)
+    members = [[] for _ in first]
+    for i, u in enumerate(uidx):
+        members[u].append(i)
+    return uidx, members
+
+
+def top_contribution_keys(row_a, row_b, dim_keys, top=WHY_KEYS):
+    """Top contributing dimension keys of a pair's cosine similarity on the
+    hybrid matrix: contribution[d] = a[d]*b[d] (all blocks non-negative, so
+    ranking by raw product == ranking by share of the dot product). Excludes
+    '_missing' indicator columns and 'cov:' tokens — shared missingness /
+    crawl-coverage metadata is not a human explanation. Returns <= top keys,
+    positive contributions only, strongest first."""
+    prod = sp.csr_matrix(row_a).multiply(sp.csr_matrix(row_b)).tocoo()
+    pairs = [
+        (float(v), dim_keys[j])
+        for j, v in zip(prod.col, prod.data)
+        if v > 0 and not dim_keys[j].endswith("_missing") and not dim_keys[j].startswith("cov:")
+    ]
+    pairs.sort(key=lambda p: (-p[0], p[1]))
+    return [k for _, k in pairs[:top]]
+
+
+def structured_neighbors(matrix, node_ids, dup_keys, k=K_NEIGHBORS,
+                         twin_cap=TWIN_ID_CAP, dim_keys=None):
+    """Twin-collapsed cosine kNN (Phase 30 v2 payload). kNN runs over one
+    representative row per exact-vector twin group, so every match is a
+    DISTINCT profile; twin members share their group's match list (their
+    vectors are byte-identical, so the math is exact for each member).
+
+    Returns {nodeId: {"v": 2,
+                      "matches": [{"nodeId", "score", "why": [keys]}],
+                      "twins": {"count": group_size - 1,
+                                "ids": [<= twin_cap other member nodeIds]}}}.
+    """
+    matrix = sp.csr_matrix(matrix)
+    group_of, members = twin_groups(dup_keys)
+    firsts = [m[0] for m in members]
+    uniq = matrix[firsts]
+    n_groups = len(firsts)
+    kk = min(k + 1, n_groups)
+    nn = NearestNeighbors(n_neighbors=kk, metric="cosine").fit(uniq)
+    dist, idx = nn.kneighbors(uniq)
+
+    group_matches = []
+    for g in range(n_groups):
         row = []
-        for j, d in zip(idx[i], dist[i]):
-            if j == i:
+        for j, d in zip(idx[g], dist[g]):
+            if j == g:
                 continue
-            row.append({"nodeId": node_ids[j], "score": round(1.0 - float(d), 4)})
+            why = top_contribution_keys(uniq[g], uniq[j], dim_keys) if dim_keys else []
+            row.append({
+                "nodeId": node_ids[firsts[j]],
+                "score": round(1.0 - float(d), 4),
+                "why": why,
+            })
             if len(row) >= k:
                 break
-        out[nid] = row
+        group_matches.append(row)
+
+    out = {}
+    for i, nid in enumerate(node_ids):
+        g = int(group_of[i])
+        mates = members[g]
+        out[nid] = {
+            "v": 2,
+            "matches": group_matches[g],
+            "twins": {
+                "count": len(mates) - 1,
+                "ids": [node_ids[j] for j in mates if j != i][:twin_cap],
+            },
+        }
     return out
 
 
@@ -279,7 +344,7 @@ def main():
         raise SystemExit("no instance features found; run build-instance-features.ts first")
     n = len(node_ids)
 
-    tfidf, _vocab = tfidf_matrix(docs)
+    tfidf, vocab = tfidf_matrix(docs)
     numeric, num_cols = normalize_numerics(numeric_rows)
     hybrid = build_hybrid_matrix(tfidf, numeric)
     print(f"nodes={n} vocab={tfidf.shape[1]} numeric_cols={len(num_cols)} "
@@ -321,7 +386,14 @@ def main():
         print("no stored embedding found (first run) — trustworthiness comparison "
               "skipped; gate rests on the duplicate-rate report above.")
 
-    neighbors = knn_neighbors(hybrid, node_ids)
+    # SIM-01/02: twin-collapsed structured neighbors + why keys (v2 payload).
+    _, members = twin_groups(new_keys)
+    sizes = np.array([len(m) for m in members], dtype=np.int64)
+    print(f"twin-group sizes: groups={len(sizes)} multi-member={int((sizes > 1).sum())} "
+          f"max={int(sizes.max())} median={float(np.median(sizes)):.1f} "
+          f"p95={float(np.percentile(sizes, 95)):.1f}")
+    neighbors = structured_neighbors(hybrid, node_ids, new_keys,
+                                     dim_keys=list(vocab) + num_cols)
     run_id = f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
     _upsert(node_ids, coords, clusters, neighbors, run_id)
     print(f"Upserted {n} AccInstanceEmbedding rows "
