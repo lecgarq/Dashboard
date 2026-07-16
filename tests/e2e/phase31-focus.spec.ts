@@ -45,6 +45,19 @@ async function targetNodeId(page: Page): Promise<string> {
 }
 
 test.describe("Phase 31 click and hover choreography", () => {
+  test("authenticated production routes render the spatial graph shell", async ({ page }) => {
+    for (const route of ["/users/spatial-graph", "/users/access-analysis"]) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page).toHaveURL(new RegExp(`${route.replace("/", "\\/")}$`));
+      await expect(page.getByTestId("right-panel-stack")).toBeAttached({
+        timeout: 120_000,
+      });
+      await expect(page.getByTestId("graph-legend")).toBeVisible({
+        timeout: 120_000,
+      });
+    }
+  });
+
   test("hover reveals the delayed headline tooltip and cancels cleanly", async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
