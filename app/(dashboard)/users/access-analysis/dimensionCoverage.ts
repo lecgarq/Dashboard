@@ -37,7 +37,7 @@ export const APERTURE_SOURCE_NOTES: Readonly<Record<string, string>> = {
 };
 
 /** Placeholder strings the extractors use for absent values. */
-const MISSING_STRINGS = new Set(["", "(none)", "(unknown)", "(no role)", "none", "unknown"]);
+export const MISSING_STRINGS = new Set(["", "(none)", "(unknown)", "(no role)", "none", "unknown"]);
 
 function presentValue(v: string | number | string[] | null): boolean {
   if (v == null) return false;

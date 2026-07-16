@@ -18,6 +18,7 @@
  */
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { moduleLabel } from "@/lib/acc/modules";
+import { MISSING_STRINGS } from "./dimensionCoverage";
 
 export interface WhyChip {
   label: string;
@@ -74,6 +75,11 @@ export function resolveWhyKey(
   const sep = key.indexOf(":");
   const prefix = sep >= 0 ? key.slice(0, sep) : key;
   const value = sep >= 0 ? key.slice(sep + 1) : "";
+
+  // A shared PLACEHOLDER is not a shared attribute: "company:(none)" means
+  // both lack a value — never present absence as a confident explanation
+  // (same missing-set the coverage convention uses).
+  if (sep >= 0 && MISSING_STRINGS.has(value.toLowerCase())) return null;
 
   if (
     PERMISSION_DERIVED.has(prefix) &&

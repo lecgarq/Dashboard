@@ -89,6 +89,15 @@ describe("resolveWhyKey", () => {
     );
   });
 
+  it("never presents shared placeholders as explanations", () => {
+    for (const key of ["company:(none)", "role:(no role)", "recency:none", "aff:unknown", "status:", "perm:(none)"]) {
+      expect(resolveWhyKey(key, a, b)).toBeNull();
+    }
+    // real values unaffected
+    expect(resolveWhyKey("company:ACME", a, b)).not.toBeNull();
+    expect(resolveWhyKey("admin:1", a, b)).not.toBeNull();
+  });
+
   it("returns null for meta / non-signal / unknown keys", () => {
     expect(resolveWhyKey("cov:known", a, b)).toBeNull();
     expect(resolveWhyKey("membershipAgeDays_missing", a, b)).toBeNull();
