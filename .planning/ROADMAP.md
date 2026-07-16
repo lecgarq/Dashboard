@@ -9,6 +9,7 @@
 - ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
 - ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
+- 🔄 **v2.5 Living Graph** - Phases 29-33 (opened 2026-07-16)
 
 ---
 
@@ -795,3 +796,155 @@ PERF-03 — verify at v2.4 close before re-listing):**
 - **`.planning/` phase-directory archival** — deliberately deferred at the v2.3 close
   because the `.planning/` tree is mid-migration on this branch with ~450 files of
   unrelated dirty WIP. All 6 v2.3 phase directories remain at `.planning/phases/`.
+
+---
+
+## 🔄 v2.5 Living Graph (Opened — 2026-07-16)
+
+**Milestone goal:** Make the spatial graph's positions *true* (full extracted feature set,
+magnitude-aware distances, UMAP projection), its similarity relationships *intelligent*
+(meaningful de-twinned neighbors with per-match "why similar" explanations), and its surface
+*alive* (full ambient node life, click/hover choreography, expressive links) — then close the
+route's remaining perf debt so the life is actually felt (SSR-hydration fix app-wide,
+shell-chunk parse gap reduced).
+
+**Source requirements:** `.planning/REQUIREMENTS.md` (v2.5, 16 requirements: EMB-01–06,
+SIM-01–03, LIFE-01–05, PERF-05–06). **16/16 mapped** across Phases 29–33.
+
+**⚠️ Name collision (standing):** `app/(dashboard)/access-analysis/` is the 23-panel charts
+page (untouched). `app/(dashboard)/users/access-analysis/` is the spatial-graph shell this
+milestone touches; `/users/spatial-graph` and `/users/access-analysis` render the same UI.
+
+**Overarching guardrail:** no new data source, no new Prisma table/migration; one new offline
+python dep (umap-learn) is the only dependency change, zero new npm deps. Frozen-render
+contract holds — the PERF-02 frozen-handle invariant (`GraphCanvas.test.ts`) stays green; all
+motion rides the CPU/rAF static-layer path, never the GPU simulation. `prefers-reduced-motion`
+→ static graph. Zinc theme; organic layouts, never a grid. TEST-01/02/03 stay green.
+`npx tsc --noEmit` before any rebuild.
+
+## Phases
+
+- [ ] **Phase 29: Embedding v2 — Feature Fidelity & UMAP** - Node positions derive from the full snapshot dimension set with magnitude-aware distances, projected by UMAP, quality-gated against the old embedding, and live on the graph
+- [ ] **Phase 30: Similarity Intelligence** - Neighbors recomputed on the enriched vector, twin-saturation fixed, and every match explains why it is similar
+- [ ] **Phase 31: Click & Hover Choreography** - Clicking a node becomes a choreographed focus (camera ease, neighbor lighting, enriched animated panel); hover gains edge emphasis and a headline-dimension tooltip
+- [ ] **Phase 32: Ambient Life & Link Expression** - Every node carries recency-modulated organic life at rest behind a hard ≥50fps gate with a designed degradation rule; similarity links get intentional strength/hover/morph rendering
+- [ ] **Phase 33: Perf Closeout & Verification** - SSR-hydration fixed at the shared boundary for all three call sites; shell chunk code-split; time-to-graph re-measured vs the 28.1 median
+
+## Phase Details
+
+### Phase 29: Embedding v2 — Feature Fidelity & UMAP
+
+**Goal**: A user looking at `/users/spatial-graph` sees node positions that honestly encode
+the full extracted feature set — nodes with similar permission strength, folder breadth,
+data reach, tenure, and activity sit near each other with magnitude preserved — instead of
+today's bag-of-words map where 87% of nodes are jittered clones and half the computed
+dimensions never influence position.
+**Depends on**: Phase 28 (v2.4, shipped) — first phase of v2.5.
+**Requirements**: EMB-01, EMB-02, EMB-03, EMB-04, EMB-05, EMB-06
+**Success Criteria** (what must be TRUE):
+
+  1. `scripts/build-instance-features.ts` (or its successor) emits a hybrid feature vector —
+     scaled numerics (folderBreadth, accessibleDataBytes, activityTotal, membership tenure,
+     riskScore, permissionCoverage, permissionStrength) + weighted categoricals — with every
+     included/excluded dimension listed and rationaled; normalization choices unit-tested
+     (EMB-01, EMB-02).
+  2. `scripts/compute_instance_embeddings.py` projects with UMAP (fixed seed, umap-learn,
+     small-N fallback kept); the stale "features → UMAP" ingest log is now true (EMB-03).
+  3. The pipeline reports the duplicate-profile rate before/after (baseline ~87%) and
+     trustworthiness/neighbor-purity metrics old-vs-new on the same input snapshot; the new
+     embedding ships only if it beats or matches baseline, with the comparison recorded in
+     the phase verification (EMB-04, EMB-05).
+  4. The recompute runs against the live DB with a recorded `embeddingRunId`; the graph
+     renders the new coordinates; v2.4 Group-by/slider anchor morphs still work on the new
+     baseline (smoke check); `dc-daily-ingest.cjs` wiring remains non-fatal (EMB-06).
+
+**UI hint**: minimal — the visible change is the map itself; controls unchanged.
+
+### Phase 30: Similarity Intelligence
+
+**Goal**: Clicking a node yields a neighbor list a person can trust and understand — distinct,
+meaningful matches (not score-1.0 clones) each carrying a "why similar" attribute breakdown.
+**Depends on**: Phase 29 (neighbors must be computed on the enriched vector; recomputing them
+on the old TF-IDF matrix would immediately be thrown away).
+**Requirements**: SIM-01, SIM-02, SIM-03
+**Success Criteria** (what must be TRUE):
+
+  1. `AccInstanceEmbedding.neighbors` carries the enriched-vector kNN with twins collapsed or
+     tiered; `NeighborMatchesPanel` shows k distinct meaningful matches plus an honest
+     "N identical twins" affordance (SIM-01).
+  2. Every rendered match explains its similarity — top contributing shared dimensions, with
+     DC-sourced attributes labeled with coverage like every v2.4 dimension label (SIM-02).
+  3. The similarity web is rebuilt from the new neighbor sets; cluster-aware selection
+     preserved or re-tuned with recorded evidence; strength normalization reflects the real
+     score distribution (SIM-03).
+
+**UI hint**: yes — NeighborMatchesPanel redesign.
+
+### Phase 31: Click & Hover Choreography
+
+**Goal**: Clicking a node feels like the graph responding — camera eases to the node, its
+neighborhood lights up, an enriched panel animates in; hover carries edge emphasis and a
+substantive tooltip.
+**Depends on**: Phase 30 (the choreography lights the *new* neighbor sets and the panel
+integrates the "why similar" explanations).
+**Requirements**: LIFE-01, LIFE-02, LIFE-04
+**Success Criteria** (what must be TRUE):
+
+  1. Node click: camera/focus ease to the node, neighbors + their edges emphasized,
+     non-neighbors dimmed; background click / Esc reverses; all interaction responses ≤200ms
+     and reduced-motion renders the state change without animation (LIFE-01).
+  2. Hover: the node's own similarity edges emphasize; `NodeTooltip` adds headline dimensions
+     (tier, recency, breadth) beyond identity fields (LIFE-02).
+  3. The click reveal is one coherent animated panel experience integrating profile +
+     "why similar", preserving the user-detail > lasso > sliders precedence (LIFE-04).
+  4. PERF-02 frozen-handle invariant stays green; no GPU-sim start on any interaction.
+
+**UI hint**: yes — the milestone's interaction centerpiece.
+
+### Phase 32: Ambient Life & Link Expression
+
+**Goal**: The graph is visibly alive at rest — every node carries subtle organic,
+recency-modulated motion — and the similarity web reads as intentional, with strength-driven
+styling, hover-priority edges, and a designed morph transition.
+**Depends on**: Phase 31 (ambient motion must compose with the click/hover choreography, not
+fight it; edge emphasis layers on the upgraded link rendering path).
+**Requirements**: LIFE-03, LIFE-05
+**Success Criteria** (what must be TRUE):
+
+  1. Full ambient motion at rest: drift/breathing modulated by activity recency
+     (recently-active visibly alive, dormant stiller), riding the existing rAF
+     static-layer `pushPositions` path — never the GPU simulation (LIFE-03).
+  2. **Hard perf gate:** sustained ≥50 fps at the full ~22k-node set on the workshop
+     machine, measured and recorded in the phase verification; on gate failure the
+     implementation auto-degrades (fewer animated nodes / interaction-only) rather than
+     shipping jank — degradation observed and recorded, not hypothesized (LIFE-03).
+  3. `prefers-reduced-motion` renders a fully static graph (verified, not assumed).
+  4. Similarity links: strength → width/opacity mapping is deliberate; a selected/hovered
+     node's edges render above the rest; slider-morph behavior is a designed transition,
+     not a fade-to-nothing (LIFE-05).
+
+**UI hint**: yes.
+
+### Phase 33: Perf Closeout & Verification
+
+**Goal**: The life shipped in 29–32 is actually felt — the route stops refetching multi-MB
+prefetched payloads app-wide and stops parsing a ~4s shell chunk before the graph appears;
+time-to-graph is re-measured and recorded against the 28.1 median.
+**Depends on**: Phases 29–32 (measure after all product changes land, mirroring the v2.4
+Phase 24/28 baseline-then-verify pattern).
+**Requirements**: PERF-05, PERF-06
+**Success Criteria** (what must be TRUE):
+
+  1. A shared hydration helper deserializes the superjson-wrapped `dehydrate()` state before
+     `<HydrationBoundary>` at all three call sites (`spatial-graph/page.tsx`,
+     `app/(dashboard)/layout.tsx`, `users/page.tsx`); prefetched queries verifiably hydrate
+     (no client refetch of prefetched data); a unit test pins the helper (PERF-05).
+  2. Heavy static imports are code-split out of the `AccessAnalysisShell` chunk
+     (CONCERNS §Ph28.1(2)); the chunk's parse cost measurably drops (PERF-06).
+  3. Time-to-graph re-measured with the Phase 24/28.1 methodology (isolated `:3100` prod
+     build, median-of-5) against the 28.1 median (4,360 ms); delta recorded; any regression
+     blocks the phase (PERF-06).
+  4. Full gate sweep green: tsc, focused tests, TEST-01/02/03, PERF-02 invariant, repo-map
+     check; deploy per autoDeploy policy with route probe recorded.
+
+**UI hint**: no.
