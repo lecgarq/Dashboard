@@ -28,12 +28,12 @@ const EMPTY: Inputs = {
   isolatedNodeIndex: null,
 };
 
-describe("buildMaskPredicate — isolate lights the same-user footprint", () => {
-  it("lights every instance whose userId matches the isolated node, dims the rest", () => {
+describe("buildMaskPredicate — isolate lights the selected instance only by default", () => {
+  it("keeps another project membership for the same user dimmed", () => {
     const features = [f("u1::pA"), f("u1::pB"), f("u2::pA")];
     const predicate = buildMaskPredicate({ ...EMPTY, features, isolatedNodeIndex: 0 });
     expect(predicate(0)).toBe(1.0); // clicked instance
-    expect(predicate(1)).toBe(1.0); // same user, other project → footprint lit
+    expect(predicate(1)).toBe(0.15); // same user, other project → not a Phase-30 match
     expect(predicate(2)).toBe(0.15); // different user → dimmed
   });
 
