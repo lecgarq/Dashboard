@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 30
 current_phase_name: "Similarity Intelligence"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 30 CONTEXT captured 2026-07-16 (30-CONTEXT.md, 4 owner decisions locked: exact-vector twin collapse, count+capped-list twin affordance, hybrid why-similar (python exact keys + client label/coverage rendering), de-twinned-only similarity web with evidence-backed reserve re-tune). Status ready_to_plan. Next: /lecg-phase 30."
-last_updated: "2026-07-16T15:30:00-06:00"
+status: executing
+current_plan: "30-01"
+stopped_at: "Phase 30 planned 2026-07-16 (4 plans: 30-01 python twin-collapse+why keys, 30-02 proc normalization+de-twinned edges, 30-03 panel redesign, 30-04 live run+edge evidence). Executing 30-01. Resume: /lecg-phase 30."
+last_updated: "2026-07-16T16:10:00-06:00"
 ---
 
 # Project State
