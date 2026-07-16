@@ -5,9 +5,9 @@ milestone_name: "Living Graph"
 current_phase: 31
 current_phase_name: "Click & Hover Choreography"
 status: executing
-current_plan: "31-02"
-stopped_at: "31-01 complete (camera/mask/focus edges/hover tooltip; 47 tests + tsc green). Executing 31-02: unified matches-first profile rail."
-last_updated: "2026-07-16T13:08:00-06:00"
+current_plan: null
+stopped_at: "Phase 31 implementation complete: 31-01 and 31-02 summarized. Running phase completion audit, full gates, isolated browser verification, deploy, and advance."
+last_updated: "2026-07-16T13:12:00-06:00"
 ---
 
 # Project State
@@ -27,9 +27,8 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 31 — Click & Hover Choreography — **executing 31-02**
-  (`31-01` camera/mask/focus edges/hover tooltip complete; unified
-  matches-first profile rail in progress).
+- **Phase:** 31 — Click & Hover Choreography — **implementation complete,
+  verification in progress** (`31-01` and `31-02` summarized).
 - **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
   BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
   payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
@@ -57,6 +56,11 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   selected+matches-only mask, selected/hovered Canvas2D edge priority with
   missing-match fallback, and 80ms truthful tier/recency/breadth tooltip.
   Focused gate: 47 tests + tsc clean.
+- **Phase 31-02 COMPLETE 2026-07-16:** floating card removed; one identity
+  header + closest matches/twins/why evidence + existing ACC body now share the
+  right rail. Honest loading/empty/error states; one concurrent 180ms rail
+  transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
+  impeccable zero findings.
 - **Next:** `/lecg-phase 31`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
@@ -241,6 +245,6 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Continue `/lecg-phase 31`** at `31-02`, then verify, deploy, and advance.
-Phase 32 still owns ambient motion and the general
+**Continue `/lecg-phase 31`** with phase audit, full verification, deploy, and
+advance. Phase 32 still owns ambient motion and the general
 strength/width/morph link redesign.

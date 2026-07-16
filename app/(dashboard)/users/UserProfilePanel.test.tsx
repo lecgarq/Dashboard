@@ -146,6 +146,24 @@ describe("UserProfilePanel", () => {
     expect(screen.getByText("GH")).toBeTruthy(); // Ghost -> GH
   });
 
+  it("renders one rail header, then the supplied matches prelude before the ACC body", () => {
+    render(
+      <UserProfilePanel
+        user={stub}
+        email={stub.email}
+        variant="rail"
+        onClose={() => {}}
+        railPrelude={<section data-testid="matches-prelude">Closest matches</section>}
+      />,
+    );
+    expect(screen.getAllByTestId("user-detail-header")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Close" })).toHaveLength(1);
+    expect(screen.queryByText("Open profile")).toBeNull();
+    const prelude = screen.getByTestId("matches-prelude");
+    const profile = screen.getByTestId("acc-profile-body");
+    expect(prelude.compareDocumentPosition(profile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("shows the cost center for a synced directory member", () => {
     render(<UserProfilePanel user={found} email={found.email} variant="rail" />);
     expect(screen.getByText(/cost center/i)).toBeTruthy();

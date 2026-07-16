@@ -14,8 +14,8 @@
  * Slide-in animation: framer-motion AnimatePresence with translateX (RESEARCH Pattern 9).
  */
 
-import { lazy, Suspense, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { lazy, Suspense, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   clampSidebarWidth,
@@ -48,6 +48,8 @@ export interface RightPanelStackProps {
   activeLayoutLabel?: string;
   colorLabel?: string;
   onCatalogReady?: (catalog: readonly CatalogDimension[]) => void;
+  /** Phase-30 similarity evidence inserted before the rail profile body. */
+  neighborPanel?: ReactNode;
 }
 
 type LayerKind = "user-detail" | "lasso-pie" | "sliders";
@@ -61,13 +63,6 @@ function getTopLayer(
   return "sliders";
 }
 
-const slide = {
-  initial: { x: 320, opacity: 0 },
-  animate: { x: 0, opacity: 1 },
-  exit: { x: 320, opacity: 0 },
-  transition: { duration: 0.2 },
-};
-
 export function RightPanelStack({
   features,
   physics,
@@ -79,10 +74,18 @@ export function RightPanelStack({
   activeLayoutLabel,
   colorLabel,
   onCatalogReady,
+  neighborPanel,
 }: RightPanelStackProps): React.JSX.Element {
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
   const top = getTopLayer(isolatedNodeIndex, lassoSelection);
   const [baseView, setBaseView] = useState<"layout" | "dimensions">("layout");
+  const reducedMotion = !!useReducedMotion();
+  const slide = {
+    initial: reducedMotion ? { opacity: 0 } : { x: 320, opacity: 0 },
+    animate: { x: 0, opacity: 1 },
+    exit: reducedMotion ? { opacity: 0 } : { x: 320, opacity: 0 },
+    transition: { duration: reducedMotion ? 0 : 0.18, ease: "easeOut" as const },
+  };
 
   // ---- Resizable rail width (persisted, drag handle on the left edge) -------
   // Client-only shell (AccessAnalysisShellClient is dynamic ssr:false), so it's
@@ -164,11 +167,11 @@ export function RightPanelStack({
       <div
         data-testid="right-panel-stack"
         data-top-layer={top}
-        className="flex h-full min-h-0 w-full overflow-y-auto"
+        className="relative flex h-full min-h-0 w-full overflow-hidden"
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           {top === "user-detail" ? (
-            <motion.div key="user-detail" className="h-full w-full" {...slide}>
+            <motion.div key="user-detail" className="absolute inset-0 h-full w-full overflow-y-auto" {...slide}>
               {(() => {
                 const email = features[isolatedNodeIndex!]?.emailLower ?? "";
                 return (
@@ -177,12 +180,13 @@ export function RightPanelStack({
                     email={email}
                     onClose={() => setIsolated(null)}
                     variant="rail"
+                    railPrelude={neighborPanel}
                   />
                 );
               })()}
             </motion.div>
           ) : top === "lasso-pie" ? (
-            <motion.div key="lasso-pie" className="h-full w-full" {...slide}>
+            <motion.div key="lasso-pie" className="absolute inset-0 h-full w-full overflow-y-auto" {...slide}>
               <SelectionPanel
                 visibleSelectedIndices={visibleSelectedIndices ?? new Set<number>()}
                 features={features}
@@ -190,7 +194,7 @@ export function RightPanelStack({
               />
             </motion.div>
           ) : (
-            <motion.div key="sliders" className="h-full w-full" {...slide}>
+            <motion.div key="sliders" className="absolute inset-0 h-full w-full overflow-y-auto" {...slide}>
               <Tabs
                 value={baseView}
                 onValueChange={(value) => setBaseView(value as "layout" | "dimensions")}

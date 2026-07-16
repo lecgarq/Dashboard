@@ -37,7 +37,6 @@ function setup(over: Partial<Parameters<typeof NeighborMatchesPanel>[0]> = {}) {
   const indexByNodeId = new Map(features.map((f, i) => [f.nodeId, i]));
   const onSelectMatch = vi.fn();
   const props = {
-    centerName: "User c",
     center: features[0],
     matches: [
       { nodeId: "m1", score: 0.91, why: ["company:ACME", "act:High"] },
@@ -47,7 +46,6 @@ function setup(over: Partial<Parameters<typeof NeighborMatchesPanel>[0]> = {}) {
     indexByNodeId,
     features,
     coverageByDim: new Map([["company", "14,201/22,279"]]),
-    onOpenProfile: vi.fn(),
     onSelectMatch,
     ...over,
   };
@@ -109,6 +107,20 @@ describe("NeighborMatchesPanel", () => {
     expect(onSelectMatch).toHaveBeenCalledWith(1);
 
     const empty = setup({ matches: [], twins: { count: 0, ids: [] } });
-    expect(empty.container.querySelector("[data-testid=neighbor-matches]")).toBeNull();
+    expect(empty.getByTestId("neighbor-matches-empty").textContent).toContain(
+      "No distinct matches",
+    );
+  });
+
+  it("renders honest loading and inline error states without an Open profile action", () => {
+    const loading = setup({ status: "loading" });
+    expect(loading.getByTestId("neighbor-matches-loading")).toBeTruthy();
+    expect(loading.queryByText("Open profile")).toBeNull();
+    loading.unmount();
+
+    setup({ status: "error", errorMessage: "Similarity data unavailable." });
+    expect(screen.getByTestId("neighbor-matches-error").textContent).toContain(
+      "Similarity data unavailable.",
+    );
   });
 });

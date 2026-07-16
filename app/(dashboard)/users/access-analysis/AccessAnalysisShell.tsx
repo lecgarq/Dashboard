@@ -547,29 +547,6 @@ export function ShellBody({
               hoveredIndex={hoveredNodeIndex}
             />
           )}
-          {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
-            <NeighborMatchesPanel
-              centerName={
-                features[isolatedNodeIndex]?.userName ??
-                features[isolatedNodeIndex]?.nodeId ??
-                "Selected"
-              }
-              center={features[isolatedNodeIndex]}
-              matches={neighborsQuery.data?.matches ?? []}
-              twins={neighborsQuery.data?.twins ?? { count: 0, ids: [] }}
-              indexByNodeId={indexByNodeId}
-              features={features}
-              coverageByDim={coverageByDim}
-              // Profile for the centre node is already the top RightPanelStack
-              // layer whenever isolatedNodeIndex !== null. Re-assert isolate on the
-              // same node (the click setter) to ensure that profile is shown — and
-              // to restore it if a different overlay was raised in the interim.
-              onOpenProfile={() => setIsolated(isolatedNodeIndex)}
-              // Re-isolate to the chosen match: opens its profile + relights its
-              // own neighbors (query re-fires on the new clickedNodeId).
-              onSelectMatch={(idx) => setIsolated(idx)}
-            />
-          )}
         </div>
         <RightPanelStack
           features={features}
@@ -582,6 +559,27 @@ export function ShellBody({
           activeLayoutLabel={activeLayoutLabel}
           colorLabel={colorLabel}
           onCatalogReady={onCatalogReady}
+          neighborPanel={
+            !ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null ? (
+              <NeighborMatchesPanel
+                center={features[isolatedNodeIndex]}
+                matches={neighborsQuery.data?.matches ?? []}
+                twins={neighborsQuery.data?.twins ?? { count: 0, ids: [] }}
+                indexByNodeId={indexByNodeId}
+                features={features}
+                coverageByDim={coverageByDim}
+                status={
+                  neighborsQuery.isError
+                    ? "error"
+                    : neighborsQuery.data
+                      ? "ready"
+                      : "loading"
+                }
+                errorMessage="Closest matches could not be loaded."
+                onSelectMatch={(idx) => setIsolated(idx)}
+              />
+            ) : null
+          }
         />
       </div>
     </div>

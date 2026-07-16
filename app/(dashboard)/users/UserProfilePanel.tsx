@@ -28,7 +28,7 @@
  *                stability) with its own header + close button + scroll.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { RefreshCw, Mail, Building2, Briefcase, Phone, DollarSign, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -50,6 +50,8 @@ export interface UserProfilePanelProps {
    *  contact rows) above the ACC profile body. Omitting it preserves the prior
    *  behavior — no chrome rendered. Rail variant ignores this prop. */
   person?: OrgPerson;
+  /** Rail-only content rendered after the single identity header and before ACC details. */
+  railPrelude?: ReactNode;
 }
 
 export function UserProfilePanel({
@@ -58,6 +60,7 @@ export function UserProfilePanel({
   onClose,
   variant = "dialog",
   person,
+  railPrelude,
 }: UserProfilePanelProps): React.JSX.Element {
   const utils = trpc.useUtils();
   const [override, setOverride] = useState<AccProfileData | null>(null);
@@ -264,7 +267,10 @@ export function UserProfilePanel({
       data-testid="user-detail-panel"
       className="flex h-full w-full shrink-0 flex-col border-l border-border/30 bg-card"
     >
-      <header className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3">
+      <header
+        data-testid="user-detail-header"
+        className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3"
+      >
         <div className="flex min-w-0 items-center gap-3">
           <ProfileAvatar name={user?.name} email={email} photoUrl={user?.photoUrl} size="lg" />
           <div className="min-w-0">
@@ -286,7 +292,12 @@ export function UserProfilePanel({
           </button>
         )}
       </header>
-      <div className="flex-1 overflow-y-auto px-4 pb-6">{body}</div>
+      <div className="flex-1 overflow-y-auto">
+        {railPrelude}
+        <div data-testid="acc-profile-body" className="px-4 pb-6">
+          {body}
+        </div>
+      </div>
     </aside>
   );
 }

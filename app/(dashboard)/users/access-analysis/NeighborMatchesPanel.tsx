@@ -22,7 +22,6 @@ import { resolveWhyKey } from "./whySimilar";
 export type { NeighborMatch };
 
 export function NeighborMatchesPanel(props: {
-  centerName: string;
   center: NodeFeatureSnapshot | undefined;
   matches: NeighborMatch[];
   twins: NeighborTwins;
@@ -30,11 +29,12 @@ export function NeighborMatchesPanel(props: {
   features: ReadonlyArray<NodeFeatureSnapshot>;
   /** dimId → coverageText ("14,201/22,279"), prebuilt by the shell. */
   coverageByDim: ReadonlyMap<string, string>;
-  onOpenProfile: () => void;
   onSelectMatch: (index: number) => void;
-}): React.JSX.Element | null {
+  status?: "loading" | "ready" | "error";
+  errorMessage?: string;
+}): React.JSX.Element {
   const [twinsOpen, setTwinsOpen] = useState(false);
-  if (props.matches.length === 0 && props.twins.count === 0) return null;
+  const status = props.status ?? "ready";
 
   const nodeRow = (nodeId: string): { idx: number | undefined; f: NodeFeatureSnapshot | undefined } => {
     const idx = props.indexByNodeId.get(nodeId);
@@ -44,100 +44,122 @@ export function NeighborMatchesPanel(props: {
   const twinOverflow = props.twins.count - props.twins.ids.length;
 
   return (
-    <div
+    <section
       data-testid="neighbor-matches"
-      className="absolute right-3 top-16 z-10 max-h-[70vh] w-72 overflow-y-auto rounded-lg border bg-card/95 p-3 text-sm shadow-md backdrop-blur"
+      className="border-b border-border/30 px-4 py-4 text-sm"
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="truncate font-medium">{props.centerName}</span>
-        <button onClick={props.onOpenProfile} className="shrink-0 text-xs text-blue-600 hover:underline">
-          Open profile
-        </button>
-      </div>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Closest matches
+      </h3>
 
-      {props.twins.count > 0 && (
-        <div className="mb-2">
-          <button
-            data-testid="twin-chip"
-            onClick={() => setTwinsOpen((v) => !v)}
-            aria-expanded={twinsOpen}
-            className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent"
-          >
-            {props.twins.count.toLocaleString("en-US")} identical twin
-            {props.twins.count === 1 ? "" : "s"} {twinsOpen ? "▾" : "▸"}
-          </button>
-          {twinsOpen && (
-            <ul data-testid="twin-list" className="mt-1 space-y-0.5">
-              {props.twins.ids.map((id) => {
-                const { idx, f } = nodeRow(id);
+      {status === "loading" ? (
+        <div data-testid="neighbor-matches-loading" role="status" className="space-y-2">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="space-y-1">
+              <div className="h-3 w-3/4 rounded bg-muted" />
+              <div className="h-2 w-1/2 rounded bg-muted/70" />
+            </div>
+          ))}
+          <span className="sr-only">Loading closest matches</span>
+        </div>
+      ) : status === "error" ? (
+        <p data-testid="neighbor-matches-error" role="alert" className="text-xs text-muted-foreground">
+          {props.errorMessage ?? "Closest matches are unavailable."}
+        </p>
+      ) : (
+        <>
+          {props.twins.count > 0 && (
+            <div className="mb-2">
+              <button
+                data-testid="twin-chip"
+                onClick={() => setTwinsOpen((v) => !v)}
+                aria-expanded={twinsOpen}
+                className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent"
+              >
+                {props.twins.count.toLocaleString("en-US")} identical twin
+                {props.twins.count === 1 ? "" : "s"} {twinsOpen ? "▾" : "▸"}
+              </button>
+              {twinsOpen && (
+                <ul data-testid="twin-list" className="mt-1 space-y-0.5">
+                  {props.twins.ids.map((id) => {
+                    const { idx, f } = nodeRow(id);
+                    return (
+                      <li key={id}>
+                        <button
+                          disabled={idx === undefined}
+                          onClick={() => idx !== undefined && props.onSelectMatch(idx)}
+                          className="w-full truncate rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent"
+                        >
+                          {f ? `${f.userName ?? f.nodeId} · ${f.project}` : id}
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {twinOverflow > 0 && (
+                    <li className="px-1 text-xs text-muted-foreground">
+                      +{twinOverflow.toLocaleString("en-US")} more
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {props.matches.length > 0 && (
+            <ul className="space-y-1.5">
+              {props.matches.map((m) => {
+                const { idx, f } = nodeRow(m.nodeId);
+                // No center snapshot -> no chips: numeric keys would render
+                // made-up center values otherwise (center is always set in practice).
+                const chips = props.center
+                  ? m.why
+                      .map((key) => resolveWhyKey(key, props.center!, f))
+                      .filter((c): c is NonNullable<typeof c> => c !== null)
+                  : [];
                 return (
-                  <li key={id}>
+                  <li key={m.nodeId}>
                     <button
                       disabled={idx === undefined}
                       onClick={() => idx !== undefined && props.onSelectMatch(idx)}
-                      className="w-full truncate rounded px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent"
+                      className="flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left hover:bg-accent"
                     >
-                      {f ? `${f.userName ?? f.nodeId} · ${f.project}` : id}
+                      <span className="truncate">
+                        {f ? `${f.userName ?? f.nodeId} · ${f.project}` : m.nodeId}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {(m.score * 100).toFixed(0)}%
+                      </span>
                     </button>
+                    {chips.length > 0 && (
+                      <div className="mt-0.5 flex flex-wrap gap-1 px-1">
+                        {chips.map((c) => (
+                          <span
+                            key={c.label}
+                            className="rounded bg-muted px-1 py-px text-[10px] leading-4 text-muted-foreground"
+                          >
+                            {c.label}
+                            {c.coverageDimId && props.coverageByDim.has(c.coverageDimId) && (
+                              <span className="opacity-70">
+                                {" "}
+                                · {props.coverageByDim.get(c.coverageDimId)}
+                              </span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 );
               })}
-              {twinOverflow > 0 && (
-                <li className="px-1 text-xs text-muted-foreground">
-                  +{twinOverflow.toLocaleString("en-US")} more
-                </li>
-              )}
             </ul>
           )}
-        </div>
-      )}
-
-      {props.matches.length > 0 && (
-        <>
-          <div className="mb-1 text-xs text-muted-foreground">Closest matches</div>
-          <ul className="space-y-1.5">
-            {props.matches.map((m) => {
-              const { idx, f } = nodeRow(m.nodeId);
-              // No center snapshot -> no chips: numeric keys would render
-              // made-up center values otherwise (center is always set in practice).
-              const chips = props.center
-                ? m.why
-                    .map((key) => resolveWhyKey(key, props.center!, f))
-                    .filter((c): c is NonNullable<typeof c> => c !== null)
-                : [];
-              return (
-                <li key={m.nodeId}>
-                  <button
-                    disabled={idx === undefined}
-                    onClick={() => idx !== undefined && props.onSelectMatch(idx)}
-                    className="flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left hover:bg-accent"
-                  >
-                    <span className="truncate">{f ? `${f.userName ?? f.nodeId} · ${f.project}` : m.nodeId}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {(m.score * 100).toFixed(0)}%
-                    </span>
-                  </button>
-                  {chips.length > 0 && (
-                    <div className="mt-0.5 flex flex-wrap gap-1 px-1">
-                      {chips.map((c) => (
-                        <span
-                          key={c.label}
-                          className="rounded bg-muted px-1 py-px text-[10px] leading-4 text-muted-foreground"
-                        >
-                          {c.label}
-                          {c.coverageDimId && props.coverageByDim.has(c.coverageDimId) && (
-                            <span className="opacity-70"> · {props.coverageByDim.get(c.coverageDimId)}</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          {props.matches.length === 0 && props.twins.count === 0 && (
+            <p data-testid="neighbor-matches-empty" className="text-xs text-muted-foreground">
+              No distinct matches are available for this node.
+            </p>
+          )}
         </>
       )}
-    </div>
+    </section>
   );
 }
