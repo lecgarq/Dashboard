@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-14T00:00:00.000Z",
+  "generatedAt": "2026-07-16T00:00:00.000Z",
   "policy": {
-    "notes": "dependency-cruiser errors and circular imports fail immediately. Existing warnings are visible but non-blocking while they are tracked down. Ratcheted down 2026-07-14 (23-04): 3 of the 6 prior warningEdges named scripts/diag-activity-{coordination,module-audit,types}.cjs, deleted 2026-07-10 in commit b95bf5c7 (off-roadmap cleanup); a 4th (diag-activity-service-xtab.cjs) is also gone from the live dependency-cruiser.json. Baseline now matches the live warning set exactly (2 edges, both build-instance-features.ts, pre-existing and unrelated to Phase 23)."
+    "notes": "dependency-cruiser errors and circular imports fail immediately. Existing warnings are visible but non-blocking while they are tracked down. Ratcheted down 2026-07-14 (23-04): 3 of the 6 prior warningEdges named scripts/diag-activity-{coordination,module-audit,types}.cjs, deleted 2026-07-10 in commit b95bf5c7 (off-roadmap cleanup); a 4th (diag-activity-service-xtab.cjs) is also gone from the live dependency-cruiser.json. Ratcheted UP 2026-07-16 (33-01 housekeeping): Phase 29 commit 31ecc672 added a third build-instance-features.ts edge (instanceFeatureNumerics.ts, same documented-deferred BND-03 group-2 family as the other two) without updating this baseline, so the gate failed on every run since. Baseline now matches the live warning set exactly (3 edges, all build-instance-features.ts)."
   },
   "errorCounts": [],
   "warningCounts": [
     {
       "id": "no-scripts-to-app",
-      "count": 2
+      "count": 3
     }
   ],
   "warningEdges": [
@@ -20,6 +20,11 @@
       "id": "no-scripts-to-app",
       "from": "scripts/build-instance-features.ts",
       "to": "app/(dashboard)/users/access-analysis/instanceFeatureTokens.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/build-instance-features.ts",
+      "to": "app/(dashboard)/users/access-analysis/instanceFeatureNumerics.ts"
     }
   ]
 }
