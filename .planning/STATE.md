@@ -1,13 +1,13 @@
 ---
 lecg_state_version: 2
-milestone: v2.4
-milestone_name: Spatial Graph Dimensions
-current_phase: 28.1
-current_phase_name: Spatial-Graph Regression Debug
-status: executing
-current_plan: "28.1-02"
-stopped_at: "Phase 28.1: 28.1-01 (PERF-03) ✅ COMPLETE + verified (commit 716ee966). Root cause: LassoOverlay pointer-listener effect deps on onComplete = fresh inline arrow every shell render (AccessAnalysisShell.tsx:457); any mid-drag re-render re-ran the effect, cleanup reset drawingRef/pathRef, onUp early-returned, selection never committed. LATENT (identical in baseline 33d6e58f; Phase 27 never touched the file) — Phase 27 post-freeze re-renders newly trigger it warm-cache. Fix: latest-ref pattern, effect keyed on [active] only. Proof: red-first unit test (RED→GREEN) + :3100 lasso e2e 3/3 GREEN (4795/4747/4747 of 22279) — the identical run that FAILED 3/3 in 28-02, spec unmodified. :3000 BUILD_ID kZKWbfeAqYW1R4bYrUx2U unchanged. REMAINING: 28.1-02 (PERF-04, +42% time-to-graph 8822 vs 6193.2ms) NOT STARTED — discovery-first plan written (28.1-02-PLAN.md): instrument boot boundaries (bulkUsers→snapshot→dims→targets→staticLayer→first render), build+measure ONCE on :3100 to localize, then fix, then re-measure N=5 ≤ ~6812ms gate. buildCatalogTargets/Weights already EXONERATED by source. Needs the :3100 build cycle — FRESH SESSION recommended (context deep). Next: /lecg-phase 28.1 (executes 28.1-02) or /lecg-resume-work."
-last_updated: "2026-07-15T17:35:00-06:00"
+milestone: none
+milestone_name: "(between milestones — v2.4 closed)"
+current_phase: null
+current_phase_name: null
+status: ready_to_plan
+current_plan: null
+stopped_at: "milestone v2.4 closed — next: /lecg-new-milestone. v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16: 18/18 requirements, phases 24-28 (+28.1 fractional), deployed BUILD_ID KeTX6mq25E1sa0vgA-Pnn. Retrospective in MILESTONES.md; archived to milestones/v2.4-{REQUIREMENTS,ROADMAP}.md; phase dirs 24-28.1 pruned (history in git + archive). Suggest /lecg-map-codebase before the next milestone (docs predate v2.4's aperture/catalog/layout work). DEFERRED ITEMS carried forward: (1) DIM-05 project-coverage denominator VERIFY (550/1,153 unverified — dimensionCoverage.ts); (2) APP-WIDE SSR-hydration miss still affects layout.tsx + users/page.tsx (CONCERNS §Ph28.1(1); candidate shared deserializeHydrationState helper); (3) dynamic() shell-chunk ~4s parse gap — code-split heavy imports out of AccessAnalysisShell (CONCERNS §Ph28.1(2)); (4) 3 pre-existing usePredicateEngine Phase-25 unit fails (not a regression); (5) Tier-3 graph dims ISSUE-GRAPH-01 (needs AccIssue.createdBy→AccDcUser resolution spike) + TIME-01 temporal scrubber → v2.5; (6) standing: COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01, MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20-23 still on disk)."
+last_updated: "2026-07-16T10:25:00-06:00"
 ---
 
 # Project State

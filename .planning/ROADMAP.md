@@ -8,7 +8,7 @@
 - ✅ **v2.1 Concerns Hardening** - Phases 09-14 (shipped 2026-07-01)
 - ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
-- 🚧 **v2.4 Spatial Graph Dimensions** - Phases 24-28 (in progress, opened 2026-07-14)
+- ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
 
 ---
 
@@ -444,7 +444,7 @@ Plans:
 
 ---
 
-## 🚧 v2.4 Spatial Graph Dimensions (Active — opened 2026-07-14)
+## ✅ v2.4 Spatial Graph Dimensions (Shipped — 2026-07-16, 18/18 requirements; retrospective in MILESTONES.md, archived to milestones/v2.4-*)
 
 **Milestone goal:** Make every access-analysis dimension selectable on the spatial graph
 (`/users/spatial-graph`, rendered by `AccessAnalysisShellClient` under
@@ -473,7 +473,7 @@ characterization tests (TEST-01/02/03) stay green throughout.
 - [x] **Phase 25: Dimension Aperture — Group, Color & Filter** - Group-by, Color-by, and the filter chip toolbar all draw from the full available-dimension set, each with an honest coverage label (completed 2026-07-15; deployed BUILD_ID Vl7pXM_h_j5j2UrFGYd5Z)
 - [x] **Phase 26: Catalog Slider Wall** - The 208-dim `CatalogSliderSidebar` renders in production decoupled from the dead 3D flag, lazy-loads, is searchable, and greys unavailable dimensions with a reason (completed 2026-07-15; deployed BUILD_ID `CwTEecFhqC9yUj_Vm7Koh`)
 - [x] **Phase 27: Layout Engine — Force-Anchor Revival & Reheat Guard** - Selecting a dimension restructures the graph organically via the previously-discarded force-anchor engine, with a reheat guard landing first as the safety net for the fragile cosmos.gl mechanism it reaches into (completed 2026-07-15; deployed BUILD_ID `kZKWbfeAqYW1R4bYrUx2U`)
-- [ ] **Phase 28: Performance Closeout & Verification** - DuckDB warm-up moves off the critical path, the lasso e2e test passes reliably (fixing the standing dev-server infra bug if it blocks the run), and first paint is re-measured against the Phase 24 baseline to prove no regression
+- [x] **Phase 28: Performance Closeout & Verification** - DuckDB warm-up moved off the critical path (PERF-01, 28-01); lasso e2e + first-paint regression found-then-fixed in Phase 28.1 (PERF-03/04). Completed 2026-07-16; deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`
 
 ## Phase Details
 
@@ -609,6 +609,43 @@ in this phase.
 
 ---
 
+### Phase 28.1: Spatial-Graph Regression Debug (inserted 2026-07-15, URGENT)
+
+**Why inserted:** Phase 28's verification found two **real regressions** on the shipping v2.4
+build (commit `20d72f49`, isolated build `iFln6u9mFo`) that block an honest milestone close.
+This fractional phase debugs and fixes them, then re-runs the identical PERF-03/PERF-04 gates.
+PERF-01 already shipped green in Phase 28 (28-01). Evidence: `28-02-SUMMARY.md`,
+`28.1-CONTEXT.md`.
+
+**Goal**: The +42% first-paint regression and the default-lasso selection-commit race are
+root-caused at the narrowest shared boundary and fixed in the product path (not masked in the
+test), and both PERF gates re-run green against the Phase-24 baseline.
+**Depends on**: Phase 28 (owns the failing measurements this phase must resolve).
+**Requirements**: PERF-03, PERF-04 (re-verification; both remain unchecked until this closes).
+**Success Criteria** (what must be TRUE):
+
+  1. **PERF-04**: `scripts/measure-spatial-graph-baseline.cjs` (N=5, GRAPH_TEST=1 frozen path,
+     `:3100`, cosmos 3.3.0) re-runs with median time-to-graph-rendered ≤ ~6812 ms (baseline
+     6193.2 ms + 10%) — the ~2.6 s regression from Phases 25–27 is found and removed, OR an
+     owner-accepted, documented reason why the widened surface's cost is irreducible.
+  2. **PERF-03**: `tests/e2e/acc-dc-graph.spec.ts:537` passes green **3/3 warm-cache** under
+     `playwright.verify.config.ts` on `:3100`, fixed at the product selection-commit path —
+     the 15 s `getSelectedNodeIds()` gate at line 603 resolves. No timeout raise, no
+     freeze/lasso/physics masking.
+  3. `npx tsc --noEmit` + `npm test` green; TEST-01/02/03 byte-identical; any physics/layout
+     change re-runs `node scripts/repo-map/check.cjs`.
+  4. Live `:3000` `.next/BUILD_ID` verified unchanged around any isolated `:3100` rebuild.
+
+**Approach**: `superpowers:systematic-debugging` (lecg-workflow-conventions §Process-skill
+ownership) — start from the two captured diagnoses in `28-02-SUMMARY.md`; bisect the frozen-path
+load cost across Phases 25/26/27 for PERF-04; trace the post-`mouse.up` selection-commit path
+(GraphCanvas2D / lasso / clusterTransitionLayer / static-layer refit) for PERF-03. Fix the root
+cause once at the narrowest shared boundary.
+
+**Plans**: TBD
+
+---
+
 ## Progress
 
 **Execution Order (v2.1):** 09 → 10 → 11 → 12 → 13 → 14
@@ -640,7 +677,8 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 25. Dimension Aperture — Group, Color & Filter | 3/3 | Complete | 2026-07-15 |
 | 26. Catalog Slider Wall | 2/2 | Complete | 2026-07-15 |
 | 27. Layout Engine — Force-Anchor Revival & Reheat Guard | 3/3 | Complete | 2026-07-15 |
-| 28. Performance Closeout & Verification | 0/TBD | Not started | - |
+| 28. Performance Closeout & Verification | 3/3 | Complete — PERF-01 ✅; PERF-03/04 fixed in Phase 28.1 | 2026-07-16 |
+| 28.1. Spatial-Graph Regression Debug (inserted) | 2/2 | Complete — PERF-03 lasso commit race (716ee966) + PERF-04 SSR-hydration miss (median 4360 ms ≤ 6812) | 2026-07-16 |
 
 ---
 

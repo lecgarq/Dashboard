@@ -1,5 +1,57 @@
 # Milestones — LECG Dashboard
 
+## v2.4 Spatial Graph Dimensions (Shipped: 2026-07-16)
+
+**Phases:** 5 (24–28) + 1 fractional (28.1) · **Requirements:** 18/18 shipped · **Commits:** 74 (2026-07-14 → 2026-07-16; 12 feat, 6 fix, 2 refactor, 49 docs, 5 chore) · **Tag:** _local-only_
+
+**Goal vs outcome:** Make every access-analysis dimension selectable on the spatial graph and make selecting one actually *restructure* the graph — by unlocking dimension machinery already built, computed every page load, and discarded. **Achieved with zero new data source, Prisma table, loader, or npm dependency** — the milestone was an unlock, not a build. The two hardcoded 3-string apertures became a unified, coverage-honest, ~17-dim group/color/filter surface; the 208-dim catalog wall renders lazily and searchably; the dead force-anchor engine drives organic layout; and the closeout exonerated the widened surface for a first-paint regression that turned out to be a pre-existing SSR-hydration bug.
+
+**Per-requirement audit:**
+
+| Req | Verdict | Phase | Evidence |
+|---|---|---|---|
+| DIM-01 group by any node dim | ✅ shipped | 25 | `APERTURE_THEME_GROUPS`→17-id presets, themed `GroupByControls` (`662dc0da`,`917a98c9`) |
+| DIM-02 color by any node dim | ✅ shipped | 25 | Toolbar Color-by over same aperture; banded categorical swatches (`917a98c9`) |
+| DIM-03 unified id-space | ✅ shipped | 24 | 24-VERIFICATION 8/8 |
+| DIM-04 filter by any dim | ✅ shipped | 25 | Add-a-chip Toolbar, aperture-keyed `FilterContext`, `DIMENSIONS` import removed (`7ae2f29a`) |
+| DIM-05 honest coverage labels | ✅ shipped (deviation) | 25 | `dimensionCoverage.ts` node-derived covered/total + provenance chip. **Deviation:** node-derived denominator, NOT 550/1,153 project denominator (never verified → would be a made-up number; `VERIFY:` note stands) |
+| DIM-06 stale registry doc fixed | ✅ shipped | 24 | 24-VERIFICATION |
+| CAT-01 catalog wall renders in prod | ✅ shipped | 26 | Grouping/Catalog tabs, 3D-flag decoupled (`d54ace25`) |
+| CAT-02 176-action lazy-load | ✅ shipped | 26 | 26-VERIFICATION; CONCERNS §3.3 closed |
+| CAT-03 searchable catalog | ✅ shipped | 26 | 26-VERIFICATION |
+| CAT-04 unavailable dims greyed w/ reason | ✅ shipped | 26 | 26-VERIFICATION |
+| LAY-01 dimension restructures organically | ✅ shipped | 27 | 27-VERIFICATION |
+| LAY-02 catalogTargets/Weights live | ✅ shipped | 27 | dead compute→live render path |
+| LAY-03 sliders morph continuously | ✅ shipped | 27 | 27-VERIFICATION |
+| LAY-04 never a fixed grid | ✅ shipped | 27 | 27-VERIFICATION |
+| PERF-01 DuckDB warm-up off critical path | ✅ shipped | 28 | idle-guard `useHybridAnalytics.ts` + live path already JS-snapshot (28-01); CONCERNS §3.1 closed |
+| PERF-02 no accidental reheat | ✅ shipped | 27 | frozen-handle invariant `GraphCanvas.test.ts`; CONCERNS §3.2 closed |
+| PERF-03 lasso e2e reliable | ✅ shipped | 28.1 | LassoOverlay latest-ref (`716ee966`); e2e 3/3 warm-cache GREEN |
+| PERF-04 no first-paint regression | ✅ shipped | 28.1 | SSR-hydration fix `spatial-graph/page.tsx` (`9fb54cb8`); median 4360 ms ≤ 6812 gate, −30% vs baseline |
+
+**Phases shipped:** 24 Baseline & Dimension ID Unification (2026-07-14) · 25 Dimension Aperture (2026-07-15, BUILD_ID `Vl7pXM_h_j5j2UrFGYd5Z`) · 26 Catalog Slider Wall (2026-07-15, `CwTEecFhqC9yUj_Vm7Koh`) · 27 Layout Engine — Force-Anchor Revival & Reheat Guard (2026-07-15, `kZKWbfeAqYW1R4bYrUx2U`) · 28 Performance Closeout — PERF-01 shipped, PERF-03/04 found-regressed → 28.1 · 28.1 Spatial-Graph Regression Debug (2026-07-16, deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`).
+
+**Durable traps & decisions (carry forward):**
+
+1. **Name collision** — `app/(dashboard)/access-analysis/` = 23-panel charts page; `app/(dashboard)/users/access-analysis/` = spatial-graph shell. `/users/spatial-graph` and `/users/access-analysis` render the same UI. This milestone touched the `users/` one.
+2. **The "+42% regression" was NOT the widened surface.** Boot instrumentation: whole build/render path = 317 ms (`buildCatalogTargets`/`Weights` = 86 ms). Root cause was a pre-existing **SSR-hydration miss**: `createServerSideHelpers({transformer:superjson}).dehydrate()` returns a superjson-WRAPPED `{json,meta}` state, but the App Router passed it raw to `<HydrationBoundary>` (which needs a bare `DehydratedState`) → hydrated nothing → the client refetched the multi-MB `bulkUsers` on the critical path. Fix = `superjson.deserialize` before the boundary. **This same bug still affects `layout.tsx` + `users/page.tsx` app-wide** (CONCERNS §Ph28.1).
+3. **PERF-03 lasso race was latent since the Phase-24 baseline**, not authored by Phase 27 — `LassoOverlay`'s pointer effect depended on an inline `onComplete`; Phase 27's post-freeze re-renders newly *triggered* it warm-cache. Fixed with a latest-ref pattern.
+4. **cosmos.gl 3.3.0** upgrade (uncommitted at milestone open) was owner-confirmed and rode through all phases; frozen-handle invariant held.
+5. Sequencing that held: DIM-03 before DIM-01/02; CAT-01 before CAT-02/03/04; PERF-02 landed inside Phase 27 (not a separate phase) as the safety net for LAY-01/02.
+
+**Deferred items (destinations):**
+
+- **DIM-05 project-coverage denominator** — verify whether 550/1,153 is the correct DC-sourced denominator before ever displaying it (→ v2.5 or a data-truth spike). `VERIFY:` in `dimensionCoverage.ts`.
+- **App-wide SSR-hydration miss** — `layout.tsx` + `users/page.tsx` prefetches still refetch; candidate shared `deserializeHydrationState(helpers)` helper (→ CONCERNS §Ph28.1(1)).
+- **`dynamic()` shell-chunk ~4 s parse gap** — remaining time-to-graph cost after the hydration fix; code-split heavy static imports out of the shell chunk (→ CONCERNS §Ph28.1(2)).
+- **3 pre-existing `usePredicateEngine` Phase-25 unit failures** — banded-catalog aperture tests; not a regression (proven by stash-and-rerun); pre-existing WIP.
+- **Tier-3 graph dims** (ISSUE-GRAPH-01 needs `AccIssue.createdBy`→`AccDcUser` resolution spike; TIME-01 temporal scrubber) → v2.5.
+- **COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01, MILESTONES v2.1/v2.2 backfill** → standing.
+
+**Archive:** [`milestones/v2.4-ROADMAP.md`](milestones/v2.4-ROADMAP.md) · [`milestones/v2.4-REQUIREMENTS.md`](milestones/v2.4-REQUIREMENTS.md)
+
+---
+
 ## v2.3 New Graphs (Shipped: 2026-07-14)
 
 **Phases completed:** 6 phases, 28 plans, 62 tasks
