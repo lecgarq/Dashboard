@@ -6,8 +6,8 @@ current_phase: 31
 current_phase_name: "Click & Hover Choreography"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 30 SHIPPED 2026-07-16 (4/4 plans, 30-VERIFICATION.md, deployed BUILD_ID SkA5J8kUu0LgER4NcyiJr, live run 20260716T182623Z-e6fab986). Phase 31 has no CONTEXT yet. Next: /lecg-discuss-phase 31."
-last_updated: "2026-07-16T19:30:00-06:00"
+stopped_at: "Phase 31 CONTEXT captured 2026-07-16: moderate native camera focus + exact view restore, selected-plus-matches-only lighting, one matches-first profile rail, and hover-above-selection locked. Next: /lecg-phase 31."
+last_updated: "2026-07-16T12:51:17-06:00"
 ---
 
 # Project State
@@ -27,8 +27,9 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 31 — Click & Hover Choreography — **needs CONTEXT**
-  (`/lecg-discuss-phase 31`; no `.planning/phases/31-*/` directory yet).
+- **Phase:** 31 — Click & Hover Choreography — **ready to plan**
+  (`.planning/phases/31-click-hover-choreography/31-CONTEXT.md`; next
+  `/lecg-phase 31`).
 - **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
   BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
   payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
@@ -43,7 +44,12 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   **Phase 31 planners note:** panel is content-complete and chrome-modest by
   design — LIFE-04's animated reveal wraps it without content rework; neighbor
   lighting should light `matches` only (twins are position clumps, not lit).
-- **Next:** `/lecg-discuss-phase 31`.
+- **Phase 31 CONTEXT LOCKED 2026-07-16:** native Cosmos focus at ~2.25× / 180ms
+  with exact pre-focus view restore; focus set is selected + ten distinct matches
+  only (no twins or same-user footprint); floating matches card becomes one
+  matches-first profile rail; hover incident edges temporarily render above the
+  persistent click selection and an ~80ms tier/recency/breadth tooltip.
+- **Next:** `/lecg-phase 31`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -227,11 +233,8 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Run `/lecg-phase 30`** (Similarity Intelligence — SIM-01..03). Context is locked in
-`30-CONTEXT.md`: exact-vector twin collapse (count + capped ~10-id expandable list in the
-neighbors Json), hybrid why-similar (python computes exact top contributing dimension keys
-from the real hybrid vector; client resolves labels/values/coverage from snapshots it
-already holds), similarity web rebuilt from de-twinned match lists only (twin edges gone;
-`interReserveFrac`/budget re-tuned with measured post-collapse score distributions).
-Shape-change trap: `neighbors` goes bare-array → structured payload — pipeline, proc, and
-panel ship together and the proc must normalize old-shape rows.
+**Run `/lecg-phase 31`** (Click & Hover Choreography — LIFE-01/02/04).
+`31-CONTEXT.md` locks the four owner choices: moderate native camera focus with exact
+view restore; selected + distinct matches only; one matches-first profile rail; and
+hover edges/tooltip temporarily above the persistent click selection. Phase 32 still
+owns ambient motion and the general strength/width/morph link redesign.
