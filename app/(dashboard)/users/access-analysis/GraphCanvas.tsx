@@ -30,6 +30,7 @@ import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
 import { createClusterTransitionLayer, type ClusterTransitionLayer } from "./clusterTransitionLayer";
 import { resolveLodMode } from "./lodState";
 import { is3dGraphEnabled } from "./graphModeFlag";
+import type { AmbientMotionLayer } from "./ambientMotion";
 
 // ---------------------------------------------------------------------------
 // Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
@@ -106,6 +107,12 @@ export interface GraphCanvasProps {
   aggregateColors?: Float32Array;
   /** LOD: aggregate point sizes, length = clusterCount. */
   aggregateSizes?: Float32Array;
+  /** Optional frozen-projector ambient compositor; receives only aligned buffers. */
+  ambientLayer?: AmbientMotionLayer;
+  /** One byte per node; 1 freezes selected/matched/hovered foreground nodes. */
+  ambientFreezeMask?: Uint8Array;
+  /** Softens non-frozen background offsets while a click focus is active. */
+  ambientFocusActive?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,15 +170,30 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+  const documentHiddenRef = useRef(
+    typeof document !== "undefined" && document.hidden,
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = (): void => { reducedMotionRef.current = media.matches; };
+    const update = (): void => {
+      reducedMotionRef.current = media.matches;
+      props.ambientLayer?.resetSampling(performance.now());
+    };
     update();
     media.addEventListener?.("change", update);
     return () => media.removeEventListener?.("change", update);
-  }, []);
+  }, [props.ambientLayer]);
+
+  useEffect(() => {
+    const update = (): void => {
+      documentHiddenRef.current = document.hidden;
+      props.ambientLayer?.resetSampling(performance.now());
+    };
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, [props.ambientLayer]);
 
   // Handle refs for each renderer
   const handle2D = useRef<GraphCanvas2DHandle | null>(null);
@@ -215,7 +237,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // SliderContext) and props.physics — NOT on the full sliders
   // context value (which changes identity on every slider move and would
   // cause the cleanup to fire syncPositions mid-drag).
-  const { subscribePreviewActive } = sliders;
+  const { subscribePreviewActive, isPreviewActive } = sliders;
   useEffect(() => {
     if (!ENABLE_PREVIEW_INTERPOLATION || gpu2d) return;
     const unsub = subscribePreviewActive((active) => {
@@ -265,19 +287,43 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     const layer = clusterLayerRef.current;
     if (!layer || !props.layoutTarget) return null;
     const target = props.layoutTarget();
-    if (reducedMotionRef.current) return target;
+    const now = performance.now();
+    if (reducedMotionRef.current || documentHiddenRef.current) {
+      return props.ambientLayer?.frame({
+        anchors: target,
+        nowMs: now,
+        paused: isPreviewActive(),
+        reducedMotion: true,
+        freezeMask: props.ambientFreezeMask,
+        focusActive: props.ambientFocusActive,
+      }) ?? target;
+    }
     try {
       layer.setTarget(target);
     } catch {
       // node count changed mid-flight (layer not yet re-created) — hold last frame
       return layer.snapshot();
     }
-    const now = performance.now();
     const dt = clusterLastTsRef.current ? now - clusterLastTsRef.current : 16;
     clusterLastTsRef.current = now;
-    layer.step(dt);
-    return layer.snapshot();
-  }, [props.layoutTarget, props.mode]);
+    const settled = layer.step(dt);
+    const anchors = layer.snapshot();
+    return props.ambientLayer?.frame({
+      anchors,
+      nowMs: now,
+      paused: isPreviewActive() || !settled,
+      reducedMotion: false,
+      freezeMask: props.ambientFreezeMask,
+      focusActive: props.ambientFocusActive,
+    }) ?? anchors;
+  }, [
+    isPreviewActive,
+    props.ambientFocusActive,
+    props.ambientFreezeMask,
+    props.ambientLayer,
+    props.layoutTarget,
+    props.mode,
+  ]);
 
   // (Re)create the layer when node count changes; seed from current visible positions.
   useEffect(() => {
@@ -348,7 +394,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
       // Desired set: aggregate while dragging (when capable), else full. Settled = full so
       // interactions hit real nodes (see lodState — zoom-out aggregation is deferred).
       const desired: "full" | "aggregate" =
-        lodCapable && resolveLodMode({ dragging: sliders.isPreviewActive() }) === "aggregate"
+        lodCapable && resolveLodMode({ dragging: isPreviewActive() }) === "aggregate"
           ? "aggregate"
           : "full";
 

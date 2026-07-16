@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useGraphRafLoop } from "./useGraphRafLoop";
 import type { PhysicsLayer } from "./physicsLayer";
+import type { AmbientMotionLayer } from "./ambientMotion";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -467,7 +468,7 @@ describe("GraphCanvas.tsx + GraphCanvas2D.tsx — REND-04 source purity", () => 
       expect(line, "GraphCanvas.tsx has unexpected import: " + line).toMatch(
         // lodState is a PURE renderer-control resolver (no math/data/dimension layer) — the
         // LOD mode decision (aggregate vs full) belongs with the renderer, like the loop hook.
-        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|clusterTransitionLayer|gpuLayout2D|lodState|graphModeFlag/i
+        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|clusterTransitionLayer|ambientMotion|gpuLayout2D|lodState|graphModeFlag/i
       );
     }
   });
@@ -909,6 +910,7 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
   async function mountPacked(
     gpuSimulation: boolean,
     reducedMotion = false,
+    ambientLayer?: AmbientMotionLayer,
   ): Promise<{ cleanup: () => void; packed: Float32Array }> {
     const { GraphCanvas } = await import("./GraphCanvas");
     const { SliderProvider } = await import("./SliderContext");
@@ -956,6 +958,7 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
               // A static layout target stands in for the old packed positions: the
               // renderer eases toward it with the GPU sim paused (same contract).
               layoutTarget: () => packed,
+              ambientLayer,
             }),
           },
         ),
@@ -996,6 +999,21 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
     expect(Array.from(pushed ?? [])).toEqual([
       packed[0], packed[1], packed[3], packed[4], packed[6], packed[7],
     ]);
+    cleanup();
+  });
+
+  it("composes ambient output through the existing override push without reheating", async () => {
+    const frame = vi.fn(({ anchors }: { anchors: Float32Array }) => anchors);
+    const ambientLayer = {
+      frame,
+      resetSampling: vi.fn(),
+      getStats: () => ({ tier: 0 as const, nodeCount: 3, animatedNodeCount: 3, lastWindowFps: 60, positionVersion: 1 }),
+      exerciseControllerForTest: () => ({ sequence: [0, 1, 2, 1] as const, recoveredTier: 1 as const }),
+    } as AmbientMotionLayer;
+    const { cleanup } = await mountPacked(false, false, ambientLayer);
+    expect(frame).toHaveBeenCalledTimes(1);
+    expect(_setPointPositionsCalls.some((call) => call.dontRescale)).toBe(true);
+    expect(_startCalls).toEqual([]);
     cleanup();
   });
 });

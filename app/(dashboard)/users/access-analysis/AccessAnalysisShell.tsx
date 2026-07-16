@@ -78,6 +78,7 @@ import { buildGraphNodesFromUsers } from "./graphNodesFromUsers";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
 import { ensurePositionsSchema } from "./positionsCache";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import { createAmbientMotionLayer } from "./ambientMotion";
 
 // Single-flip rollback for the similarity web. OFF (=0) → overlay never mounts and
 // the query never fires. Flag-OFF projector map only (the 3D physics graph keeps its
@@ -322,6 +323,16 @@ export function ShellBody({
   }, [features, colorDim, colorOverride, autoColorMode, blobDesc, grouping.showLabels]);
   const nodeColors = bucketed.colors;
   const nodeSizes = useMemo<Float32Array>(() => buildNodeSizes(features), [features]);
+  const ambientLayer = useMemo(
+    () =>
+      ACC_3D_GRAPH_ENABLED
+        ? undefined
+        : createAmbientMotionLayer({
+            nodeIds: features.map((feature) => feature.nodeId),
+            recency: features.map((feature) => feature.activityRecencyBucket),
+          }),
+    [features],
+  );
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
     installGraphTestBridge();
@@ -336,12 +347,13 @@ export function ShellBody({
       isolated: isolatedNodeIndex,
       colorMode,
       nodeColors,
+      ambientLayer: ambientLayer ?? null,
       // Projector grouping so an e2e can verify each name chip rides its cluster's
       // live on-screen centroid (only set when actively grouping with labels shown).
       projectorIds: grouping.showLabels && blobDesc ? blobDesc.clustering.ids : null,
       projectorLabels: grouping.showLabels && blobDesc ? blobDesc.clustering.labels : null,
     });
-  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors, grouping.showLabels, blobDesc]);
+  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors, ambientLayer, grouping.showLabels, blobDesc]);
 
   // Banded aperture labels for the filter (Phase 25 DIM-04): one resolver per
   // aperture dim, shared by the mask predicate, the visible-subset rule, and
@@ -413,6 +425,13 @@ export function ShellBody({
       }),
     [neighborsQuery.data, indexByNodeId],
   );
+  const ambientFreezeMask = useMemo(() => {
+    const mask = new Uint8Array(features.length);
+    if (hoveredNodeIndex !== null) mask[hoveredNodeIndex] = 1;
+    if (isolatedNodeIndex !== null) mask[isolatedNodeIndex] = 1;
+    for (const match of selectedMatches) mask[match.index] = 1;
+    return mask;
+  }, [features.length, hoveredNodeIndex, isolatedNodeIndex, selectedMatches]);
 
   // Same-user edges are a physics-graph (flag-ON) affordance only. On the flag-OFF
   // embedding map we render NO edges: edges/links/baseLinkColors stay EMPTY so
@@ -443,6 +462,9 @@ export function ShellBody({
   useEffect(() => {
     setEdgeTestState({ derive: edgeData, nodeCount: features.length });
   }, [edgeData, features.length]);
+  useEffect(() => {
+    setShellTestState({ similarityEdgeCount: simWeb.src.length });
+  }, [simWeb.src.length]);
 
   return (
     // min-h-0 + overflow-hidden so the graph row fills the viewport instead of
@@ -508,6 +530,9 @@ export function ShellBody({
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
+              ambientLayer={ambientLayer}
+              ambientFreezeMask={ambientFreezeMask}
+              ambientFocusActive={isolatedNodeIndex !== null}
             />
           </GraphInteractions>
           <Legend entries={bucketed.legend} />

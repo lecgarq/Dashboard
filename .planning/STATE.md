@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 32
 current_phase_name: "Ambient Life & Link Expression"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 32 planned as 32-01 ambient/FPS and 32-02 link expression. Run $lecg-phase 32 to execute 32-01."
-last_updated: "2026-07-16T16:40:28-06:00"
+status: executing
+current_plan: "32-02"
+stopped_at: "32-01 complete with 22,279 nodes at 60.04fps Tier 0. Execute 32-02 strength-banded, visible-during-morph links."
+last_updated: "2026-07-16T16:57:50-06:00"
 ---
 
 # Project State
@@ -33,6 +33,11 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   foreground freeze, morph pause/resume, the three-tier FPS controller, and full-data
   bridge evidence; `32-02` adds three strength bands and the visible 25%-floor morphing
   similarity web. Both stay on the frozen flag-OFF rAF/Canvas2D path.
+- **Phase 32-01 COMPLETE 2026-07-16:** deterministic recency micro-orbits, focus
+  freeze, 180ms post-morph resume, three-tier FPS safety controller, and flag-gated
+  production evidence shipped. Isolated full-data gate: 22,279 nodes / 14,200 mapped
+  links / 60.04fps for 10.010s / Tier 0 / 22,279 animated; Playwright 3/3 and focused
+  Vitest 33/33 passed. Next: execute `32-02`.
 - **Phase 32 CONTEXT LOCKED 2026-07-16:** deterministic anchor-relative
   recency micro-orbits with semantic node sizes unchanged; hover and
   selected+ten-match foreground freeze over softer background life; ambient

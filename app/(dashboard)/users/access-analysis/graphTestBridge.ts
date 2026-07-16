@@ -25,6 +25,7 @@ import type { DeriveResult } from "./sameUserEdges";
 import { computeAxisRanges, computeClusteringRatio } from "./layoutStats";
 import { categoryValue, type TargetDimensionId } from "./featureTargets";
 import { gridCells, pickDensestCell } from "./lassoProbe";
+import type { AmbientMotionLayer, AmbientStats, AmbientTier } from "./ambientMotion";
 
 function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
@@ -47,6 +48,8 @@ interface ShellState {
    *  test can verify each name chip sits on its cluster's LIVE on-screen centroid. */
   projectorIds: Int32Array | null;
   projectorLabels: ReadonlyArray<string> | null;
+  ambientLayer: AmbientMotionLayer | null;
+  similarityEdgeCount: number;
 }
 
 interface InteractionState {
@@ -67,6 +70,8 @@ const shell: ShellState = {
   nodeColors: null,
   projectorIds: null,
   projectorLabels: null,
+  ambientLayer: null,
+  similarityEdgeCount: 0,
 };
 
 const interaction: InteractionState = {
@@ -114,8 +119,10 @@ function nodeScreenPosition(nodeId: string): { x: number; y: number } | null {
   if (i < 0 || !shell.physics) return null;
   const root = shell.graphRef?.current;
   if (!root || root.mode !== "2d" || !root.handle) return null;
-  const p = shell.physics.getPositions();
-  const sp = root.handle.spaceToScreen([p[i * 3], p[i * 3 + 1]]);
+  const rendered = root.handle.getPointPositions?.();
+  const p = rendered ?? shell.physics.getPositions();
+  const stride = rendered ? 2 : 3;
+  const sp = root.handle.spaceToScreen([p[i * stride], p[i * stride + 1]]);
   if (!Number.isFinite(sp[0]) || !Number.isFinite(sp[1])) return null;
   return { x: sp[0], y: sp[1] };
 }
@@ -259,6 +266,8 @@ interface GraphTestApi {
   getMode(): "2d" | "3d";
   getRenderedNodeCount(): number;
   getFeatureCount(): number;
+  getAmbientStats(): (AmbientStats & { edgeCount: number }) | null;
+  exerciseAmbientController(): { sequence: AmbientTier[]; recoveredTier: AmbientTier } | null;
   getPositionsStats(): {
     count: number;
     anyNaN: boolean;
@@ -368,6 +377,13 @@ function buildApi(): GraphTestApi {
     },
     getFeatureCount() {
       return shell.features.length;
+    },
+    getAmbientStats() {
+      const layer = shell.ambientLayer;
+      return layer ? { ...layer.getStats(), edgeCount: shell.similarityEdgeCount } : null;
+    },
+    exerciseAmbientController() {
+      return shell.ambientLayer?.exerciseControllerForTest() ?? null;
     },
     getPositionsStats() {
       const out = {
