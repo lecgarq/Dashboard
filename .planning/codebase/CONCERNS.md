@@ -598,3 +598,16 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
 - **[Ph30] Panel "100%" scores for near-identical distinct profiles.** Cosine
   0.99995+ renders as 100% next to genuinely distinct matches; if workshop UAT
   reads it as "clone", show one more decimal in Phase 31's panel polish.
+
+## Phase 32 debt roll-forward (2026-07-16 — Ambient Life & Link Expression)
+
+- **[Ph32→Ph33] Full moving Canvas web exhausts the workshop frame budget.**
+  Before live-link position tracking, the 22,279-node ambient layer sustained
+  60.04 fps in Tier 0. On the final shipped path, redrawing 14,200 curved links
+  at ~30 Hz while those nodes move measured 20.68 fps over 10.009 seconds and
+  the required controller visibly degraded Tier 0→1→2 (static). This is safe and
+  satisfies LIFE-03's explicit degradation clause, but means full ambient life is
+  not sustained with live links on the workshop machine. Phase 33 should profile
+  the Canvas projection/stroke cost alongside its chunk closeout before changing
+  update cadence, edge density, or renderer architecture; do not quote the
+  pre-link 60.04 fps as final shipped performance.

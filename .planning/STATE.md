@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.5
 milestone_name: "Living Graph"
-current_phase: 32
-current_phase_name: "Ambient Life & Link Expression"
-status: executing
-current_plan: "32-02"
-stopped_at: "32-02 complete. Final full path measured 22,279 nodes / 14,200 links / 20.68fps and visibly degraded Tier 0→1→2; phase verification and deploy pending."
-last_updated: "2026-07-16T17:09:53-06:00"
+current_phase: 33
+current_phase_name: "Perf Closeout & Verification"
+status: ready_for_discussion
+current_plan: null
+stopped_at: "Phase 32 verified + deployed (BUILD_ID wiAv-e6WVMCVkPo2ie-5N). Next: $lecg-discuss-phase 33."
+last_updated: "2026-07-16T17:16:10-06:00"
 ---
 
 # Project State
@@ -27,8 +27,15 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 32 — Ambient Life & Link Expression — **planned**
-  (`32-01` ambient/FPS then `32-02` link expression; next command `$lecg-phase 32`).
+- **Phase:** 33 — Perf Closeout & Verification — **ready for discussion**
+  (PERF-05 shared hydration boundary + PERF-06 shell chunk split/re-measure;
+  next command `$lecg-discuss-phase 33`).
+- **Phase 32 SHIPPED 2026-07-16** (`32-VERIFICATION.md`, deployed BUILD_ID
+  `wiAv-e6WVMCVkPo2ie-5N`): deterministic recency micro-orbits, focus freeze,
+  180ms morph resume, three-tier safety controller, weak/medium/strong link
+  expression, and a visible 25%-floor morph web. Final 22,279-node/14,200-link
+  sample measured 20.68fps and visibly degraded Tier 0→1→2 as required;
+  isolated browser 4/4 and live authenticated route smoke 1/1 passed.
 - **Phase 32 PLANNED 2026-07-16:** `32-01` adds deterministic recency micro-orbits,
   foreground freeze, morph pause/resume, the three-tier FPS controller, and full-data
   bridge evidence; `32-02` adds three strength bands and the visible 25%-floor morphing
@@ -89,7 +96,7 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   right rail. Honest loading/empty/error states; one concurrent 180ms rail
   transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
   impeccable zero findings.
-- **Next:** `/lecg-phase 32`.
+- **Next:** `/lecg-discuss-phase 33`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -274,5 +281,5 @@ Prior-milestone decisions live in `PROJECT.md` and `MILESTONES.md`.
 
 ## Next Action
 
-**Run `/lecg-phase 32`.** Plan and execute the locked anchor-relative ambient layer,
-three-tier FPS controller, and banded similarity-link morph expression.
+**Run `/lecg-discuss-phase 33`.** Lock the shared hydration-boundary repair, shell
+chunk split, and final time-to-graph measurement method before planning.

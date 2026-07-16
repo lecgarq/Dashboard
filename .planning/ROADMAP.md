@@ -827,7 +827,7 @@ motion rides the CPU/rAF static-layer path, never the GPU simulation. `prefers-r
 - [x] **Phase 29: Embedding v2 — Feature Fidelity & PaCMAP** - Node positions derive from the full snapshot dimension set with magnitude-aware distances, projected by PaCMAP (owner amendment 2026-07-16, was UMAP), quality-gated against the old embedding, and live on the graph — VERIFIED 2026-07-16 (run 20260716T173543Z-345c0e14; dup-rate 84.3%→20.4%, trustworthiness 0.9388→0.9597)
 - [x] **Phase 30: Similarity Intelligence** - Neighbors recomputed on the enriched vector, twin-saturation fixed, and every match explains why it is similar — VERIFIED + DEPLOYED 2026-07-16 (run 20260716T182623Z-e6fab986; BUILD_ID SkA5J8kUu0LgER4NcyiJr; twin groups max 313/p95 2; edge reserve kept 0.4 with recorded evidence)
 - [x] **Phase 31: Click & Hover Choreography** - Clicking a node becomes a choreographed focus (camera ease, neighbor lighting, enriched animated panel); hover gains edge emphasis and a headline-dimension tooltip — VERIFIED + DEPLOYED 2026-07-16 (BUILD_ID YTIBgQ4sRBXlonyphxjTq; isolated Phase-31 browser 2/2; live authenticated route smoke 1/1)
-- [ ] **Phase 32: Ambient Life & Link Expression** - Every node carries recency-modulated organic life at rest behind a hard ≥50fps gate with a designed degradation rule; similarity links get intentional strength/hover/morph rendering
+- [x] **Phase 32: Ambient Life & Link Expression** - Every node carries recency-modulated organic life at rest behind a hard ≥50fps gate with a designed degradation rule; similarity links get intentional strength/hover/morph rendering — VERIFIED + DEPLOYED 2026-07-16 (BUILD_ID wiAv-e6WVMCVkPo2ie-5N; final 22,279-node/14,200-link gate 20.68fps, visibly degraded Tier 0→1→2; isolated browser 4/4; live authenticated route smoke 1/1)
 - [ ] **Phase 33: Perf Closeout & Verification** - SSR-hydration fixed at the shared boundary for all three call sites; shell chunk code-split; time-to-graph re-measured vs the 28.1 median
 
 ## Phase Details
@@ -924,6 +924,15 @@ fight it; edge emphasis layers on the upgraded link rendering path).
      not a fade-to-nothing (LIFE-05).
 
 **UI hint**: yes.
+
+**Plans:** 2/2 complete
+
+- [x] `32-01-PLAN.md` — deterministic recency micro-orbits, focus freeze,
+  morph pause/resume, three-tier FPS controller, reduced-motion static path,
+  and full-data test bridge — COMPLETE 2026-07-16 (`6cd7b68c`).
+- [x] `32-02-PLAN.md` — real-score link bands, palette+band batching,
+  selected/hover priority, 25%-floor morph expression, production browser gate,
+  and deployment — COMPLETE 2026-07-16 (`3a48274a`).
 
 ### Phase 33: Perf Closeout & Verification
 

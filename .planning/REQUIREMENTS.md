@@ -168,7 +168,7 @@ motion rides the existing CPU/rAF `pushPositions` path).
       upgrades the tooltip (`NodeTooltip`) with the node's headline dimensions (tier,
       recency, breadth) beyond the current identity fields.
 
-- [ ] **LIFE-03**: **Full ambient motion** (owner-chosen) — every node carries subtle organic
+- [x] **LIFE-03**: **Full ambient motion** (owner-chosen) — every node carries subtle organic
       life at rest (drift/breathing modulated by activity recency: recently-active nodes
       visibly alive, dormant nodes stiller), driven through the existing rAF static-layer
       path. **Hard perf gate:** sustained frame rate ≥ 50 fps on the workshop machine at the
@@ -181,7 +181,7 @@ motion rides the existing CPU/rAF `pushPositions` path).
       (entrance/exit within the motion budget), keeping the existing
       user-detail > lasso > sliders panel precedence.
 
-- [ ] **LIFE-05**: **Links feel intentional** — similarity-web rendering upgrades: strength
+- [x] **LIFE-05**: **Links feel intentional** — similarity-web rendering upgrades: strength
       maps to width/opacity deliberately, a selected/hovered node's own edges render above
       the rest, and the web's behavior during slider morphs (currently: fade out entirely) is
       a designed transition rather than a disappearance.
