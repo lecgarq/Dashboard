@@ -6,8 +6,8 @@ current_phase: 32
 current_phase_name: "Ambient Life & Link Expression"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 31 verified and deployed. Phase 32 has no context artifact; run $lecg-discuss-phase 32."
-last_updated: "2026-07-16T13:32:28-06:00"
+stopped_at: "Phase 32 context locked: micro-orbits, focus freeze, three-tier FPS degradation, and banded visible-during-morph links. Run $lecg-phase 32."
+last_updated: "2026-07-16T15:01:59-06:00"
 ---
 
 # Project State
@@ -27,8 +27,15 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 32 — Ambient Life & Link Expression — **ready for discussion**
-  (no `32-CONTEXT.md` yet; owner decisions required before planning).
+- **Phase:** 32 — Ambient Life & Link Expression — **ready to plan**
+  (`32-CONTEXT.md` locked; next command `$lecg-phase 32`).
+- **Phase 32 CONTEXT LOCKED 2026-07-16:** deterministic anchor-relative
+  recency micro-orbits with semantic node sizes unchanged; hover and
+  selected+ten-match foreground freeze over softer background life; ambient
+  pauses through Catalog morphs and resumes over ~180ms; three FPS tiers
+  (all nodes -> <=60d at 30Hz -> static) downgrade below 50fps and recover
+  after sustained >=55fps; similarity links use three strength bands and
+  remain at ~25% opacity through morphs.
 - **Phase 31 SHIPPED 2026-07-16** (`31-VERIFICATION.md`, deployed BUILD_ID
   `YTIBgQ4sRBXlonyphxjTq`): reversible 180ms / 2.25× frozen-Cosmos focus,
   selected + ten-distinct-match lighting, selected/hover edge priority with
@@ -67,7 +74,7 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   right rail. Honest loading/empty/error states; one concurrent 180ms rail
   transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
   impeccable zero findings.
-- **Next:** `/lecg-discuss-phase 32`.
+- **Next:** `/lecg-phase 32`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -245,12 +252,12 @@ shell-chunk parse gap → PERF-06):
 
 ### Decisions
 
-v2.5 open decisions are recorded in `PROJECT.md` Key Decisions (UMAP, full ambient + gate,
-perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decisions live in
-`PROJECT.md` and `MILESTONES.md`.
+v2.5 milestone decisions are recorded in `PROJECT.md` Key Decisions and
+REQUIREMENTS.md "Owner scope decisions". Phase 32's executable ambient/link choices are
+locked in `.planning/phases/32-ambient-life-link-expression/32-CONTEXT.md`.
+Prior-milestone decisions live in `PROJECT.md` and `MILESTONES.md`.
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 32`.** Gather the remaining owner decisions for full
-ambient recency-modulated motion, the ≥50fps degradation rule, and general
-strength/width/morph link expression before Phase 32 is planned.
+**Run `/lecg-phase 32`.** Plan and execute the locked anchor-relative ambient layer,
+three-tier FPS controller, and banded similarity-link morph expression.
