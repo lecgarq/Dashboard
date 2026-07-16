@@ -26,6 +26,11 @@ describe("instanceFeatureTokens", () => {
     expect(t).toContain("status:active");
     expect(t).toContain("recency:8-14d");
   });
+  it("emits the permission-coverage token (cov: known|partial|unknown)", () => {
+    expect(instanceFeatureTokens(fixture())).toContain("cov:known");
+    expect(instanceFeatureTokens(fixture({ permissionCoverage: "partial" }))).toContain("cov:partial");
+    expect(instanceFeatureTokens(fixture({ permissionCoverage: "unknown" }))).toContain("cov:unknown");
+  });
   it("does NOT emit a raw project-identity token (D5: down-weight project)", () => {
     const t = instanceFeatureTokens(fixture());
     expect(t.some((x) => x.startsWith("projid:"))).toBe(false);

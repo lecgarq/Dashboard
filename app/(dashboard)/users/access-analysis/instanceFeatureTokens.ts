@@ -17,6 +17,7 @@ export function instanceFeatureTokens(f: NodeFeatureSnapshot): string[] {
   out.add(`recency:${f.activityRecencyBucket ?? "none"}`);
   out.add(`aff:${f.affiliation ?? (f.isExternal ? "external" : "internal")}`);
   out.add(`status:${f.accountStatus || "(none)"}`);
+  out.add(`cov:${f.permissionCoverage}`);
   out.add(`admin:${f.isAdmin ? "1" : "0"}`);
   for (const m of f.moduleSignature ?? []) out.add(`mod:${m}`);
   return Array.from(out).sort();

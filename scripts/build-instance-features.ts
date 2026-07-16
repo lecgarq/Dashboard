@@ -6,6 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { getCachedAccDcBulkUsers } from "../lib/server/acc-hot-cache";
 import { buildGraphNodesFromUsers } from "../app/(dashboard)/users/access-analysis/graphNodesFromUsers";
 import { instanceFeatureTokens } from "../app/(dashboard)/users/access-analysis/instanceFeatureTokens";
+import { instanceFeatureNumerics } from "../app/(dashboard)/users/access-analysis/instanceFeatureNumerics";
 
 function loadEnvFile(file: string) {
   const full = path.resolve(process.cwd(), file);
@@ -47,7 +48,7 @@ async function main(): Promise<void> {
     const outDir = join(process.cwd(), ".embedding");
     mkdirSync(outDir, { recursive: true });
     const lines = features.map((f, i) =>
-      JSON.stringify({ nodeId: nodeIds[i], tokens: instanceFeatureTokens(f) }),
+      JSON.stringify({ nodeId: nodeIds[i], tokens: instanceFeatureTokens(f), numerics: instanceFeatureNumerics(f) }),
     );
     writeFileSync(join(outDir, "instance-features.jsonl"), lines.join("\n") + "\n", "utf8");
     console.log(`Wrote ${lines.length} instance feature rows to .embedding/instance-features.jsonl`);
