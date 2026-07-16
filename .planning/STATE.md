@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 33
 current_phase_name: "Perf Closeout & Verification"
-status: ready_for_discussion
+status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 32 verified + deployed (BUILD_ID wiAv-e6WVMCVkPo2ie-5N). Next: $lecg-discuss-phase 33."
-last_updated: "2026-07-16T17:16:10-06:00"
+stopped_at: "Phase 33 context locked in 33-CONTEXT.md (fresh in-phase perf baseline pair, graph-first staged load, owner-added LINK-PERF profile+fix best-effort). Next: /lecg-phase 33."
+last_updated: "2026-07-16T18:05:00-06:00"
 ---
 
 # Project State
@@ -27,9 +27,19 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 33 — Perf Closeout & Verification — **ready for discussion**
-  (PERF-05 shared hydration boundary + PERF-06 shell chunk split/re-measure;
-  next command `$lecg-discuss-phase 33`).
+- **Phase:** 33 — Perf Closeout & Verification — **ready to plan**
+  (context locked 2026-07-16; next command `/lecg-phase 33`).
+- **Phase 33 CONTEXT LOCKED 2026-07-16:** PERF-05 shared
+  `deserializeHydrationState` helper at all three call sites (layout.tsx:45 +
+  users/page.tsx:13 still raw; spatial-graph/page.tsx migrates its inline fix)
+  with unit test + one `:3100` no-refetch network check. PERF-06 pass/fail =
+  fresh in-phase pre-split vs post-split median pair (`:3100` median-of-5 via
+  `measure-spatial-graph-baseline.cjs`); delta vs the 28.1 median 4,360 ms
+  recorded honestly but 29–32 drift alone does not fail the phase. Load feel:
+  graph-first, panels stream in behind quiet placeholders (no layout shift,
+  fade-in only). Owner-added LINK-PERF: profile + best-effort optimize the
+  Canvas2D link path (20.68 fps ceiling), no hard fps gate; PERF-02 invariant
+  and Phase-32 band/tier/morph behavior must survive unchanged.
 - **Phase 32 SHIPPED 2026-07-16** (`32-VERIFICATION.md`, deployed BUILD_ID
   `wiAv-e6WVMCVkPo2ie-5N`): deterministic recency micro-orbits, focus freeze,
   180ms morph resume, three-tier safety controller, weak/medium/strong link
@@ -96,7 +106,7 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   right rail. Honest loading/empty/error states; one concurrent 180ms rail
   transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
   impeccable zero findings.
-- **Next:** `/lecg-discuss-phase 33`.
+- **Next:** `/lecg-phase 33`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
   `.planning/milestones/v2.4-*`.
@@ -281,5 +291,7 @@ Prior-milestone decisions live in `PROJECT.md` and `MILESTONES.md`.
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 33`.** Lock the shared hydration-boundary repair, shell
-chunk split, and final time-to-graph measurement method before planning.
+**Run `/lecg-phase 33`.** Context is locked in
+`.planning/phases/33-perf-closeout-verification/33-CONTEXT.md` — plan and execute
+PERF-05 (shared hydration helper), PERF-06 (shell chunk split + baseline-pair
+re-measure), and the owner-added best-effort LINK-PERF profiling/fix.
