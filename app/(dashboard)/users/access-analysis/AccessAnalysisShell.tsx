@@ -50,6 +50,8 @@ import { MapClusterLabels } from "./MapClusterLabels";
 import { SimilarityWebOverlay } from "./SimilarityWebOverlay";
 import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
 import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
+import { dimensionCoverage, coverageText } from "./dimensionCoverage";
+import { WHY_COVERAGE_DIM_IDS } from "./whySimilar";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
 import {
   defaultGroupBy,
@@ -368,6 +370,16 @@ export function ShellBody({
     return m;
   }, [features]);
 
+  // Coverage texts for the why-similar chips (SIM-02): honest node-derived
+  // figures per referenced dim, computed once per snapshot (v2.4 convention).
+  const coverageByDim = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const id of WHY_COVERAGE_DIM_IDS) {
+      m.set(id, coverageText(dimensionCoverage(features, id, catalog)));
+    }
+    return m;
+  }, [features, catalog]);
+
   // Similarity web (flag-OFF projector map): the always-on curved edge mesh. The
   // server returns the capped, strongest edge set keyed by nodeId; we map to cosmos
   // indices once, then color by community (endpoint blend) × similarity strength.
@@ -528,9 +540,12 @@ export function ShellBody({
                 features[isolatedNodeIndex]?.nodeId ??
                 "Selected"
               }
+              center={features[isolatedNodeIndex]}
               matches={neighborsQuery.data?.matches ?? []}
+              twins={neighborsQuery.data?.twins ?? { count: 0, ids: [] }}
               indexByNodeId={indexByNodeId}
               features={features}
+              coverageByDim={coverageByDim}
               // Profile for the centre node is already the top RightPanelStack
               // layer whenever isolatedNodeIndex !== null. Re-assert isolate on the
               // same node (the click setter) to ensure that profile is shown — and
