@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 29
 current_phase_name: "Embedding v2 — Feature Fidelity & PaCMAP"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 29 CONTEXT captured 2026-07-16 (.planning/phases/29-embedding-v2-feature-fidelity/29-CONTEXT.md). Owner locked: PaCMAP (AMENDS the milestone-open UMAP/umap-learn choice — pacmap 0.9.1 + faiss-cpu, dry-run-verified installable on the pipeline python 3.12.10), balanced-hybrid vector mix, tight-islands look, trustworthiness+twin-rate ship gate, dedupe-then-expand retired (project full ~22k). REQUIREMENTS.md EMB-03 amended. Next: /lecg-phase 29."
-last_updated: "2026-07-16T13:00:00-06:00"
+status: executing
+current_plan: "29-01"
+stopped_at: "Phase 29 planned 2026-07-16: 3 plans (29-01 TS hybrid feature export EMB-01/02; 29-02 python PaCMAP hybrid pipeline + quality gate EMB-02..05; 29-03 live-DB run + EMB-06 smoke). Waves 1→2→3, sequential. Executing 29-01. Resume: /lecg-phase 29."
+last_updated: "2026-07-16T13:40:00-06:00"
 ---
 
 # Project State
