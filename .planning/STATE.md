@@ -6,8 +6,8 @@ current_phase: 31
 current_phase_name: "Click & Hover Choreography"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 31 CONTEXT captured 2026-07-16: moderate native camera focus + exact view restore, selected-plus-matches-only lighting, one matches-first profile rail, and hover-above-selection locked. Next: /lecg-phase 31."
-last_updated: "2026-07-16T12:51:17-06:00"
+stopped_at: "Phase 31 planned as 31-01 (camera/mask/focus edges/hover tooltip) and 31-02 (unified matches-first profile rail). Next: /lecg-phase 31 executes 31-01."
+last_updated: "2026-07-16T12:59:47-06:00"
 ---
 
 # Project State
@@ -27,9 +27,9 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 31 — Click & Hover Choreography — **ready to plan**
-  (`.planning/phases/31-click-hover-choreography/31-CONTEXT.md`; next
-  `/lecg-phase 31`).
+- **Phase:** 31 — Click & Hover Choreography — **planned, ready to execute**
+  (`31-01-PLAN.md` camera/mask/focus edges/hover tooltip →
+  `31-02-PLAN.md` unified matches-first profile rail; next `/lecg-phase 31`).
 - **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
   BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
   payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
@@ -49,6 +49,10 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
   only (no twins or same-user footprint); floating matches card becomes one
   matches-first profile rail; hover incident edges temporarily render above the
   persistent click selection and an ~80ms tier/recency/breadth tooltip.
+- **Phase 31 PLANNED 2026-07-16:** `31-01` delivers LIFE-01/LIFE-02 through the
+  existing frozen Cosmos handle + Canvas2D overlay; `31-02` moves the complete
+  Phase-30 match evidence into the existing profile rail for LIFE-04. No new
+  renderer, fetch, dependency, scrape, or data contract.
 - **Next:** `/lecg-phase 31`.
 - **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
   BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
@@ -233,8 +237,6 @@ perf fold-in) and REQUIREMENTS.md "Owner scope decisions". Prior-milestone decis
 
 ## Next Action
 
-**Run `/lecg-phase 31`** (Click & Hover Choreography — LIFE-01/02/04).
-`31-CONTEXT.md` locks the four owner choices: moderate native camera focus with exact
-view restore; selected + distinct matches only; one matches-first profile rail; and
-hover edges/tooltip temporarily above the persistent click selection. Phase 32 still
-owns ambient motion and the general strength/width/morph link redesign.
+**Run `/lecg-phase 31`** to execute `31-01`, then `31-02`, verify, deploy, and
+advance. Phase 32 still owns ambient motion and the general
+strength/width/morph link redesign.
