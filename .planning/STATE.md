@@ -6,8 +6,8 @@ current_phase: 35
 current_phase_name: "Similarity-Web Renderer Rethink"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 34 complete and deployed (5/5 criteria, BUILD_ID CV_frbgC6hmbArjJ53Qi7) — Phase 35 has no context; next: /lecg-discuss-phase 35"
-last_updated: "2026-07-20T12:23:30-06:00"
+stopped_at: "Phase 35 context captured 2026-07-20 (Cosmos-native curved links preferred; deterministic zoom decimation allowed only for zoomed-out ambient fallback; selected/hovered and settled close view always complete) — next: /lecg-phase 35"
+last_updated: "2026-07-20T12:32:23-06:00"
 ---
 
 # Project State
@@ -33,7 +33,10 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
 - **Prior milestones:** v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`),
   v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
   all in `MILESTONES.md` / `milestones/`.
-- **Next:** `/lecg-discuss-phase 35` — no Phase 35 context or plans exist yet.
+- **Phase 35 (Similarity-Web Renderer Rethink)** is `ready_to_plan` — context captured
+  2026-07-20 with Cosmos-native curved GPU links preferred by measurement and zoom
+  decimation constrained to a deterministic zoomed-out ambient fallback.
+- **Next:** `/lecg-phase 35` — plan and execute REND-01/03 from `35-CONTEXT.md`.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -121,6 +124,6 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 35`.** Phase 34 is complete and deployed; Phase 35 has no context
-or plans yet. Renderer facts to reload: REQUIREMENTS.md "Read Before Planning" + MILESTONES
-v2.5 trap #3 (`33-BASELINE.md` LINK-PERF evidence in git history, last at `27297514`).
+**Run `/lecg-phase 35`.** Context is locked in `35-CONTEXT.md`; measure the three approved
+renderer levers against the Phase-33 LINK-PERF baseline, implement the smallest winner, and
+preserve the Phase-32 visual contract. Historical baseline remains at commit `27297514`.
