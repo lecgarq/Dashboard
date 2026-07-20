@@ -6,8 +6,8 @@ current_phase: 34
 current_phase_name: "Test & Guard Health Sweep"
 status: ready_to_plan
 current_plan: null
-stopped_at: "milestone v2.6 opened 2026-07-20 (renderer rethink + health sweep, hard >=50fps Tier-0 bar; 8 reqs, phases 34-36, breakdown owner-approved) — next: /lecg-discuss-phase 34 (or /lecg-phase 34 — the health sweep is mostly mechanical with few gray areas)"
-last_updated: "2026-07-20T11:30:00-06:00"
+stopped_at: "phase 34 context captured 2026-07-20 (34-CONTEXT.md: 4 owner decisions locked — exact node-count pin 22,279, powershell+pwsh -Command guard scope, TEST-04 code-fix pre-authorized, guard-bash WIP committed first; TEST-04 3 fails + GUARD-01 quote-strip bypass reproduced live) — next: /lecg-phase 34"
+last_updated: "2026-07-20T11:55:00-06:00"
 ---
 
 # Project State
@@ -27,9 +27,13 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
   phase breakdown owner-approved 2026-07-20. Owner scope picks: renderer rethink headline +
   health sweep (candidates 1+3), hard ≥50fps Tier-0 bar; Tier-3 dims stay deferred
   (ISSUE-GRAPH-01 spike = v2.7 entry ticket).
-- **Phase 34 (Test & Guard Health Sweep)** is `ready_to_plan` — e2e re-baseline
-  (acc-dc-graph 14 drift fails + dead selectors), lasso 120s budget, 3 usePredicateEngine
-  unit fails, guard-bash powershell-wrap deny, embedding stale-row prune (983→0).
+- **Phase 34 (Test & Guard Health Sweep)** is `ready_to_plan` — **context captured
+  2026-07-20** (`34-CONTEXT.md`): e2e re-baseline (acc-dc-graph drift + dead selectors),
+  lasso 120s budget, 3 usePredicateEngine unit fails (reproduced live, all in
+  `__tests__/usePredicateEngine.test.tsx` aperture suite), guard-bash powershell-wrap
+  deny (root cause = quote-strip at line 16 blanks the wrapped payload; uncommitted
+  isolatedDist WIP in the same file commits first), embedding stale-row prune (983→0,
+  prune strictly after the EMB-05 gate).
 - **Prior milestones:** v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`),
   v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
   all in `MILESTONES.md` / `milestones/`.
