@@ -4,10 +4,10 @@ milestone: v2.6
 milestone_name: "Full-Rate Graph"
 current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Execute 36-01-PLAN.md: sweep gates, measure time-to-graph, run the hard full-rate gate last, deploy, and route to milestone closeout"
-last_updated: "2026-07-20T15:21:36-06:00"
+status: executing
+current_plan: "36-01"
+stopped_at: "Resume 36-01-PLAN.md after interrupted acc-dc-graph rerun: restore isolated :3100, finish browser gates, record measurements, deploy"
+last_updated: "2026-07-20T15:58:39-06:00"
 ---
 
 # Project State
