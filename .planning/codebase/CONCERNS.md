@@ -611,3 +611,45 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   the Canvas projection/stroke cost alongside its chunk closeout before changing
   update cadence, edge density, or renderer architecture; do not quote the
   pre-link 60.04 fps as final shipped performance.
+
+## Phase 33 debt roll-forward (2026-07-20 — Perf Closeout & Verification)
+
+- **[Ph28.1(1)] RESOLVED.** App-wide SSR-hydration miss fixed at the shared
+  boundary: `lib/server/hydrationState.ts` `deserializeHydrationState()` at
+  all three call sites (layout.tsx, users/page.tsx, spatial-graph/page.tsx),
+  pinned by `lib/server/hydrationState.test.ts`. Authenticated `:3100` network
+  evidence: zero prefetched-query refetches on `/users` and
+  `/users/spatial-graph` (33-BASELINE.md). Included root-cause fix:
+  `BULK_USERS_LEAN_INPUT` moved from the `"use client"`
+  `useUsersDirectoryData.ts` to directive-free `lib/acc/cachePolicy.ts` —
+  server imports of client-module exports are RSC client-reference proxies,
+  which silently broke the /users prefetch input since PERF-03 (v2.4).
+- **[Ph28.1(2)] RESOLVED.** Graph-first code split (`Toolbar`,
+  `RightPanelStack`, `NeighborMatchesPanel` via `next/dynamic` behind
+  geometry-matched placeholders): shell chunk −18.3% (164,154→134,108 B,
+  framer-motion evicted), time-to-graph median 5,116→3,914 ms (−23.5%;
+  −10.2% vs the 28.1 reference median).
+- **[Ph32→Ph33] CLOSED into a v2.6 candidate.** LINK-PERF profiling proved
+  the ceiling is Canvas2D rasterization (~40 ms/frame for the 14.2k-bezier
+  web; JS tick 1.4 ms), not JS path building. Shipped: ambient-only ~10 Hz
+  redraw throttle + empty-stroke skip → 21.35→41.33 fps (+94%) at the full
+  sample; tier controller still degrades below 50 fps as designed. **v2.6
+  candidate:** OffscreenCanvas worker rasterization, cosmos-native links, or
+  zoom-based edge decimation if Tier-0-with-full-links ≥50 fps becomes a
+  requirement (33-BASELINE.md "LINK-PERF (after)").
+- **[NEW Ph33] guard-bash gap: powershell-wrapped builds bypass the deny
+  rule.** `powershell -Command "... npx next build ..."` launched from Git
+  Bash is not caught by `.claude/hooks/guard-bash.cjs`'s
+  build-while-:3000-live rule. Trigger trap: bash **double-quoted** commands
+  expand `$env:VAR` to empty, silently dropping `NEXT_DIST_DIR`/flags — this
+  overwrote the live `.next` once during 33-03 (recovered by task restart on
+  the tsc-clean current-HEAD build; probe 200/307). Fix seed: extend the
+  guard to powershell-wrapped next/npm build invocations; always
+  single-quote PowerShell commands issued from bash.
+- **[NEW Ph33] `.tools/repo-map/architecture-summary.md` /ARCHITECTURE line
+  stale:** "BULK_USERS_LEAN_INPUT … defined in useUsersDirectoryData.ts" —
+  home is now `lib/acc/cachePolicy.ts` (re-exported for client consumers).
+  Correct at the next codebase-map refresh.
+- **[Ph33 note] BND-03 group-2 `scripts→app` dep-cruiser family is 3 edges**
+  (33-01 ratcheted the baseline for the Phase-29 `instanceFeatureNumerics`
+  edge); §B's "down from 6 / 2 warnings" note is superseded.
