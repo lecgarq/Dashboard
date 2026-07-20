@@ -2,6 +2,7 @@
 
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-16 — unified activity source (`lib/server/unifiedActivitySource.ts`, accds-primary + DC-backfill merge) documented; DC admin-snapshot weekly refresh + `DC_SKIP_ADMIN_SNAPSHOT` added; ACCDS session env vars resolved; Task Scheduler task name corrected to `LECG Dashboard Local`; several stale VERIFY items closed
+**Refreshed:** 2026-07-20 — post v2.5 close: unified-activity consumer list corrected (per-panel views do the merge in raw SQL, not via imports); DC env flag names corrected (`RESERVE` → `DC_FAIRNESS_RESERVE`, added `DC_PROGRESSIVE_SLICE_DAYS` + `DC_BACKFILL_CUTOFF_DATE`); Electron pin corrected to `^43.1.0`; dead `KV_REST_API_*` aliases removed; Redis usage resolved; `NEXT_PUBLIC_ACC_3D_GRAPH` flag added
 
 ---
 
@@ -53,6 +54,9 @@
 - Feature flag: `DC_403_BISECT` — bisect-on-403 salvage mode
 - Feature flag: `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips the admin snapshot rebuild (the daily MTY-allowlisted extract covers too few projects and trips the `dcAnomalyChecks` user-drop guard; the full-universe weekly refresh owns admin snapshots instead)
 - Feature flag: `DC_RESUME` — resume pending/running rows only (lives in `scripts/dc-ingest-where-i-admin.cjs`, not the daily ingest)
+- Feature flag: `DC_FAIRNESS_RESERVE` — per-run fairness reserve slot count when priority backfill is on (default ~20% of remaining safe budget; `lib/acc/dcIngest.ts`)
+- Feature flag: `DC_PROGRESSIVE_SLICE_DAYS` — override the default 30-day progressive extraction window (`lib/acc/dcProgressiveBackfill.ts`)
+- Feature flag: `DC_BACKFILL_CUTOFF_DATE` — YYYY-MM-DD extraction ceiling for manual history mode (`lib/acc/dcIngest.ts`)
 - Pool config: `PG_POOL_MAX` (default 10 dev / 5 prod)
 
 **Ingest pipeline:**
@@ -146,7 +150,8 @@ note that role names reflect the live APS state, not the DC snapshot date.
 - Module: `lib/server/unifiedActivitySource.ts` (tested in `lib/server/unifiedActivitySource.test.ts`)
 - `mergeActivitySources({ dcRows, accdsRows })` — ACCDS rows are primary; per project, DC (`AccActivity`) rows are kept only when they predate that project's earliest ACCDS row (DC acts as historical backfill before the ~12-month ACCDS window)
 - Query helpers: `listUnifiedActivityRows`, `countUnifiedActivityRows`, `groupUnifiedActivityByUserProjectAction`, `groupUnifiedAdminActionsByActor`, `groupUnifiedActivityByRawAction`, `getLastUnifiedActivityByEmail` (same file)
-- Consumers: `lib/server/acc-hot-cache.ts`, `lib/server/activityByActorView.ts`, `lib/server/activityRecencyView.ts`, `lib/server/activityTimelineView.ts`, `lib/server/moduleActivityView.ts`, `lib/server/folderActivityView.ts`, `lib/server/folderActivityByCompanyView.ts`, `lib/server/workflowToolsView.ts`
+- Direct importers of the helper module: `lib/server/acc-hot-cache.ts`, `lib/server/projectCoverageView.ts`, `server/routers/acc-activity.ts`, `server/routers/acc-members.ts`, `server/routers/users/acc-profile.ts`
+- The per-panel view modules (`lib/server/activityByActorView.ts`, `activityRecencyView.ts`, `activityTimelineView.ts`, `moduleActivityView.ts`, `folderActivityView.ts`, `folderActivityByCompanyView.ts`, `workflowToolsView.ts`) implement the SAME accds-primary + DC-backfill policy as raw-SQL `UNION ALL` queries over `AccActivityAccds`/`AccActivity` directly — they do NOT import `unifiedActivitySource.ts` (correcting the 2026-07-16 consumer list)
 - EXCEPTION (`lib/server/workflowToolsView.ts`): ACCDS never emits `rfi-`/`submittal-` family verbs, so RFI/submittal rows are taken from `AccActivity` (DC) unconditionally — the naive merge would undercount those workflows ~20×
 
 ---
@@ -262,9 +267,7 @@ note that role names reflect the live APS state, not the DC snapshot date.
 
 **Env vars:** `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
-**Also:** `KV_REST_API_URL`, `KV_REST_API_TOKEN` — alternative Vercel KV env var names detected in source (VERIFY: whether both are used or one is legacy)
-
-**Usage:** Rate limiting, caching, or session storage (VERIFY: exact use cases beyond lazy-init)
+**Usage:** server-side caching in `server/routers/aps-search.ts` and `server/routers/lod.ts` (the only importers of `lib/redis.ts`). The previously listed `KV_REST_API_URL`/`KV_REST_API_TOKEN` Vercel KV aliases no longer appear anywhere in source — removed.
 
 ---
 
@@ -330,7 +333,7 @@ note that role names reflect the live APS state, not the DC snapshot date.
 
 ## Electron (Optional Desktop Shell)
 
-**Package:** `electron ^42.1.0` (devDependency)
+**Package:** `electron ^43.1.0` (devDependency)
 
 **Entrypoint:** `electron/main.cjs`
 
@@ -356,7 +359,7 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 **DC daily ingest env flags:**
 - `DC_PRIORITY_BACKFILL=1` — enable priority ordering (set in `.env`)
 - `DC_SKIP_ADMIN_SNAPSHOT=1` — skip the admin snapshot rebuild in the daily run
-- `RESERVE` — quota reserve param in `scripts/dc-daily-ingest.cjs` (`SAFE_BUDGET` no longer appears outside `scripts/_attic/`)
+- `DC_FAIRNESS_RESERVE` — fairness reserve slot count override (the previously documented bare `RESERVE` name does not exist in source; `SAFE_BUDGET` no longer appears outside `scripts/_attic/`)
 
 **Progress monitor (read-only ops UI):**
 - `node scripts/progress-monitor.cjs` → `http://localhost:4321` (override with `PORT`) — standalone monitor for DC activity extraction and folder/permission crawl progress
@@ -420,7 +423,9 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 - `DC_403_BISECT` — bisect-on-403 salvage mode
 - `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips admin snapshot rebuild
 - `DC_RESUME` — resume pending/running rows only (`scripts/dc-ingest-where-i-admin.cjs`)
-- `RESERVE` — quota reserve (daily ingest)
+- `DC_FAIRNESS_RESERVE` — fairness reserve slots when priority backfill is on
+- `DC_PROGRESSIVE_SLICE_DAYS` — progressive extraction window override
+- `DC_BACKFILL_CUTOFF_DATE` — manual history-mode extraction ceiling (YYYY-MM-DD)
 
 **ACCDS:**
 - `ACC_SESSION_PATH` — Playwright storageState path (default `scratch/acc-session.json`)
@@ -436,13 +441,13 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 - `OPENAI_API_KEY`, `OPENAI_MODEL`
 
 **Redis / Cache:**
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash Redis
-- `KV_REST_API_URL`, `KV_REST_API_TOKEN` — Vercel KV aliases (VERIFY: still active)
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash Redis (`KV_REST_API_*` aliases removed — no longer in source)
 
 **UploadThing:**
 - `UPLOADTHING_TOKEN`
 
 **Feature Flags (NEXT_PUBLIC_ — client-visible):**
+- `NEXT_PUBLIC_ACC_3D_GRAPH` — 3D physics graph mode (`app/(dashboard)/users/access-analysis/graphModeFlag.ts`)
 - `NEXT_PUBLIC_ACC_GPU_2D` — enable GPU 2D physics (default on)
 - `NEXT_PUBLIC_ACC_GRAPH_TEST` — Playwright E2E test mode for ACC graph
 - `NEXT_PUBLIC_ACC_JS_SNAPSHOT` — JS-side snapshot flag
@@ -460,4 +465,4 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 ---
 
-*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree.*
+*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree. Refreshed 2026-07-20 (post v2.5 close, working tree includes the uncommitted `feat/access-analysis-redesign` state): unified-activity consumers re-derived by import grep; DC env flags re-verified from `scripts/dc-daily-ingest.cjs` header + `lib/acc/dcIngest.ts`/`dcProgressiveBackfill.ts`; Redis usage from `lib/redis.ts` importers; `NEXT_PUBLIC_*` flags re-grepped across `app`/`lib`/`components`/`server`.*

@@ -2,6 +2,7 @@
 
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-16 — pins re-verified against `package.json` after the full dependency refresh (commit `0bfe0962`, 2026-07-14): cosmos.gl 3.3.0, three 0.185, googleapis 173, csv-parse 7, fast-check 4, electron 43, Tiptap 3.27; `ws`/`y-protocols` no longer direct deps; Task Scheduler task name corrected to `LECG Dashboard Local`
+**Refreshed:** 2026-07-20 — post v2.5 "Living Graph" close (phases 29–33, close commit `04d26799`): no `package.json` dependency changes since 2026-07-16 (all pins re-checked, still exact); added the Python PaCMAP embedding pipeline (`scripts/compute_instance_embeddings.py`) and the shared SSR-hydration fix (`lib/server/hydrationState.ts`). Working tree carries the in-flight access-analysis redesign (branch `feat/access-analysis-redesign`, uncommitted) — no stack/dependency impact, mostly `app/(dashboard)/access-analysis` + `/users` component churn and legacy-file deletions.
 
 ---
 
@@ -9,7 +10,7 @@
 
 **Primary:**
 - TypeScript 6.x (`^6.0.3`) — all application code under `app/`, `components/`, `lib/`, `server/`, and most `scripts/`
-- Python 3.x — `services/lod-engine/server.py` (FastAPI image/LOD service) and `scripts/run_dev_stack.py`
+- Python 3.x — `services/lod-engine/server.py` (FastAPI image/LOD service), `scripts/run_dev_stack.py`, and `scripts/compute_instance_embeddings.py` (v2.5 Ph29/30 spatial-graph embedding pipeline: PaCMAP 2D projection + KMeans clustering + twin-collapsed cosine kNN neighbors; deps `pacmap` (0.9.1 verified in-source), `scikit-learn`, `scipy`, `numpy`; unit tests in `scripts/test_compute_instance_embeddings.py`; input `.embedding/instance-features.jsonl` produced by `scripts/build-instance-features.ts`)
 
 **Secondary:**
 - JavaScript (`.cjs`, `.mjs`, `.js`) — operational scripts in `scripts/` that run as Node CJS outside Next.js bundler
@@ -63,7 +64,7 @@
 - `framer-motion ^12.40.0` — animation primitives; motion budget ≤200ms for drill interactions
 - `zustand ^5.0.14` — lightweight client state (access-analysis filter state, Mosaic selections)
 - `zod ^4.4.3` — input validation on tRPC procedures and form boundaries
-- `superjson ^2.2.6` — tRPC serialization of Date/BigInt types
+- `superjson ^2.2.6` — tRPC serialization of Date/BigInt types; ALSO the shared SSR-hydration boundary fix `lib/server/hydrationState.ts` (`deserializeHydrationState`, v2.5 Ph33 PERF-05): `createServerSideHelpers().dehydrate()` returns a superjson-wrapped `{json,meta}` object that App Router `<HydrationBoundary>` cannot hydrate — must deserialize first or every prefetched query silently refetches; consumed by `app/(dashboard)/layout.tsx`, `users/page.tsx`, `users/spatial-graph/page.tsx`
 - `next-themes ^0.4.6` — theme provider for zinc dark/light toggle
 
 **3D / Graph (spatial-graph — explicitly in-scope):**
@@ -144,7 +145,7 @@
 - Key settings: webpack mode forced, DuckDB WASM alias, `serverExternalPackages` for Google libs, `optimisticClientCache`, `removeConsole` in production
 
 **Prisma:**
-- Schema: `prisma/schema.prisma` (65 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection and the newer `AccIssueType` + `AccInstanceEmbedding` models)
+- Schema: `prisma/schema.prisma` (65 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection and the newer `AccIssueType` + `AccInstanceEmbedding` models; `AccInstanceEmbedding.neighbors Json` now carries the v2.5 Ph30 twin-collapsed structured payload — k distinct matches with per-match "why" contribution keys plus an exact-twin summary)
 - Generator: `prisma-client-js` + `prisma-erd-generator` (ERD → `docs/erd.md`)
 - Client generation in `postinstall` hook: `prisma generate && patch-package && node scripts/copy-duckdb-wasm.cjs`
 - Note (Ph18 deviation): `prisma migrate dev` chokes on the pgvector extension — the Ph18 projection shipped via a raw SQL migration; long server-side `INSERT .. SELECT` writes need the `$transaction` timeout widened (300s used)
@@ -191,8 +192,9 @@ over the live server.
 **Development:**
 - Windows 11 (primary; PowerShell scripts `start-local.ps1`, `dc-daily-cron.ps1`)
 - Node.js >=22
-- Python 3.x (for `services/lod-engine/` and `scripts/run_dev_stack.py`)
+- Python 3.x (for `services/lod-engine/`, `scripts/run_dev_stack.py`, `scripts/compute_instance_embeddings.py`)
 - PyTorch + HuggingFace Transformers (for LOD engine SigLIP model)
+- pacmap + scikit-learn + scipy + numpy (for the spatial-graph embedding pipeline)
 - Local PostgreSQL 18 (trust auth localhost; managed via `scripts/postgres-local.js`)
 - Task Scheduler task `LECG Dashboard Local` (boot on logon)
 - Task Scheduler task `LECG Postgres Local` (Postgres boot on logon)
@@ -204,4 +206,4 @@ over the live server.
 
 ---
 
-*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-16: all pins re-checked against `package.json` after the 2026-07-14 dependency refresh (commit `0bfe0962`); config filenames, Prisma model count (65), and Task Scheduler task name verified against the tree.*
+*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-16: all pins re-checked against `package.json` after the 2026-07-14 dependency refresh (commit `0bfe0962`); config filenames, Prisma model count (65), and Task Scheduler task name verified against the tree. Refreshed 2026-07-20 (post v2.5): pins unchanged; Python pipeline verified from `scripts/compute_instance_embeddings.py`; hydration fix verified from `lib/server/hydrationState.ts` + its three page consumers; Prisma model count re-verified (65).*

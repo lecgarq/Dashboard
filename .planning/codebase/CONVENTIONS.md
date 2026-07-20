@@ -1,7 +1,7 @@
 # Coding Conventions
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-16 — post v2.4 close (canonical EChart wrapper, commit conventions, guard-bash hook). Previous refresh 2026-07-02.
+**Refreshed:** 2026-07-20 — post v2.5 close (directive-free shared-constant rule, `test` commit type, WIP note for the access-analysis redesign branch). Previous refreshes 2026-07-16, 2026-07-02.
 
 ## TypeScript & Next.js App Router Idioms
 
@@ -10,6 +10,7 @@
 - Interactive client components require `"use client"` as the first line.
 - Server actions (data mutations / heavy server reads triggered lazily) use `"use server"` as the first line. Examples: `app/(dashboard)/access-analysis/coordinationActions.ts`, `folderTerrainActions.ts`, `folderActivityActions.ts`.
 - Pure transform/compute modules (`roleCounts.ts`, `companyCounts.ts`, etc.) carry no directive — they are safe for both client and server imports.
+- **Directive-free shared-constant rule (v2.5 PERF-05):** any constant shared by a server prefetch and a client query (e.g. a tRPC input that must produce identical cache keys on both sides) MUST live in a directive-free module — pattern: `lib/acc/cachePolicy.ts` (`BULK_USERS_LEAN_INPUT`). Importing any export of a `"use client"` module from server code yields a client-reference **proxy**, not the value — the SSR prefetch silently breaks and the client refetches the full payload.
 - Both `EChart` wrappers (`components/ui/EChart.tsx` — canonical; `app/(dashboard)/access-analysis/components/EChart.tsx` — legacy, consumers not yet migrated) are `"use client"` because `echarts-for-react` relies on the DOM.
 
 **RSC data loading pattern (`access-analysis`, `template-mty`):**
@@ -251,9 +252,9 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 
 ## Git & Commit Conventions
 
-**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-16:
-- Types in active use: `feat`, `fix`, `refactor`, `docs`.
-- Scope is either the phase number (`fix(28.1): ...`, `docs(27-02): ...`), the surface (`feat(spatial-graph): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.4 milestone`).
+**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-20:
+- Types in active use: `feat`, `fix`, `refactor`, `docs`, `test` (v2.5 added standalone test commits, e.g. `test(31): verify production focus choreography`).
+- Scope is either the phase number (`feat(33): ...`, `docs(27-02): ...`, `feat(30-03): ...`), the surface (`feat(spatial-graph): ...`, `feat(users): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.5 milestone`).
 - Subject is imperative, lowercase, no trailing period. Plan/requirement IDs appear in the subject when relevant (`(26-02)`, `(PERF-03)`).
 
 **Surgical staging is mandatory.** Stage explicit paths only, then inspect `git diff --cached --name-only` before committing. Bulk staging (`git add -A`, `git add .`, `git add -u`, `git commit -a`) is **denied at the tool level** by the PreToolUse hook `.claude/hooks/guard-bash.cjs` — the working tree is permanently WIP-heavy and bulk staging sweeps unrelated edits/deletions into commits.
@@ -263,8 +264,8 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 ---
 
 **Dashboard self-check:**
-- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `git log`, direct file reads (refresh 2026-07-16).
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `git log`, direct file reads (refresh 2026-07-20).
 - Evidence: all patterns verified from actual source files listed above.
 - Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root, explicit-path staging enforced by hook.
-- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (users/ directory components deleted, access-analysis modules reworked) — route-level file examples in this doc reflect the committed tree.
+- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (verified 2026-07-20): the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Route-level file examples in this doc reflect the committed tree.
 - VERIFY: none — all claims grounded in verified source.

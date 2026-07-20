@@ -1,7 +1,7 @@
 # Testing Patterns
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-16 — post v2.4 close (e2e spec inventory, guard-bash build gate, verify-config corrections). Previous refresh 2026-07-02.
+**Refreshed:** 2026-07-20 — post v2.5 close (phase 31/32 e2e specs, bridge extensions, test-count refresh, redesign-branch WIP note). Previous refreshes 2026-07-16, 2026-07-02.
 
 ## Test Framework
 
@@ -94,7 +94,7 @@ lib/server/
   accessInstanceView.test.ts      # co-located
 ```
 
-**E2E layout (full inventory, verified 2026-07-16):**
+**E2E layout (full inventory, verified 2026-07-20):**
 ```
 tests/e2e/
   acc-dc-graph.spec.ts             # spatial graph bridge assertions
@@ -107,6 +107,8 @@ tests/e2e/
   catalog-preview-lazy.spec.ts     # v2.4 Phase 26 lazy catalog preview
   folder-activity-by-role.spec.ts
   forma-proposal.spec.ts
+  phase31-focus.spec.ts            # v2.5 focus choreography (hover/click via bridge)
+  phase32-ambient.spec.ts          # v2.5 ambient-life tiers (getAmbientStats bridge)
   sidebar-resize.spec.ts
   spatial-graph-baseline.spec.ts   # v2.4 perf baseline harness
   uat-workshop.spec.ts             # 38-test Phase 7 UAT harness
@@ -281,9 +283,10 @@ NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but 
 
 - URL under test: `GRAPH_URL = "/users/spatial-graph"`.
 - `gotoGraph(page)` helper: navigates, waits for bridge ready + finite non-NaN positions.
-- Node count constant: `EXPECTED_NODE_COUNT = 16_942` (still in `tests/e2e/acc-dc-graph.spec.ts:17` as of 2026-07-16). Asserted exactly — bump only if the DC dataset changes. VERIFY: the 2026-07-14 dependency-update verification observed the live dataset at 22,279 nodes, so the exact-count assertions currently fail as pre-existing drift (not a regression) until the constant is re-baselined.
+- Node count constant: `EXPECTED_NODE_COUNT = 16_942` (still in `tests/e2e/acc-dc-graph.spec.ts:17` as of 2026-07-20). Asserted exactly — bump only if the DC dataset changes. The 2026-07-14 dependency-update verification observed the live dataset at 22,279 nodes, so those exact-count assertions fail as pre-existing drift (not a regression) until the constant is re-baselined. The v2.5 specs sidestep this: `phase31-focus.spec.ts` waits for `stats.count > 22_000` instead of asserting an exact count.
 - 3D tests skip when `NEXT_PUBLIC_ACC_3D_GRAPH !== "1"` via `test.skip(!ACC_3D_GRAPH, ...)`.
 - Slider interactions use `page.keyboard.press("End")` (Radix Slider keyboard API) not drag.
+- **v2.5 bridge extensions** (used by `phase31-focus.spec.ts` / `phase32-ambient.spec.ts`): `simulateClick(nodeId)`, `simulateHoverEnd()`, `getCentermostNodeId()`, `getIsolatedNodeId()`, `getHighlightedNodeCount()`, `getAmbientStats()` (tier/fps/animated-node counts), `exerciseAmbientController()` (drives the tier 0→1→2 fallback sequence in-page).
 
 ## UAT Workshop Tests (`tests/e2e/uat-workshop.spec.ts`)
 
@@ -312,7 +315,7 @@ Convention: any future split of a large module (or query-owner change) must add 
 
 ## Coverage
 
-No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **330 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-16; 114 live under `__tests__/` directories). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 passed at the 2026-07-14 dependency-update verification. VERIFY: current pass count not re-run for this refresh.
+No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **337 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-20; 114 live under `__tests__/` directories). The working tree additionally carries 5 untracked new tests (`app/(dashboard)/users/statCardBoundaries.test.ts`, `lib/acc/issueBackfillAudit.test.ts`, `lib/acc/issueListQuery.test.ts`, `lib/acc/modelCoordinationGrant.test.ts`, `scripts/lib/tolerance-audit.test.ts`) and 3 working-tree deletions, all under `scripts/scratch/` (monitor-* tests). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 passed at the 2026-07-14 dependency-update verification. VERIFY: current pass count not re-run for this refresh.
 
 ---
 
@@ -323,5 +326,5 @@ No enforced coverage thresholds. The access-analysis surfaces have the densest u
 - Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
   `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
   sequence for an explicitly requested local rebuild.
-- VERIFY: (1) total unit test pass count drifts as phases add tests — file count (330) verified 2026-07-16, pass count not re-run; (2) EXPECTED_NODE_COUNT 16,942 vs live 22,279 drift — constant verified in-tree, live count from the 2026-07-14 verification run, not re-measured here.
-- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (several `app/(dashboard)/users/` components and their tests deleted in the working tree); counts above are from tracked files (`git ls-files`).
+- VERIFY: (1) total unit test pass count drifts as phases add tests — file count (337) verified 2026-07-20, pass count not re-run; (2) EXPECTED_NODE_COUNT 16,942 vs live 22,279 drift — constant verified in-tree, live count from the 2026-07-14 verification run, not re-measured here.
+- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (verified 2026-07-20): several `app/(dashboard)/users/` components are deleted in the working tree, but their replacements' tests are committed co-located files; the only deleted test files are the three `scripts/scratch/monitor-*` tests. Several access-analysis and users tests are modified (e.g. `app/(dashboard)/access-analysis/__tests__/roleCounts.test.ts`, `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`). Counts above are from tracked files (`git ls-files`).

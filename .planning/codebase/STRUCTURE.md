@@ -1,10 +1,10 @@
-<!-- refreshed: 2026-07-16 -->
+<!-- refreshed: 2026-07-20 -->
 # Codebase Structure
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-16 — targeted post-v2.3 (6-tab charts page, new panels/views) + v2.4 (dimension catalog widening) update
+**Refreshed:** 2026-07-20 — post-v2.5 "Living Graph" (phases 29–33) update, described against the **current working tree** on `feat/access-analysis-redesign`
 
-> **In-flight note (2026-07-16):** branch `feat/access-analysis-redesign` has ~222 uncommitted working-tree entries — a `/users` directory redesign that deletes `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` and modifies many access-analysis files. This document describes the **committed** tree.
+> **In-flight note (2026-07-20):** the working tree has ~221 uncommitted entries. Deletions are treated as real: in `app/(dashboard)/users/`, `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` are **deleted** — do not reference them. Also deleted (uncommitted): root `CHANGELOG.md`, `GSD-STYLE.md`, `PROJECT_RULES.md`, `docs/runbook.md`, all of `scripts/scratch/`, and the `docs/archive/planning/2026-05-18/gsd/` archive.
 
 ## Directory Layout
 
@@ -55,10 +55,11 @@ C:/LECG/Dashboard/
 │   │   ├── cachePolicy.ts       # ACC_SNAPSHOT_STALE_TIME_MS
 │   │   ├── mty-allowlist.json   # MTY project ID allowlist
 │   │   ├── template-mty.ts      # TEMPLATE_MTY_ID / TEMPLATE_MTY_NAME constants
-│   │   ├── embedding/           # Instance embeddings + similarity edge set
+│   │   ├── embedding/           # Instance embeddings + similarity edge set (+ neighborPayload.ts — v2.5 structured-neighbors normalizer)
 │   │   └── __tests__/           # Unit tests for acc helpers
 │   ├── server/                  # Server-only view builders + integrations
 │   │   ├── acc-route-hydration.ts  # createAccRouteHelpers + prefetch helpers for RSC pages
+│   │   ├── hydrationState.ts       # deserializeHydrationState — superjson unwrap for <HydrationBoundary> (v2.5 Ph33)
 │   │   ├── acc-hot-cache.ts        # In-process BulkAccUser cache
 │   │   ├── accessInstanceView.ts   # DC snapshot → AccessInstance[] + mergeRoleNames
 │   │   ├── moduleActivityView.ts   # AccActivity → module rows
@@ -130,8 +131,9 @@ C:/LECG/Dashboard/
 │   ├── repo-map/                # Repo-map generator + checker (generate.cjs, check.cjs)
 │   ├── acc-*.cjs                # ACC member/folder sync scripts
 │   ├── dc-*.cjs                 # Data Connector extraction scripts
-│   ├── build-instance-features.ts  # Snapshot builder (WARN: imports from app/ route — move to lib/)
-│   ├── diag-activity-*.cjs      # Diagnostic scripts (WARN: import moduleOverrides from app/)
+│   ├── build-instance-features.ts  # Hybrid feature export → instance-features jsonl (WARN: imports 3 app/ modules — no-scripts-to-app, still open)
+│   ├── compute_instance_embeddings.py  # PaCMAP hybrid embedding + trustworthiness gate + twin-collapsed neighbors (v2.5 Ph29–30)
+│   ├── diag-activity-service-xtab.cjs  # Diagnostic script (app-import WARN resolved in v2.1 Ph10)
 │   └── progress-monitor.cjs     # Standalone progress monitor web app (localhost:4321)
 ├── services/
 │   └── lod-engine/              # Python LOD/image processing service
@@ -180,8 +182,10 @@ C:/LECG/Dashboard/
 
 **Purpose:** ACC member directory (DataTable), profile panels, stat cards, and the nested `/access-analysis` physics graph and `/spatial-graph` view.
 
-**Key files in `app/(dashboard)/users/`:**
-- `page.tsx` — RSC shell; TanStack prefetch via `prefetchUsersRouteAccData`; `<HydrationBoundary><UsersDirectoryClient />`
+**Deleted in the working tree (do not reference):** `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` — the card/row directory presentation is gone; the DataTable stack below is the surviving surface.
+
+**Key files in `app/(dashboard)/users/` (all verified extant):**
+- `page.tsx` — RSC shell; TanStack prefetch via `prefetchUsersRouteAccData`; `deserializeHydrationState(helpers.dehydrate())` → `<HydrationBoundary><UsersDirectoryClient />` (v2.5 Ph33 hydration fix)
 - `UsersDirectoryClient.tsx` — client shell; Zustand store + DataTable + DrillSheet + PeekPanel; dynamic-imports `UserProfilePanel` and `DashboardSidePanel`
 - `useUsersDirectoryData.ts` — data hook; consumes `accDcGraph.bulkUsers` (lean), `accMembers.enrichedUsers`, `users.getDirectory`, `users.getOrgDirectory`, `accActivity.lastFileActivityByEmailAll`. Defines `BULK_USERS_LEAN_INPUT` — must match RSC prefetch.
 - `useUsersDirectoryStore.ts` — Zustand store for filter/selection state
@@ -213,15 +217,17 @@ Key structural groups:
 | Layout engines | `catalogTargets.ts`, `featureTargets.ts`, `restLayout.ts`, `gridLayout.ts`, `blobDescriptor.ts`, `clusterPacking.ts`, `clusterForceLayout.ts` | Anchor positions per dimension kind |
 | Sidebar UI | `CatalogSliderSidebar.tsx`, `CatalogCollapse.tsx`, `CatalogTreeSection.tsx`, `DimensionSlider.tsx`, `DimensionSearchBox.tsx`, `PresetBar.tsx` | Per-dimension slider tree |
 | Visual encoding | `nodeColors.ts`, `nodeSizes.ts`, `bucketedColors.ts`, `clusterColors.ts`, `chartColors.ts`, `linkEmphasis.ts` | Color/alpha/size computation |
-| Right panels | `RightPanelStack.tsx`, `SelectionPanel.tsx`, `RiskAccessPanel.tsx`, `DistributionPanel.tsx`, `HeadlineInsights.tsx` | Post-selection and analytics panels |
+| Right panels | `RightPanelStack.tsx`, `SelectionPanel.tsx`, `RiskAccessPanel.tsx`, `DistributionPanel.tsx`, `HeadlineInsights.tsx`, `NeighborMatchesPanel.tsx` | Post-selection and analytics panels; NeighborMatchesPanel redesigned in v2.5 Ph30–31 (twin affordance + why-similar chips, unified focus rail) |
+| Living graph (v2.5) | `similarityWeb.ts`, `SimilarityWebOverlay.tsx`, `ambientMotion.ts`, `whySimilar.ts`, `graphTestBridge.ts` | Similarity-edge overlay w/ link strength + ambient redraw throttle (LINK-PERF); ambient idle motion (reduced-motion aware); why-similar contribution chips; e2e bridge (`tests/e2e/phase32-ambient.spec.ts`) |
+| Embedding feature export | `instanceFeatureNumerics.ts`, `instanceFeatureTokens.ts` | Hybrid raw-numerics + coverage-token export consumed by `scripts/build-instance-features.ts` → `scripts/compute_instance_embeddings.py` (PaCMAP, v2.5 Ph29) |
 | Analytics | `analyticsFindings.ts`, `analyticsQueries.ts`, `accessFacets.ts`, `riskFlags.ts`, `actionBuckets.ts`, `catalogWeights.ts` | Risk/perm analytics on feature snapshots |
 | Graph KPI | `ChartPanel.tsx`, `DonutPanel.tsx`, `KpiHeroStrip.tsx` | In-graph chart panels |
 | Runtime registry (NOT legacy-dead) | `dimensionRegistry.ts`, `dimensionGroups.ts` | Runtime slider/physics dimension subset; actively imported by `SliderContext.tsx`, `AccessAnalysisShell.tsx`, `nodeColors.ts`, `featureTargets.ts`, `bucketedColors.ts`, `sliderPresets.ts`, `featureSnapshot.ts`, `dimensionCatalog.structural.ts` |
 
 **`app/(dashboard)/users/spatial-graph/`:**
-- `page.tsx` — prefetches via `prefetchAccessAnalysisRouteData`; applies **`superjson.deserialize(helpers.dehydrate())`** before `<HydrationBoundary>` (v2.4 PERF-04 fix, 9fb54cb8 — `createServerSideHelpers({ transformer: superjson })` returns a `{ json, meta }` wrapper that App Router's boundary can't hydrate raw); renders `AccessAnalysisShellClient`
+- `page.tsx` — prefetches via `prefetchAccessAnalysisRouteData`; applies **`deserializeHydrationState(helpers.dehydrate())`** (`lib/server/hydrationState.ts`) before `<HydrationBoundary>` — `createServerSideHelpers({ transformer: superjson })` returns a `{ json, meta }` wrapper that App Router's boundary can't hydrate raw (v2.4 PERF-04, generalized to the shared boundary in v2.5 Ph33 PERF-05)
 - `loading.tsx` — route-level loading skeleton
-- Same hydration miss is **still live** on `app/(dashboard)/layout.tsx` and `app/(dashboard)/users/page.tsx`, which pass raw `helpers.dehydrate()`
+- The former hydration miss on `app/(dashboard)/layout.tsx` and `app/(dashboard)/users/page.tsx` is **closed** — both now call `deserializeHydrationState` (commit e7e14e64)
 
 ## Focus Area: `/template-mty` (`app/(dashboard)/template-mty/`)
 
@@ -348,8 +354,8 @@ Key structural groups:
 - Committed: Yes (standing research input)
 
 **`.planning/`:**
-- Purpose: GSD planning artifacts (STATE.md, PROJECT.md, codebase maps, phase plans)
-- Generated: By GSD commands
+- Purpose: Project planning memory (STATE.md, PROJECT.md, MILESTONES.md, codebase maps, phase plans) used by the `.claude/skills/lecg-*` lifecycle skills (GSD framework retired 2026-07-15)
+- Generated: By the lecg-* skills (plain markdown, no external runtime)
 - Committed: Yes
 
 **`public/duckdb-wasm/`:**
@@ -366,11 +372,11 @@ Key structural groups:
 
 ## Dashboard Self-Check
 
-- **Context:** repo-map architecture-summary.md (2026-07-14) + direct source reads for the workshop routes + `git ls-files` listings (committed truth; the working tree carries ~222 uncommitted WIP entries).
-- **Evidence:** All paths verified from `git ls-files` output and file reads. No invented paths. Stale per-file line counts from the 2026-07-02 pass were dropped rather than re-measured against the WIP tree.
+- **Context:** repo-map architecture-summary.md (2026-07-16, working-tree regeneration) + v2.5 commit log (phases 29–33) + `git status --short` for the ~221 uncommitted entries on `feat/access-analysis-redesign`; this refresh describes the current working tree, deletions included.
+- **Evidence:** Every named path verified extant in the working tree by direct file-existence check (all v2.5 modules, all surviving `/users` files); deleted files verified from `git status` and excluded. No invented paths.
 - **Constraints:** No `src/` root. No Prisma in `components/`. Page scroll ownership noted.
 - **Gates:** Map artifact only — no compilation.
 - **Resolved prior VERIFY:** `dimensionRegistry.ts` / `dimensionGroups.ts` are still active runtime imports (SliderContext, nodeColors, featureTargets, etc.), coexisting with the widened `dimensionCatalog`.
 - **VERIFY:** the exact 3 unexposed dimensions in the 205-of-208 v2.4 split (208 is test-pinned; 205 is from the milestone close, not re-derived here).
 
-*Structure analysis: 2026-06-23; targeted refresh 2026-07-16 (post v2.3 New Graphs + v2.4 Spatial Graph Dimensions)*
+*Structure analysis: 2026-06-23; targeted refresh 2026-07-20 (post v2.5 Living Graph; working tree = feat/access-analysis-redesign WIP)*

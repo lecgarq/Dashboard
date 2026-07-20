@@ -1,10 +1,10 @@
-<!-- refreshed: 2026-07-16 -->
+<!-- refreshed: 2026-07-20 -->
 # Architecture
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-16 — targeted post-v2.3 (charts/panels) + v2.4 (spatial-graph dimension widening) update; repo-map basis 2026-07-14 (gate passing)
+**Refreshed:** 2026-07-20 — post-v2.5 "Living Graph" (phases 29–33: PaCMAP embeddings, neighbor/why-similar redesign, focus choreography, ambient life + link strength, PERF-05/06 + LINK-PERF) update; repo-map basis 2026-07-16 (gate passing)
 
-> **In-flight note (2026-07-16):** branch `feat/access-analysis-redesign` carries ~222 uncommitted working-tree entries (a `/users` directory redesign that deletes `PersonCard.tsx`, `PersonRow.tsx`, `PersonDetailModal.tsx`, etc.). This document describes the **committed** architecture; do not treat working-tree deletions/edits as landed.
+> **In-flight note (2026-07-20):** branch `feat/access-analysis-redesign` carries ~221 uncommitted working-tree entries. This document describes the **current working tree**, deletions included: `app/(dashboard)/users/` `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` are **deleted** (uncommitted) and must not be referenced as extant. `UsersDirectoryClient.tsx`, `UserProfilePanel.tsx`, and the DataTable directory stack remain.
 
 ## System Overview
 
@@ -133,9 +133,8 @@
 3. Client component (`UsersDirectoryClient`, `AccessAnalysisShellClient`) reads from React Query cache — no re-fetch on mount
 4. Subsequent user interactions trigger `trpc.<proc>.useQuery()` calls with stale-while-revalidate
 
-**superjson hydration trap (v2.4 PERF-04):** `createServerSideHelpers({ transformer: superjson })` makes `helpers.dehydrate()` return a superjson-**wrapped** `{ json, meta }` envelope (a pages-router idiom). App Router's `<HydrationBoundary>` expects a **raw** `DehydratedState`, so passing the wrapper hydrates nothing and the client silently re-fetches the multi-MB payload on mount. Fix: `superjson.deserialize(dehydrated)` before the boundary, guarded on the `{ json }` shape.
-- **Fixed:** `app/(dashboard)/users/spatial-graph/page.tsx` (commit 9fb54cb8)
-- **Still raw (live hydration miss):** `app/(dashboard)/layout.tsx` (6 layout-level prefetches) and `app/(dashboard)/users/page.tsx` — both pass `helpers.dehydrate()` straight to `<HydrationBoundary>`
+**superjson hydration trap (v2.4 PERF-04 → v2.5 PERF-05 closed everywhere):** `createServerSideHelpers({ transformer: superjson })` makes `helpers.dehydrate()` return a superjson-**wrapped** `{ json, meta }` envelope (a pages-router idiom). App Router's `<HydrationBoundary>` expects a **raw** `DehydratedState`, so passing the wrapper hydrates nothing and the client silently re-fetches the multi-MB payload on mount.
+- **Fixed at the shared boundary (v2.5 Ph33, commit e7e14e64):** `lib/server/hydrationState.ts` exports `deserializeHydrationState()` (guards on the `{ json }` shape). All three call sites now use it: `app/(dashboard)/layout.tsx`, `app/(dashboard)/users/page.tsx`, `app/(dashboard)/users/spatial-graph/page.tsx`. The prior per-page inline `superjson.deserialize` (9fb54cb8) is superseded. Any NEW `<HydrationBoundary>` must wrap `helpers.dehydrate()` in `deserializeHydrationState()`.
 
 ### 3D Physics Graph Path (`/users/spatial-graph` → `AccessAnalysisShell`)
 
@@ -151,6 +150,12 @@
 5. `GraphInteractions` wraps `GraphCanvas` — owns hover/click via `setEventHandlers`, `LassoOverlay`, `usePredicateEngine`
 6. `usePredicateEngine` is the ONLY channel that calls `physics.setMask()` — filter/search/lasso/drill never restart the simulation
 7. `SliderContext` (localStorage-persisted) calls `physics.updateSliders(normalized 0..1)` via rAF coalescing
+
+**v2.5 "Living Graph" additions on this path (phases 29–33):**
+- **Similarity web + focus choreography (Ph31):** `similarityWeb.ts` + `SimilarityWebOverlay.tsx` render Gephi-style similarity edges; click/hover focus choreography wired through `GraphInteractions.tsx` and a unified focus rail across `NeighborMatchesPanel.tsx` / `RightPanelStack.tsx` / `UserProfilePanel.tsx`.
+- **Ambient life + link strength (Ph32):** `ambientMotion.ts` drives subtle idle node motion (reduced-motion aware); `SimilarityWebOverlay` expresses per-edge link strength. e2e: `tests/e2e/phase32-ambient.spec.ts`.
+- **Perf closeout (Ph33):** PERF-05 shared hydration fix (`lib/server/hydrationState.ts`), PERF-06 graph-first code split in `AccessAnalysisShell.tsx` + RSC-proxied `bulkUsers` input fix (`lib/acc/cachePolicy.ts` client-proxy trap), LINK-PERF ambient redraw throttle + empty-stroke skip in `SimilarityWebOverlay.tsx` (21.4→41.3 fps).
+- **Embedding pipeline (Ph29–30, offline):** `scripts/build-instance-features.ts` exports hybrid features (`instanceFeatureNumerics.ts` / `instanceFeatureTokens.ts`); `scripts/compute_instance_embeddings.py` runs a PaCMAP hybrid embedding with a trustworthiness ship gate and twin-collapsed structured neighbors; `lib/acc/embedding/neighborPayload.ts` normalizes the neighbors JSON shape for `accDcGraph`; `whySimilar.ts` renders why-similar contribution chips.
 
 **State Management:**
 - `/access-analysis` RSC page: all state local to `AccessAnalysisCharts` via React `useState` (no Zustand)
@@ -227,11 +232,11 @@
 
 **`/users` route:**
 - Location: `app/(dashboard)/users/page.tsx`
-- Pattern: RSC prefetch via `prefetchUsersRouteAccData` → `<HydrationBoundary>` → `UsersDirectoryClient` (Zustand + DataTable). Passes raw `helpers.dehydrate()` — known live superjson hydration miss (see Data Flow).
+- Pattern: RSC prefetch via `prefetchUsersRouteAccData` → `deserializeHydrationState(helpers.dehydrate())` → `<HydrationBoundary>` → `UsersDirectoryClient` (Zustand + DataTable). Hydration miss fixed in v2.5 Ph33 (see Data Flow).
 
 **`/users/spatial-graph` route:**
 - Location: `app/(dashboard)/users/spatial-graph/page.tsx`
-- Pattern: RSC prefetch via `prefetchAccessAnalysisRouteData` → `superjson.deserialize(helpers.dehydrate())` → `<HydrationBoundary h-screen>` → `AccessAnalysisShellClient` → dynamic `AccessAnalysisShell` (ssr:false). Route-level `loading.tsx` skeleton.
+- Pattern: RSC prefetch via `prefetchAccessAnalysisRouteData` → `deserializeHydrationState(helpers.dehydrate())` → `<HydrationBoundary h-screen>` → `AccessAnalysisShellClient` → dynamic `AccessAnalysisShell` (ssr:false; graph-first code split since v2.5 Ph33). Route-level `loading.tsx` skeleton.
 
 **`/users/access-analysis` route (redirect only):**
 - Location: `app/(dashboard)/users/access-analysis/page.tsx`
@@ -289,11 +294,11 @@
 
 ## Dashboard Self-Check
 
-- **Context:** architecture-summary.md (2026-07-14, gate passing), root.ts, page.tsx/layout.tsx for the workshop routes, `mainCharts.tsx`, and key spatial-graph modules read directly from committed source; 2026-07-16 refresh grounded in v2.3/v2.4 milestone artifacts.
-- **Evidence:** All paths, routers, components, and patterns verified from source files (`git ls-files` for committed truth on the WIP-heavy tree). 23 tRPC routers verified from `server/routers/root.ts` (incl. `accCoordination`). superjson hydration state verified per-file (spatial-graph/page.tsx fixed; layout.tsx + users/page.tsx still raw). 208-entry catalog vocabulary verified from `catalogSliders.test.ts`.
+- **Context:** architecture-summary.md (2026-07-16, gate passing), root.ts, page.tsx/layout.tsx for the workshop routes, `mainCharts.tsx`, and key spatial-graph modules; 2026-07-20 refresh grounded in the v2.5 Living Graph commit log (phases 29–33) plus `git status --short` for working-tree deletions on `feat/access-analysis-redesign`.
+- **Evidence:** All paths, routers, components, and patterns verified against the current working tree (file-existence checks for every v2.5 module and every surviving `/users` component; deletions confirmed from `git status`). 23 tRPC routers verified from `server/routers/root.ts` (incl. `accCoordination`). superjson hydration fix verified per-file: all three boundaries import `deserializeHydrationState` from `lib/server/hydrationState.ts`. 208-entry catalog vocabulary from `catalogSliders.test.ts`.
 - **Constraints:** zinc theme, MASK bus invariant, no-Prisma-in-UI, page scroll ownership documented explicitly.
 - **Gates:** No compilation run (map-only artifact). `npx tsc --noEmit` required before any edits.
 - **Resolved prior VERIFY:** `dimensionRegistry.ts` / `dimensionGroups.ts` remain actively imported (SliderContext, nodeColors, featureTargets, etc.) — registry is the runtime slider subset, not dead legacy.
 - **VERIFY:** the exact 3 unexposed dimensions in the 205-of-208 v2.4 split (count from milestone close; not re-derived from source).
 
-*Architecture analysis: 2026-06-23; targeted refresh 2026-07-16 (post v2.3 New Graphs + v2.4 Spatial Graph Dimensions)*
+*Architecture analysis: 2026-06-23; targeted refresh 2026-07-20 (post v2.5 Living Graph; working tree = feat/access-analysis-redesign WIP)*
