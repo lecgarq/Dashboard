@@ -61,7 +61,43 @@ export interface SimilarityWebOverlayProps {
 }
 
 const FRAME_MS = 33; // ~30Hz, matches MapClusterLabels
+/**
+ * LINK-PERF (33-03): rasterizing 14k antialiased beziers is the fps ceiling
+ * (A/B: 60fps with the overlay hidden vs 17.6fps drawing every tick; JS spans
+ * are ~1.4ms/draw). Ambient micro-orbits displace nodes sub-pixel per 100ms,
+ * so when ambient drift is the ONLY change we redraw at ~10Hz. Pan/zoom,
+ * morphs, data and focus changes still redraw immediately at full rate.
+ */
+const AMBIENT_REDRAW_MS = 100;
 const EMPTY_MATCHES: readonly FocusMatchIndex[] = [];
+
+// LINK-PERF instrumentation: inlined at build time, dead code on production builds.
+const PROFILE_ENABLED = process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
+
+interface SimWebProfile {
+  draws: number;
+  parked: number;
+  projectMs: number;
+  buildMs: number;
+  strokeMs: number;
+  focusMs: number;
+  totalMs: number;
+}
+
+function profileCounters(): SimWebProfile | null {
+  if (!PROFILE_ENABLED) return null;
+  const w = window as unknown as { __SIM_WEB_PROFILE__?: SimWebProfile };
+  w.__SIM_WEB_PROFILE__ ??= {
+    draws: 0,
+    parked: 0,
+    projectMs: 0,
+    buildMs: 0,
+    strokeMs: 0,
+    focusMs: 0,
+    totalMs: 0,
+  };
+  return w.__SIM_WEB_PROFILE__;
+}
 
 export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JSX.Element | null {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,6 +114,7 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
     let active = true;
     let raf = 0;
     let last = 0;
+    let lastAmbientDraw = 0;
     let curOpacity = 0;
     let prevAff: Affine | null = null;
     let prevSrc: Int32Array | null = null;
@@ -158,23 +195,40 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         const moved = affChanged(aff, prevAff);
         const opacitySettled = curOpacity === target;
 
+        const prof = profileCounters();
+
         // Skip the whole redraw when nothing changed (idle = zero cost).
         if (!moved && !positionsChanged && opacitySettled && !morphing && !dataChanged && !focusChanged) {
+          if (prof) prof.parked += 1;
           raf = requestAnimationFrame(tick);
           return;
         }
 
+        // Ambient-only drift redraws at ~10Hz (sub-pixel motion; raster is the
+        // ceiling). Anything user-visible-fast still redraws this tick.
+        const ambientOnly = !moved && opacitySettled && !morphing && !dataChanged && !focusChanged;
+        if (ambientOnly && ts - lastAmbientDraw < AMBIENT_REDRAW_MS) {
+          if (prof) prof.parked += 1;
+          raf = requestAnimationFrame(tick);
+          return;
+        }
+        lastAmbientDraw = ts;
+
         curOpacity = reducedMotion ? target : stepOpacity(curOpacity, target, dt);
         prevAff = aff;
 
+        const t0 = prof ? performance.now() : 0;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, cw, ch);
         const pts = handle.getPointPositions(); // stride-2 cosmos space coords
+        if (prof) prof.projectMs += performance.now() - t0;
 
         if (curOpacity > 0.005 && src.length > 0) {
+          const tBuild = prof ? performance.now() : 0;
           const bucketCount = palette.length / 4;
-          const paths: Path2D[] = [];
-          for (let b = 0; b < bucketCount * 3; b++) paths.push(new Path2D());
+          // Lazy per-combo paths: most bucket×band combos are empty — never
+          // allocate or stroke them.
+          const paths: (Path2D | undefined)[] = new Array(bucketCount * 3);
 
           for (let i = 0; i < src.length; i++) {
             const a = src[i] * 2;
@@ -185,25 +239,37 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
             const by = pts[d + 1] * aff.sy + aff.oy;
             const cx = (ax + bx) / 2 - (by - ay) * curve;
             const cy = (ay + by) / 2 + (bx - ax) * curve;
-            const p = paths[bucket[i] * 3 + band[i]];
+            const pi = bucket[i] * 3 + band[i];
+            const p = paths[pi] ?? (paths[pi] = new Path2D());
             p.moveTo(ax, ay);
             p.quadraticCurveTo(cx, cy, bx, by);
           }
 
+          const tStroke = prof ? performance.now() : 0;
+          if (prof) prof.buildMs += tStroke - tBuild;
+
           ctx.globalAlpha = curOpacity * (selectedIndex === null ? 1 : 0.15);
           for (let b = 0; b < bucketCount; b++) {
-            const o = b * 4;
-            ctx.strokeStyle = `rgba(${Math.round(palette[o] * 255)},${Math.round(
-              palette[o + 1] * 255,
-            )},${Math.round(palette[o + 2] * 255)},${palette[o + 3]})`;
+            let styled = false;
             for (let edgeBand = 0; edgeBand < 3; edgeBand++) {
+              const p = paths[b * 3 + edgeBand];
+              if (!p) continue;
+              if (!styled) {
+                const o = b * 4;
+                ctx.strokeStyle = `rgba(${Math.round(palette[o] * 255)},${Math.round(
+                  palette[o + 1] * 255,
+                )},${Math.round(palette[o + 2] * 255)},${palette[o + 3]})`;
+                styled = true;
+              }
               ctx.lineWidth = linkBandStyle(edgeBand as 0 | 1 | 2).width;
-              ctx.stroke(paths[b * 3 + edgeBand]);
+              ctx.stroke(p);
             }
           }
           ctx.globalAlpha = 1;
+          if (prof) prof.strokeMs += performance.now() - tStroke;
         }
 
+        const tFocus = prof ? performance.now() : 0;
         if (dataChanged || focusChanged) {
           focusCache = resolveFocusEdges(
             { src, dst, strength, dropped: 0 },
@@ -255,6 +321,12 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
         // Deliberate draw priority: ambient < persistent selected < temporary hover.
         drawFocus(focusCache.selected, 0.9, 0.08);
         drawFocus(focusCache.hovered, 1.2, 0.12);
+        if (prof) {
+          const tEnd = performance.now();
+          prof.focusMs += tEnd - tFocus;
+          prof.totalMs += tEnd - t0;
+          prof.draws += 1;
+        }
       }
 
       raf = requestAnimationFrame(tick);
