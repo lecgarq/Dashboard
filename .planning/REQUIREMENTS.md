@@ -102,21 +102,21 @@ Data authority for all REND requirements: the existing similarity edge set —
 Data authority: the existing Playwright suite + isolated `:3100` prod-build harness
 (`NEXT_PUBLIC_ACC_GRAPH_TEST`, minted NextAuth cookie auth).
 
-- [ ] **E2E-01**: `tests/e2e/acc-dc-graph.spec.ts` is **re-baselined and green** on an
+- [x] **E2E-01**: `tests/e2e/acc-dc-graph.spec.ts` is **re-baselined and green** on an
       isolated `:3100` production build — node-count expectations updated to the live
       22,279-node snapshot, dead physics-shell sidebar testids and curated-slider selectors
       ("User name thumb") replaced with the real v2.4+ surface (`group-by-select`,
       "Grouping strength thumb"); 0 of the 14 pre-existing drift failures remain. The suite
       can gate the v2.6 renderer phases.
 
-- [ ] **E2E-02**: The lasso e2e flake is closed (CONCERNS §3.4) — `acc-3d-lasso.spec.ts` no
+- [x] **E2E-02**: The lasso e2e flake is closed (CONCERNS §3.4) — `acc-3d-lasso.spec.ts` no
       longer times out at the 120 s global budget under machine load (scoped timeout /
       `test.slow()` / reduced fixture, whichever the evidence supports); passes recorded on
       consecutive runs.
 
 ### Unit Suite (TEST — continues v2.1 numbering)
 
-- [ ] **TEST-04**: The 3 pre-existing `usePredicateEngine` banded-catalog aperture failures
+- [x] **TEST-04**: The 3 pre-existing `usePredicateEngine` banded-catalog aperture failures
       (proven pre-existing WIP at v2.4 Phase 25, stash-and-rerun) are resolved — code fixed
       or the tests corrected against real intended behavior, with the rationale recorded —
       so `npm test` is **fully green** with zero carried failures.
@@ -125,7 +125,7 @@ Data authority: the existing Playwright suite + isolated `:3100` prod-build harn
 
 Data authority: `.claude/hooks/guard-bash.cjs` (existing PreToolUse hook).
 
-- [ ] **GUARD-01**: The guard-bash powershell-wrap gap is closed — `powershell -Command`
+- [x] **GUARD-01**: The guard-bash powershell-wrap gap is closed — `powershell -Command`
       invocations that wrap `next build`/`npm run build` are denied while `:3000` serves,
       same as bare invocations; the double-quoted-`$env:`-expands-empty trap is documented
       at the rule. A regression check (hook unit test or recorded manual matrix) covers the
@@ -136,7 +136,7 @@ Data authority: `.claude/hooks/guard-bash.cjs` (existing PreToolUse hook).
 Data authority: `AccInstanceEmbedding` (Prisma) + `scripts/compute_instance_embeddings.py`
 upsert path.
 
-- [ ] **PIPE-02**: The embedding pipeline **prunes stale rows** — after each run, rows whose
+- [x] **PIPE-02**: The embedding pipeline **prunes stale rows** — after each run, rows whose
       nodeId is absent from the current run's snapshot set are deleted (983 stale old-shape
       rows today → 0 after the first pruned run); the prune count is reported in the run
       output. Delete-only, additive to the existing gate-conditional upsert — a trustworthiness

@@ -985,7 +985,7 @@ organic, never a fixed grid.
 
 ## Phases
 
-- [ ] **Phase 34: Test & Guard Health Sweep** - The suites can gate again: e2e re-baselined
+- [x] **Phase 34: Test & Guard Health Sweep** - The suites can gate again: e2e re-baselined
   green, lasso budget fixed, unit suite fully green, guard-bash denies powershell-wrapped
   builds, embedding pipeline prunes stale rows
 - [ ] **Phase 35: Similarity-Web Renderer Rethink** - The web renders off the main-thread
@@ -1082,4 +1082,3 @@ v2.4 Phase 28 / v2.5 Phase 33).
      with route probe recorded.
 
 **UI hint**: no.
-
