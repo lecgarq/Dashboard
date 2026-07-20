@@ -9,7 +9,7 @@
 - ✅ **v2.2 Structural Refactors** - Phases 15-19 (shipped 2026-07-02)
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
 - ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
-- 🔄 **v2.5 Living Graph** - Phases 29-33 (opened 2026-07-16)
+- ✅ **v2.5 Living Graph** - Phases 29-33 (shipped 2026-07-20)
 
 ---
 
@@ -799,7 +799,7 @@ PERF-03 — verify at v2.4 close before re-listing):**
 
 ---
 
-## 🔄 v2.5 Living Graph (Opened — 2026-07-16)
+## ✅ v2.5 Living Graph (Shipped — 2026-07-20, 16/16 requirements; retrospective in MILESTONES.md, archived to milestones/v2.5-*)
 
 **Milestone goal:** Make the spatial graph's positions *true* (full extracted feature set,
 magnitude-aware distances, UMAP projection), its similarity relationships *intelligent*

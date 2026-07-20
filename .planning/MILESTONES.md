@@ -1,5 +1,61 @@
 # Milestones — LECG Dashboard
 
+## v2.5 Living Graph (Shipped: 2026-07-20)
+
+**Phases:** 5 (29–33) · **Requirements:** 16/16 shipped · **Span:** 2026-07-16 → 2026-07-20 · **Tag:** _local-only_
+
+**Goal vs outcome:** Make the spatial graph's positions *true* (full extracted feature set, magnitude-aware distances), its similarity relationships *intelligent* (de-twinned, explained neighbors), and its surface *alive* (full ambient motion, click/hover choreography, expressive links) — then close the carried perf debt so the life is felt. **Achieved end-to-end:** the bag-of-words t-SNE map (84.3% jittered clones) became a hybrid-vector PaCMAP projection (20.4% duplicates, trustworthiness 0.9388→0.9597, gate-conditional upsert); neighbor lists went from 10×100%-clone rows to k=10 distinct matches + twin chip + per-match "why similar" chips with coverage labels; click/hover/ambient choreography shipped entirely on the frozen CPU/rAF path (PERF-02 invariant green throughout); and PERF-05/06 closed the v2.4 debt with hard numbers (no-refetch on both routes, shell chunk −18.3%, time-to-graph −23.5%). One dependency change total (offline python `pacmap`+`faiss-cpu`), zero new npm deps, zero migrations.
+
+**Per-requirement audit:**
+
+| Req | Verdict | Phase | Evidence |
+|---|---|---|---|
+| EMB-01 full-feature vector | ✅ shipped | 29 | 8 categorical groups + 6 raw numerics + `cov:` token; in-code include/exclude rationale table (`instanceFeatureNumerics.ts`, `31ecc672`) |
+| EMB-02 magnitude survives distance | ✅ shipped | 29 | log1p+max-scale / ÷5 ordinals / missing indicators, block-scaled; unit-pinned both sides incl. "permstr 5 closer to 4 than 0" (TS 3 tests + pytest) |
+| EMB-03 PaCMAP projection | ✅ shipped (as amended) | 29 | Owner amendment UMAP→PaCMAP recorded; pacmap 0.9.1 + faiss-cpu, `random_state=42`, determinism proven live twice; ingest log truthful (`12140386`) |
+| EMB-04 archetype collapse reduced | ✅ shipped | 29 | Duplicate rate 84.3%→20.4% (unique 3,488→17,732), measured baseline honest vs ~87% estimate; jitter residual-only |
+| EMB-05 quantitative quality gate | ✅ shipped | 29 | trustworthiness(k=10) old=0.9388 new=0.9597 PASS, same-snapshot seeded sample; upsert conditional (exit 1 on regression); neighbor-purity deliberately non-gate (owner §4) |
+| EMB-06 live recompute on graph | ✅ shipped | 29 | Run `20260716T173543Z-345c0e14` (22,279 rows); :3000 renders new islands, zero (0,0) fallbacks; Role 0→60→0 morph smoke OK; ingest wiring non-fatal |
+| SIM-01 de-twinned neighbors | ✅ shipped | 30 | kNN over twin-group representatives, k=10 DISTINCT guaranteed + `{count, ids[≤10]}` twin summary; run `20260716T182623Z-e6fab986` (trust 0.9598 PASS, twin max 313/p95 2); panel before/after screenshots |
+| SIM-02 "why similar" explanations | ✅ shipped | 30 | `top_contribution_keys` (elementwise product on real hybrid matrix, math unit-pinned) → `whySimilar.ts` labels+values+coverage suffixes; placeholder/unknown-coverage suppression (`eef5eaa9`) |
+| SIM-03 edge set rebuilt honestly | ✅ shipped | 30 | Matches-only edges (twins structurally excluded); `interReserveFrac=0.4`/18k KEPT with recorded evidence table (inter share 11.0%→14.5%); min-max pinned by `similarityWeb.test.ts` |
+| LIFE-01 click choreography | ✅ shipped | 31 | 180ms/2.25× frozen-Cosmos focus w/ exact restore; selected+10-distinct-match lighting; Playwright 11 lit nodes/navigation/Close (`849d74d4`, `4821cac3`) |
+| LIFE-02 hover life | ✅ shipped | 31 | Hover incident-edge priority + cancellable 80ms tier/recency/breadth tooltip, truthful partial coverage; handler-path Playwright |
+| LIFE-04 enriched click panel | ✅ shipped | 31 | Floating card removed → one matches-first rail (identity header + match/twin/why evidence + ACC body), concurrent 180ms swap, reduced-motion 0 (`923428f1`) |
+| LIFE-03 full ambient motion | ✅ shipped (fallback clause) | 32 | Deterministic recency micro-orbits on frozen rAF path; **hard Tier-0 ≥50fps gate FAILED on final 14,200-link path (20.68fps)** — passes by the requirement's explicit degradation clause: three-tier controller observed degrading 0→1→2 to static, recorded not hypothesized; pre-link diagnostic 60.04fps retained honestly as non-final |
+| LIFE-05 intentional links | ✅ shipped | 32 | Real-score weak/medium/strong bands at locked boundaries, monotone width/alpha, ambient<selected<hover draw order, 25%-opacity-floor morph web (no fade-to-nothing), reduced-motion snap (`3a48274a`) |
+| PERF-05 app-wide hydration fix | ✅ shipped | 33 | `lib/server/hydrationState.ts` at all 3 call sites + 2/2 unit test; network evidence: zero refetch violations both routes; in-scope root-cause bonus — `BULK_USERS_LEAN_INPUT` client-proxy fix → `lib/acc/cachePolicy.ts` (`e7e14e64`, `65306046`) |
+| PERF-06 shell-chunk split + re-measure | ✅ shipped | 33 | Graph-first `next/dynamic` split, shell chunk 164,154→134,108 B (−18.3%), framer-motion evicted; fresh in-phase pair 5,116→3,914 ms (−23.5%); vs 28.1 median 4,360: −446 ms (−10.2%) (`65306046`, `33-BASELINE.md`) |
+
+Owner-added LINK-PERF (no REQ-ID, best-effort, no fps gate): ✅ delivered — raster-bound ceiling proven causally (60.0fps blanked vs 17.6 drawing), ambient-only ~10 Hz redraw throttle + Path2D/empty-stroke skip → 21.35→41.33 fps (+94%), Phase-32 contract intact (`682a4176`).
+
+**Phases shipped:** 29 Embedding v2 — Feature Fidelity & PaCMAP (2026-07-16, data-only — rebuild skipped with rationale, live route probe) · 30 Similarity Intelligence (2026-07-16, BUILD_ID `SkA5J8kUu0LgER4NcyiJr`) · 31 Click & Hover Choreography (2026-07-16, `YTIBgQ4sRBXlonyphxjTq`) · 32 Ambient Life & Link Expression (2026-07-16, `wiAv-e6WVMCVkPo2ie-5N`) · 33 Perf Closeout & Verification (2026-07-20, `-zcfnulR0rESok3UDom50`, authenticated live smoke 1/1).
+
+**Durable traps & decisions (carry forward):**
+
+1. **RSC client-reference proxy poisons server prefetch.** A constant imported from a `"use client"` module by server code becomes a client-reference proxy — the `/users` SSR prefetch had errored silently since v2.4/PERF-03 because of `BULK_USERS_LEAN_INPUT`. Fix pattern: shared constants live in directive-free modules (`lib/acc/cachePolicy.ts`). Check this any time a server component imports from a client file.
+2. **Isolated builds are PowerShell-only** — Git Bash trips a `.tsbuildinfo` path-style clash. Worse: a Git Bash **double-quoted** PowerShell command expands `$env:` to empty — one such command built over the live `.next` mid-phase (recovered same-day). guard-bash gap recorded in CONCERNS (`[NEW Ph33]`); single-quote or heredoc PowerShell invocations.
+3. **Canvas2D rasterization is the fps ceiling, not JS.** Profiling: JS tick 1.36 ms/draw vs ~40 ms/frame raster for the 14.2k-bezier web. Throttling redraws (+94%) is the last cheap lever; further gains need a renderer rethink — OffscreenCanvas worker / cosmos-native links / zoom decimation → **v2.6 candidate** (CONCERNS, `33-BASELINE.md`).
+4. **Twin-collapse before kNN, not after.** Computing neighbors over exact-vector twin-group *representatives* is what guarantees k distinct matches; post-hoc filtering of a saturated list cannot. Twin edges are excluded structurally from the web, not score-filtered.
+5. **PaCMAP determinism + gate-conditional upsert** held: fixed seed proven by identical double-run; the pipeline refuses to write on trustworthiness regression (exit 1 before upsert). MN_ratio/FP_ratio remain package defaults — revisit only on owner UAT ask.
+6. **Requirement-embedded fallback clauses keep audits honest** — LIFE-03's hard gate failed on the shipped path, and the milestone still closes truthfully because the degradation rule was written into the requirement, observed, and recorded (not asserted).
+7. Sequencing that held: 29→30 (neighbors on the new vector only), 30→31 (choreography lights the de-twinned sets), 33 measured last (baseline-then-verify, same as v2.4's 24→28).
+
+**Deferred items (destinations):**
+
+- **Similarity-web renderer rethink** (OffscreenCanvas worker / cosmos-native links / zoom decimation) — raster-bound ceiling; tier controller still degrades below 50fps by design → **v2.6 candidate** (CONCERNS Ph33).
+- **guard-bash powershell-wrap gap** — deny rules bypassed by powershell-wrapped builds; double-quote `$env:` expansion trap → CONCERNS `[NEW Ph33]`.
+- **Tier-3 graph dims** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser` resolution spike) + TIME-01 temporal scrubber → v2.6 candidates.
+- **e2e drift re-baseline** — `acc-dc-graph.spec.ts` 14 pre-existing failures (node count 16,942→22,279 + dead physics-shell testids); suite cannot gate until re-baselined → standing.
+- **DIM-05 project-coverage denominator** (verify 550/1,153 before display; `VERIFY:` in `dimensionCoverage.ts`) → standing.
+- **3 pre-existing `usePredicateEngine` Phase-25 unit failures** (stash-and-rerun proven pre-existing WIP) → standing.
+- **PaCMAP MN_ratio/FP_ratio tuning** — defaults only; revisit on owner UAT ask → CONCERNS (phase-29 tagged).
+- **Standing:** COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01, MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20–23 + 07 still on disk), Phase-17 SPLIT-04 owner visual sign-off.
+
+**Archive:** [`milestones/v2.5-ROADMAP.md`](milestones/v2.5-ROADMAP.md) · [`milestones/v2.5-REQUIREMENTS.md`](milestones/v2.5-REQUIREMENTS.md)
+
+---
+
 ## v2.4 Spatial Graph Dimensions (Shipped: 2026-07-16)
 
 **Phases:** 5 (24–28) + 1 fractional (28.1) · **Requirements:** 18/18 shipped · **Commits:** 74 (2026-07-14 → 2026-07-16; 12 feat, 6 fix, 2 refactor, 49 docs, 5 chore) · **Tag:** _local-only_

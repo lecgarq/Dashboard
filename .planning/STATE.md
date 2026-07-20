@@ -6,8 +6,8 @@ current_phase: 33
 current_phase_name: "Perf Closeout & Verification"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 33 VERIFIED + DEPLOYED 2026-07-20 (BUILD_ID -zcfnulR0rESok3UDom50, live authenticated smoke 1/1, 33-VERIFICATION.md complete, CONCERNS rolled forward). Phase 33 was v2.5's LAST phase — all 5 phases (29–33) shipped. Next command: /lecg-close-milestone (audit v2.5, retrospective, archive)."
-last_updated: "2026-07-20T09:50:00-06:00"
+stopped_at: "milestone v2.5 closed — next: /lecg-new-milestone (audit 16/16 shipped 2026-07-20; retrospective in MILESTONES.md; archives milestones/v2.5-*; phase dirs 29–33 pruned; seed the next milestone with the Deferred Items below + CONCERNS Ph33 debt, notably the similarity-web renderer rethink v2.6 candidate)"
+last_updated: "2026-07-20T10:30:00-06:00"
 ---
 
 # Project State
@@ -17,203 +17,22 @@ last_updated: "2026-07-20T09:50:00-06:00"
 See: `.planning/PROJECT.md` (updated 2026-07-16)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.5 Living Graph (opened 2026-07-16) — embedding fidelity (hybrid
-feature vector + UMAP), similarity intelligence (de-twinned, explained neighbors), living
-UI (full ambient motion + click/hover choreography + expressive links), and the two carried
-perf items (app-wide SSR-hydration fix, shell-chunk code-split).
+**Current focus:** none — v2.5 Living Graph CLOSED 2026-07-20 (16/16 shipped). Next:
+`/lecg-new-milestone`.
 
 ## Current Position
 
-- **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
-  (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
-  Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 33 — Perf Closeout & Verification — **SHIPPED 2026-07-20**
-  (`33-VERIFICATION.md`, deployed BUILD_ID `-zcfnulR0rESok3UDom50`): PERF-05
-  hydration helper ×3 call sites + no-refetch network evidence both routes
-  (incl. BULK_USERS_LEAN_INPUT RSC-proxy root-cause fix → cachePolicy.ts);
-  PERF-06 graph-first split, shell chunk −18.3%, time-to-graph 5,116→3,914 ms
-  (−23.5%; −10.2% vs 28.1 median); LINK-PERF 21.35→41.33 fps (+94%,
-  ambient-only ~10 Hz redraw throttle — raster-bound ceiling proven,
-  renderer rethink = v2.6 candidate). **v2.5 is phase-complete (29–33).**
-- **Phase 33 CONTEXT LOCKED 2026-07-16:** PERF-05 shared
-  `deserializeHydrationState` helper at all three call sites (layout.tsx:45 +
-  users/page.tsx:13 still raw; spatial-graph/page.tsx migrates its inline fix)
-  with unit test + one `:3100` no-refetch network check. PERF-06 pass/fail =
-  fresh in-phase pre-split vs post-split median pair (`:3100` median-of-5 via
-  `measure-spatial-graph-baseline.cjs`); delta vs the 28.1 median 4,360 ms
-  recorded honestly but 29–32 drift alone does not fail the phase. Load feel:
-  graph-first, panels stream in behind quiet placeholders (no layout shift,
-  fade-in only). Owner-added LINK-PERF: profile + best-effort optimize the
-  Canvas2D link path (20.68 fps ceiling), no hard fps gate; PERF-02 invariant
-  and Phase-32 band/tier/morph behavior must survive unchanged.
-- **Phase 32 SHIPPED 2026-07-16** (`32-VERIFICATION.md`, deployed BUILD_ID
-  `wiAv-e6WVMCVkPo2ie-5N`): deterministic recency micro-orbits, focus freeze,
-  180ms morph resume, three-tier safety controller, weak/medium/strong link
-  expression, and a visible 25%-floor morph web. Final 22,279-node/14,200-link
-  sample measured 20.68fps and visibly degraded Tier 0→1→2 as required;
-  isolated browser 4/4 and live authenticated route smoke 1/1 passed.
-- **Phase 32 PLANNED 2026-07-16:** `32-01` adds deterministic recency micro-orbits,
-  foreground freeze, morph pause/resume, the three-tier FPS controller, and full-data
-  bridge evidence; `32-02` adds three strength bands and the visible 25%-floor morphing
-  similarity web. Both stay on the frozen flag-OFF rAF/Canvas2D path.
-- **Phase 32-01 COMPLETE 2026-07-16:** deterministic recency micro-orbits, focus
-  freeze, 180ms post-morph resume, three-tier FPS safety controller, and flag-gated
-  production evidence shipped. Isolated full-data gate: 22,279 nodes / 14,200 mapped
-  links / 60.04fps for 10.010s / Tier 0 / 22,279 animated; Playwright 3/3 and focused
-  Vitest 33/33 passed. Next: execute `32-02`.
-- **Phase 32-02 COMPLETE 2026-07-16:** real-score weak/medium/strong link bands,
-  palette+band batching, focus draw priority, and a position-attached 25%-floor
-  morph shipped. Focused Vitest 46/46, TEST-01/02/03 21/21, tsc, isolated build,
-  and Playwright 4/4 passed. Final full path measured 22,279 nodes / 14,200 links /
-  20.68fps and visibly degraded Tier 0→1→2; this truthful Canvas2D ceiling is
-  recorded for Phase-33 profiling rather than masked by the pre-link 60.04fps run.
-- **Phase 32 CONTEXT LOCKED 2026-07-16:** deterministic anchor-relative
-  recency micro-orbits with semantic node sizes unchanged; hover and
-  selected+ten-match foreground freeze over softer background life; ambient
-  pauses through Catalog morphs and resumes over ~180ms; three FPS tiers
-  (all nodes -> <=60d at 30Hz -> static) downgrade below 50fps and recover
-  after sustained >=55fps; similarity links use three strength bands and
-  remain at ~25% opacity through morphs.
-- **Phase 31 SHIPPED 2026-07-16** (`31-VERIFICATION.md`, deployed BUILD_ID
-  `YTIBgQ4sRBXlonyphxjTq`): reversible 180ms / 2.25× frozen-Cosmos focus,
-  selected + ten-distinct-match lighting, selected/hover edge priority with
-  fallback curves, truthful 80ms tier/recency/breadth tooltip, and one
-  matches-first ACC profile rail. Isolated Phase-31 Playwright 2/2 and live
-  authenticated route smoke 1/1 passed; impeccable found zero issues.
-- **Phase 30 SHIPPED 2026-07-16** (4/4 plans, `30-VERIFICATION.md`, deployed
-  BUILD_ID `SkA5J8kUu0LgER4NcyiJr`): `neighbors` Json is now the v2 structured
-  payload `{v:2, matches:[{nodeId, score, why[≤3]}], twins:{count, ids[≤10]}}` —
-  k=10 DISTINCT matches via kNN over exact-vector twin-group representatives;
-  `instanceNeighbors` returns the typed normalized shape (old bare-array rows
-  tolerated via `lib/acc/embedding/neighborPayload.ts`); panel shows twin chip +
-  why chips (labels/values/coverage resolved client-side in `whySimilar.ts`);
-  `similarityEdges` built from matches only, `interReserveFrac=0.4`/18k KEPT with
-  recorded evidence. Live run `20260716T182623Z-e6fab986` (22,279 rows, trust
-  0.9598 PASS, twin groups max 313 / p95 2). Commits: 2467f0a9, 6d52e7e9,
-  9666da74, eef5eaa9.
-  **Phase 31 planners note:** panel is content-complete and chrome-modest by
-  design — LIFE-04's animated reveal wraps it without content rework; neighbor
-  lighting should light `matches` only (twins are position clumps, not lit).
-- **Phase 31 CONTEXT LOCKED 2026-07-16:** native Cosmos focus at ~2.25× / 180ms
-  with exact pre-focus view restore; focus set is selected + ten distinct matches
-  only (no twins or same-user footprint); floating matches card becomes one
-  matches-first profile rail; hover incident edges temporarily render above the
-  persistent click selection and an ~80ms tier/recency/breadth tooltip.
-- **Phase 31 PLANNED 2026-07-16:** `31-01` delivers LIFE-01/LIFE-02 through the
-  existing frozen Cosmos handle + Canvas2D overlay; `31-02` moves the complete
-  Phase-30 match evidence into the existing profile rail for LIFE-04. No new
-  renderer, fetch, dependency, scrape, or data contract.
-- **Phase 31-01 COMPLETE 2026-07-16:** exact camera snapshot/focus/restore,
-  selected+matches-only mask, selected/hovered Canvas2D edge priority with
-  missing-match fallback, and 80ms truthful tier/recency/breadth tooltip.
-  Focused gate: 47 tests + tsc clean.
-- **Phase 31-02 COMPLETE 2026-07-16:** floating card removed; one identity
-  header + closest matches/twins/why evidence + existing ACC body now share the
-  right rail. Honest loading/empty/error states; one concurrent 180ms rail
-  transition with reduced-motion duration 0. Focused gate: 30 tests + tsc +
-  impeccable zero findings.
-- **Next:** `/lecg-phase 33`.
-- **Prior milestone:** v2.4 Spatial Graph Dimensions SHIPPED 2026-07-16 (18/18, deployed
-  BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`); retrospective in `MILESTONES.md`, archive in
-  `.planning/milestones/v2.4-*`.
-
-### v2.5 phase map (29–33)
-
-| Phase | Goal | Requirements |
-|---|---|---|
-| **29** Embedding v2 — Feature Fidelity & UMAP | Full-feature hybrid vector, magnitude-aware, UMAP projection, quality-gated old-vs-new, recomputed live | EMB-01–06 |
-| **30** Similarity Intelligence | kNN on the enriched vector, twin-saturation fixed, per-match "why similar" explanations, web rebuilt | SIM-01–03 |
-| **31** Click & Hover Choreography | Camera-ease focus, neighbor lighting, enriched animated panel, hover edge emphasis + headline tooltip | LIFE-01, LIFE-02, LIFE-04 |
-| **32** Ambient Life & Link Expression | Full ambient recency-modulated motion behind a hard ≥50fps gate + degradation rule; intentional link strength/hover/morph rendering | LIFE-03, LIFE-05 |
-| **33** Perf Closeout & Verification | SSR-hydration fixed at the shared boundary (3 call sites), shell chunk code-split, time-to-graph re-measured vs 28.1 median | PERF-05, PERF-06 |
-
-**Locked sequencing (do not re-order without re-deciding):**
-
-- **Phase 29 strictly precedes 30** — neighbors computed on the old TF-IDF matrix would be
-  thrown away the moment the vector changes.
-- **Phase 30 precedes 31** — the click choreography lights the *new* neighbor sets and the
-  panel integrates SIM-02's explanations; building it on twin-saturated lists wastes the work.
-- **Phase 33 measures LAST** — same baseline-then-verify discipline as v2.4 (Phase 24 → 28).
-
-### v2.5 scope decisions (owner, 2026-07-16)
-
-| Decision | Chosen |
-|---|---|
-| Projection | **PaCMAP** (amended from UMAP at the Phase-29 discussion 2026-07-16 — `pacmap` + faiss-cpu, the milestone's only dependency change, offline python pipeline only). Fixed seed, small-N fallback kept. |
-| Ambient motion | **Full ambient** — every node carries recency-modulated life at rest. Owner chose over the recommended "subtle". Safety net: hard ≥50fps gate at ~22k nodes + mandated auto-degradation rule (LIFE-03), reduced-motion → static. |
-| Perf debt | **Both folded in** — PERF-05 app-wide SSR-hydration fix (layout.tsx + users/page.tsx via shared helper + test), PERF-06 shell-chunk code-split + re-measure vs 28.1 median 4,360 ms. |
-| Phases | 5 (29–33) approved as proposed. |
-
-### v2.5 grounding facts (verified from source, 2026-07-16)
-
-Load-bearing findings from the milestone-open investigation. **Any planner/executor must
-treat these as the baseline.**
-
-- ⚠️ **NAME COLLISION (standing).** `app/(dashboard)/access-analysis/` = 23-panel charts
-  page (untouched). `app/(dashboard)/users/access-analysis/` = spatial-graph shell (this
-  milestone's surface). `/users/spatial-graph` and `/users/access-analysis` render the same
-  UI via `spatial-graph/page.tsx` → `AccessAnalysisShellClient`.
-
-- **Default path is flag-OFF.** `ACC_3D_GRAPH_ENABLED` is true only when
-  `NEXT_PUBLIC_ACC_3D_GRAPH === "1"` (`graphModeFlag.ts:2-7`) — unset in the repo. The
-  static embedding map is the live production surface; the GPU-sim/3D machinery is parked.
-
-- **Embedding pipeline (offline):** `scripts/build-instance-features.ts` (bulkUsers →
-  `buildGraphNodesFromUsers` → `instanceFeatureTokens` → `.embedding/instance-features.jsonl`)
-  → `scripts/compute_instance_embeddings.py` (TF-IDF → dedupe ~87% duplicate profiles to
-  ~3,000 archetypes → **t-SNE** cosine 2D → KMeans-12 → jitter-expand `JITTER_FRAC=0.012` →
-  normalize to `HALF_EXTENT=1000` → cosine kNN k=10 on the FULL matrix) → upsert
-  `AccInstanceEmbedding`. Wired in `scripts/dc-daily-ingest.cjs:139-146`, non-fatal.
-  **The `:140` log says "features → UMAP" but the code runs t-SNE** — stale until EMB-03.
-
-- **Token set today** (`instanceFeatureTokens.ts:10-22`): role, company, perm tier,
-  `permstr:<n>`, activity bucket, recency bucket, affiliation, status, admin, `mod:<key>`
-  multi-hot. **Project identity deliberately excluded** (D5 spec, comment `:6-8`).
-  **Dropped from position today:** folderBreadth, accessibleDataBytes, activityTotal,
-  membership tenure, riskScore, permissionCoverage, signinBucket, actionCounts/activityMix.
-  Bag-of-words ⇒ all numeric magnitude discarded (`permstr:5` equidistant to `permstr:0`).
-
-- **Storage:** `AccInstanceEmbedding` (`prisma/schema.prisma:926-934`) = `nodeId @id, x, y,
-  cluster Int?, neighbors Json, embeddingRunId, updatedAt`. **No pgvector column** (the
-  repo's only pgvector use is the unrelated LOD feature). Neighbors-Json payload changes are
-  additive — no migration needed.
-
-- **Client consumption:** `accDcGraph.instanceEmbedding` (`server/routers/acc-dc-graph.ts:63-69`)
-  → `AccessAnalysisShell.tsx:680-692` joins into stride-2 `Float32Array` →
-  `createStaticLayer(nodeIds, xy, targets, dimWeights)` (`staticLayer.ts:54-91`, frozen
-  PhysicsLayer). Missing coords fall back to (0,0) + console warn.
-
-- **Force anchors read the embedding baseline:** `staticLayer.ts:11-44` lerps embedding →
-  strongest-slider anchor field with `ORGANIC_RESIDUAL=0.2`. A new embedding changes the
-  morph baseline — v2.4's Group-by/slider morphs must still work (EMB-06 smoke check).
-
-- **Similarity today:** `neighbors` = cosine kNN k=10 on the full TF-IDF matrix — lists
-  saturate with score-1.0 identical-profile twins (acknowledged `acc-dc-graph.ts:94-96`).
-  `similarityEdges` proc → `dedupeAndSelectClusterAware` (`lib/acc/embedding/similarityEdgeSet.ts`,
-  18k edge budget, `interReserveFrac=0.4` cross-cluster reserve) →
-  `SimilarityWebOverlay.tsx` (separate Canvas2D overlay, zIndex 4, quadratic beziers,
-  ~30Hz, fades OUT entirely during slider morphs). `SIM_WEB_ENABLED` defaults ON flag-OFF.
-  **cosmos itself draws zero links on the live path** (`AccessAnalysisShell.tsx:401-421`).
-
-- **Interaction today:** click → `onIsolate(index)` (`GraphInteractions.tsx:126-132`) →
-  `UserProfilePanel` rail (RightPanelStack precedence: user-detail > lasso > sliders) +
-  `NeighborMatchesPanel` (`AccessAnalysisShell.tsx:524-543`) listing stored kNN. Hover →
-  blue focus ring + `NodeTooltip` (identity fields only). Lasso → `SelectionPanel`. **No
-  motion at rest, no camera ease, hard-cut panel swaps.**
-
-- **Render contract:** cosmos.gl v3 FROZEN (`enableSimulation:false`,
-  `transitionDuration:0`); node radius [2.0, 5.5] by `ACCESS_WEIGHT` (`nodeSizes.ts:8-36`);
-  colors RGBA Float32Array from bucketed color-by; greyout 0.15. All motion = CPU/rAF
-  `pushPositions` with settle-skip (`GraphCanvas2D.tsx:410-513`). **PERF-02 frozen-handle
-  invariant (`GraphCanvas.test.ts`) must stay green through every LIFE change.**
-
-- **Node grain:** one user × project membership (`nodeId = user_id::project_id`,
-  `graphNodesFromUsers.ts`), ~22,279 nodes live (was 16,942 pre-2026-07-14 data growth —
-  e2e suites still carry the old count as pre-existing drift failures).
-
-- **cosmos.gl 3.3.0** (owner-confirmed upgrade, patched via patch-package) is the engine
-  version all v2.4 invariants were re-proven against. Alpha semantics inverted vs d3
-  (`getSimulationAlpha()` = 1 − progress) — version-sensitive, don't touch blind.
+- **Milestone:** none active. **v2.5 Living Graph CLOSED 2026-07-20** — 16/16 requirements
+  shipped across Phases 29–33 (retrospective + per-ID audit table in `MILESTONES.md`;
+  archives `milestones/v2.5-REQUIREMENTS.md` / `milestones/v2.5-ROADMAP.md`; phase dirs
+  29–33 pruned). Final production BUILD_ID `-zcfnulR0rESok3UDom50` (2026-07-20).
+- **Prior milestones:** v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
+  all in `MILESTONES.md` / `milestones/`.
+- **Next:** `/lecg-new-milestone`, seeded with the Deferred Items below + CONCERNS Ph33 debt.
+  Headline v2.6 candidates: similarity-web renderer rethink (Canvas2D raster-bound —
+  OffscreenCanvas worker / cosmos-native links / zoom decimation), ISSUE-GRAPH-01 spike,
+  TIME-01 temporal scrubber, e2e drift re-baseline. Consider `/lecg-map-codebase` first —
+  codebase docs predate the v2.5 graph work.
 
 ## Status (data baseline — still current)
 
@@ -252,27 +71,36 @@ spot-check reconciles.
 
 ## Deferred Items
 
-Carried forward at the v2.5 open (absorbed items dropped: SSR-hydration app-wide → PERF-05;
-shell-chunk parse gap → PERF-06):
+Carried forward at the v2.5 close (2026-07-20):
 
-1. **DIM-05 project-coverage denominator** — verify whether 550/1,153 is the correct
-   DC-sourced denominator before ever displaying it (`VERIFY:` in `dimensionCoverage.ts`).
-2. **3 pre-existing `usePredicateEngine` Phase-25 unit failures** — banded-catalog aperture
-   tests, proven pre-existing WIP (stash-and-rerun), not a regression.
+1. **Similarity-web renderer rethink** — Canvas2D rasterization is the proven fps ceiling
+   (~40 ms/frame for the 14.2k-bezier web; throttle already banked +94% → 41.33 fps, tier
+   controller still degrades <50 fps by design). Levers: OffscreenCanvas worker,
+   cosmos-native links, zoom decimation (CONCERNS Ph33, `33-BASELINE.md` evidence archived
+   in git history) → **v2.6 headline candidate**.
+2. **guard-bash powershell-wrap gap** — deny rules bypassed by powershell-wrapped builds;
+   Git Bash double-quoted `$env:` expands to empty (overwrote live `.next` once, recovered)
+   (CONCERNS `[NEW Ph33]`).
 3. **Tier-3 graph dims** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser` resolution
    spike) + TIME-01 temporal scrubber → v2.6 candidates.
 4. **e2e drift re-baseline** — `acc-dc-graph.spec.ts` carries 14 pre-existing failures
    (node count 16,942→22,279 + physics-shell sidebar testids gone); suite can't gate until
    re-baselined. Lasso e2e 120s budget (CONCERNS §3.4) also still open.
-5. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
+5. **DIM-05 project-coverage denominator** — verify whether 550/1,153 is the correct
+   DC-sourced denominator before ever displaying it (`VERIFY:` in `dimensionCoverage.ts`).
+6. **3 pre-existing `usePredicateEngine` Phase-25 unit failures** — banded-catalog aperture
+   tests, proven pre-existing WIP (stash-and-rerun), not a regression.
+7. **PaCMAP MN_ratio/FP_ratio tuning** — package defaults shipped; revisit only on owner
+   UAT ask (CONCERNS, phase-29 tagged).
+8. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
    ORPHAN-01 (PresetBar/SliderGroup/dimensionSearch/dimensionWeights orphans), TEST-SPLIT-01
    (CONCERNS §8.2/8.3 giant test files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir
-   prune (20–23 still on disk), Phase-17 SPLIT-04 owner visual sign-off (test-basis-only,
-   no live mount).
+   prune (20–23 + 07 still on disk), Phase-17 SPLIT-04 owner visual sign-off
+   (test-basis-only, no live mount).
 
 ## Accumulated Context
 
-### Standing guardrails (carry into every v2.5 phase)
+### Standing guardrails (carry into every phase)
 
 - Commit by explicit path only — branch carries heavy unrelated WIP; check
   `git diff --cached --name-only` before every commit.
@@ -290,14 +118,14 @@ shell-chunk parse gap → PERF-06):
 
 ### Decisions
 
-v2.5 milestone decisions are recorded in `PROJECT.md` Key Decisions and
-REQUIREMENTS.md "Owner scope decisions". Phase 32's executable ambient/link choices are
-locked in `.planning/phases/32-ambient-life-link-expression/32-CONTEXT.md`.
-Prior-milestone decisions live in `PROJECT.md` and `MILESTONES.md`.
+Milestone decisions live in `PROJECT.md` Key Decisions, `MILESTONES.md` retrospectives
+("Durable traps & decisions"), and the archived `milestones/vN.N-REQUIREMENTS.md` owner
+scope decisions. v2.5's phase CONTEXT files are pruned from disk; full text is in git
+history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-close-milestone`.** Phase 33 shipped 2026-07-20 — all five v2.5
-phases (29–33) are verified and deployed. Close-out: audit v2.5 against
-REQUIREMENTS (16/16), write the retrospective into MILESTONES.md, archive
-`.planning/milestones/v2.5-*`, prune phase directories.
+**Run `/lecg-new-milestone`.** v2.5 closed 2026-07-20 (16/16). Seed it with the
+Deferred Items above + CONCERNS Ph33 debt (similarity-web renderer rethink is the
+headline v2.6 candidate). Consider `/lecg-map-codebase` first — the codebase docs
+predate v2.5's embedding/similarity/choreography work.
