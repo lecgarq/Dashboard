@@ -336,6 +336,21 @@ def _upsert(node_ids, coords, clusters, neighbors, run_id):
         conn.commit()
 
 
+def _prune(node_ids):
+    """PIPE-02: delete rows whose nodeId is absent from the current snapshot set.
+    Called strictly AFTER the EMB-05 gate-pass point (a gate failure exits before
+    any write, including this delete). Delete-only; returns the pruned count."""
+    import psycopg
+    with psycopg.connect(_db_url()) as conn, conn.cursor() as cur:
+        cur.execute(
+            'DELETE FROM "AccInstanceEmbedding" WHERE NOT ("nodeId" = ANY(%s))',
+            (list(node_ids),),
+        )
+        pruned = cur.rowcount
+        conn.commit()
+    return pruned
+
+
 def main():
     t0 = time.time()
     path = os.path.join(os.getcwd(), ".embedding", "instance-features.jsonl")
@@ -396,7 +411,8 @@ def main():
                                      dim_keys=list(vocab) + num_cols)
     run_id = f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
     _upsert(node_ids, coords, clusters, neighbors, run_id)
-    print(f"Upserted {n} AccInstanceEmbedding rows "
+    pruned = _prune(node_ids)
+    print(f"Upserted {n} AccInstanceEmbedding rows / Pruned {pruned} stale "
           f"({int(clusters.max()) + 1} clusters, run {run_id}) "
           f"in {time.time() - t0:.1f}s total")
 
