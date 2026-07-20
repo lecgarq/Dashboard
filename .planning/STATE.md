@@ -6,8 +6,8 @@ current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
 status: executing
 current_plan: "36-01"
-stopped_at: "Phase 36 blocked on owner decision: keep strict N=5 cutoff and authorize broader optimization, or revise noisy-machine acceptance protocol; see 36-BASELINE.md"
-last_updated: "2026-07-20T16:14:58-06:00"
+stopped_at: "Continue Plan 36-01 broader profiling/optimization: keep strict 3,913.7 ms cutoff and validate a compact graph-payload path; rejected client-only bulkUsers fetch is fully reverted"
+last_updated: "2026-07-20T16:43:50-06:00"
 ---
 
 # Project State
@@ -41,7 +41,9 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
   unchanged N=5 time-to-graph batch measured 3,934.8 ms against the literal 3,913.7 ms
   cutoff. Repeated clean batches crossed the cutoff in both directions without a stable
   code-correlated effect; failed scheduling experiments were removed. See `36-BASELINE.md`.
-  Owner direction is required before broader optimization or a measurement-policy change.
+  The owner authorized broader profiling/optimization on 2026-07-20 while keeping the
+  literal cutoff unchanged. A client-only `bulkUsers` fetch was measured and rejected;
+  the source is restored while a compact graph-payload path is profiled.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -129,7 +131,6 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Resolve the Phase 36 time-to-graph blocker in `36-BASELINE.md`.** Choose whether to keep
-the strict N=5 cutoff and authorize broader profiling/optimization, or revise the noisy
-workshop-machine acceptance protocol. Do not run the final full-rate sample or deploy until
-the time-to-graph gate is honestly green.
+**Continue Plan 36-01 broader profiling/optimization.** Keep the strict 3,913.7 ms N=5
+cutoff, validate a compact graph-payload path, and do not run the final full-rate sample or
+deploy until the time-to-graph gate is honestly green.
