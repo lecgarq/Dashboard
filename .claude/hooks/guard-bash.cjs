@@ -36,7 +36,11 @@ process.stdin
       );
     }
 
-    if (/\b(?:npm(?:\.cmd)?\s+run\s+build|next\s+build)\b/.test(cmd)) {
+    // Isolated-dist builds (NEXT_DIST_DIR set to a non-default dir, e.g. .next-e2e)
+    // never write live .next, so they cannot 500 the :3000 app — this is the exact
+    // mechanism 24-BASELINE.md uses to measure with :3000 live. Exempt them.
+    const isolatedDist = /\bNEXT_DIST_DIR\s*=\s*['"]?(?!\.next['"\s]|\.next$)\.[\w./-]+/.test(cmd);
+    if (!isolatedDist && /\b(?:npm(?:\.cmd)?\s+run\s+build|next\s+build)\b/.test(cmd)) {
       const sock = require('net').connect({ port: 3000, host: '127.0.0.1' });
       sock.setTimeout(700);
       sock.on('connect', () => {
