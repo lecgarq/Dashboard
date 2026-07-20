@@ -148,4 +148,10 @@ describe("RightPanelStack — base rail views", () => {
     expect(source).toContain("duration: reducedMotion ? 0 : 0.18");
     expect(source).not.toContain("stagger");
   });
+
+  it("does not eagerly fetch full directory snapshots for the default rail", () => {
+    const source = fs.readFileSync(path.join(__dirname, "RightPanelStack.tsx"), "utf8");
+    expect(source).not.toContain("bulkUsers.useQuery");
+    expect(source).not.toContain("useOrgDirectoryPeople");
+  });
 });

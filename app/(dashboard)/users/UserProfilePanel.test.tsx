@@ -141,6 +141,16 @@ describe("UserProfilePanel", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("loads one full snapshot on demand when the rail opens without a cached user", () => {
+    render(<UserProfilePanel user={null} email="ada@hermosillo.com" variant="rail" />);
+
+    expect(bulkUserQuerySpy).toHaveBeenLastCalledWith(
+      { email: "ada@hermosillo.com" },
+      expect.objectContaining({ enabled: true }),
+    );
+    expect(screen.getAllByText("Project Admin").length).toBeGreaterThan(0);
+  });
+
   it("renders an avatar (initials fallback) in the rail header", () => {
     render(<UserProfilePanel user={stub} email={stub.email} variant="rail" />);
     expect(screen.getByText("GH")).toBeTruthy(); // Ghost -> GH

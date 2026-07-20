@@ -66,14 +66,13 @@ export function UserProfilePanel({
   const [override, setOverride] = useState<AccProfileData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // G4: fetch the full (non-lean) BulkAccUser from the DC snapshot so per-project
-  // roles[] and modules[] are populated automatically — no Autodesk API call.
-  // Only enabled in dialog variant (rail panels don't need the enrichment).
+  // Fetch one full user snapshot on demand. The rail deliberately does not load
+  // the multi-user directory payload before a node is selected.
   const { data: fullBulkUser, isLoading: fullUserLoading } =
     trpc.accDcGraph.bulkUser.useQuery(
       { email },
       {
-        enabled: variant === "dialog" && !!email,
+        enabled: !!email && (variant === "dialog" || user === null),
         staleTime: 5 * 60_000,
       },
     );
@@ -130,14 +129,14 @@ export function UserProfilePanel({
       .finally(() => setRefreshing(false));
   }
 
-  // G4: true while either detail source is still in-flight (dialog only; rail
-  // skips both) — the snapshot renders beneath the indicator in the meantime.
+  const resolvedUser = fullBulkUser ?? user;
+
   const detailLoading =
-    variant === "dialog" &&
-    ((fullUserLoading && !fullBulkUser) || (profileLoading && !cachedProfile));
+    (fullUserLoading && !fullBulkUser) ||
+    (variant === "dialog" && profileLoading && !cachedProfile);
 
   const body =
-    refreshing && !baseData ? (
+    (refreshing || detailLoading) && !baseData ? (
       <AccLoadingProgress />
     ) : baseData ? (
       <>
@@ -272,10 +271,10 @@ export function UserProfilePanel({
         className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <ProfileAvatar name={user?.name} email={email} photoUrl={user?.photoUrl} size="lg" />
+          <ProfileAvatar name={resolvedUser?.name} email={email} photoUrl={resolvedUser?.photoUrl} size="lg" />
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold" title={user?.name || email}>
-              {user?.name || email}
+            <h2 className="truncate text-sm font-semibold" title={resolvedUser?.name || email}>
+              {resolvedUser?.name || email}
             </h2>
             <p className="truncate text-xs text-muted-foreground" title={email}>
               {email}

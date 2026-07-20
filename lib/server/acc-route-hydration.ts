@@ -51,15 +51,10 @@ export async function prefetchUsersRouteAccData(helpers: any) {
 }
 
 export async function prefetchAccessAnalysisRouteData(helpers: any) {
-  // The input MUST match the client query in AccessAnalysisShell.tsx exactly —
-  // tRPC/React-Query include the input in the cache key, so a mismatch silently
-  // misses the hydration cache and forces the client to re-fetch the whole
-  // multi-MB bulkUsers payload over the network after mount. Keep these in sync.
   await Promise.allSettled([
-    helpers.accDcGraph.bulkUsers.prefetch(
-      { includePermissionSummary: true, includeActivityMix: true },
-      { staleTime: ACC_SNAPSHOT_STALE_TIME_MS },
-    ),
+    helpers.accDcGraph.graphSnapshot.prefetch(undefined, {
+      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
+    }),
     helpers.accDcGraph.instanceEmbedding.prefetch(undefined, {
       staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     }),

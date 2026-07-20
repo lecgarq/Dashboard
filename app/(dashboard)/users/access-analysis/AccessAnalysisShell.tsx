@@ -33,7 +33,6 @@ import {
 } from "./SliderContext";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
-import { buildFeatureSnapshot } from "./featureSnapshot";
 import type { ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate, buildApertureValueResolvers } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
@@ -70,12 +69,11 @@ import { buildStructuralDimensions } from "./dimensionCatalog.structural";
 import { GROUPING_DEFAULT, sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
 import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
-import { getDuckDbClient } from "./duckdbClient";
 import { GraphLoadingSkeleton } from "@/components/ui/GraphLoadingSkeleton";
-import { buildGraphArrowTables } from "./graphTables";
-import { buildGraphNodesFromUsers } from "./graphNodesFromUsers";
-import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
-import { ensurePositionsSchema } from "./positionsCache";
+import {
+  buildGraphNodesFromCompactPayload,
+  decodeCompressedGraphSnapshot,
+} from "./graphNodesFromCompactPayload";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { createAmbientMotionLayer } from "./ambientMotion";
 
@@ -128,29 +126,6 @@ const NeighborMatchesPanel = dynamic(
 // the query never fires. Flag-OFF projector map only (the 3D physics graph keeps its
 // same-user lines). Default ON.
 const SIM_WEB_ENABLED = process.env.NEXT_PUBLIC_ACC_SIM_WEB !== "0" && !ACC_3D_GRAPH_ENABLED;
-
-// Light-speed graph load: build node ids + features in pure JS from the hydrated
-// bulk users, so the graph never boots DuckDB-WASM (~1-2s) on its critical path.
-// ON by default; set NEXT_PUBLIC_ACC_JS_SNAPSHOT="0" to revert to the legacy
-// in-browser-DuckDB path. DuckDB still lazy-loads for the deferred analytics.
-const USE_JS_SNAPSHOT = process.env.NEXT_PUBLIC_ACC_JS_SNAPSHOT !== "0";
-
-// ---------------------------------------------------------------------------
-// Loader — pulls node IDs from DuckDB in deterministic order (legacy path)
-// ---------------------------------------------------------------------------
-
-async function loadNodeIds(): Promise<string[]> {
-  const { connection } = await getDuckDbClient();
-  const view = GRAPH_ANALYTICS_SOURCE_TABLES.userProjects;
-  const sql = `
-    SELECT DISTINCT concat(user_id, '::', project_id) AS node_id
-    FROM ${view}
-    ORDER BY 1
-  `;
-  const table = await connection.query(sql);
-  const rows = table.toArray() as Array<{ node_id: string }>;
-  return rows.map((r) => String(r.node_id));
-}
 
 // ---------------------------------------------------------------------------
 // Inner body — consumes contexts, renders graph + interactions + right panel
@@ -659,11 +634,10 @@ export function ShellBody({
 // ---------------------------------------------------------------------------
 
 export function AccessAnalysisShell(): React.JSX.Element {
-  const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(
-    { includePermissionSummary: true, includeActivityMix: true },
-    { staleTime: 600_000 },
-  );
-  const users = bulkUsersQuery.data;
+  const graphSnapshotQuery = trpc.accDcGraph.graphSnapshot.useQuery(undefined, {
+    staleTime: 600_000,
+  });
+  const graphSnapshot = graphSnapshotQuery.data;
 
   // Precomputed 2D similarity-embedding coords (admin-gated). Only fetched on the
   // flag-OFF path, where they feed a STATIC PhysicsLayer instead of the d3-force
@@ -684,45 +658,16 @@ export function AccessAnalysisShell(): React.JSX.Element {
   const graphRef = useRef<GraphCanvasHandle | null>(null);
 
   useEffect(() => {
-    if (!users) return;
+    if (!graphSnapshot) return;
     let cancelled = false;
     let createdPhysics: PhysicsLayer | null = null;
     (async () => {
       try {
-        // Build the graph node set + aligned feature snapshots. Two paths:
-        //  - JS (default): pure in-memory build from the hydrated `users` — no
-        //    DuckDB-WASM boot on the critical path (the light-speed win).
-        //  - legacy: register graph_* Arrow tables into DuckDB and read back.
-        let nodeIds: string[];
-        let snapshot: NodeFeatureSnapshot[];
-        if (USE_JS_SNAPSHOT) {
-          const built = buildGraphNodesFromUsers(users);
-          nodeIds = built.nodeIds;
-          snapshot = built.features;
-        } else {
-          // DuckDB-WASM init (~1-2s) and the Arrow-table build are independent —
-          // buildGraphArrowTables needs only `users`, not the connection — so run
-          // them concurrently to overlap WASM startup with table construction.
-          const [{ connection }, tables] = await Promise.all([
-            getDuckDbClient(),
-            buildGraphArrowTables({
-              users,
-              similarityInput: null,
-              topology: null,
-              folderRows: [],
-            }),
-          ]);
-          if (cancelled) return;
-          await registerGraphArrowTables(connection, tables);
-          if (cancelled) return;
-          // Positions-cache schema must exist before the physics layer reads it.
-          await ensurePositionsSchema(connection);
-          if (cancelled) return;
-          nodeIds = await loadNodeIds();
-          if (cancelled) return;
-          snapshot = await buildFeatureSnapshot({ nodeIds });
-          if (cancelled) return;
-        }
+        const payload = await decodeCompressedGraphSnapshot(graphSnapshot);
+        if (cancelled) return;
+        const built = buildGraphNodesFromCompactPayload(payload);
+        const nodeIds = built.nodeIds;
+        const snapshot = built.features;
 
         const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
         // Phase E: the catalog drives positioning. Targets/weights are built only
@@ -800,9 +745,8 @@ export function AccessAnalysisShell(): React.JSX.Element {
           targetDimIds,
           initialSliders,
           dimWeights,
-          // JS path: skip the DuckDB-backed positions cache so the graph never
-          // boots DuckDB-WASM on its critical path (layout settles fresh).
-          !USE_JS_SNAPSHOT,
+          // The compact graph path never boots DuckDB-WASM on its critical path.
+          false,
         );
         if (cancelled) {
           layer.dispose();
@@ -822,12 +766,12 @@ export function AccessAnalysisShell(): React.JSX.Element {
       cancelled = true;
       createdPhysics?.dispose();
     };
-  }, [users, embeddingQuery.data]);
+  }, [graphSnapshot, embeddingQuery.data]);
 
-  if (bulkUsersQuery.isError) {
+  if (graphSnapshotQuery.isError) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
-        Failed to load access data: {bulkUsersQuery.error.message}
+        Failed to load access data: {graphSnapshotQuery.error.message}
       </div>
     );
   }
@@ -840,10 +784,10 @@ export function AccessAnalysisShell(): React.JSX.Element {
     );
   }
 
-  if (!users || !features || !physics || !catalog) {
+  if (!graphSnapshot || !features || !physics || !catalog) {
     return (
       <GraphLoadingSkeleton
-        message={!users ? "Loading access data…" : "Building graph…"}
+        message={!graphSnapshot ? "Loading access data…" : "Building graph…"}
       />
     );
   }

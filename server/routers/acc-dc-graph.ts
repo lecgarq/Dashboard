@@ -15,6 +15,7 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../trpc";
 import { getCachedAccDcBulkUsers, getAccDataVersion } from "@/lib/server/acc-hot-cache";
+import { getCompressedGraphSnapshot } from "@/lib/server/graphSnapshotCompression";
 import { dedupeAndSelectClusterAware } from "@/lib/acc/embedding/similarityEdgeSet";
 import { normalizeNeighborsPayload } from "@/lib/acc/embedding/neighborPayload";
 
@@ -41,6 +42,14 @@ export const accDcGraphRouter = router({
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);
     }),
+
+  graphSnapshot: adminProcedure.query(async ({ ctx }) => {
+    const users = await getCachedAccDcBulkUsers(ctx.db, {
+      includePermissionSummary: true,
+      includeActivityMix: true,
+    });
+    return getCompressedGraphSnapshot(users);
+  }),
 
   /**
    * Single-user full (non-lean) fetch from the DC snapshot.

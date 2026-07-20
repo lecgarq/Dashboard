@@ -14,7 +14,7 @@
  * Slide-in animation: framer-motion AnimatePresence with translateX (RESEARCH Pattern 9).
  */
 
-import { lazy, Suspense, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,9 +25,6 @@ import {
 import { GroupByControls } from "./GroupByControls";
 import { SelectionPanel } from "./SelectionPanel";
 import { UserProfilePanel } from "../UserProfilePanel";
-import type { BulkAccUser } from "@/lib/acc/acc-types";
-import { trpc } from "@/lib/core/trpc";
-import { mergeAccSummaryWithEnrichment, attachDirectoryFields, useOrgDirectoryPeople } from "../useMergedAccUsers";
 import { useSelection } from "./SelectionContext";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
@@ -116,31 +113,6 @@ export function RightPanelStack({
     saveSidebarWidth(widthRef.current);
   };
 
-  // Email → synced snapshot, built from data the access-analysis page already
-  // loads (accDcGraph.bulkUsers — same query + args as the shell, so React Query
-  // dedups to a cache hit) plus enrichment for company/status parity with the
-  // /users tab. Background-fetched on mount; available by the time a node is
-  // clicked, so the panel opens instantly with no network on the click itself.
-  const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(
-    { includePermissionSummary: true, includeActivityMix: true },
-    { staleTime: 600_000, retry: false },
-  );
-  const enrichedQuery = trpc.accMembers.enrichedUsers.useQuery(undefined, {
-    staleTime: 600_000,
-    retry: false,
-  });
-  const directoryPeople = useOrgDirectoryPeople();
-  const usersByEmail = useMemo<Map<string, BulkAccUser>>(() => {
-    const base = (bulkUsersQuery.data ?? []) as BulkAccUser[];
-    const merged = attachDirectoryFields(
-      mergeAccSummaryWithEnrichment(base, enrichedQuery.data ?? []),
-      directoryPeople,
-    );
-    const map = new Map<string, BulkAccUser>();
-    for (const u of merged) map.set(u.email.toLowerCase(), u);
-    return map;
-  }, [bulkUsersQuery.data, enrichedQuery.data, directoryPeople]);
-
   return (
     // Outer column owns the (resizable) width + the drag handle. Width is constant
     // across panel swaps — only a deliberate user drag changes it — so the
@@ -181,7 +153,7 @@ export function RightPanelStack({
                 const email = features[isolatedNodeIndex!]?.emailLower ?? "";
                 return (
                   <UserProfilePanel
-                    user={usersByEmail.get(email) ?? null}
+                    user={null}
                     email={email}
                     onClose={() => setIsolated(null)}
                     variant="rail"
