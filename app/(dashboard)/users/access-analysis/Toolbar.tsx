@@ -172,7 +172,9 @@ export function Toolbar({
       // pr-14 reserves the top-right corner for the globally-fixed ThemeToggle
       // (layout.tsx: `fixed right-4 top-4`), which otherwise overlaps the
       // ml-auto "Clear all" link and swallows clicks meant for it.
-      className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14"
+      // motion-safe fade covers the PERF-06 staged mount (the shell defers this
+      // chunk behind a geometry-matched placeholder; content may only fade in).
+      className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
     >
       {show3DToggle ? (
         <div className="flex items-center" data-testid="toolbar-mode">

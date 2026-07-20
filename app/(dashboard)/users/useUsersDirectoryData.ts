@@ -39,14 +39,15 @@ import { uniqueSorted } from "./directoryUtils";
 import { classifyAffiliation } from "./access-analysis/internalDomains";
 
 // ---------------------------------------------------------------------------
-// PERF-03: single referentially-stable input shared by both the client query
-// (below) and the SSR prefetch in lib/server/acc-route-hydration.ts.
-// Using the SAME object reference ensures the React-Query / tRPC cache key is
-// identical on both sides, so the hydration cache is always hit on mount and
-// the client never re-fetches the ~15 MB bulk snapshot.
+// PERF-03/PERF-05: the shared bulkUsers input now lives in
+// lib/acc/cachePolicy.ts (directive-free) — importing it from this
+// "use client" module gave server code a client-reference proxy instead of
+// the object, silently breaking the SSR prefetch. Re-exported here for
+// existing client consumers/tests.
 // DO NOT change the value of leanProjects — changing it IS the regression.
 // ---------------------------------------------------------------------------
-export const BULK_USERS_LEAN_INPUT = { leanProjects: true } as const;
+export { BULK_USERS_LEAN_INPUT } from "@/lib/acc/cachePolicy";
+import { BULK_USERS_LEAN_INPUT } from "@/lib/acc/cachePolicy";
 
 // ---------------------------------------------------------------------------
 // Return shape

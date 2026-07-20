@@ -145,7 +145,12 @@ export function RightPanelStack({
     // Outer column owns the (resizable) width + the drag handle. Width is constant
     // across panel swaps — only a deliberate user drag changes it — so the
     // AnimatePresence mode="wait" gap never reframes the graph's flex-1 camera.
-    <div className="relative flex h-full min-h-0 shrink-0" style={{ width }}>
+    // motion-safe fade covers the PERF-06 staged mount (the shell defers this
+    // chunk behind a same-width placeholder rail; content may only fade in).
+    <div
+      className="relative flex h-full min-h-0 shrink-0 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+      style={{ width }}
+    >
       {/* Drag handle straddling the left border. setPointerCapture keeps the drag
           alive even when the cursor outruns the 8px hit area. */}
       <div

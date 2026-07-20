@@ -19,12 +19,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
-import { Toolbar } from "./Toolbar";
-import { RightPanelStack } from "./RightPanelStack";
+import { loadSidebarWidth } from "./sidebarWidth";
 import {
   CONTROLS_STORAGE_KEY,
   SliderProvider,
@@ -49,7 +49,6 @@ import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
 import { SimilarityWebOverlay } from "./SimilarityWebOverlay";
 import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
-import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { dimensionCoverage, coverageText } from "./dimensionCoverage";
 import { WHY_COVERAGE_DIM_IDS } from "./whySimilar";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
@@ -79,6 +78,51 @@ import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graph
 import { ensurePositionsSchema } from "./positionsCache";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { createAmbientMotionLayer } from "./ambientMotion";
+
+// ---------------------------------------------------------------------------
+// PERF-06 (v2.5 Phase 33): graph-first staged load. The toolbar and the right
+// panel rail (framer-motion, profile/selection/catalog machinery) are
+// code-split out of the shell's initial chunk so the graph canvas parses and
+// mounts first; the panels stream in behind quiet geometry-matched
+// placeholders (no layout shift, fade-in only — owner decision 2026-07-16).
+// ---------------------------------------------------------------------------
+
+const Toolbar = dynamic(() => import("./Toolbar").then((m) => m.Toolbar), {
+  ssr: false,
+  loading: function ToolbarPlaceholder() {
+    // Same header box as Toolbar's root with an invisible copy of its tallest
+    // control, so the swap changes pixels only, never geometry.
+    return (
+      <header aria-hidden className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14">
+        <div className="invisible rounded-md border px-2.5 py-1.5 text-sm">Loading</div>
+      </header>
+    );
+  },
+});
+
+const RightPanelStack = dynamic(
+  () => import("./RightPanelStack").then((m) => m.RightPanelStack),
+  {
+    ssr: false,
+    loading: function RightPanelPlaceholder() {
+      // Same outer rail box (persisted width) as RightPanelStack's root; the
+      // left border matches the resize-handle seam so the empty rail reads as
+      // an intentional quiet panel, not a hole.
+      return (
+        <div
+          aria-hidden
+          className="relative flex h-full min-h-0 shrink-0 border-l bg-card"
+          style={{ width: loadSidebarWidth() }}
+        />
+      );
+    },
+  },
+);
+
+const NeighborMatchesPanel = dynamic(
+  () => import("./NeighborMatchesPanel").then((m) => m.NeighborMatchesPanel),
+  { ssr: false, loading: () => null },
+);
 
 // Single-flip rollback for the similarity web. OFF (=0) → overlay never mounts and
 // the query never fires. Flag-OFF projector map only (the 3D physics graph keeps its
