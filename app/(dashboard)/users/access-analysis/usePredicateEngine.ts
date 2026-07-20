@@ -21,7 +21,7 @@ import type { CatalogDimension } from "./dimensionCatalog.types";
 import { isFacetKey, nodeMatchesFacet } from "./accessFacets";
 import { valueKeyLabel } from "./dominantClusters";
 import { computeActionThresholds, type ActionThresholds } from "./actionBuckets";
-import { groupByDimensions } from "./groupByDimensions";
+import { PRESET_DIMENSION_IDS } from "./dimensionIdSpace";
 
 /** dimId → banded-label fn over the aperture (see buildApertureValueResolvers). */
 export type ApertureValueResolvers = Readonly<
@@ -39,7 +39,12 @@ export function buildApertureValueResolvers(
   features: ReadonlyArray<NodeFeatureSnapshot>,
 ): ApertureValueResolvers {
   const out: Record<string, (f: NodeFeatureSnapshot) => string> = {};
-  for (const dim of groupByDimensions(catalog)) {
+  // Full "+ Filter" aperture (PRESET_DIMENSION_IDS), NOT the narrower curated
+  // Group-into list: every dim the aperture can put into activeFilters needs a
+  // resolver, or its filter values never match and the whole graph dims.
+  const apertureIds = new Set<string>(PRESET_DIMENSION_IDS);
+  const apertureDims = catalog.filter((d) => d.available && apertureIds.has(d.id));
+  for (const dim of apertureDims) {
     // Mirrors buildDominantClusters: activity-family ordinals need per-action
     // quantile thresholds; every other kind ignores the map.
     const thresholds =
