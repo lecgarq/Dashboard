@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 33
 current_phase_name: "Perf Closeout & Verification"
-status: executing
+status: ready_to_plan
 current_plan: null
-stopped_at: "33-03 COMPLETE (682a4176, LINK-PERF 21.35→41.33 fps +94% via ambient-only ~10Hz redraw throttle + empty-stroke skip; raster-bound root cause proven by A/B, renderer rethink recorded as v2.6 candidate; phase32-ambient 4/4). All three Phase-33 plans summarized. Next: phase completion — 33-VERIFICATION.md, CONCERNS roll-forward, autoDeploy /lecg-ship, then /lecg-close-milestone routing (33 is v2.5's last phase)."
-last_updated: "2026-07-20T09:40:00-06:00"
+stopped_at: "Phase 33 VERIFIED + DEPLOYED 2026-07-20 (BUILD_ID -zcfnulR0rESok3UDom50, live authenticated smoke 1/1, 33-VERIFICATION.md complete, CONCERNS rolled forward). Phase 33 was v2.5's LAST phase — all 5 phases (29–33) shipped. Next command: /lecg-close-milestone (audit v2.5, retrospective, archive)."
+last_updated: "2026-07-20T09:50:00-06:00"
 ---
 
 # Project State
@@ -27,8 +27,14 @@ perf items (app-wide SSR-hydration fix, shell-chunk code-split).
 - **Milestone:** v2.5 — **Living Graph.** Opened + roadmapped 2026-07-16. **5 phases
   (29–33)**, 16 requirements (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06), 16/16 mapped.
   Phase numbering continues from v2.4's Phase 28.
-- **Phase:** 33 — Perf Closeout & Verification — **ready to plan**
-  (context locked 2026-07-16; next command `/lecg-phase 33`).
+- **Phase:** 33 — Perf Closeout & Verification — **SHIPPED 2026-07-20**
+  (`33-VERIFICATION.md`, deployed BUILD_ID `-zcfnulR0rESok3UDom50`): PERF-05
+  hydration helper ×3 call sites + no-refetch network evidence both routes
+  (incl. BULK_USERS_LEAN_INPUT RSC-proxy root-cause fix → cachePolicy.ts);
+  PERF-06 graph-first split, shell chunk −18.3%, time-to-graph 5,116→3,914 ms
+  (−23.5%; −10.2% vs 28.1 median); LINK-PERF 21.35→41.33 fps (+94%,
+  ambient-only ~10 Hz redraw throttle — raster-bound ceiling proven,
+  renderer rethink = v2.6 candidate). **v2.5 is phase-complete (29–33).**
 - **Phase 33 CONTEXT LOCKED 2026-07-16:** PERF-05 shared
   `deserializeHydrationState` helper at all three call sites (layout.tsx:45 +
   users/page.tsx:13 still raw; spatial-graph/page.tsx migrates its inline fix)
@@ -291,7 +297,7 @@ Prior-milestone decisions live in `PROJECT.md` and `MILESTONES.md`.
 
 ## Next Action
 
-**Run `/lecg-phase 33`.** Context is locked in
-`.planning/phases/33-perf-closeout-verification/33-CONTEXT.md` — plan and execute
-PERF-05 (shared hydration helper), PERF-06 (shell chunk split + baseline-pair
-re-measure), and the owner-added best-effort LINK-PERF profiling/fix.
+**Run `/lecg-close-milestone`.** Phase 33 shipped 2026-07-20 — all five v2.5
+phases (29–33) are verified and deployed. Close-out: audit v2.5 against
+REQUIREMENTS (16/16), write the retrospective into MILESTONES.md, archive
+`.planning/milestones/v2.5-*`, prune phase directories.

@@ -89,6 +89,24 @@ commits c5643691, e3274a2e, d8126249.
   3 usePredicateEngine Phase-25 unit failures; acc-dc-graph.spec.ts 14-failure
   e2e drift (needs re-baseline, standing deferred item 4).
 
-## Deploy (autoDeploy policy)
+## Deploy (autoDeploy policy) — SHIPPED 2026-07-20
 
-_Appended after the deploy-sequence run below._
+Full deploy-sequence run 2026-07-20 ~09:41 CST: `LECG Dashboard Local` task
+stopped, `:3000` freed, `npx tsc --noEmit` clean, `npm run build` (PowerShell)
+passed, task restarted.
+
+- Task state: **Running**; port 3000 listening.
+- Production BUILD_ID: **`-zcfnulR0rESok3UDom50`**.
+- `/api/health`: 200, `database: connected` (15:41:33 Z).
+- Unauthenticated probes: `/login` 200 (no auth "Configuration" error);
+  `/users`, `/users/spatial-graph` 307 → login (expected).
+- Authenticated Chromium live-route smoke (temporary spec, deleted after):
+  **1 passed** — `/users/spatial-graph` rendered the graph shell with the
+  similarity-web canvas attached; `/users` rendered the directory search.
+
+**Incident note (same day, pre-deploy):** an earlier mis-quoted PowerShell
+command built over the live `.next` without flags; recovered by an interim
+task restart on that tsc-clean current-HEAD build (BUILD_ID
+`36eF4RQHkFsVWMARlaro2`, probe 200/307). The final deploy above supersedes it.
+
+**Phase 33 = v2.5's last phase → next: `/lecg-close-milestone`.**
