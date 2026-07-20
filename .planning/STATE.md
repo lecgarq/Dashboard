@@ -6,8 +6,8 @@ current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
 status: executing
 current_plan: "36-01"
-stopped_at: "Resume 36-01-PLAN.md after interrupted acc-dc-graph rerun: restore isolated :3100, finish browser gates, record measurements, deploy"
-last_updated: "2026-07-20T15:58:39-06:00"
+stopped_at: "Phase 36 blocked on owner decision: keep strict N=5 cutoff and authorize broader optimization, or revise noisy-machine acceptance protocol; see 36-BASELINE.md"
+last_updated: "2026-07-20T16:14:58-06:00"
 ---
 
 # Project State
@@ -37,9 +37,11 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
   GPU links replaced the Canvas2D raster path; 22,279 nodes / 18,000 links held 60.07 fps
   at Tier 0 over 10.02 s; Phase-32 focus/morph/reduced-motion contracts stayed green; live
   BUILD_ID `lzC97Z2E6chNTArdzDZd0` verified with a populated WebGL framebuffer.
-- **Next:** plan and execute Phase 36 from `36-CONTEXT.md`. Sweep the full gates, measure
-  median-of-5 time-to-graph, re-run the hard REND-02 full-rate gate last, deploy, and close
-  v2.6.
+- **Phase 36 Plan 36-01 BLOCKED 2026-07-20:** automated gates are green, but the final
+  unchanged N=5 time-to-graph batch measured 3,934.8 ms against the literal 3,913.7 ms
+  cutoff. Repeated clean batches crossed the cutoff in both directions without a stable
+  code-correlated effect; failed scheduling experiments were removed. See `36-BASELINE.md`.
+  Owner direction is required before broader optimization or a measurement-policy change.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -127,6 +129,7 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Plan and execute Phase 36 from `36-CONTEXT.md`.** Sweep the full gates, measure
-time-to-graph against the strict Phase-33 median, re-run the hard full-rate gate last,
-deploy, and close v2.6.
+**Resolve the Phase 36 time-to-graph blocker in `36-BASELINE.md`.** Choose whether to keep
+the strict N=5 cutoff and authorize broader profiling/optimization, or revise the noisy
+workshop-machine acceptance protocol. Do not run the final full-rate sample or deploy until
+the time-to-graph gate is honestly green.
