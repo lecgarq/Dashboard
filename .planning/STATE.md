@@ -6,8 +6,8 @@ current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 36 complete and deployed; route next to $lecg-close-milestone"
-last_updated: "2026-07-20T17:27:27-06:00"
+stopped_at: "milestone v2.6 closed — next: $lecg-new-milestone"
+last_updated: "2026-07-20T17:35:44-06:00"
 ---
 
 # Project State
@@ -17,16 +17,13 @@ last_updated: "2026-07-20T17:27:27-06:00"
 See: `.planning/PROJECT.md` (updated 2026-07-20)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.6 Full-Rate Graph — similarity-web renderer off the Canvas2D ceiling
-behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
+**Current focus:** v2.6 Full-Rate Graph closed; next milestone not yet defined.
 
 ## Current Position
 
-- **Milestone:** **v2.6 Full-Rate Graph — OPENED 2026-07-20.** 8 requirements
-  (REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02), 3 phases (34–36), 8/8 mapped;
-  phase breakdown owner-approved 2026-07-20. Owner scope picks: renderer rethink headline +
-  health sweep (candidates 1+3), hard ≥50fps Tier-0 bar; Tier-3 dims stay deferred
-  (ISSUE-GRAPH-01 spike = v2.7 entry ticket).
+- **Milestone:** **v2.6 Full-Rate Graph — SHIPPED 2026-07-20.** All 8 requirements
+  shipped across Phases 34–36. Retrospective and evidence audit are in `MILESTONES.md`;
+  requirements and roadmap are archived under `.planning/milestones/v2.6-*`.
 - **Phase 34 (Test & Guard Health Sweep) COMPLETE 2026-07-20:** 4/4 plans summarized,
   5/5 success criteria verified, debt rolled to CONCERNS, and local production deployed
   as BUILD_ID `CV_frbgC6hmbArjJ53Qi7` (`/api/health` 200, database connected).
@@ -102,6 +99,13 @@ failures (→ TEST-04), stale-embedding prune (→ PIPE-02).
    files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20–23 + 07 still on disk),
    Phase-17 SPLIT-04 owner visual sign-off (test-basis-only, no live mount), per-folder
    terrain projection seed.
+6. **Focus-session camera restore** — Escape clears isolation but does not restore the
+   pre-focus camera (`CONCERNS.md` §3.8); re-add the e2e assertion when fixed.
+7. **Default e2e dev harness** — `playwright.config.ts` still stalls on `/login`; the
+   established production-build `playwright.verify.config.ts` harness remains the real gate
+   (`CONCERNS.md` §3.9).
+8. **Cluster-label chips on the default graph** — currently flag-ON-only; owner decision
+   required before treating this as a regression (`CONCERNS.md` §3.10).
 
 ## Accumulated Context
 
@@ -130,5 +134,5 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `$lecg-close-milestone`.** Phase 36 is verified and deployed; all 8/8 v2.6
-requirements are complete.
+**Run `$lecg-new-milestone`.** Seed it from Deferred Items and the live debt in
+`.planning/codebase/CONCERNS.md`; Tier-3 ISSUE-GRAPH-01 remains the stated v2.7 entry ticket.

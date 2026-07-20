@@ -10,7 +10,7 @@
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
 - ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
 - ✅ **v2.5 Living Graph** - Phases 29-33 (shipped 2026-07-20)
-- 🔄 **v2.6 Full-Rate Graph** - Phases 34-36 (opened 2026-07-20)
+- ✅ **v2.6 Full-Rate Graph** - Phases 34-36 (shipped 2026-07-20)
 
 ---
 
@@ -961,7 +961,7 @@ Phase 24/28 baseline-then-verify pattern).
 
 ---
 
-## 🔄 v2.6 Full-Rate Graph (Opened — 2026-07-20)
+## ✅ v2.6 Full-Rate Graph (Complete — 2026-07-20)
 
 **Milestone goal:** The similarity web renders off the Canvas2D rasterization ceiling so
 full ambient life + the full ~14.2k-link web sustain **≥50 fps at Tier 0** on the workshop

@@ -1,5 +1,67 @@
 # Milestones — LECG Dashboard
 
+## v2.6 Full-Rate Graph (Shipped: 2026-07-20)
+
+**Phases:** 3 (34–36) · **Requirements:** 8/8 shipped · **Span:** 2026-07-20 · **Tag:** _local-only_
+
+**Goal vs outcome:** Move the similarity web off its ~40 ms/frame main-thread Canvas2D
+raster ceiling and pass the previously missed hard gate: full ambient motion plus the full
+web at ≥50 fps in Tier 0 on the workshop machine, after restoring trust in the automated
+gates. **Achieved outright:** the measured winner was the already-installed Cosmos native
+GPU link path; the final sample held 60.016 fps for 10.014 seconds with all 22,279 nodes
+animated, 18,000 links, and Tier 0 unchanged. The health sweep also re-baselined graph e2e,
+closed the lasso budget and PowerShell build-guard gaps, fixed the aperture predicate bug,
+and pruned 983 stale embeddings. Closeout removed a separate route bottleneck: compact
+graph hydration plus on-demand rail loading reduced median time-to-graph to 2,386.7 ms,
+39.0% under the strict 3,913.7 ms cutoff. Zero new dependencies or migrations.
+
+**Per-requirement audit:**
+
+| Req | Verdict | Phase | Evidence |
+|---|---|---|---|
+| REND-01 off Canvas2D raster path | ✅ shipped | 35 | Four candidates measured on 22,279 nodes / 18,000 links: Canvas2D 39.79 fps and Tier 0→2 vs Cosmos native 60.03 fps at Tier 0; `35-VERIFICATION.md`, commit `02b729f6` |
+| REND-02 hard ≥50 fps Tier-0 gate | ✅ shipped | 36 | Measure-last sample 60.016 fps / 10.014 s, all 22,279 nodes animated, 18,000 links, Tier 0→0; `36-VERIFICATION.md` |
+| REND-03 Phase-32 visual contract | ✅ shipped | 35 | Band/width/alpha/order, 25% morph floor, reduced motion, and frozen-Cosmos invariants pinned; focused Vitest 5 files / 54 passed plus framebuffer/browser gates; `35-VERIFICATION.md` |
+| E2E-01 graph e2e re-baseline | ✅ shipped | 34 | Baseline 16 failed / 5 skipped / 6 passed → 16 passed / 8 intentional skips / 0 failed on isolated production harness; `34-VERIFICATION.md`, `c1b78647` |
+| E2E-02 lasso budget flake | ✅ shipped | 34 | Inner readiness budget fixed; three consecutive flag-on passes at 44.7 s / 37.6 s / 37.9 s; `34-VERIFICATION.md`, `c1b78647` |
+| TEST-04 fully green unit suite | ✅ shipped | 34 | Aperture resolver fixed at the shared id-space boundary; 2,629 tests passed / 0 failed / 1 skipped; `34-VERIFICATION.md`, `49e1202c` |
+| GUARD-01 PowerShell wrapper guard | ✅ shipped | 34 | Wrapped build payloads denied while :3000 serves; isolated-dist exception retained; hook regression matrix 10/10; `34-VERIFICATION.md`, `50dd815c` + `63ef0aca` |
+| PIPE-02 stale embedding prune | ✅ shipped | 34 | Gate-conditional real run pruned 983 stale rows to 0 after upserting 22,279 current rows; Python suite 17/17; `34-VERIFICATION.md`, `58a6d996` |
+
+**Phases shipped:** 34 Test & Guard Health Sweep (2026-07-20, BUILD_ID
+`CV_frbgC6hmbArjJ53Qi7`) · 35 Similarity-Web Renderer Rethink (2026-07-20,
+`lzC97Z2E6chNTArdzDZd0`) · 36 Full-Rate Gate & Closeout (2026-07-20,
+`39p7DFRd3DbgM8WjWU2Pz`, authenticated populated-graph probe).
+
+**Durable traps & decisions (carry forward):**
+
+1. Measure renderer candidates on the full live graph. Canvas2D's ceiling was raster cost,
+   not JS; Cosmos native links won at ~60 fps without a worker, decimation, or dependency.
+2. Counters are not visual proof. Phase 35 initially passed while the framebuffer was blank;
+   real framebuffer pixels and screenshots exposed the lazy 300×150 backing-size defect.
+3. Route payloads can dominate renderer readiness. A 14.5 MB full-user hydration followed
+   by an eager 17.6 MB rail fetch caused cross-run contention; a graph-only cached payload
+   and the existing single-user query were the narrow fix.
+4. The default Playwright dev harness remains unreliable for this route. Use the isolated
+   production-build `playwright.verify.config.ts` path until CONCERNS §3.9 is resolved.
+5. Build guards must inspect wrapped shell payloads, not only the outer executable; preserve
+   the PowerShell wrapper regression matrix and the isolated-dist exemption.
+
+**Deferred items (destinations):**
+
+- Tier-3 graph dims: ISSUE-GRAPH-01 resolution-rate spike is the v2.7 entry ticket; TIME-01
+  temporal scrubber remains a candidate.
+- Focus-session camera restore (Escape clears selection but not zoom) → CONCERNS §3.8 / next
+  graph-interaction phase.
+- Default e2e dev harness cleanup → CONCERNS §3.9 / tooling phase.
+- Default-map cluster-label chips require an owner decision → CONCERNS §3.10.
+- SVC-01, DIM-05 denominator verification, DC-01/DC-02, PaCMAP ratio tuning, and standing
+  COMPANY-GRAIN-01 / ORPHAN-01 / TEST-SPLIT-01 debt carry forward unchanged.
+
+**Archive:** [`milestones/v2.6-ROADMAP.md`](milestones/v2.6-ROADMAP.md) · [`milestones/v2.6-REQUIREMENTS.md`](milestones/v2.6-REQUIREMENTS.md)
+
+---
+
 ## v2.5 Living Graph (Shipped: 2026-07-20)
 
 **Phases:** 5 (29–33) · **Requirements:** 16/16 shipped · **Span:** 2026-07-16 → 2026-07-20 · **Tag:** _local-only_
