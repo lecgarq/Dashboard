@@ -4,10 +4,10 @@ milestone: v2.5
 milestone_name: "Living Graph"
 current_phase: 33
 current_phase_name: "Perf Closeout & Verification"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 33 context locked in 33-CONTEXT.md (fresh in-phase perf baseline pair, graph-first staged load, owner-added LINK-PERF profile+fix best-effort). Next: /lecg-phase 33."
-last_updated: "2026-07-16T18:05:00-06:00"
+status: executing
+current_plan: "33-03"
+stopped_at: "33-02 COMPLETE (65306046, PERF-06 PASS 5,116→3,914 ms −23.5% + PERF-05 network evidence clean both routes after BULK_USERS_LEAN_INPUT moved to cachePolicy.ts — RSC client-reference-proxy root cause). Next: execute 33-03 (LINK-PERF profile + best-effort Canvas2D link-path optimization)."
+last_updated: "2026-07-20T09:20:00-06:00"
 ---
 
 # Project State
