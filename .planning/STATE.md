@@ -4,10 +4,10 @@ milestone: v2.6
 milestone_name: "Full-Rate Graph"
 current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
-status: executing
-current_plan: "36-01"
-stopped_at: "Continue Plan 36-01 broader profiling/optimization: keep strict 3,913.7 ms cutoff and validate a compact graph-payload path; rejected client-only bulkUsers fetch is fully reverted"
-last_updated: "2026-07-20T16:43:50-06:00"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 36 complete and deployed; route next to $lecg-close-milestone"
+last_updated: "2026-07-20T17:27:27-06:00"
 ---
 
 # Project State
@@ -37,13 +37,12 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
   GPU links replaced the Canvas2D raster path; 22,279 nodes / 18,000 links held 60.07 fps
   at Tier 0 over 10.02 s; Phase-32 focus/morph/reduced-motion contracts stayed green; live
   BUILD_ID `lzC97Z2E6chNTArdzDZd0` verified with a populated WebGL framebuffer.
-- **Phase 36 Plan 36-01 BLOCKED 2026-07-20:** automated gates are green, but the final
-  unchanged N=5 time-to-graph batch measured 3,934.8 ms against the literal 3,913.7 ms
-  cutoff. Repeated clean batches crossed the cutoff in both directions without a stable
-  code-correlated effect; failed scheduling experiments were removed. See `36-BASELINE.md`.
-  The owner authorized broader profiling/optimization on 2026-07-20 while keeping the
-  literal cutoff unchanged. A client-only `bulkUsers` fetch was measured and rejected;
-  the source is restored while a compact graph-payload path is profiled.
+- **Phase 36 (Full-Rate Gate & Closeout) COMPLETE 2026-07-20:** compact graph hydration
+  plus on-demand single-user rail loading removed the full-directory critical/background
+  payloads. Final N=5 median 2,386.7 ms passed the strict 3,913.7 ms cutoff; the last
+  full-rate sample held 60.016 fps for 10.014 s at 22,279 nodes / 18,000 native links,
+  Tier 0 before/after. Local production BUILD_ID `39p7DFRd3DbgM8WjWU2Pz` passed health,
+  redirect, and authenticated populated-graph probes.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -131,6 +130,5 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Continue Plan 36-01 broader profiling/optimization.** Keep the strict 3,913.7 ms N=5
-cutoff, validate a compact graph-payload path, and do not run the final full-rate sample or
-deploy until the time-to-graph gate is honestly green.
+**Run `$lecg-close-milestone`.** Phase 36 is verified and deployed; all 8/8 v2.6
+requirements are complete.

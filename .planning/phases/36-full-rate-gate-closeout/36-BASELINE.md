@@ -2,7 +2,7 @@
 
 **Captured:** 2026-07-20
 
-**Status:** BLOCKED — strict time-to-graph gate not met reproducibly
+**Status:** PASS — strict time-to-graph and full-rate gates met
 
 **Requirement:** REND-02
 
@@ -79,14 +79,78 @@ Each scheduling experiment was test-driven and then removed after it failed to e
 reproducible improvement. The Phase-35 production implementation and its existing test are
 restored; `GraphCanvas.test.ts` passes 28/28 and Phase 36 leaves no product-code diff.
 
-## Closeout blocker
+## Prior closeout blocker
 
 Plan 36-01 says to stop when the median exceeds 3,913.7 ms, and the locked context forbids
 a tolerance band or cherry-picked repeat. The final honest batch is **3,934.8 ms**, so the
 full-rate sample, deployment, requirement check-off, and milestone closeout were not run.
 
-Owner direction is required to choose one of two scope-changing routes:
+At that checkpoint, owner direction was required to choose one of two scope-changing routes:
 
 1. keep the literal N=5 cutoff and authorize a broader profile/optimization phase aimed at
    a margin large enough to survive the observed variance; or
 2. revise the acceptance protocol for noisy workshop-machine evidence.
+
+## Authorized optimization and profiling
+
+The owner chose route 1: broaden profiling while retaining the literal 3,913.7 ms cutoff.
+Profiling isolated the navigation payload rather than the renderer:
+
+- The original hydrated document decoded to 17,419,976 bytes.
+- The heavy `bulkUsers` tRPC result was 14,538,570 bytes for 3,791 users / 22,279
+  memberships.
+- A normalized graph-only tuple payload measured 5,421,069 bytes, a 62.7% reduction.
+- A client-only full-payload experiment was rejected and reverted. Build
+  `5lWymVOUF2uM86kD8E9Ud` measured 11,838.2 / 4,178.7 / 3,814.1 / 4,396.8 /
+  3,956.6 ms, median **4,178.7 ms — FAIL**. Its request was batched with Gmail work.
+- The first SSR compact-payload build `C-XOsMKzacvVZu56YhvMY` measured 9,989.5 /
+  3,093.6 / 4,515.5 / 3,287.9 / 4,119.8 ms, median **4,119.8 ms — FAIL**.
+- Gzip packing reduced the direct graph snapshot to 1,646,246 bytes and the decoded
+  hydrated document to 4,640,554 bytes, but build `0DFqda1inKGLvwbBhmIk-` still measured
+  8,985.1 / 2,870.3 / 2,682.2 / 4,328.2 / 4,328.7 ms, median
+  **4,328.2 ms — FAIL**.
+
+The remaining correlated source was the default right rail: immediately after graph ready
+it eagerly requested `bulkUsers` plus enrichment and directory procedures, producing a
+17,606,166-byte background batch. Fresh browser contexts closed before that server work
+necessarily finished, so later runs contended with discarded full-directory responses.
+The rail now fetches one `bulkUser` only after a node is selected.
+
+## Accepted time-to-graph evidence
+
+Fresh isolated build `tWSXSzfgHWy8ZCQ1BYxT0` first measured from a newly started server:
+
+| Run | Time to graph |
+|---:|---:|
+| 1 (cold) | 8,708.3 ms |
+| 2 | 2,670.7 ms |
+| 3 | 2,349.1 ms |
+| 4 | 3,131.4 ms |
+| 5 | 2,747.2 ms |
+
+Median: **2,747.2 ms — PASS**, 1,166.5 ms / 29.8% faster than the cutoff.
+
+After the full unit, architecture, and graph-E2E sweep, the required final batch on that
+same build measured:
+
+| Run | Time to graph |
+|---:|---:|
+| 1 (cold browser context) | 2,211.5 ms |
+| 2 | 2,386.7 ms |
+| 3 | 2,389.2 ms |
+| 4 | 2,310.3 ms |
+| 5 | 2,427.4 ms |
+
+Final median: **2,386.7 ms — PASS**, 1,527.0 ms / 39.0% faster than 3,913.7 ms.
+All five runs rendered 22,279 nodes and 22,279 aligned features.
+
+## Accepted full-rate evidence
+
+The Phase-32 gate ran last on the same isolated build and passed 4/4:
+
+- **60.016 fps over 10.014 seconds**.
+- 22,279 nodes, all 22,279 animated.
+- 18,000 links, `cosmos-native`.
+- Tier 0 before and after; the controller did not engage during the accepted sample.
+- Reduced motion stayed static; click focus remained functional; grouping morph paused
+  ambient motion and resumed cleanly.

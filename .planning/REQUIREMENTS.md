@@ -83,7 +83,7 @@ Data authority for all REND requirements: the existing similarity edge set —
       with the measured numbers (not vibes). Main-thread raster cost measurably drops vs
       the 33-BASELINE ~40 ms/frame figure.
 
-- [ ] **REND-02**: **Hard perf gate, measured last:** Tier-0 full ambient motion + the full
+- [x] **REND-02**: **Hard perf gate, measured last:** Tier-0 full ambient motion + the full
       link web sustain **≥50 fps** on the workshop machine at the full 22,279-node /
       ~14.2k-link set, measured with the LIFE-03 methodology (≥10 s sample, recorded in the
       phase verification). The three-tier controller stays in place as the safety net but is

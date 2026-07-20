@@ -990,9 +990,9 @@ organic, never a fixed grid.
   builds, embedding pipeline prunes stale rows
 - [x] **Phase 35: Similarity-Web Renderer Rethink** - The web renders off the main-thread
   Canvas2D raster path via a measured lever choice, with the Phase-32 visual contract intact
-- [ ] **Phase 36: Full-Rate Gate & Closeout** - Tier-0 full ambient + full links sustained
-  ≥50 fps on the workshop machine, measured with the LIFE-03 methodology; deploy + milestone
-  verification
+- [x] **Phase 36: Full-Rate Gate & Closeout** - Tier-0 full ambient + 18,000 native links
+  sustained 60.016 fps for 10.014 s on the workshop machine; final time-to-graph median
+  2,386.7 ms; deployed as BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`
 
 ## Phase Details
 
