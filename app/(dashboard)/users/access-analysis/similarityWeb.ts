@@ -3,7 +3,7 @@
  *
  * REND-04 purity: no React, no DOM, no data/math-layer imports. Turns the
  * server's nodeId edge set into index buffers, community×strength colors, and the
- * projection/curve geometry the Canvas2D overlay draws. Fully unit-testable.
+ * renderer buffers and focus composition. Fully unit-testable.
  */
 
 export interface SimEdgeIds {
@@ -65,6 +65,18 @@ export interface EdgePaint {
   band: Uint8Array;
   /** Flat RGBA palette (length = bucketCount * 4), values in [0,1]. */
   palette: Float32Array;
+}
+
+export interface NativeWebBuffers {
+  /** Flat [source,target] pairs ordered ambient, selected, then hovered. */
+  links: Float32Array;
+  /** Per-link RGBA colors in the same order as links. */
+  colors: Float32Array;
+  /** Per-link widths in the same order as links. */
+  widths: Float32Array;
+  ambientCount: number;
+  selectedCount: number;
+  hoveredCount: number;
 }
 
 export type LinkStrengthBand = 0 | 1 | 2;
@@ -152,6 +164,100 @@ export function resolveFocusEdges(
   }
 
   return { selected, hovered };
+}
+
+/**
+ * Compose the one Cosmos-native link buffer. Ordering is the visual priority:
+ * ambient first, persistent selected second, temporary hover last. Focus links
+ * are always complete and remain fully expressed while ambient opacity morphs.
+ */
+export function buildNativeWebBuffers({
+  web,
+  paint,
+  ambientOpacity,
+  nodeColors,
+  selectedIndex = null,
+  selectedMatches = [],
+  hoveredIndex = null,
+}: {
+  web: IndexedWeb;
+  paint: EdgePaint;
+  ambientOpacity: number;
+  nodeColors?: Float32Array;
+  selectedIndex?: number | null;
+  selectedMatches?: readonly FocusMatchIndex[];
+  hoveredIndex?: number | null;
+}): NativeWebBuffers {
+  const focus = resolveFocusEdges(web, selectedIndex, selectedMatches, hoveredIndex);
+  const ambientCount = web.src.length;
+  const total = ambientCount + focus.selected.length + focus.hovered.length;
+  const links = new Float32Array(total * 2);
+  const colors = new Float32Array(total * 4);
+  const widths = new Float32Array(total);
+  const ambientAlpha =
+    Math.max(0, Math.min(1, ambientOpacity)) * (selectedIndex === null ? 1 : 0.15);
+
+  for (let i = 0; i < ambientCount; i++) {
+    const paletteOffset = paint.bucket[i] * 4;
+    links[i * 2] = web.src[i];
+    links[i * 2 + 1] = web.dst[i];
+    colors[i * 4] = paint.palette[paletteOffset];
+    colors[i * 4 + 1] = paint.palette[paletteOffset + 1];
+    colors[i * 4 + 2] = paint.palette[paletteOffset + 2];
+    colors[i * 4 + 3] = paint.palette[paletteOffset + 3] * ambientAlpha;
+    widths[i] = linkBandStyle(paint.band[i] as LinkStrengthBand).width;
+  }
+
+  const appendFocus = (
+    edges: readonly FocusEdge[],
+    widthLift: number,
+    alphaLift: number,
+    start: number,
+  ): number => {
+    let out = start;
+    for (const edge of edges) {
+      const band = edge.webIndex === null
+        ? strengthBand(edge.score)
+        : (paint.band[edge.webIndex] as LinkStrengthBand);
+      const style = linkBandStyle(band);
+      const colorOffset = out * 4;
+      links[out * 2] = edge.src;
+      links[out * 2 + 1] = edge.dst;
+      widths[out] = style.width + widthLift;
+
+      if (edge.webIndex !== null) {
+        const paletteOffset = paint.bucket[edge.webIndex] * 4;
+        colors[colorOffset] = paint.palette[paletteOffset];
+        colors[colorOffset + 1] = paint.palette[paletteOffset + 1];
+        colors[colorOffset + 2] = paint.palette[paletteOffset + 2];
+      } else if (nodeColors) {
+        const srcOffset = edge.src * 4;
+        const dstOffset = edge.dst * 4;
+        colors[colorOffset] = (nodeColors[srcOffset] + nodeColors[dstOffset]) * 0.5;
+        colors[colorOffset + 1] = (nodeColors[srcOffset + 1] + nodeColors[dstOffset + 1]) * 0.5;
+        colors[colorOffset + 2] = (nodeColors[srcOffset + 2] + nodeColors[dstOffset + 2]) * 0.5;
+      } else {
+        colors[colorOffset] = 78 / 255;
+        colors[colorOffset + 1] = 140 / 255;
+        colors[colorOffset + 2] = 203 / 255;
+      }
+      colors[colorOffset + 3] = Math.min(1, 0.7 + style.alpha * 0.2 + alphaLift);
+      out++;
+    }
+    return out;
+  };
+
+  const hoverStart = appendFocus(focus.selected, 0.9, 0.08, ambientCount);
+  appendFocus(focus.hovered, 1.2, 0.12, hoverStart);
+
+  return {
+    links,
+    colors,
+    widths,
+    ambientCount,
+    selectedCount: focus.selected.length,
+    hoveredCount: focus.hovered.length,
+  };
 }
 
 /** Base-alpha ceiling per theme — translucent, but legible (not halftone-faint). */

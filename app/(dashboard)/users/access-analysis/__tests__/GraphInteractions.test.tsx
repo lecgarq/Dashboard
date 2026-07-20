@@ -90,6 +90,7 @@ function Harness(props: {
       spaceToScreen: vi.fn((xy) => xy),
       setLinks: vi.fn(),
       setLinkColors: vi.fn(),
+      setSimilarityLinks: vi.fn(),
       getRenderState: vi.fn(() => ({ renderLinks: true, linkCount: 0 })),
       captureView:
         props.captured.captureView ??

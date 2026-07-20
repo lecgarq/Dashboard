@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapEdgesToIndices,
   computeEdgeColors,
+  buildNativeWebBuffers,
   resolveFocusEdges,
   solveAffine,
   project,
@@ -141,6 +142,53 @@ describe("resolveFocusEdges", () => {
       { src: 0, dst: 3, score: 0.87, webIndex: null },
     ]);
     expect(focus.hovered.map((edge) => edge.webIndex)).toEqual([0, 1]);
+  });
+});
+
+describe("buildNativeWebBuffers", () => {
+  it("orders full ambient below complete selected and hovered focus links", () => {
+    const buffers = buildNativeWebBuffers({
+      web: {
+        src: Int32Array.from([0, 1]),
+        dst: Int32Array.from([1, 2]),
+        strength: Float32Array.from([0, 1]),
+        dropped: 0,
+      },
+      paint: {
+        bucket: Uint16Array.from([0, 1]),
+        band: Uint8Array.from([0, 2]),
+        palette: Float32Array.from([1, 0, 0, 0.1, 0, 1, 0, 0.4]),
+      },
+      ambientOpacity: 0.8,
+      nodeColors: Float32Array.from([
+        1, 0, 0, 1,
+        0, 1, 0, 1,
+        0, 0, 1, 1,
+        1, 1, 0, 1,
+      ]),
+      selectedIndex: 0,
+      selectedMatches: [
+        { index: 1, score: 0.8 },
+        { index: 3, score: 0.9 },
+      ],
+      hoveredIndex: 1,
+    });
+
+    expect([buffers.ambientCount, buffers.selectedCount, buffers.hoveredCount]).toEqual([2, 2, 2]);
+    expect(Array.from(buffers.links)).toEqual([
+      0, 1, 1, 2, // ambient remains complete
+      0, 1, 0, 3, // selected includes the synthesized 0→3 match
+      0, 1, 1, 2, // hovered raises every incident global edge
+    ]);
+    [0.65, 1.55, 1.55, 2.45, 1.85, 2.75].forEach((width, index) => {
+      expect(buffers.widths[index]).toBeCloseTo(width);
+    });
+    expect(buffers.colors[3]).toBeCloseTo(0.012); // ambient opacity × selected dim
+    expect(buffers.colors[7]).toBeCloseTo(0.048);
+    expect(buffers.colors[11]).toBeCloseTo(0.87); // selected weak focus
+    expect(buffers.colors[15]).toBeCloseTo(0.98); // synthesized strong focus
+    expect(buffers.colors[19]).toBeCloseTo(0.91); // hovered weak focus
+    expect(buffers.colors[23]).toBe(1); // hovered strong focus
   });
 });
 

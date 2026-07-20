@@ -1085,13 +1085,13 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
   // ── Embedding-map (flag-OFF default) smoke ─────────────────────────────────
 
-  test("embedding map: no edges, no 3D toggle, click reveals neighbor-matches panel", async ({ page }, testInfo) => {
+  test("embedding map: native similarity web, no 3D toggle, click reveals neighbor-matches panel", async ({ page }, testInfo) => {
     // beforeEach already ran gotoGraph(page) → bridge ready, static-layer positions
     // loaded. ACC_3D_GRAPH_ENABLED is false in the e2e build (NEXT_PUBLIC_ACC_3D_GRAPH
     // unset), so the shell boots into the 2D embedding map:
     //   - Legend renders (color-by-company bucketed model)
     //   - show3DToggle=false → neither toolbar-mode-2d nor toolbar-mode-3d mounts
-    //   - deriveSameUserEdges is bypassed (edges=[]) → linkCount=0 in the renderer
+    //   - deriveSameUserEdges is bypassed; Cosmos receives the native similarity web
     //   - NeighborMatchesPanel mounts when isolatedNodeIndex !== null + neighbors loaded
 
     // (a) Legend renders once color bucketing resolves.
@@ -1102,14 +1102,17 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // — assert the 3D button is absent (count=0, not merely hidden).
     expect(await page.locator('[data-testid="toolbar-mode-3d"]').count()).toBe(0);
 
-    // (c) No edges: ACC_3D_GRAPH_ENABLED=false → edges=[], toCosmosLinks([]) → links=[].
-    // The 2D renderer never calls setLinks, so linkCountRef stays 0. getRendererState()
-    // delegates to GraphCanvas2D.handle.getRenderState() → { renderLinks, linkCount }.
-    // Guard with ?. in case the handle is not yet wired (unlikely post-gotoGraph, but safe).
+    // (c) The flag-off map has no same-user footprint edges, but its complete similarity
+    // web now renders on Cosmos's native curved-link layer.
+    await page.waitForFunction(
+      () => (window.__ACC_GRAPH_TEST__?.getRendererState?.()?.linkCount ?? 0) > 1_000,
+      undefined,
+      { timeout: 20_000 },
+    );
     const linkCount = await page.evaluate(
       () => window.__ACC_GRAPH_TEST__?.getRendererState?.()?.linkCount ?? 0,
     );
-    expect(linkCount, "embedding map renders zero links (no same-user edges)").toBe(0);
+    expect(linkCount, "embedding map renders the native similarity web").toBeGreaterThan(1_000);
 
     // (d) Clicking a node reveals the NeighborMatchesPanel. Use the bridge's
     // simulateClick (same production onPointClick closure) to guarantee a hit on a

@@ -8,6 +8,7 @@ type AmbientStats = {
   lastWindowFps: number | null;
   positionVersion: number;
   edgeCount: number;
+  linkRenderer: "cosmos-native";
 };
 type Phase32Bridge = {
   isReady(): boolean;
@@ -35,6 +36,45 @@ async function gotoGraph(page: Page, route = "/users/spatial-graph"): Promise<vo
   );
 }
 
+async function expectPopulatedWebGlFramebuffer(page: Page): Promise<void> {
+  await page.waitForTimeout(250);
+  const frame = await page.evaluate(() => {
+    const canvas = Array.from(document.querySelectorAll("canvas")).find((candidate) =>
+      candidate.getContext("webgl2"),
+    );
+    if (!canvas) return null;
+    const gl = canvas.getContext("webgl2");
+    if (!gl) return null;
+    const rect = canvas.getBoundingClientRect();
+    const pixels = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
+    gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    let opaquePixels = 0;
+    let coloredPixels = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (pixels[index + 3] > 0) opaquePixels += 1;
+      if (pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245) {
+        coloredPixels += 1;
+      }
+    }
+    return {
+      cssWidth: rect.width,
+      cssHeight: rect.height,
+      bufferWidth: gl.drawingBufferWidth,
+      bufferHeight: gl.drawingBufferHeight,
+      opaquePixels,
+      coloredPixels,
+    };
+  });
+
+  expect(frame).not.toBeNull();
+  expect(frame!.bufferWidth).toBeGreaterThanOrEqual(frame!.cssWidth);
+  expect(frame!.bufferHeight).toBeGreaterThanOrEqual(frame!.cssHeight);
+  expect(frame!.opaquePixels).toBeGreaterThan(frame!.bufferWidth * frame!.bufferHeight * 0.9);
+  // Nodes alone occupy roughly 12k pixels at this viewport. This threshold pins
+  // the native similarity web itself, so counters cannot hide a blank link pass.
+  expect(frame!.coloredPixels).toBeGreaterThan(50_000);
+}
+
 test.describe("Phase 32 ambient life", () => {
   test("both production aliases render the same living graph surface", async ({ page }) => {
     for (const route of ["/users/spatial-graph", "/users/access-analysis"]) {
@@ -42,6 +82,7 @@ test.describe("Phase 32 ambient life", () => {
       // The legacy alias canonicalizes to the spatial-graph URL after rendering.
       await expect(page).toHaveURL(/\/users\/spatial-graph$/);
       await expect(page.getByTestId("similarity-web")).toBeAttached();
+      await expectPopulatedWebGlFramebuffer(page);
     }
   });
 
@@ -74,6 +115,7 @@ test.describe("Phase 32 ambient life", () => {
 
     expect(result.before?.nodeCount).toBeGreaterThan(22_000);
     expect(result.before?.edgeCount).toBeGreaterThan(1_000);
+    expect(result.before?.linkRenderer).toBe("cosmos-native");
     expect(result.elapsedMs).toBeGreaterThanOrEqual(10_000);
     expect(result.controller?.sequence).toEqual([0, 1, 2, 1]);
     expect(result.controller?.recoveredTier).toBe(1);

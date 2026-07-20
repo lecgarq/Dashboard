@@ -266,7 +266,7 @@ interface GraphTestApi {
   getMode(): "2d" | "3d";
   getRenderedNodeCount(): number;
   getFeatureCount(): number;
-  getAmbientStats(): (AmbientStats & { edgeCount: number }) | null;
+  getAmbientStats(): (AmbientStats & { edgeCount: number; linkRenderer: "cosmos-native" }) | null;
   exerciseAmbientController(): { sequence: AmbientTier[]; recoveredTier: AmbientTier } | null;
   getPositionsStats(): {
     count: number;
@@ -380,7 +380,13 @@ function buildApi(): GraphTestApi {
     },
     getAmbientStats() {
       const layer = shell.ambientLayer;
-      return layer ? { ...layer.getStats(), edgeCount: shell.similarityEdgeCount } : null;
+      return layer
+        ? {
+            ...layer.getStats(),
+            edgeCount: shell.similarityEdgeCount,
+            linkRenderer: "cosmos-native" as const,
+          }
+        : null;
     },
     exerciseAmbientController() {
       return shell.ambientLayer?.exerciseControllerForTest() ?? null;

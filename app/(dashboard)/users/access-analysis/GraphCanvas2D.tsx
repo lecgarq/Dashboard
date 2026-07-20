@@ -95,6 +95,8 @@ export interface GraphCanvas2DHandle {
   setLinks(links: Float32Array): void;
   /** Replace per-link RGBA colors (0–1). Length must equal (links.length/2)*4. */
   setLinkColors(rgba: Float32Array): void;
+  /** Atomically replace native similarity links, colors, and widths with one render. */
+  setSimilarityLinks(links: Float32Array, rgba: Float32Array, widths: Float32Array): void;
   /** Test/diagnostic: effective cosmos link-render config + number of links set. */
   getRenderState(): { renderLinks: boolean; linkCount: number };
   /**
@@ -270,7 +272,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // CRITICAL config flags (Pattern 1 from RESEARCH):
       // - enableSimulation: false  → frozen mode; cosmos.gl never drives physics
       // - transitionDuration: 0   → no GPU tweens; rAF drives all animation (REND-05)
-      // - renderLinks: true        → draws same-user footprint edges (WS2; link colors precomputed)
+      // - renderLinks: true        → draws same-user or native similarity links
       // - pointGreyoutOpacity: 0.15 → matches DIM_ALPHA from CosmosCanvasClient.ts
       g = new Graph(div, {
         enableSimulation: props.gpuSimulation === true,
@@ -282,6 +284,8 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           : {}),
         renderLinks: true,
         linkWidth: 0.5,
+        curvedLinks: true,
+        curvedLinkControlPointDistance: 0.14,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
@@ -336,6 +340,30 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Store in stable ref for reactive effects
       graphRef.current = g;
 
+      // Luma's canvas ResizeObserver can miss the first non-zero size when this
+      // absolute slot settles during hydration. Sync the drawing buffer once at
+      // readiness; the observer continues to own subsequent responsive resizes.
+      const pixelRatio = window.devicePixelRatio || 1;
+      const canvasContext = (
+        g as unknown as {
+          device?: {
+            canvasContext?: {
+              resize?: (size: { width: number; height: number }) => void;
+              getCurrentFramebuffer?: () => unknown;
+            };
+          };
+        }
+      ).device?.canvasContext;
+      canvasContext?.resize?.({
+        width: Math.max(1, Math.round(div.clientWidth * pixelRatio)),
+        height: Math.max(1, Math.round(div.clientHeight * pixelRatio)),
+      });
+      // Luma applies resize() lazily. Materialize the backing framebuffer before
+      // Cosmos creates point/link GPU resources or the browser default 300×150
+      // surface can remain bound and render transparent.
+      canvasContext?.getCurrentFramebuffer?.();
+      (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+
       // Initial data load -------------------------------------------------------
 
       // Get initial positions (stride-3) and allocate the persistent stride-2 buffer.
@@ -371,6 +399,12 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         }
       }
       g.render();
+      // The first Cosmos rAF can retain its pre-resize transparent target even
+      // after Luma materializes the correct framebuffer. Draw the initialized
+      // point/link state once synchronously; Cosmos owns continuous frames after.
+      (g as unknown as { renderFrame?: (timestamp?: number) => void }).renderFrame?.(
+        performance.now(),
+      );
 
       // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs) -----------------
       // The shell computes, from the highest slider: per-node clusterIds + a
@@ -630,6 +664,35 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           }
           (g as unknown as { setLinkColors: (c: Float32Array) => void })!.setLinkColors(rgba);
           g!.render();
+        },
+
+        setSimilarityLinks(links: Float32Array, rgba: Float32Array, widths: Float32Array): void {
+          if (process.env.NODE_ENV !== "production") {
+            const linkCount = links.length / 2;
+            if (
+              links.length % 2 !== 0 ||
+              rgba.length !== linkCount * 4 ||
+              widths.length !== linkCount
+            ) {
+              throw new Error("GraphCanvas2D.setSimilarityLinks: links/colors/widths length mismatch");
+            }
+            for (let i = 0; i < rgba.length; i++) {
+              const value = rgba[i];
+              if (!Number.isFinite(value) || value < 0 || value > 1) {
+                throw new Error(`GraphCanvas2D.setSimilarityLinks: color out of [0,1]: ${value}`);
+              }
+            }
+          }
+          g!.setLinks(links);
+          g!.setLinkColors(rgba);
+          g!.setLinkWidths(widths);
+          linkCountRef.current = links.length / 2;
+          g!.render();
+          // Keep native-link updates visually atomic with their buffers. Cosmos's
+          // scheduled frame can retain the prior target after a Luma resize.
+          (g as unknown as { renderFrame?: (timestamp?: number) => void }).renderFrame?.(
+            performance.now(),
+          );
         },
 
         getRenderState(): { renderLinks: boolean; linkCount: number } {

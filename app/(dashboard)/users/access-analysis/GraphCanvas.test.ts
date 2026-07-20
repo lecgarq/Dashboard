@@ -35,6 +35,9 @@ let _clusterPosCalls: Array<(number | undefined)[]> = [];
 let _clusterStrengthCalls: Array<Float32Array> = [];
 let _startCalls: Array<number | undefined> = [];
 let _pauseCalls = 0;
+let _canvasResizeCalls: Array<{ width: number; height: number }> = [];
+let _canvasFramebufferFlushCalls = 0;
+let _immediateRenderFrameCalls = 0;
 let _zoomPointCalls: Array<{
   index: number;
   duration: number;
@@ -55,11 +58,26 @@ vi.mock("@cosmos.gl/graph", () => {
     constructor(_div: any, config: any) {
       _capturedConfig = { ...config };
       const g = this;
+      (g as any).config = _capturedConfig;
+      (g as any).device = {
+        canvasContext: {
+          resize: vi.fn((size: { width: number; height: number }) => {
+            _canvasResizeCalls.push({ ...size });
+          }),
+          getCurrentFramebuffer: vi.fn(() => {
+            _canvasFramebufferFlushCalls++;
+          }),
+        },
+      };
+      (g as any).resizeCanvas = vi.fn();
       (g as any).setPointPositions = vi.fn((xy: Float32Array, dontRescale?: boolean) => {
         _setPointPositionsCalls.push({ xy: xy.slice(), dontRescale: !!dontRescale });
       });
       (g as any).setPointColors = vi.fn();
       (g as any).setPointSizes = vi.fn();
+      (g as any).setLinks = vi.fn();
+      (g as any).setLinkColors = vi.fn();
+      (g as any).setLinkWidths = vi.fn();
       (g as any).setConfigPartial = vi.fn((p: any) => {
         _setConfigPartialCalls.push({ ...p });
       });
@@ -67,6 +85,9 @@ vi.mock("@cosmos.gl/graph", () => {
         _setConfigCalls.push({ ...p });
       });
       (g as any).render = vi.fn();
+      (g as any).renderFrame = vi.fn(() => {
+        _immediateRenderFrameCalls++;
+      });
       (g as any).setPointClusters = vi.fn((c: (number | undefined)[]) => { _clusterCalls.push(c.slice()); });
       (g as any).setClusterPositions = vi.fn((p: (number | undefined)[]) => { _clusterPosCalls.push(p.slice()); });
       (g as any).setPointClusterStrength = vi.fn((s: Float32Array) => { _clusterStrengthCalls.push(s.slice()); });
@@ -218,6 +239,9 @@ beforeEach(() => {
   _clusterStrengthCalls = [];
   _startCalls = [];
   _pauseCalls = 0;
+  _canvasResizeCalls = [];
+  _canvasFramebufferFlushCalls = 0;
+  _immediateRenderFrameCalls = 0;
   _zoomPointCalls = [];
   _zoomTransformCalls = [];
 });
@@ -254,9 +278,17 @@ describe("GraphCanvas2D — REND-01 frozen-mode initialization", () => {
     expect(_capturedConfig.enableSimulation).toBe(false);
     // WS2: link rendering is enabled to draw same-user footprint edges.
     expect(_capturedConfig.renderLinks).toBe(true);
+    expect(_capturedConfig.curvedLinks).toBe(true);
+    expect(_capturedConfig.curvedLinkControlPointDistance).toBe(0.14);
     expect(_capturedConfig.transitionDuration).toBe(0);
     expect(_capturedConfig.pointGreyoutOpacity).toBe(0.15);
     expect(_capturedConfig.backgroundColor).toBe("#09090B");
+    expect(_canvasResizeCalls).toContainEqual({
+      width: 800 * window.devicePixelRatio,
+      height: 600 * window.devicePixelRatio,
+    });
+    expect(_canvasFramebufferFlushCalls).toBe(1);
+    expect(_immediateRenderFrameCalls).toBe(1);
   });
 });
 
@@ -317,6 +349,37 @@ describe("GraphCanvas2DHandle — REND-05 tick path", () => {
     expect(call!.xy[3]).toBe(50);
     // dontRescale must be true on tick path
     expect(call!.dontRescale).toBe(true);
+  });
+});
+
+describe("GraphCanvas2DHandle — native similarity links", () => {
+  it("queues links, colors, and widths atomically without reheating simulation", async () => {
+    const handle = await setupHandle(3);
+    const graph = _capturedGraph as {
+      setLinks: ReturnType<typeof vi.fn>;
+      setLinkColors: ReturnType<typeof vi.fn>;
+      setLinkWidths: ReturnType<typeof vi.fn>;
+      render: ReturnType<typeof vi.fn>;
+      renderFrame: ReturnType<typeof vi.fn>;
+      unpause: ReturnType<typeof vi.fn>;
+    };
+    graph.render.mockClear();
+    graph.renderFrame.mockClear();
+    _startCalls = [];
+
+    const links = Float32Array.from([0, 1, 1, 2]);
+    const colors = Float32Array.from([1, 0, 0, 0.5, 0, 1, 0, 0.75]);
+    const widths = Float32Array.from([0.65, 1.55]);
+    handle.setSimilarityLinks(links, colors, widths);
+
+    expect(graph.setLinks).toHaveBeenLastCalledWith(links);
+    expect(graph.setLinkColors).toHaveBeenLastCalledWith(colors);
+    expect(graph.setLinkWidths).toHaveBeenLastCalledWith(widths);
+    expect(graph.render).toHaveBeenCalledTimes(1);
+    expect(graph.renderFrame).toHaveBeenCalledTimes(1);
+    expect(handle.getRenderState()).toEqual({ renderLinks: true, linkCount: 2 });
+    expect(_startCalls).toEqual([]);
+    expect(graph.unpause).not.toHaveBeenCalled();
   });
 });
 

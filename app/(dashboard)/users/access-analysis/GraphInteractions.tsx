@@ -55,7 +55,7 @@ export interface GraphInteractionsProps {
    * clicked node. Empty/undefined on the flag-ON physics graph (no embedding).
    */
   neighborIndices?: ReadonlySet<number> | null;
-  /** Immediate hover notification for the Canvas2D similarity-edge layer. */
+  /** Immediate hover notification for the native similarity-link controller. */
   onHoverChange?: (index: number | null) => void;
 
   /**
@@ -294,7 +294,9 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
   useEffect(() => {
     const handle = graphRef.current?.handle ?? null;
     const rgba = computeLinkEmphasisColors(edges, activeUserIds);
-    if (handle) handle.setLinkColors(rgba);
+    // Empty same-user buffers belong to the flag-off projector. Do not erase the
+    // native similarity-web colors that its controller owns on the same Cosmos layer.
+    if (handle && rgba.length > 0) handle.setLinkColors(rgba);
     setEdgeTestState({ brightCount: countBrightEdges(edges, activeUserIds) });
     // rendererReady: re-apply once the async handle exists.
   }, [edges, activeUserIds, graphRef, mode, rendererReady]);
