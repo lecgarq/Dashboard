@@ -139,6 +139,69 @@ violation lists empty on BOTH routes.
   every-load lean bulkUsers refetch is gone. Remaining client traffic:
   coverage/dataVersion/accSync/gmail/project background queries only.
 
-## LINK-PERF (to be recorded)
+## LINK-PERF profile (before)
 
-_Pending: 33-03 profile + before/after fps._
+Captured 2026-07-20 on the post-split `:3100` build rebuilt with flag-gated
+`performance.now()` spans in `SimilarityWebOverlay.tsx` (counters compiled in
+only when `NEXT_PUBLIC_ACC_GRAPH_TEST=1`; dead code in production builds).
+Full sample: 22,279 nodes / 14,155 mapped links.
+
+**JS-side tick breakdown (6s window, ambient running):** 110 draws, 0 parked,
+per-draw ms — projection+clear 0.63, path-build 0.49, stroke calls 0.21,
+focus 0.03, **total 1.36 ms/draw** (~25 ms/s of JS). The JS loop is NOT the
+cost.
+
+**Causal A/B (same build):** fps measured 5s each way after a Tier-0 reset —
+overlay drawing: **17.57 fps**; overlay `display:none` (zero-area buffer →
+strokes no-op): **60.00 fps, Tier 0 held**. The entire deficit is Canvas2D
+**rasterization** of ~14.2k antialiased quadratic beziers per redraw
+(~40 ms/frame of raster work invisible to `performance.now()` around
+`ctx.stroke()`, which only queues commands).
+
+**Before fps (phase32-ambient 10s gate, this phase):** **21.35 fps**
+(elapsed 10,024 ms), Tier 0 → degraded to Tier 2 within the window
+(matches Phase 32's recorded 20.68 fps ceiling).
+
+## LINK-PERF (after)
+
+**Applied** (in `SimilarityWebOverlay.tsx`; band widths/opacities, draw
+priority, 25%-floor morph web, focus rendering, and the frozen cosmos handle
+all untouched):
+
+1. **Ambient-only redraw throttle (`AMBIENT_REDRAW_MS = 100`).** When the
+   only change is ambient position drift (no pan/zoom, no morph, no
+   data/focus change, opacity settled), the web redraws at ~10 Hz instead of
+   every ~33 ms tick. Ambient micro-orbits displace nodes sub-pixel per
+   100 ms, so the lag is visually imperceptible; pan/zoom, slider morphs,
+   selection and hover changes still redraw immediately on the next tick.
+2. **Lazy per-combo Path2D + empty-stroke skip.** Most bucket×band combos are
+   empty; they are no longer allocated or stroked, and `strokeStyle` is built
+   only for buckets that actually stroke.
+
+**After fps (identical method, rebuilt `:3100`, BUILD_ID
+`exsSYVkoR31p_Jr47JnH0`):** **41.33 fps** (10,016 ms) — and 41.45 fps on the
+full-suite re-run — vs 21.35 before = **+94%**. A/B on the same build:
+overlay drawing 42.93 fps vs hidden 60.04 fps (deficit 42.4 → 17.1 fps).
+Profile: 52 draws / 106 parked per 6s (~8.7 redraws/s), per-draw JS
+unchanged (~1.5 ms). Playwright `phase32-ambient.spec.ts` **4/4 passed** on
+the optimized build — tier controller still degrades below 50 fps as
+designed (holds-or-degrades contract intact; `lastWindowFps` ~37.5 at the
+10s mark).
+
+**Rejected levers** (recorded per plan):
+
+- Short-segment bezier→line swap — sub-pixel in theory, but appearance-risk
+  with unproven gain ("if in doubt, don't").
+- Lower overlay canvas dpr — visibly blurs strokes.
+- Global tick-rate cut below 30 Hz — would lag pan/zoom tracking, which is
+  user-visible-fast.
+- OffscreenCanvas/worker rasterization and cosmos-native straight links —
+  renderer-level rethink, out of best-effort scope.
+
+**Renderer-rethink finding (v2.6 candidate, per CONTEXT Deferred):**
+main-thread Canvas2D fundamentally cannot hold Tier 0 ≥50 fps with the full
+14k-link web: one full-web redraw costs ~40 ms of rasterization, so even at
+10 Hz ambient cadence the ceiling lands ~42 fps. Candidates: move overlay
+rasterization to an OffscreenCanvas worker, or draw links cosmos-native
+(straight GPU lines, losing the bezier bow), or decimate drawn edges by
+zoom level.

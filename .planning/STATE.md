@@ -5,9 +5,9 @@ milestone_name: "Living Graph"
 current_phase: 33
 current_phase_name: "Perf Closeout & Verification"
 status: executing
-current_plan: "33-03"
-stopped_at: "33-02 COMPLETE (65306046, PERF-06 PASS 5,116→3,914 ms −23.5% + PERF-05 network evidence clean both routes after BULK_USERS_LEAN_INPUT moved to cachePolicy.ts — RSC client-reference-proxy root cause). Next: execute 33-03 (LINK-PERF profile + best-effort Canvas2D link-path optimization)."
-last_updated: "2026-07-20T09:20:00-06:00"
+current_plan: null
+stopped_at: "33-03 COMPLETE (682a4176, LINK-PERF 21.35→41.33 fps +94% via ambient-only ~10Hz redraw throttle + empty-stroke skip; raster-bound root cause proven by A/B, renderer rethink recorded as v2.6 candidate; phase32-ambient 4/4). All three Phase-33 plans summarized. Next: phase completion — 33-VERIFICATION.md, CONCERNS roll-forward, autoDeploy /lecg-ship, then /lecg-close-milestone routing (33 is v2.5's last phase)."
+last_updated: "2026-07-20T09:40:00-06:00"
 ---
 
 # Project State
