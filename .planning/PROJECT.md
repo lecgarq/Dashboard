@@ -15,7 +15,19 @@ about its coverage.
 
 ## Current State
 
-**Shipped:** v2.4 Spatial Graph Dimensions — closed 2026-07-16 (5 phases 24–28 + fractional
+**Shipped:** v2.5 Living Graph — closed 2026-07-20 (5 phases 29–33; 16/16 requirements;
+final BUILD_ID `-zcfnulR0rESok3UDom50`). The bag-of-words t-SNE map (84.3% jittered clones)
+became a hybrid-vector PaCMAP projection (20.4% duplicates, trustworthiness 0.9388→0.9597,
+gate-conditional upsert); neighbor lists went to k=10 distinct matches + twin chip + per-match
+"why similar" chips; click/hover/ambient choreography shipped entirely on the frozen CPU/rAF
+path (PERF-02 green throughout); PERF-05/06 closed the v2.4 debt (zero refetch both routes,
+shell chunk −18.3%, time-to-graph −23.5%, new median 3,914 ms). LIFE-03's hard ≥50fps gate
+FAILED on the final 14.2k-link path (20.68 fps) and shipped via its written degradation clause
+— LINK-PERF profiling proved Canvas2D rasterization is the ceiling (~40 ms/frame raster vs
+1.4 ms JS); redraw throttle banked +94% (41.33 fps). Retrospective in `MILESTONES.md`;
+archived to `.planning/milestones/v2.5-*`.
+
+**Prior shipped:** v2.4 Spatial Graph Dimensions — closed 2026-07-16 (5 phases 24–28 + fractional
 28.1; 18/18 requirements; deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`). An unlock, not a build:
 the two hardcoded 3-string apertures became a unified ~17-dim group/color/filter surface with
 honest coverage labels, the 208-dim catalog wall renders lazily/searchably in production, the
@@ -58,54 +70,50 @@ tree; tags and git history are the authoritative detailed record. Deploy = rebui
 (not a branch merge); v2.3's final phase (23) rebuilt `:3000` and captured the owner's
 graph-by-graph sign-off before closing.
 
-**Current focus:** v2.5 Living Graph — opened 2026-07-16. See "Current Milestone" below.
+**Current focus:** v2.6 Full-Rate Graph — opened 2026-07-20. See "Current Milestone" below.
 
-## Current Milestone: v2.5 Living Graph
+## Current Milestone: v2.6 Full-Rate Graph
 
-**Goal:** Make the spatial graph's positions *true* (full extracted feature set,
-magnitude-aware distances, UMAP), its similarity relationships *intelligent* (meaningful
-de-twinned neighbors, each explaining *why* it matches), and its surface *alive* (full
-ambient node life, click/hover choreography, expressive links) — then close the route's
-remaining perf debt so the life is actually felt.
+**Goal:** Take the similarity web off the Canvas2D rasterization ceiling so full ambient
+life + the full 14.2k-link web sustain **≥50 fps at Tier 0** on the workshop machine (tier
+controller retained as safety net but never engaged there) — and restore the repo's gating
+power with a test/guard health sweep (e2e re-baseline, lasso budget, unit suite fully green,
+guard-bash powershell gap, stale-embedding prune).
 
-**Owner's ask (verbatim, 2026-07-16):** *"I want to improve the embeddings and vectoral
-position of my spatial graph to be extremely accurate with the extracted data and also the
-relationships of similarities to be advanced and intelligent enough that is correctly
-computed. Also I want to improve vastly the UI in terms of nodes, links, what happens when
-clicking a node, I want the nodes to feel alive etc."*
+**Why this is needed** (evidence from the v2.5 close, 2026-07-20):
 
-**Why this is needed** (verified 2026-07-16 from source):
+- LIFE-03's hard ≥50fps gate **failed on the shipped path** (20.68 fps at 14.2k moving
+  links); it closed via its written degradation clause. LINK-PERF profiling proved the
+  ceiling is **Canvas2D rasterization** (~40 ms/frame raster vs 1.4 ms JS tick); the redraw
+  throttle (+94% → 41.33 fps) was the last cheap lever. Further gains need a renderer
+  rethink: OffscreenCanvas worker, cosmos-native links, or zoom decimation (MILESTONES v2.5
+  trap #3, CONCERNS Ph33).
+- `tests/e2e/acc-dc-graph.spec.ts` carries 14 pre-existing drift failures (node count
+  16,942→22,279, dead physics-shell/curated-slider selectors) and **cannot gate**; the lasso
+  spec still flakes at its 120s budget (CONCERNS §3.4); 3 pre-existing `usePredicateEngine`
+  unit failures keep `npm test` from being fully green.
+- guard-bash's build-deny rule is bypassed by powershell-wrapped invocations — this
+  overwrote the live `.next` once during Phase 33 (CONCERNS `[NEW Ph33]`).
+- The embedding pipeline never prunes: 983 stale `AccInstanceEmbedding` rows accumulate
+  harmlessly today but grow with every snapshot change (CONCERNS Ph30).
 
-- The embedding is **TF-IDF bag-of-words → t-SNE** (`instanceFeatureTokens.ts:10-22`,
-  `compute_instance_embeddings.py`): numeric magnitude is discarded (`permstr:5` and
-  `permstr:0` are equidistant tokens), ~half the computed snapshot dims never feed position
-  (folderBreadth, accessibleDataBytes, activityTotal, tenure, riskScore), and **87% of nodes
-  are jittered clones of ~3,000 archetypes** — within-archetype spread is gaussian noise,
-  not data.
-- Similarity neighbors are cosine kNN on that same matrix, saturated with score-1.0
-  identical-profile twins (acknowledged at `acc-dc-graph.ts:94-96`); the
-  `NeighborMatchesPanel` never explains *why* a match is similar.
-- The UI at rest is a frozen static point field: hover ring only, zero cosmos links on the
-  live path, click = hard-cut panel swap. No motion, no focus choreography.
+**Target features (8 requirements — REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02):**
 
-**Target features (16 requirements — EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06):**
+- Similarity-web renderer chosen from measured prototypes of the three levers, implemented
+  with the Phase-32 link-expression contract preserved byte-for-byte in tests
+- Hard gate measured last: Tier-0 full ambient + full links sustained ≥50 fps, LIFE-03
+  methodology, recorded — the gate v2.5 could not pass
+- e2e suite re-baselined and green; lasso budget fixed; unit suite fully green; guard-bash
+  denies powershell-wrapped builds; pipeline prunes stale embedding rows
 
-- Hybrid feature vector (scaled numerics + weighted categoricals) → UMAP, quality-gated
-  old-vs-new (trustworthiness/neighbor-purity), recomputed against the live DB
-- De-twinned, explained neighbor matches; similarity web rebuilt from the new vectors
-- Click choreography (camera ease, neighbor lighting, animated enriched panel), hover edge
-  emphasis + headline-dimension tooltip, **full ambient** node life behind a hard ≥50fps
-  gate with a designed degradation rule
-- App-wide SSR-hydration fix at the shared boundary + `AccessAnalysisShell` chunk code-split,
-  time-to-graph re-measured vs the 28.1 median (4,360 ms)
+**Owner scope decisions (2026-07-20):** renderer rethink headline + health sweep supporting
+(picked from the seeded candidates); **hard ≥50fps Tier-0 bar** (not best-effort); Tier-3
+dims (ISSUE-GRAPH-01 spike + TIME-01 scrubber) stay deferred — the ISSUE-GRAPH-01 resolution
+spike is the v2.7 entry ticket; data-truth items (SVC-01, DIM-05 denominator) not in scope.
 
-**Owner scope decisions (2026-07-16):** UMAP (umap-learn = the milestone's only dependency
-change, offline python pipeline only); full ambient motion (perf-gated); both v2.4-deferred
-perf items folded in; 5 phases (29–33) approved.
-
-**Explicitly deferred to v2.6** (Tier 3, needs new data plumbing): issue status / type /
-coordination on the graph (requires an `AccIssue.createdBy` → `AccDcUser` id bridge with an
-unmeasured resolution rate), and a temporal scrubber for activity/issues over time.
+**Explicitly deferred to v2.7:** issue dims on the graph (needs the `AccIssue.createdBy` →
+`AccDcUser` resolution-rate spike first), temporal scrubber, SVC-01, DIM-05 denominator
+verify, DC-01/02 (external Account Admin blocker).
 
 ## Shipped Milestone: v2.3 New Graphs — ✅ SHIPPED 2026-07-14
 
@@ -179,16 +187,20 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
   (18/18 requirements; unified ~17-dim aperture, 208-dim catalog wall in prod, force-anchor
   organic layout revived, perf debt §3.1–3.3 closed + 28.1 SSR-hydration/lasso fixes;
   deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn` 2026-07-16)
+- ✓ **Living Graph** (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06) — v2.5
+  (16/16 requirements; hybrid-vector PaCMAP embedding, de-twinned explained neighbors,
+  click/hover/ambient choreography on the frozen path, PERF-05/06 hydration + chunk-split
+  closed; LIFE-03 shipped via its written degradation clause; deployed BUILD_ID
+  `-zcfnulR0rESok3UDom50` 2026-07-20)
 
 ### Active
 
-<!-- v2.4 Spatial Graph Dimensions shipped → moved to Validated (2026-07-16). The owner's embedding/similarity/liveliness ask is now the ACTIVE v2.5 milestone. SVC-01, DC-01/02 remain deferred candidates. -->
+<!-- v2.5 Living Graph shipped → moved to Validated (2026-07-20). The renderer rethink it seeded is now the ACTIVE v2.6 milestone. SVC-01, DC-01/02 remain deferred candidates. -->
 
-- [ ] **v2.5 Living Graph** (ACTIVE — see "Current Milestone" above) — hybrid feature vector
-  + UMAP embedding recompute quality-gated old-vs-new, de-twinned explained similarity
-  neighbors + rebuilt similarity web, click/hover choreography + full ambient node life
-  (≥50fps hard gate), and the two carried perf items (app-wide SSR-hydration fix PERF-05,
-  shell-chunk code-split PERF-06).
+- [ ] **v2.6 Full-Rate Graph** (ACTIVE — see "Current Milestone" above) — similarity-web
+  renderer off the Canvas2D ceiling (measured lever choice, Phase-32 contract preserved,
+  hard ≥50fps Tier-0 gate measured last) + test/guard health sweep (e2e re-baseline, lasso
+  budget, unit suite fully green, guard-bash powershell gap, stale-embedding prune).
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
@@ -284,10 +296,12 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | **Revive the force-anchor layout engine** (dimensions restructure the graph) rather than keeping the static embedding map | Owner chose it over the lower-risk "recolor/regroup only" option. A dimension that can't move the graph isn't really a graph dimension — and the anchors are already computed. Accepted risk: touches cosmos.gl reheat, the known-fragile area (CONCERNS.md §3.2) | ✓ Good — PERF-02 frozen-handle invariant held; the "+42% regression" scare turned out to be a pre-existing SSR bug, not the engine |
 | **Tier 3 (issue dims + temporal scrubber) explicitly deferred** | `AccIssue.createdBy` → `AccDcUser` has no id bridge and an unmeasured resolution rate; shipping it blind risks a mostly-empty dimension that lies. Time is not a node attribute | ✓ Good — still deferred (now v2.6 candidate) |
 | **Perf debt (CONCERNS.md §3.1–3.4) folded into v2.4, not deferred again** | Exposing 189 sliders makes the eager 176-action catalog init a real first-paint cost on a live-demo page, not a theoretical one. The debt becomes load-bearing precisely because of this milestone | ✓ Good — §3.1/3.2/3.3 closed; 28.1 found+fixed the real first-paint culprit |
-| **v2.5 = embedding truth + similarity intelligence + living UI** on the same surface | Direct owner request 2026-07-16. Source investigation proved the map is bag-of-words (magnitude discarded, 87% jittered clones) and the neighbor lists are twin-saturated — position/similarity don't honestly reflect the extracted data, violating core value on the flagship demo surface | — Pending |
-| **UMAP over t-SNE for the recompute** (umap-learn = only dependency change) | Owner-chosen 2026-07-16. Global structure becomes meaningful (inter-cluster distances interpretable), faster at 22k nodes; dep is offline-python-only, zero app runtime impact | — Pending |
-| **Full ambient motion, behind a hard ≥50fps gate + degradation rule** | Owner-chosen 2026-07-16 over the recommended "subtle ambient". Risk accepted deliberately: per-frame updates on ~22k frozen nodes; the gate + auto-degrade rule (LIFE-03) is the safety net, and reduced-motion stays static | — Pending |
-| **PERF-05/06 (SSR-hydration app-wide + shell-chunk split) folded into v2.5** | The 4s dead gap and multi-MB refetches sit on this exact route; "nodes feel alive" is unachievable behind them. Fix at the shared boundary (helper + test), measure last (Phase 33) | — Pending |
+| **v2.5 = embedding truth + similarity intelligence + living UI** on the same surface | Direct owner request 2026-07-16. Source investigation proved the map is bag-of-words (magnitude discarded, 87% jittered clones) and the neighbor lists are twin-saturated — position/similarity don't honestly reflect the extracted data, violating core value on the flagship demo surface | ✓ Good — 16/16 shipped; duplicates 84.3%→20.4%, trustworthiness gate passed |
+| **UMAP over t-SNE for the recompute** (amended to PaCMAP at Phase-29 discussion) | Owner-chosen 2026-07-16, swapped to pacmap+faiss-cpu 2026-07-16; dep is offline-python-only, zero app runtime impact | ✓ Good — deterministic (seed proven twice), gate-conditional upsert held |
+| **Full ambient motion, behind a hard ≥50fps gate + degradation rule** | Owner-chosen 2026-07-16 over the recommended "subtle ambient". Risk accepted deliberately: per-frame updates on ~22k frozen nodes; the gate + auto-degrade rule (LIFE-03) is the safety net, and reduced-motion stays static | 🟡 Honest partial — gate FAILED on the final 14.2k-link path (20.68 fps); shipped via the written degradation clause; Canvas2D raster proven the ceiling → v2.6 |
+| **PERF-05/06 (SSR-hydration app-wide + shell-chunk split) folded into v2.5** | The 4s dead gap and multi-MB refetches sit on this exact route; "nodes feel alive" is unachievable behind them. Fix at the shared boundary (helper + test), measure last (Phase 33) | ✓ Good — zero refetch both routes, chunk −18.3%, time-to-graph −23.5% (median 3,914 ms); bonus RSC client-proxy root-cause fix (`cachePolicy.ts`) |
+| **v2.6 = renderer rethink (hard ≥50fps Tier-0 bar) + health sweep** | Owner-chosen 2026-07-20 from the seeded candidates (1+3). The renderer is the only path to the gate v2.5 couldn't pass; the health sweep restores gating power the renderer work itself needs. Tier-3 dims stay deferred (spike = v2.7 entry ticket) | — Pending |
+| **Health sweep sequenced FIRST (Phase 34), renderer after** | The renderer phases need a trustworthy e2e gate; re-baselining `acc-dc-graph.spec.ts` before touching the web means regressions surface as failures, not noise | — Pending |
 
 ---
-*Last updated: 2026-07-16 — opened milestone **v2.5 Living Graph** (see "Current Milestone" above): embedding fidelity (hybrid vector + UMAP), similarity intelligence (de-twinned explained neighbors), living UI (full ambient + choreography), and the two carried perf items. Prior: closed v2.4 Spatial Graph Dimensions (18/18 requirements shipped, deployed `KeTX6mq25E1sa0vgA-Pnn`).*
+*Last updated: 2026-07-20 — opened milestone **v2.6 Full-Rate Graph** (see "Current Milestone" above): similarity-web renderer off the Canvas2D ceiling behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep. Prior: closed v2.5 Living Graph (16/16 requirements shipped, deployed `-zcfnulR0rESok3UDom50`).*

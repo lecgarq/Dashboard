@@ -1,38 +1,40 @@
 ---
 lecg_state_version: 2
-milestone: v2.5
-milestone_name: "Living Graph"
-current_phase: 33
-current_phase_name: "Perf Closeout & Verification"
+milestone: v2.6
+milestone_name: "Full-Rate Graph"
+current_phase: 34
+current_phase_name: "Test & Guard Health Sweep"
 status: ready_to_plan
 current_plan: null
-stopped_at: "milestone v2.5 closed — next: /lecg-new-milestone (audit 16/16 shipped 2026-07-20; retrospective in MILESTONES.md; archives milestones/v2.5-*; phase dirs 29–33 pruned; seed the next milestone with the Deferred Items below + CONCERNS Ph33 debt, notably the similarity-web renderer rethink v2.6 candidate)"
-last_updated: "2026-07-20T10:30:00-06:00"
+stopped_at: "milestone v2.6 opened 2026-07-20 (renderer rethink + health sweep, hard >=50fps Tier-0 bar; 8 reqs, phases 34-36, breakdown owner-approved) — next: /lecg-discuss-phase 34 (or /lecg-phase 34 — the health sweep is mostly mechanical with few gray areas)"
+last_updated: "2026-07-20T11:30:00-06:00"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-16)
+See: `.planning/PROJECT.md` (updated 2026-07-20)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** none — v2.5 Living Graph CLOSED 2026-07-20 (16/16 shipped). Next:
-`/lecg-new-milestone`.
+**Current focus:** v2.6 Full-Rate Graph — similarity-web renderer off the Canvas2D ceiling
+behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
 
 ## Current Position
 
-- **Milestone:** none active. **v2.5 Living Graph CLOSED 2026-07-20** — 16/16 requirements
-  shipped across Phases 29–33 (retrospective + per-ID audit table in `MILESTONES.md`;
-  archives `milestones/v2.5-REQUIREMENTS.md` / `milestones/v2.5-ROADMAP.md`; phase dirs
-  29–33 pruned). Final production BUILD_ID `-zcfnulR0rESok3UDom50` (2026-07-20).
-- **Prior milestones:** v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
+- **Milestone:** **v2.6 Full-Rate Graph — OPENED 2026-07-20.** 8 requirements
+  (REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02), 3 phases (34–36), 8/8 mapped;
+  phase breakdown owner-approved 2026-07-20. Owner scope picks: renderer rethink headline +
+  health sweep (candidates 1+3), hard ≥50fps Tier-0 bar; Tier-3 dims stay deferred
+  (ISSUE-GRAPH-01 spike = v2.7 entry ticket).
+- **Phase 34 (Test & Guard Health Sweep)** is `ready_to_plan` — e2e re-baseline
+  (acc-dc-graph 14 drift fails + dead selectors), lasso 120s budget, 3 usePredicateEngine
+  unit fails, guard-bash powershell-wrap deny, embedding stale-row prune (983→0).
+- **Prior milestones:** v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`),
+  v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
   all in `MILESTONES.md` / `milestones/`.
-- **Next:** `/lecg-new-milestone`, seeded with the Deferred Items below + CONCERNS Ph33 debt.
-  Headline v2.6 candidates: similarity-web renderer rethink (Canvas2D raster-bound —
-  OffscreenCanvas worker / cosmos-native links / zoom decimation), ISSUE-GRAPH-01 spike,
-  TIME-01 temporal scrubber, e2e drift re-baseline. Consider `/lecg-map-codebase` first —
-  codebase docs predate the v2.5 graph work.
+- **Next:** `/lecg-discuss-phase 34` (or `/lecg-phase 34` directly — mostly mechanical).
+  Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
 
@@ -71,32 +73,26 @@ spot-check reconciles.
 
 ## Deferred Items
 
-Carried forward at the v2.5 close (2026-07-20):
+Updated at the v2.6 open (2026-07-20). **Absorbed into v2.6 requirements** (dropped from
+this list): similarity-web renderer rethink (→ REND-01–03), guard-bash powershell-wrap gap
+(→ GUARD-01), e2e drift re-baseline + lasso budget (→ E2E-01/02), 3 `usePredicateEngine`
+failures (→ TEST-04), stale-embedding prune (→ PIPE-02).
 
-1. **Similarity-web renderer rethink** — Canvas2D rasterization is the proven fps ceiling
-   (~40 ms/frame for the 14.2k-bezier web; throttle already banked +94% → 41.33 fps, tier
-   controller still degrades <50 fps by design). Levers: OffscreenCanvas worker,
-   cosmos-native links, zoom decimation (CONCERNS Ph33, `33-BASELINE.md` evidence archived
-   in git history) → **v2.6 headline candidate**.
-2. **guard-bash powershell-wrap gap** — deny rules bypassed by powershell-wrapped builds;
-   Git Bash double-quoted `$env:` expands to empty (overwrote live `.next` once, recovered)
-   (CONCERNS `[NEW Ph33]`).
-3. **Tier-3 graph dims** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser` resolution
-   spike) + TIME-01 temporal scrubber → v2.6 candidates.
-4. **e2e drift re-baseline** — `acc-dc-graph.spec.ts` carries 14 pre-existing failures
-   (node count 16,942→22,279 + physics-shell sidebar testids gone); suite can't gate until
-   re-baselined. Lasso e2e 120s budget (CONCERNS §3.4) also still open.
-5. **DIM-05 project-coverage denominator** — verify whether 550/1,153 is the correct
-   DC-sourced denominator before ever displaying it (`VERIFY:` in `dimensionCoverage.ts`).
-6. **3 pre-existing `usePredicateEngine` Phase-25 unit failures** — banded-catalog aperture
-   tests, proven pre-existing WIP (stash-and-rerun), not a regression.
-7. **PaCMAP MN_ratio/FP_ratio tuning** — package defaults shipped; revisit only on owner
+1. **Tier-3 graph dims** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser` resolution
+   spike, unmeasured rate — **the v2.7 entry ticket**) + TIME-01 temporal scrubber →
+   v2.7 candidates (owner explicitly left them out of v2.6).
+2. **Data-truth items** — SVC-01 service-override attribution refinement; DIM-05
+   project-coverage denominator (verify whether 550/1,153 is correct before ever displaying
+   it; `VERIFY:` in `dimensionCoverage.ts`). Not picked for v2.6.
+3. **PaCMAP MN_ratio/FP_ratio tuning** — package defaults shipped; revisit only on owner
    UAT ask (CONCERNS, phase-29 tagged).
-8. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
+4. **DC-01 / DC-02** — external Account Admin provisioning blocker, unchanged.
+5. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
    ORPHAN-01 (PresetBar/SliderGroup/dimensionSearch/dimensionWeights orphans), TEST-SPLIT-01
-   (CONCERNS §8.2/8.3 giant test files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir
-   prune (20–23 + 07 still on disk), Phase-17 SPLIT-04 owner visual sign-off
-   (test-basis-only, no live mount).
+   (CONCERNS §8.2/8.3 giant test files — E2E-01 re-baselines assertions, does NOT split
+   files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20–23 + 07 still on disk),
+   Phase-17 SPLIT-04 owner visual sign-off (test-basis-only, no live mount), per-folder
+   terrain projection seed.
 
 ## Accumulated Context
 
@@ -125,7 +121,9 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-new-milestone`.** v2.5 closed 2026-07-20 (16/16). Seed it with the
-Deferred Items above + CONCERNS Ph33 debt (similarity-web renderer rethink is the
-headline v2.6 candidate). Consider `/lecg-map-codebase` first — the codebase docs
-predate v2.5's embedding/similarity/choreography work.
+**Run `/lecg-discuss-phase 34`** (or `/lecg-phase 34` directly — the health sweep is mostly
+mechanical: e2e re-baseline, lasso budget, unit fixes, guard-bash rule, pipeline prune; few
+product gray areas). v2.6 Full-Rate Graph opened 2026-07-20 — phases 34–36 approved, 8/8
+requirements mapped. Renderer facts to reload before Phase 35: REQUIREMENTS.md "Read Before
+Planning" + MILESTONES v2.5 trap #3 (`33-BASELINE.md` LINK-PERF evidence in git history,
+last at `27297514`).

@@ -10,6 +10,7 @@
 - ✅ **v2.3 New Graphs** - Phases 20-23 (shipped 2026-07-14)
 - ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
 - ✅ **v2.5 Living Graph** - Phases 29-33 (shipped 2026-07-20)
+- 🔄 **v2.6 Full-Rate Graph** - Phases 34-36 (opened 2026-07-20)
 
 ---
 
@@ -957,3 +958,128 @@ Phase 24/28 baseline-then-verify pattern).
      check; deploy per autoDeploy policy with route probe recorded.
 
 **UI hint**: no.
+
+---
+
+## 🔄 v2.6 Full-Rate Graph (Opened — 2026-07-20)
+
+**Milestone goal:** The similarity web renders off the Canvas2D rasterization ceiling so
+full ambient life + the full ~14.2k-link web sustain **≥50 fps at Tier 0** on the workshop
+machine (the hard gate v2.5's LIFE-03 closed via its degradation clause), and the automated
+suites regain gating power first: e2e re-baselined and green, lasso budget fixed, unit suite
+fully green, guard-bash powershell gap closed, embedding pipeline pruned.
+
+**Source requirements:** `.planning/REQUIREMENTS.md` (v2.6, 8 requirements: REND-01–03,
+E2E-01–02, TEST-04, GUARD-01, PIPE-02). **8/8 mapped, each to exactly one phase.**
+
+**⚠️ Name collision (standing):** `app/(dashboard)/access-analysis/` = 23-panel charts page;
+`app/(dashboard)/users/access-analysis/` = the **spatial-graph shell** this milestone
+touches (`/users/spatial-graph` and `/users/access-analysis` render the same UI).
+
+**Overarching guardrail:** no new data source, table, migration, or npm dependency (without
+explicit owner approval); no new WebGL on data surfaces; zinc theme; reduced-motion → fully
+static; TEST-01/02/03 + PERF-02 frozen-handle invariant green throughout; Phase-32 link
+contract (`similarityWeb.test.ts`) preserved across the renderer swap; isolated builds
+PowerShell-only, single-quoted from bash; `npx tsc --noEmit` before any rebuild; layouts
+organic, never a fixed grid.
+
+## Phases
+
+- [ ] **Phase 34: Test & Guard Health Sweep** - The suites can gate again: e2e re-baselined
+  green, lasso budget fixed, unit suite fully green, guard-bash denies powershell-wrapped
+  builds, embedding pipeline prunes stale rows
+- [ ] **Phase 35: Similarity-Web Renderer Rethink** - The web renders off the main-thread
+  Canvas2D raster path via a measured lever choice, with the Phase-32 visual contract intact
+- [ ] **Phase 36: Full-Rate Gate & Closeout** - Tier-0 full ambient + full links sustained
+  ≥50 fps on the workshop machine, measured with the LIFE-03 methodology; deploy + milestone
+  verification
+
+## Phase Details
+
+### Phase 34: Test & Guard Health Sweep
+
+**Goal**: Every automated gate the renderer work will lean on is trustworthy — the graph e2e
+suite passes against the real current surface, the lasso spec stops flaking, `npm test` is
+fully green, guard-bash closes the powershell bypass that once overwrote the live `.next`,
+and the embedding pipeline stops accumulating stale rows.
+**Depends on**: Phase 33 (v2.5, shipped) — first phase of v2.6, no intra-milestone dependency.
+Sequenced FIRST deliberately: Phases 35–36 need `acc-dc-graph.spec.ts` able to gate renderer
+regressions as failures, not noise.
+**Requirements**: E2E-01, E2E-02, TEST-04, GUARD-01, PIPE-02
+**Success Criteria** (what must be TRUE):
+
+  1. `tests/e2e/acc-dc-graph.spec.ts` passes green on an isolated `:3100` production build —
+     node-count expectations updated to the live 22,279-node snapshot, dead physics-shell
+     sidebar testids and curated-slider selectors ("User name thumb") replaced with the real
+     v2.4+ surface (`group-by-select`, "Grouping strength thumb"); 0 of the 14 pre-existing
+     drift failures remain (E2E-01).
+  2. `tests/e2e/acc-3d-lasso.spec.ts` passes on consecutive recorded runs without hitting the
+     120 s global budget under machine load — fix chosen from evidence (scoped timeout /
+     `test.slow()` / reduced `NEXT_PUBLIC_ACC_GRAPH_TEST` fixture) (E2E-02).
+  3. `npm test` is fully green: the 3 pre-existing `usePredicateEngine` banded-catalog
+     failures are resolved (code fixed or tests corrected to real intended behavior, with
+     rationale recorded in the plan summary); zero carried failures remain (TEST-04).
+  4. `.claude/hooks/guard-bash.cjs` denies `powershell -Command`-wrapped `next build`/`npm
+     run build` invocations while `:3000` serves, with the double-quoted-`$env:` trap
+     documented at the rule; a regression check (hook unit test or recorded manual matrix)
+     covers the wrapped forms (GUARD-01).
+  5. `scripts/compute_instance_embeddings.py` deletes `AccInstanceEmbedding` rows whose
+     nodeId is absent from the current run's snapshot set, reports the prune count in the
+     run output, and still refuses ALL writes (including the prune) on a trustworthiness-gate
+     failure; verified live: 983 stale rows before → 0 after a real run (PIPE-02).
+
+**UI hint**: no.
+
+### Phase 35: Similarity-Web Renderer Rethink
+
+**Goal**: The similarity web no longer pays ~40 ms/frame of main-thread Canvas2D raster —
+the winning lever (OffscreenCanvas worker rasterization, cosmos-native links, zoom-based
+edge decimation, alone or combined) is chosen from measured prototypes and implemented, and
+the web looks and behaves exactly as Phase 32 shipped it.
+**Depends on**: Phase 34 (the re-baselined e2e suite gates this phase's regressions).
+**Requirements**: REND-01, REND-03
+**Success Criteria** (what must be TRUE):
+
+  1. The candidate levers are prototyped and measured against the live ~14.2k-link web on
+     the workshop machine; the decision (which lever(s), why) is recorded with the measured
+     numbers in the phase artifacts — evidence, not vibes (REND-01).
+  2. The chosen renderer is implemented on the live path; main-thread raster cost measurably
+     drops vs the 33-BASELINE ~40 ms/frame figure (profiled, recorded) (REND-01).
+  3. Phase-32 visual contract intact on the new renderer: real-score weak/medium/strong
+     bands at locked boundaries, monotone width/alpha, ambient<selected<hover draw order,
+     25%-opacity-floor morph web, reduced-motion snap; `similarityWeb.test.ts` pins green —
+     extended, not weakened, where the renderer boundary moves (REND-03).
+  4. PERF-02 frozen-handle invariant green — no GPU-simulation start, no cluster/anchor/
+     config mutation (load-bearing if the cosmos-native-links lever is chosen); TEST-01/02/03
+     green; `npx tsc --noEmit` clean; re-baselined e2e suite (Phase 34) green.
+  5. Zero new npm dependencies without explicit owner approval; no new WebGL surface beyond
+     the existing cosmos.gl canvas.
+
+**UI hint**: yes — the web must be visually indistinguishable at rest; any deliberate
+difference (e.g. decimation at far zoom) is shown to the owner, not slipped in.
+
+### Phase 36: Full-Rate Gate & Closeout
+
+**Goal**: The gate v2.5 could not pass, passed outright and recorded: Tier-0 full ambient
+motion + the full link web sustained ≥50 fps on the workshop machine, with the tier
+controller observed idle; milestone deployed and verified.
+**Depends on**: Phase 35 (measure after the renderer lands — same measure-last discipline as
+v2.4 Phase 28 / v2.5 Phase 33).
+**Requirements**: REND-02
+**Success Criteria** (what must be TRUE):
+
+  1. LIFE-03 methodology re-run on the workshop machine at the full 22,279-node /
+     ~14.2k-link set, Tier 0, ambient + links live: sustained ≥50 fps over a ≥10 s sample,
+     measured and recorded in `36-VERIFICATION.md` (REND-02).
+  2. The three-tier controller remains in place (safety net for other machines) and is
+     observed NOT to engage during the workshop-machine sample — recorded, not assumed
+     (REND-02).
+  3. No collateral regression: time-to-graph re-measured with the established `:3100`
+     median-of-5 methodology vs the Phase-33 median (3,914 ms) — any regression blocks the
+     phase; `prefers-reduced-motion` still renders a fully static graph (verified).
+  4. Full gate sweep green: tsc, `npm test` (fully green per Phase 34), TEST-01/02/03,
+     PERF-02 invariant, re-baselined e2e suite, repo-map check; deploy per autoDeploy policy
+     with route probe recorded.
+
+**UI hint**: no.
+
