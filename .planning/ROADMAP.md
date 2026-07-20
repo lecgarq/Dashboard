@@ -988,7 +988,7 @@ organic, never a fixed grid.
 - [x] **Phase 34: Test & Guard Health Sweep** - The suites can gate again: e2e re-baselined
   green, lasso budget fixed, unit suite fully green, guard-bash denies powershell-wrapped
   builds, embedding pipeline prunes stale rows
-- [ ] **Phase 35: Similarity-Web Renderer Rethink** - The web renders off the main-thread
+- [x] **Phase 35: Similarity-Web Renderer Rethink** - The web renders off the main-thread
   Canvas2D raster path via a measured lever choice, with the Phase-32 visual contract intact
 - [ ] **Phase 36: Full-Rate Gate & Closeout** - Tier-0 full ambient + full links sustained
   ≥50 fps on the workshop machine, measured with the LIFE-03 methodology; deploy + milestone

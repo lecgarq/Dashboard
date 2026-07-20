@@ -76,7 +76,7 @@ Data authority for all REND requirements: the existing similarity edge set —
 `AccInstanceEmbedding.neighbors` (v2.5 de-twinned payload) → `similarityEdgeSet.ts` →
 `SimilarityWebOverlay.tsx`. No new data; the rethink changes rendering architecture only.
 
-- [ ] **REND-01**: The similarity web renders **off the main-thread Canvas2D raster path**.
+- [x] **REND-01**: The similarity web renders **off the main-thread Canvas2D raster path**.
       The three levers (OffscreenCanvas worker rasterization, cosmos-native links,
       zoom-based edge decimation — alone or combined) are prototyped and measured against
       the live 14.2k-link web; the chosen approach is implemented and the decision recorded
@@ -90,7 +90,7 @@ Data authority for all REND requirements: the existing similarity edge set —
       **observed not to engage** on the workshop machine during the sample. This is the gate
       v2.5 closed via its degradation clause; v2.6 exists to pass it outright.
 
-- [ ] **REND-03**: The **Phase-32 visual contract survives the renderer swap** — real-score
+- [x] **REND-03**: The **Phase-32 visual contract survives the renderer swap** — real-score
       strength bands at the locked boundaries, monotone width/alpha, ambient<selected<hover
       draw order, the 25%-opacity-floor morph web, and reduced-motion snap all behave
       identically on the new renderer; `similarityWeb.test.ts` pins stay green (extended,

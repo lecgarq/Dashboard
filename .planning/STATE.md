@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.6
 milestone_name: "Full-Rate Graph"
-current_phase: 35
-current_phase_name: "Similarity-Web Renderer Rethink"
+current_phase: 36
+current_phase_name: "Full-Rate Gate & Closeout"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 35 planned as 35-01 candidate measurements then 35-02 measured-winner implementation (REND-01/03) — next: execute /lecg-phase 35"
-last_updated: "2026-07-20T12:36:00-06:00"
+stopped_at: "Discuss and plan Phase 36: re-run the hard full-rate gate last, measure time-to-graph, and close v2.6"
+last_updated: "2026-07-20T14:29:05-06:00"
 ---
 
 # Project State
@@ -33,10 +33,12 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
 - **Prior milestones:** v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`),
   v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
   all in `MILESTONES.md` / `milestones/`.
-- **Phase 35 (Similarity-Web Renderer Rethink)** is `ready_to_plan` — context captured
-  2026-07-20 with Cosmos-native curved GPU links preferred by measurement and zoom
-  decimation constrained to a deterministic zoomed-out ambient fallback.
-- **Next:** `/lecg-phase 35` — plan and execute REND-01/03 from `35-CONTEXT.md`.
+- **Phase 35 (Similarity-Web Renderer Rethink) COMPLETE 2026-07-20:** Cosmos-native curved
+  GPU links replaced the Canvas2D raster path; 22,279 nodes / 18,000 links held 60.07 fps
+  at Tier 0 over 10.02 s; Phase-32 focus/morph/reduced-motion contracts stayed green; live
+  BUILD_ID `lzC97Z2E6chNTArdzDZd0` verified with a populated WebGL framebuffer.
+- **Next:** discuss and plan Phase 36. Re-run the hard REND-02 measure-last gate, measure
+  median-of-5 time-to-graph, sweep the full gates, deploy, and close v2.6.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -124,6 +126,5 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-phase 35`.** Context is locked in `35-CONTEXT.md`; measure the three approved
-renderer levers against the Phase-33 LINK-PERF baseline, implement the smallest winner, and
-preserve the Phase-32 visual contract. Historical baseline remains at commit `27297514`.
+**Discuss and plan Phase 36.** Re-run the hard full-rate gate last, measure time-to-graph
+against the Phase-33 median, sweep the full gates, deploy, and close v2.6.
