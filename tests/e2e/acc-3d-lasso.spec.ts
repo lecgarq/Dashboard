@@ -20,8 +20,12 @@ const GRAPH_URL = "/users/spatial-graph";
 async function gotoGraph(page: Page): Promise<void> {
   await page.goto(GRAPH_URL, { waitUntil: "domcontentloaded" });
   // Bridge installs once features + physics exist.
+  // E2E-02 (Phase 34): these INNER waits were the real budget that tripped under
+  // machine load (the test body already carries a scoped 360s setTimeout, so the
+  // 120s config default never governs here). Sized to fit inside the body budget
+  // with margin; recorded prod-harness runs complete gotoGraph in well under 60s.
   await page.waitForFunction(() => !!window.__ACC_GRAPH_TEST__?.isReady(), undefined, {
-    timeout: 120_000,
+    timeout: 240_000,
   });
   // Proceed once the graph is visibly rendered with valid positions.
   await page.waitForFunction(

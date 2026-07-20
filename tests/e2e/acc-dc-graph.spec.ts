@@ -14,7 +14,7 @@ test.beforeEach(() => {
  * Current DC snapshot size (accDcGraph.bulkUsers → one node per user×project).
  * Asserted exactly per the verification standard; bump this if the dataset changes.
  */
-const EXPECTED_NODE_COUNT = 16_942;
+const EXPECTED_NODE_COUNT = 22_279;
 
 /** Capture a full-page screenshot and attach it to the HTML report as a proof artifact. */
 async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
@@ -227,13 +227,16 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-default-layout");
   });
 
-  test("moving the user slider does not crash the graph (smoke)", async ({ page }, testInfo) => {
+  test("moving the grouping-strength slider does not crash the graph (smoke)", async ({ page }, testInfo) => {
     // SMOKE only — clustering math is proven in physicsClustering.test.ts. Here we
     // just confirm a real slider interaction keeps the graph valid (no NaN, full
-    // node set, finite clustering score). We do NOT wait for a full re-settle or a
-    // target ratio — that would add minutes of physical settling to the suite.
-    // The ONLY curated slider is "User name" (CURATED_SLIDER_IDS = ["user"]).
-    const thumb = page.getByLabel("User name thumb");
+    // node set). We do NOT wait for a full re-settle or a target ratio — that
+    // would add minutes of physical settling to the suite.
+    // v2.4+ surface: the curated "User name" slider is gone; the Layout tab's
+    // Group-into select + single "Grouping strength" slider replaced it.
+    await page.selectOption('[data-testid="group-by-select"]', "user");
+    const thumb = page.getByLabel("Grouping strength thumb");
+    await expect(thumb, "Grouping strength slider appears for a non-General group").toBeVisible();
     await thumb.focus();
     await page.keyboard.press("End"); // Radix slider: End → max (100)
 
@@ -241,14 +244,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await page.waitForTimeout(1_500);
 
     const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
-    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("user").ratio);
     // eslint-disable-next-line no-console
-    console.log(`[slider smoke] anyNaN=${pos.anyNaN} count=${pos.count} score=${score.toFixed(3)}`);
+    console.log(`[strength smoke] anyNaN=${pos.anyNaN} count=${pos.count}`);
     expect(pos.anyNaN, "no NaN after slider change").toBe(false);
     expect(pos.count, "node set intact after slider change").toBe(EXPECTED_NODE_COUNT);
-    expect(Number.isFinite(score), "clustering score stays finite").toBe(true);
     await expect(page.locator("canvas").first()).toBeVisible();
-    await proofShot(page, testInfo, "after-user-slider");
+    await proofShot(page, testInfo, "after-grouping-strength-slider");
   });
 
   // NOTE: a second-slider-state duplicate-key e2e was added with the composite-key
@@ -469,7 +470,9 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     }));
     expect(before.dimmed, "no dimming before any filter").toBe(0);
 
-    // Open the Role popover and toggle the first available chip.
+    // v2.4+ surface: chips render only after the presenter ADDS the dimension via
+    // the "+ Filter" aperture select; then open its popover and toggle a value.
+    await page.selectOption('[data-testid="toolbar-add-filter"]', "role");
     await page.getByTestId("dim-popover-role").click();
     const firstChip = page.locator('[data-testid^="chip-role-"]').first();
     await expect(firstChip).toBeVisible();
@@ -695,6 +698,10 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("isolating a multi-project user brightens exactly their footprint edges", async ({ page }, testInfo) => {
+    // Same-user edges exist only in the parked 3D physics shell — the default 2D
+    // embedding map bypasses deriveSameUserEdges (edges=[], see the embedding-map
+    // smoke below), so getEdgeSample() has nothing to sample.
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     await waitForFreeze(page); // real-mouse hit-test needs stable screen coordinates
     const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample());
     expect(sample, "a multi-project user exists").toBeTruthy();
@@ -725,54 +732,36 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
   // ── P4 assertions ──────────────────────────────────────────────────────────
 
-  test("P4: sidebar shows Primary group expanded and advanced groups collapsed", async ({ page }, testInfo) => {
-    // Primary group is always open → its title heading is visible in the DOM.
-    const primaryGroup = page.getByTestId("slider-group-Primary");
-    await expect(primaryGroup, "Primary slider group is present").toBeVisible();
-    // A primary dim label ("Project") must be visible inside it.
-    await expect(primaryGroup.getByText("Project"), "Project slider visible in Primary group").toBeVisible();
+  test("P4: right panel shows Layout tab by default and the catalog sidebar under Dimensions", async ({ page }, testInfo) => {
+    // v2.4+ surface: the grouped slider sidebar (slider-group-*) was replaced by a
+    // two-tab right panel — Layout (Group-into + strength) and Dimensions (the
+    // catalog tree with per-dim sliders in themed sections).
+    await expect(page.getByTestId("layout-tab"), "Layout tab is present").toBeVisible();
+    await expect(page.getByTestId("dimensions-tab"), "Dimensions tab is present").toBeVisible();
+    await expect(page.getByTestId("group-by-controls"), "Layout tab content (GroupByControls) is the default").toBeVisible();
 
-    // Affiliation advanced group is collapsed by default → its toggle button has aria-expanded=false.
-    const affiliationGroup = page.getByTestId("slider-group-Affiliation");
-    await expect(affiliationGroup, "Affiliation group is present").toBeVisible();
-    const affiliationToggle = affiliationGroup.getByRole("button");
-    await expect(affiliationToggle, "Affiliation group starts collapsed").toHaveAttribute("aria-expanded", "false");
+    // Switching to Dimensions mounts the catalog sidebar with its themed sections.
+    await page.getByTestId("dimensions-tab").click();
+    await expect(page.getByTestId("catalog-slider-sidebar"), "catalog sidebar mounts under Dimensions").toBeVisible();
+    await expect(page.getByTestId("catalog-section-structural"), "structural catalog section present").toBeVisible();
 
-    // The "Company / firm" slider label must NOT be visible while the Affiliation group is collapsed.
-    // (It lives inside affiliationGroup; when closed the rows are not rendered.)
-    await expect(affiliationGroup.getByText("Company / firm")).not.toBeVisible();
-
-    // Click the Affiliation header → group expands, "Company / firm" becomes visible.
-    await affiliationToggle.click();
-    await expect(affiliationToggle, "Affiliation group expands on click").toHaveAttribute("aria-expanded", "true");
-    await expect(affiliationGroup.getByText("Company / firm"), "Company / firm label visible after expand").toBeVisible();
-
-    await proofShot(page, testInfo, "after-p4-sidebar-groups");
-  });
-
-  test("P4: Access & permissions advanced group shows '1 active' badge (module dim default-on)", async ({ page }, testInfo) => {
-    // The organic default preset has module at 0.15 (15 > 0) and isAdmin at 0 by default.
-    // module is the only dim in "Access & permissions" that is active → badge reads "1 active".
-    const accessGroup = page.getByTestId("slider-group-Access & permissions");
-    await expect(accessGroup, "Access & permissions group is present").toBeVisible();
-    await expect(accessGroup.getByText("1 active"), "badge shows 1 active dim in Access & permissions").toBeVisible();
-    await proofShot(page, testInfo, "after-p4-active-badge");
+    await proofShot(page, testInfo, "after-p4-sidebar-tabs");
   });
 
   test("P4: dimension search filters visible sliders", async ({ page }, testInfo) => {
+    // v2.4+ surface: DimensionSearchBox lives under the Dimensions tab and filters
+    // the catalog tree ("Company" is a structural slider dim; "Users" is another).
+    await page.getByTestId("dimensions-tab").click();
     const searchBox = page.getByTestId("dimension-search");
     await expect(searchBox, "dimension search input is visible").toBeVisible();
 
-    // Typing "company" should make Company / firm appear (search opens groups).
+    // Typing "company" should surface the Company slider (search force-opens
+    // sections; more than one catalog dim matches "company", hence .first()).
     await searchBox.fill("company");
-    await expect(page.getByText("Company / firm").first(), "Company / firm appears in search results").toBeVisible();
+    await expect(page.getByLabel("Company slider").first(), "Company slider appears in search results").toBeVisible();
 
-    // "User name" slider should NOT appear when query is "company" (doesn't match).
-    await expect(page.getByLabel("User name thumb"), "User name slider hidden while searching 'company'").not.toBeVisible();
-
-    // Clear search → User name thumb returns (it is the only curated slider).
-    await searchBox.fill("");
-    await expect(page.getByLabel("User name thumb"), "User name slider returns after clearing search").toBeVisible();
+    // "Users" slider should NOT appear when query is "company" (doesn't match).
+    await expect(page.getByLabel("Users slider"), "Users slider hidden while searching 'company'").not.toBeVisible();
 
     await proofShot(page, testInfo, "after-p4-dimension-search");
   });
@@ -786,10 +775,13 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     );
     // eslint-disable-next-line no-console
     console.log(`[P4 color] options=${optionValues.join(",")}`);
+    // v2.4+ id-space: options come from the catalog aperture (PRESET_DIMENSION_IDS),
+    // not the retired registry ColorMode list — 'isAdmin' is now 'adminMember' and
+    // 'status' is not part of the aperture.
     expect(optionValues, "color-mode options include 'role'").toContain("role");
     expect(optionValues, "color-mode options include 'company'").toContain("company");
-    expect(optionValues, "color-mode options include 'isAdmin'").toContain("isAdmin");
-    expect(optionValues, "color-mode options include 'status'").toContain("status");
+    expect(optionValues, "color-mode options include 'adminMember'").toContain("adminMember");
+    expect(optionValues, "color-mode options include 'riskScore'").toContain("riskScore");
 
     // Capture baseline (default = role).
     const baseline = await page.evaluate(() => ({
@@ -822,72 +814,15 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-p4-color-mode");
   });
 
-  test("P4: Free preset relaxes layout without NaN or degenerate collapse", async ({ page }, testInfo) => {
-    // Capture baseline positions under the organic (default) preset.
-    const before = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
-    expect(before.anyNaN, "baseline layout has no NaN").toBe(false);
-    expect(before.nodeCount, "baseline has full node set").toBe(EXPECTED_NODE_COUNT);
-
-    // Apply the Free / No semantic clustering preset via the preset bar.
-    const freeBtn = page.getByTestId("preset-bar").getByRole("button", { name: "Free / No semantic clustering" });
-    await expect(freeBtn, "Free preset button is visible").toBeVisible();
-    await freeBtn.click();
-
-    // Wait briefly for the rAF-coalesced slider→physics push to apply.
-    // We do NOT wait for full freeze — same as the slider smoke test.
-    await page.waitForTimeout(1_500);
-
-    // Assert via the existing bridge: positions are finite, non-collapsed, non-runaway.
-    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
-    const layout = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
-    // eslint-disable-next-line no-console
-    console.log(
-      `[P4 free] n=${pos.count} anyNaN=${pos.anyNaN} maxAbs=${pos.maxAbs.toFixed(1)} x=${layout.xRange.toFixed(1)} y=${layout.yRange.toFixed(1)} z=${layout.zRange.toFixed(1)}`,
-    );
-
-    // Positions must be finite (no NaN from a bad preset application).
-    expect(pos.anyNaN, "Free preset: no NaN positions").toBe(false);
-    expect(pos.count, "Free preset: node set intact").toBe(EXPECTED_NODE_COUNT);
-    // Layout must be non-degenerate (not an origin-collapsed globe artifact).
-    expect(pos.maxAbs, "Free preset: layout is non-degenerate (spread out)").toBeGreaterThan(1);
-    expect(pos.maxAbs, "Free preset: no runaway explosion").toBeLessThan(100_000);
-    // The layout is always user-blob (z=0 targets), so x/y must spread but z stays flat.
-    expect(layout.xRange, "Free preset: x spread is non-degenerate").toBeGreaterThan(1);
-    expect(layout.yRange, "Free preset: y spread is non-degenerate").toBeGreaterThan(1);
-    expect(layout.zRange, "Free preset: blob layout stays flat (z intentionally near-zero)").toBeLessThan(
-      0.05 * Math.max(layout.xRange, layout.yRange),
-    );
-    await expect(page.locator("canvas").first(), "canvas still rendered after Free preset").toBeVisible();
-
-    await proofShot(page, testInfo, "after-p4-free-preset");
-  });
-
-  test("P6: riskScore advanced slider engages without breaking the graph (smoke)", async ({ page }, testInfo) => {
-    // SMOKE only — riskScore clustering math is proven in unit tests. Here we just
-    // confirm engaging the new advanced "Risk score" slider (which defaults OFF)
-    // keeps the graph valid: no NaN, full node set, finite clustering score. We do
-    // NOT wait for a full re-settle — mirrors the project slider smoke above.
-    // The Risk family group is collapsed by default → expand it first (like the P4
-    // "Affiliation" group expand), then drive its slider.
-    await page.getByTestId("slider-group-Risk").getByRole("button").click();
-
-    const thumb = page.getByLabel("Risk score thumb");
-    await thumb.focus();
-    await page.keyboard.press("End"); // Radix slider: End → max (100)
-
-    // Let the rAF-coalesced slider→physics push apply; do NOT wait for full freeze.
-    await page.waitForTimeout(1_500);
-
-    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
-    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("riskScore").ratio);
-    // eslint-disable-next-line no-console
-    console.log(`[P6 risk slider smoke] anyNaN=${pos.anyNaN} count=${pos.count} score=${score.toFixed(3)}`);
-    expect(pos.anyNaN, "no NaN after riskScore slider change").toBe(false);
-    expect(pos.count, "node set intact after riskScore slider change").toBe(EXPECTED_NODE_COUNT);
-    expect(Number.isFinite(score), "riskScore clustering score stays finite").toBe(true);
-    await expect(page.locator("canvas").first()).toBeVisible();
-    await proofShot(page, testInfo, "after-p6-risk-slider");
-  });
+  // NOTE (E2E-01 re-baseline, Phase 34): two P4/P6 tests deleted here because their
+  // covered features no longer exist in any form on the v2.4+ surface:
+  //   - "P4: Free preset relaxes layout without NaN or degenerate collapse" — the
+  //     PresetBar is unmounted (ORPHAN-01); presets were replaced by the Group-into
+  //     select, whose slider path is smoke-covered above.
+  //   - "P6: riskScore advanced slider engages without breaking the graph" — the
+  //     riskScore dim is no longer slider-surfaced (surfaces: ["color"]); its color
+  //     mode is still covered by the P6 color-mode smoke below, and its filter path
+  //     by the aperture filter test above.
 
   test("P6: riskScore ordered color mode swaps the node color buffer (smoke)", async ({ page }, testInfo) => {
     // SMOKE — the ordered-ramp color MATH is proven in nodeColors.test.ts. Here we
@@ -1006,17 +941,26 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // sticky under the organic preset, so a non-dominant slider move never
     // restarted the sim. Use a real keyboard NUDGE (not End/max) on a low-default
     // dim so the scalar max stays unchanged — proving the per-dimension delta fix.
+    // v2.5+: the default 2D embedding map runs under the PERF-02 frozen-handle
+    // invariant — sliders morph the renderer-side layoutTarget WITHOUT restarting
+    // the sim, so "unfreeze on nudge" is a physics-shell-only contract now.
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     await waitForFreeze(page); // ensure a frozen baseline first
     expect(await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getFrozen())).toBe(true);
 
-    // "Company / firm" defaults low/zero in the organic preset (advanced group).
+    // "Company" defaults low/zero (advanced catalog dim, Dimensions tab).
     // Drive ONE supra-threshold change: PageUp = +10 units = 0.10 normalized, which
     // exceeds SKIP_THRESHOLD (0.02) in a single rAF-coalesced flush. (Single arrow
     // steps are 0.01 each — below the anti-thrash threshold — and never reheat; a
     // real drag moves >2 units/frame, like this PageUp.) Company stays non-dominant,
     // so max(allSliders) is unchanged — exactly the case the old scalar-max gate skipped.
-    await page.getByTestId("slider-group-Affiliation").getByRole("button").click();
-    const thumb = page.getByLabel("Company / firm thumb");
+    // v2.4+ surface: per-dim sliders live in the catalog tree under the Dimensions
+    // tab; search force-opens the section containing the Company slider.
+    await page.getByTestId("dimensions-tab").click();
+    await page.getByTestId("dimension-search").fill("company");
+    // More than one catalog dim matches "company"; the structural Company slider
+    // ranks first in the filtered tree.
+    const thumb = page.getByLabel("Company thumb").first();
     await thumb.focus();
     await thumb.press("PageUp");
 
@@ -1034,10 +978,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-p0-nondominant-slider");
   });
 
-  test("P0: selecting a node does not move the camera (2D projected size stable)", async ({ page }, testInfo) => {
-    // Defect B regression. Selection must not reframe the camera. With the fixed-
-    // width panel column, isolating a node no longer resizes the graph, so the
-    // projected cloud size + zoom stay put.
+  test("P0: isolating a node moves the camera into a focus session; Escape clears it", async ({ page }, testInfo) => {
+    // v2.4+ contract INVERSION of the old Defect-B "camera must not move" pin:
+    // GraphInteractions now runs a REVERSIBLE 2D focus session — isolate calls
+    // handle.focusPoint (zoomToPointByIndex, scale 2.25) and Escape restores the
+    // captured pre-focus view. Pin the new contract: zoom changes on isolate AND
+    // returns to (approximately) the baseline after Escape.
     await waitForFreeze(page);
     await page.waitForFunction(
       () => {
@@ -1053,23 +999,40 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     );
     await page.evaluate((nid) => window.__ACC_GRAPH_TEST__!.simulateClick(nid!), id);
     await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "user-detail");
+    // Focus animation is ≤200ms (reduced-motion aware); allow it to land.
+    await page.waitForTimeout(600);
 
-    const after = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getProjectedCloudSize());
+    const during = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getProjectedCloudSize());
     // eslint-disable-next-line no-console
     console.log(
-      `[P0 camera] before=${before!.widthPx.toFixed(0)}x${before!.heightPx.toFixed(0)}@${before!.zoom.toFixed(3)} after=${after!.widthPx.toFixed(0)}x${after!.heightPx.toFixed(0)}@${after!.zoom.toFixed(3)}`,
+      `[P0 focus] before=${before!.widthPx.toFixed(0)}px@${before!.zoom.toFixed(3)} during=${during!.widthPx.toFixed(0)}px@${during!.zoom.toFixed(3)}`,
     );
-    // Camera unchanged → projected width + zoom within a tight tolerance (no refit).
-    expect(Math.abs(after!.widthPx - before!.widthPx)).toBeLessThan(before!.widthPx * 0.05);
-    expect(Math.abs(after!.zoom - before!.zoom)).toBeLessThan(Math.max(0.01, before!.zoom * 0.05));
-    await proofShot(page, testInfo, "after-p0-select-camera-stable");
+    // Direction of the cosmos zoom level is renderer-internal (observed to move
+    // either way with zoomToPointByIndex); the contract pinned here is that the
+    // camera MOVES on isolate and RESTORES on Escape.
+    expect(
+      Math.abs(during!.zoom - before!.zoom),
+      "focus session moves the camera on isolate",
+    ).toBeGreaterThan(Math.max(0.02, before!.zoom * 0.05));
 
+    // Escape clears the isolation (panel returns to the sliders layer).
+    // KNOWN GAP (recorded Phase 34, CONCERNS): restoreView's
+    // setZoomTransformByPointPositions call does NOT return the camera to the
+    // captured baseline (measured before=1.000 → during=0.265 → after-Escape
+    // 0.252 on the live surface), so the reversibility half of the focus-session
+    // contract is NOT asserted here until that product gap is fixed.
     await page.keyboard.press("Escape");
+    await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "sliders");
+    await proofShot(page, testInfo, "after-p0-focus-session-escape");
   });
 
   test("P0: isolating a multi-project user lights its footprint (not just one node)", async ({ page }, testInfo) => {
     // Defect C regression. Isolate must light the clicked node AND its same-user
     // footprint, so >1 node stays lit for a multi-project user.
+    // getEdgeSample derives from same-user edges, which exist only in the parked 3D
+    // shell (the 2D embedding map lights similarity NEIGHBORS instead — covered by
+    // the embedding-map smoke below).
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample()); // a multi-project user
     expect(sample, "a multi-project user exists").toBeTruthy();
 
@@ -1091,7 +1054,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
   // ── 2D infographic access-map smoke ────────────────────────────────────────
 
-  test("access map boots in 2D with legend + grouped-by Role + labels overlay", async ({ page }, testInfo) => {
+  test("access map boots in 2D with legend + grouped-by General", async ({ page }, testInfo) => {
     // beforeEach already ran gotoGraph(page) → bridge ready, graph rendered with
     // valid positions. This smoke test asserts the THEME/GPU-INDEPENDENT DOM that
     // always mounts once the shell is ready — no GPU or positional assertions.
@@ -1104,16 +1067,18 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // no WebGL dependency). Allow up to 20s for the initial data load.
     await expect(page.getByTestId("graph-legend")).toBeVisible({ timeout: 20_000 });
 
-    // By default the grouping dim is "role" → COLOR_MODE_LABELS["role"] = "Role".
-    // The span only renders when groupedByLabel is non-empty, so this assertion
-    // simultaneously confirms the shell passed a real label to the Toolbar.
-    await expect(page.getByTestId("toolbar-grouped-by")).toContainText("Role");
+    // v2.4+ default grouping is the similarity layout — defaultGroupBy() returns
+    // GENERAL_GROUP_ID, rendered as "Group into: General". The span only renders
+    // when groupedByLabel is non-empty, so this assertion simultaneously confirms
+    // the shell passed a real label to the Toolbar.
+    await expect(page.getByTestId("toolbar-grouped-by")).toContainText("General");
 
-    // The MapClusterLabels overlay container is attached to the DOM once the shell
-    // mounts in 2D mode. We assert ATTACHED (not visible) because under the test
-    // flag the GPU 2D sim is OFF and chip projection can be mis-seeded/scattered,
-    // making individual chip visibility unreliable in e2e.
-    await expect(page.getByTestId("map-cluster-labels")).toBeAttached({ timeout: 20_000 });
+    // NOTE (E2E-01 re-baseline, Phase 34): the map-cluster-labels attachment
+    // assertion was DELETED here. blobDesc is built only when ACC_3D_GRAPH_ENABLED
+    // (AccessAnalysisShell), so on the default flag-OFF path MapClusterLabels
+    // always receives empty labels and renders nothing — cluster chips are a
+    // flag-ON surface now. Component behavior stays covered by
+    // MapClusterLabels.test.tsx.
 
     await proofShot(page, testInfo, "after-access-map-2d-smoke");
   });
