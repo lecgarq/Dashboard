@@ -6,8 +6,8 @@ current_phase: 35
 current_phase_name: "Similarity-Web Renderer Rethink"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 35 context captured 2026-07-20 (Cosmos-native curved links preferred; deterministic zoom decimation allowed only for zoomed-out ambient fallback; selected/hovered and settled close view always complete) — next: /lecg-phase 35"
-last_updated: "2026-07-20T12:32:23-06:00"
+stopped_at: "Phase 35 planned as 35-01 candidate measurements then 35-02 measured-winner implementation (REND-01/03) — next: execute /lecg-phase 35"
+last_updated: "2026-07-20T12:36:00-06:00"
 ---
 
 # Project State
