@@ -6,8 +6,8 @@ current_phase: 36
 current_phase_name: "Full-Rate Gate & Closeout"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Discuss and plan Phase 36: re-run the hard full-rate gate last, measure time-to-graph, and close v2.6"
-last_updated: "2026-07-20T14:29:05-06:00"
+stopped_at: "Plan and execute Phase 36 from 36-CONTEXT.md: sweep gates, measure time-to-graph, run the hard full-rate gate last, deploy, and close v2.6"
+last_updated: "2026-07-20T15:18:17-06:00"
 ---
 
 # Project State
@@ -37,8 +37,9 @@ behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep.
   GPU links replaced the Canvas2D raster path; 22,279 nodes / 18,000 links held 60.07 fps
   at Tier 0 over 10.02 s; Phase-32 focus/morph/reduced-motion contracts stayed green; live
   BUILD_ID `lzC97Z2E6chNTArdzDZd0` verified with a populated WebGL framebuffer.
-- **Next:** discuss and plan Phase 36. Re-run the hard REND-02 measure-last gate, measure
-  median-of-5 time-to-graph, sweep the full gates, deploy, and close v2.6.
+- **Next:** plan and execute Phase 36 from `36-CONTEXT.md`. Sweep the full gates, measure
+  median-of-5 time-to-graph, re-run the hard REND-02 full-rate gate last, deploy, and close
+  v2.6.
   Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
@@ -126,5 +127,6 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Discuss and plan Phase 36.** Re-run the hard full-rate gate last, measure time-to-graph
-against the Phase-33 median, sweep the full gates, deploy, and close v2.6.
+**Plan and execute Phase 36 from `36-CONTEXT.md`.** Sweep the full gates, measure
+time-to-graph against the strict Phase-33 median, re-run the hard full-rate gate last,
+deploy, and close v2.6.
