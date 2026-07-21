@@ -4,10 +4,10 @@ milestone: v2.7
 milestone_name: "Activity Universe"
 current_phase: 38
 current_phase_name: "Activity Data Pipeline & Embedding"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 38 planned: 38-01 (table+author sidecar+coverage) → 38-02 (full-fit pipeline) → 38-03 (payload route+budget+staleness); executing 38-01 next — resume: /lecg-phase 38"
-last_updated: "2026-07-21T13:20:00-06:00"
+status: executing
+current_plan: "38-02"
+stopped_at: "38-01 COMPLETE (fa2502c2: table live, sidecar 22,279 rows, unified corpus 4,904,886, author resolvedEmailRate 94.41%); executing 38-02 (full-fit pipeline) — resume: /lecg-phase 38"
+last_updated: "2026-07-21T13:45:00-06:00"
 ---
 
 # Project State
