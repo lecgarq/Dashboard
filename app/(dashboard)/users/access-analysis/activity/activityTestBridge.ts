@@ -20,6 +20,12 @@ export interface ActivityTestState {
   lodMode: "sample" | "region";
   sampleStride: number;
   selectedCount: number;
+  /** Phase 40 dimension surface. */
+  groupBy: string;
+  colorBy: string;
+  strength: number;
+  morphCount: number;
+  ambientActive: boolean;
 }
 
 declare global {
@@ -35,6 +41,11 @@ const state: ActivityTestState = {
   lodMode: "sample",
   sampleStride: 1,
   selectedCount: 0,
+  groupBy: "none",
+  colorBy: "module",
+  strength: 0,
+  morphCount: 0,
+  ambientActive: false,
 };
 
 export const testBridgeEnabled = (): boolean =>
