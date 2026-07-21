@@ -74,6 +74,19 @@ path comfortably beats the v2.6 JSON budget class (2,386.7 ms median at 22k) whi
 
 ## Ladder decision (owner)
 
-_Pending owner checkpoint — numbers table above + live demo at
-`http://localhost:3100/users/scale-spike?n=<N>[&gpu=1]` (server up at capture time).
-Decision and owner words to be recorded here verbatim._
+**L2 — LOD rendering. Locked 2026-07-21 at the phase-end checkpoint** (owner selected
+"L2 — LOD rendering (Recommended)" from the four-option rung choice; numbers table +
+live `:3100` demo links presented).
+
+What L2 means for every later phase (build target, from the evidence):
+
+- **All 4,862,301 events resident** — binary columnar payload (~73 MB, ~1.1 s measured)
+  + full cosmos point set uploaded (no context loss proven).
+- **Far-zoom renders a decimated subset ≤ ~500k points** (≥50 fps static proven at 500k:
+  71.9/68.1); zoom reveals per-region detail via the existing `setPointSet`/`pushPointSet`
+  LOD seam in GraphCanvas2D.
+- **Ambient motion on a bounded subset (~100k class)** — 73 fps CPU-choreographed proven
+  at 106k; cosmos's GPU force sim is NOT the ambient path (20.4 fps @500k). Phase 40
+  decides custom-shader vs decimated-CPU from this evidence.
+- REND-04's ≥50 fps hard gate at close applies to this rung; shipping below L0 carries
+  this recorded sign-off (REQUIREMENTS REND-04 clause satisfied).

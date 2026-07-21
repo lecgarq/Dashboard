@@ -670,3 +670,24 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
 - **[Ph33 note] BND-03 group-2 `scripts→app` dep-cruiser family is 3 edges**
   (33-01 ratcheted the baseline for the Phase-29 `instanceFeatureNumerics`
   edge); §B's "down from 6 / 2 warnings" note is superseded.
+- **[NEW Ph37 2026-07-21] fps-measurement SwiftShader trap.** Playwright headless
+  Chromium silently falls back to SwiftShader software rasterization — a first
+  scale-spike run recorded 0.4–1 fps that had nothing to do with the workshop
+  GPU. `tests/e2e/scale-spike.spec.ts` now runs HEADED with `--use-angle=d3d11`
+  and hard-fails on a SwiftShader renderer string (`assertHardwareRenderer`).
+  Every future fps-bearing spec (REND-04 close gate, E2E-03 re-baseline) must
+  carry the same guard.
+- **[NEW Ph37] L2 ambient path is unbuilt physics.** Owner locked ladder rung L2
+  (all 4.86M resident, LOD-decimated rendering). Evidence: cosmos.gl's own GPU
+  force sim is NOT viable ambient at scale (20.4 fps @500k, 2.2 @4.86M); CPU
+  full-set push dead ≥250k. Phase 40 must ship custom GPU-shader displacement
+  or bounded-subset (~100k class, 73 fps proven) ambient — decided from
+  37-BASELINE.md, not re-measured assumptions.
+- **[NEW Ph37] faiss flat-index projection slower than full fit.** IndexFlatL2
+  kNN projection measured 840 rows/s (~77 min for the 3.86M remainder) vs ~34 min
+  extrapolated full-corpus PaCMAP fit. If Phase 38 wants sample-fit+projection
+  (incremental refresh), benchmark IVF/HNSW first; otherwise full-fit. Full-fit
+  RSS extrapolates ~6 GB — estimate, measure before productionizing (EMB-07).
+- **[NEW Ph37] scale-spike surface lifecycle.** `/users/scale-spike` +
+  `/api/scale-spike/payload` are committed, flag-gated (`NEXT_PUBLIC_ACC_SCALE_SPIKE`),
+  404/dead without the flag. Remove or re-gate at v2.7 milestone close.
