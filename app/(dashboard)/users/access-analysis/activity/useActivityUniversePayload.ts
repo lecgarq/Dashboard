@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { decodeColumnarPayload, type ColumnArray } from "@/lib/acc/columnarPayload";
 import type { ActivityUniverseMeta } from "@/lib/server/activityUniversePayload";
 
-export const ACTIVITY_UNIVERSE_PAYLOAD_URL = "/api/activity-universe/payload";
+const ACTIVITY_UNIVERSE_PAYLOAD_URL = "/api/activity-universe/payload";
 
 export interface ActivityUniverseData {
   meta: ActivityUniverseMeta;

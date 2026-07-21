@@ -67,34 +67,14 @@ export function viewportIndices(
   return out;
 }
 
-/** Gather stride-2 positions for the given full-set indices. */
-export function gatherPositions(positions: Float32Array, indices: Uint32Array): Float32Array {
-  const out = new Float32Array(indices.length * 2);
+/** Gather per-node values at the given stride (positions 2, RGBA 4, scalars 1) for full-set indices. */
+export function gather(values: Float32Array, indices: Uint32Array, stride: number): Float32Array {
+  const out = new Float32Array(indices.length * stride);
   for (let i = 0; i < indices.length; i++) {
-    out[i * 2] = positions[indices[i] * 2];
-    out[i * 2 + 1] = positions[indices[i] * 2 + 1];
+    const s = indices[i] * stride;
+    const d = i * stride;
+    for (let k = 0; k < stride; k++) out[d + k] = values[s + k];
   }
-  return out;
-}
-
-/** Gather RGBA colors (n*4) for the given full-set indices. */
-export function gatherRgba(colors: Float32Array, indices: Uint32Array): Float32Array {
-  const out = new Float32Array(indices.length * 4);
-  for (let i = 0; i < indices.length; i++) {
-    const s = indices[i] * 4;
-    const d = i * 4;
-    out[d] = colors[s];
-    out[d + 1] = colors[s + 1];
-    out[d + 2] = colors[s + 2];
-    out[d + 3] = colors[s + 3];
-  }
-  return out;
-}
-
-/** Gather scalar per-node values (sizes) for the given full-set indices. */
-export function gatherScalar(values: Float32Array, indices: Uint32Array): Float32Array {
-  const out = new Float32Array(indices.length);
-  for (let i = 0; i < indices.length; i++) out[i] = values[indices[i]];
   return out;
 }
 

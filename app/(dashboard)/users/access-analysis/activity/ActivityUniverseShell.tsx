@@ -28,9 +28,7 @@ import {
 import { buildModuleColorBuffer, buildModuleLegend } from "./moduleColors";
 import { buildActivitySizes } from "./activitySizes";
 import {
-  gatherPositions,
-  gatherRgba,
-  gatherScalar,
+  gather,
   lodLabel,
   sampleStride,
   uniformSampleIndices,
@@ -39,18 +37,11 @@ import {
 } from "./lodSample";
 import { createActivityPhysicsStub, toStride3 } from "./activityPhysicsStub";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
-import { resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
+import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
 import { ActivityTooltip } from "./ActivityTooltip";
 import { ActivityDetailRail } from "./ActivityDetailRail";
 
 const LOD_DEBOUNCE_MS = 250;
-
-function monthFloorLabel(monthFloor: string): string {
-  // "2024-12" → "Dec 2024" without Date parsing pitfalls.
-  const [y, m] = monthFloor.split("-").map(Number);
-  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return Number.isFinite(y) && m >= 1 && m <= 12 ? `${names[m - 1]} ${y}` : monthFloor;
-}
 
 export function ActivityUniverseShell(): React.JSX.Element {
   const payload = useActivityUniversePayload();
@@ -102,9 +93,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const sampleIdx = useMemo(() => uniformSampleIndices(data.count), [data.count]);
   const sampled = useMemo(
     () => ({
-      positions: gatherPositions(positions, sampleIdx),
-      colors: gatherRgba(fullColors, sampleIdx),
-      sizes: gatherScalar(fullSizes, sampleIdx),
+      positions: gather(positions, sampleIdx, 2),
+      colors: gather(fullColors, sampleIdx, 4),
+      sizes: gather(fullSizes, sampleIdx, 1),
     }),
     [positions, fullColors, fullSizes, sampleIdx],
   );
@@ -242,9 +233,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         switchTo(
           region,
           "region",
-          gatherPositions(positions, region),
-          gatherRgba(fullColors, region),
-          gatherScalar(fullSizes, region),
+          gather(positions, region, 2),
+          gather(fullColors, region, 4),
+          gather(fullSizes, region, 1),
         );
       } else if (renderedToFullRef.current !== sampleIdx) {
         switchTo(sampleIdx, "sample", sampled.positions, sampled.colors, sampled.sizes);
@@ -304,7 +295,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         <div className="text-sm font-semibold text-foreground">Activity universe</div>
         <div>{lodLabel(lod.mode, lod.renderedCount, data.count)}</div>
         <div>
-          {fmt(data.count)} events · data from {monthFloorLabel(monthFloor)}
+          {fmt(data.count)} events · data from {monthLabel(monthFloor, 0)}
         </div>
         <div>
           author resolution {(coverage.resolvedEmailRate * 100).toFixed(2)}% · unknown authors{" "}

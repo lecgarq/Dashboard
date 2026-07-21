@@ -9,11 +9,8 @@
 
 export interface ActivityUniverseTestApi {
   isReady(): boolean;
-  getResidentCount(): number;
-  getRenderedCount(): number;
-  getLodMode(): "sample" | "region";
-  getSampleStride(): number;
-  getSelectedCount(): number;
+  /** Snapshot copy of all counters — Phase 41 reads fields off one object. */
+  getState(): ActivityTestState;
 }
 
 export interface ActivityTestState {
@@ -53,11 +50,7 @@ export function installActivityTestBridge(): () => void {
   if (!testBridgeEnabled() || typeof window === "undefined") return () => {};
   window.__ACTIVITY_UNIVERSE_TEST__ = {
     isReady: () => state.ready,
-    getResidentCount: () => state.residentCount,
-    getRenderedCount: () => state.renderedCount,
-    getLodMode: () => state.lodMode,
-    getSampleStride: () => state.sampleStride,
-    getSelectedCount: () => state.selectedCount,
+    getState: () => ({ ...state }),
   };
   return () => {
     delete window.__ACTIVITY_UNIVERSE_TEST__;

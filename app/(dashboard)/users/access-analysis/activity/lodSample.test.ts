@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LOD_CAP,
-  gatherPositions,
-  gatherRgba,
-  gatherScalar,
+  gather,
   lodLabel,
   sampleStride,
   uniformSampleIndices,
@@ -45,11 +43,11 @@ describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
     const colors = new Float32Array([0.1, 0.2, 0.3, 1, 0.4, 0.5, 0.6, 1, 0.7, 0.8, 0.9, 1]);
     const sizes = new Float32Array([9, 8, 7]);
     const idx = new Uint32Array([2, 0]);
-    expect(Array.from(gatherPositions(positions, idx))).toEqual([5, 6, 1, 2]);
-    expect(gatherRgba(colors, idx)).toEqual(
+    expect(Array.from(gather(positions, idx, 2))).toEqual([5, 6, 1, 2]);
+    expect(gather(colors, idx, 4)).toEqual(
       new Float32Array([0.7, 0.8, 0.9, 1, 0.1, 0.2, 0.3, 1]),
     );
-    expect(Array.from(gatherScalar(sizes, idx))).toEqual([7, 9]);
+    expect(Array.from(gather(sizes, idx, 1))).toEqual([7, 9]);
   });
 
   it("labels are honest for both modes", () => {
