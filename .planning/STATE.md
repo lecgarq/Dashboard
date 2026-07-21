@@ -6,8 +6,8 @@ current_phase: 40
 current_phase_name: "Dimensions & Sliders at Scale"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 39 COMPLETE + DEPLOYED (BUILD_ID 8Va2aGSw6-sTC0SXkgNxO; activity universe live on /users/spatial-graph, instance path retired −8.9k lines, all gates green, probe 200 + live screenshot). No 40-CONTEXT.md yet — next: /lecg-discuss-phase 40"
-last_updated: "2026-07-21T18:00:00-06:00"
+stopped_at: "Phase 40 context captured (40-CONTEXT.md, 4 owner decisions locked: decimated CPU ambient ~100k, GPU lerp morph with decimated fallback clause, sidebar shell reuse with 8 activity dims, all-categories group-by with top-N labels). Ready to plan — next: /lecg-phase 40"
+last_updated: "2026-07-21T18:45:00-06:00"
 ---
 
 # Project State
@@ -142,7 +142,10 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 38`** (Activity Data Pipeline & Embedding — SCALE-02, EMB-07,
-ACT-02). No `38-CONTEXT.md` yet. Phase-37 inputs: L2 rung locked; payload budget input
-≤ ~2.5 s median-of-5; full-fit PaCMAP tractable (~34 min est, ~6 GB RSS est — verify);
-if projection wanted, benchmark IVF/HNSW first (flat index measured slower than full fit).
+**Run `/lecg-phase 40`** (Dimensions & Sliders at Scale — DIM-07, PERF-07).
+`40-CONTEXT.md` captured 2026-07-21 with 4 locked owner decisions: (1) ambient =
+decimated CPU ~100k of the rendered subset (73 fps proven path), (2) morph = GPU lerp
+shader in GraphCanvas2D with decimated-morph+snap as recorded fallback, (3) slider UI =
+kept CatalogSliderSidebar shell repopulated with 8 activity dims (search/presets retire),
+(4) group-by = all categories with organic centroids, top-N labels, author excluded from
+group-by. All dimension columns already resident client-side — no payload/pipeline work.
