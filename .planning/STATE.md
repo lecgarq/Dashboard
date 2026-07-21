@@ -6,8 +6,8 @@ current_phase: 38
 current_phase_name: "Activity Data Pipeline & Embedding"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 38 context gathered (38-CONTEXT.md: full-fit PaCMAP + manual refresh + unified ~4.905M corpus + ints-resident payload, all owner-locked 2026-07-21) — next: /lecg-phase 38"
-last_updated: "2026-07-21T13:05:00-06:00"
+stopped_at: "Phase 38 planned: 38-01 (table+author sidecar+coverage) → 38-02 (full-fit pipeline) → 38-03 (payload route+budget+staleness); executing 38-01 next — resume: /lecg-phase 38"
+last_updated: "2026-07-21T13:20:00-06:00"
 ---
 
 # Project State
