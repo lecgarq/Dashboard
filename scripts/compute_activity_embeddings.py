@@ -41,6 +41,8 @@ from datetime import datetime, timezone
 
 import numpy as np
 
+from datetime import timedelta
+
 RANDOM_STATE = 42
 HALF_EXTENT = 1000.0
 TRUST_SAMPLE = 5000
@@ -85,6 +87,14 @@ def dict_labels(d: dict, zero_label: str) -> list[str]:
             continue
         inv[v] = k
     return [zero_label] + [inv[i] for i in sorted(inv)]
+
+
+def to_naive_utc(dt: datetime) -> datetime:
+    """Normalize mixed tz-aware/naive timestamps (the two activity tables differ)
+    to naive UTC so min/max/subtraction are comparable."""
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 
 def month_index(created: datetime, floor: datetime) -> int:
@@ -237,7 +247,7 @@ def main() -> None:
         services.append(service or None)
         otypes.append(otype or None)
         folders.append(folder or None)
-        createds.append(created)
+        createds.append(to_naive_utc(created))
     n = len(ids)
     print(f"streamed {n} rows in {time.time() - t0:.1f}s")
     if not smoke and n != expected:

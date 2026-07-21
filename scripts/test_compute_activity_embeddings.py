@@ -1,5 +1,5 @@
 """Unit tests for the pure functions of compute_activity_embeddings.py."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 
@@ -12,7 +12,18 @@ from compute_activity_embeddings import (
     dict_labels,
     month_index,
     normalize_coords,
+    to_naive_utc,
 )
+
+
+def test_to_naive_utc_mixes_sources():
+    aware = datetime(2026, 7, 21, 12, 0, tzinfo=timezone.utc)
+    naive = datetime(2026, 7, 21, 6, 0)
+    # regression pin: the two activity tables return mixed tz-ness; after
+    # normalization they must be comparable (the full-run crash of 2026-07-21)
+    assert min(to_naive_utc(aware), to_naive_utc(naive)) == naive
+    assert to_naive_utc(aware).tzinfo is None
+    assert to_naive_utc(naive) is naive
 
 
 def test_bucket_deterministic_and_bounded():
