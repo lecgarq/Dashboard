@@ -6,8 +6,8 @@ current_phase: 37
 current_phase_name: "Scale Feasibility Spike & Fallback Ladder"
 status: ready_to_plan
 current_plan: null
-stopped_at: "milestone v2.7 opened (phases 37-41 approved) — next: $lecg-discuss-phase 37"
-last_updated: "2026-07-21T08:50:48-06:00"
+stopped_at: "phase 37 context captured (37-CONTEXT.md, 5 decisions locked) — next: $lecg-phase 37"
+last_updated: "2026-07-21T09:05:00-06:00"
 ---
 
 # Project State
@@ -36,9 +36,12 @@ extracted activity event.
   (grew from the 2026-06-23 census 4,554,785) · last 12 months 4,458,926 · distinct
   authors 2,313 · user+project+verb+month 106,196 · user+project+month 40,166 · current
   graph 22,279 nodes.
-- **Next:** Phase 37 (Scale Feasibility Spike & Fallback Ladder) — needs CONTEXT
-  (`/lecg-discuss-phase 37`): spike harness shape, measurement methodology, ladder
-  sign-off format.
+- **Phase 37 CONTEXT captured 2026-07-21** (`37-CONTEXT.md`, 5 locked decisions):
+  committed flag-gated spike route reusing GraphCanvas2D + graphTestBridge; synthetic
+  positions at real 4,862,301 scale + real attribute cardinalities; GPU-shader ambient
+  drift counts as L0 "all animated" (CPU full-set push still measured for the record);
+  payload = raw typed-array buffers, zero deps (Arrow rejected barring evidence);
+  ladder sign-off = owner checkpoint with 37-BASELINE.md numbers + live demo.
 - **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
   v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
   v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
@@ -135,7 +138,6 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `$lecg-discuss-phase 37`** (Scale Feasibility Spike & Fallback Ladder). Gray areas
-to settle in CONTEXT: spike harness shape (route flag vs scratch page), synthetic vs real
-positions for the 4.86M-point render test, LIFE-03 measurement adaptation at scale, binary
-payload format candidates (raw typed arrays vs Arrow), and the ladder sign-off format.
+**Run `$lecg-phase 37`** (Scale Feasibility Spike & Fallback Ladder). Context is locked
+in `37-CONTEXT.md`; the phase plans the three measurement tracks (render / payload /
+embedding-estimate), executes the spike, and ends at the ladder-rung owner checkpoint.
