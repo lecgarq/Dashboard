@@ -1126,8 +1126,9 @@ TEST-01/02/03 stay green.
   `je7yDXXumvtzNylv874vC`
 - [x] **Phase 39: Activity Universe Swap** (2026-07-21) - The graph renders activity nodes at the shipped
   rung; user-instance path fully retired; node hover/click shows event + author
-- [ ] **Phase 40: Dimensions & Sliders at Scale** - Activity-native dimension surface with
-  the slider UX preserved; morph/grouping GPU-side within the perf bar
+- [x] **Phase 40: Dimensions & Sliders at Scale** - Activity-native dimension surface with
+  the slider UX preserved; morph/grouping GPU-side within the perf bar (2026-07-21,
+  deployed `nisFtHzavDZXZs-Ej75XB`)
 - [ ] **Phase 41: Time Scrubber, Hard Gate & Closeout** - TIME-01 temporal scrubber, e2e
   re-baseline, measure-last ≥50fps Tier-0 gate, deploy + milestone close
 

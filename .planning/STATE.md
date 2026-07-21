@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.7
 milestone_name: "Activity Universe"
-current_phase: 40
-current_phase_name: "Dimensions & Sliders at Scale"
-status: executing
-current_plan: "40-03"
-stopped_at: "40-01 + 40-02 COMPLETE (commits 6b7be17a, 2356e659; all gates green). Executing 40-03 (sidebar repopulation + shell wiring + labels + retirement) — resume: /lecg-phase 40"
-last_updated: "2026-07-21T20:10:00-06:00"
+current_phase: 41
+current_phase_name: "Time Scrubber, Hard Gate & Closeout"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 40 COMPLETE + DEPLOYED (3/3 plans, 40-VERIFICATION.md, BUILD_ID nisFtHzavDZXZs-Ej75XB, probe 200). Phase 41 has no CONTEXT yet — next: /lecg-discuss-phase 41"
+last_updated: "2026-07-21T17:45:00-06:00"
 ---
 
 # Project State
@@ -142,10 +142,14 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-phase 40`** (Dimensions & Sliders at Scale — DIM-07, PERF-07).
-`40-CONTEXT.md` captured 2026-07-21 with 4 locked owner decisions: (1) ambient =
-decimated CPU ~100k of the rendered subset (73 fps proven path), (2) morph = GPU lerp
-shader in GraphCanvas2D with decimated-morph+snap as recorded fallback, (3) slider UI =
-kept CatalogSliderSidebar shell repopulated with 8 activity dims (search/presets retire),
-(4) group-by = all categories with organic centroids, top-N labels, author excluded from
-group-by. All dimension columns already resident client-side — no payload/pipeline work.
+**Run `/lecg-discuss-phase 41`** (Time Scrubber, Hard Gate & Closeout — TIME-01,
+REND-04, E2E-03). No `41-CONTEXT.md` yet. Phase 40 shipped 2026-07-21 (commits
+`6b7be17a`/`2356e659`/`5f11dada`, deployed `nisFtHzavDZXZs-Ej75XB`): 8 activity dims,
+ActivityDimensionsPanel sidebar, GPU morph via cosmos-native transition, decimated
+ambient ≤100k, MapClusterLabels riding the morph, region-LOD suspended at strength>0,
+instance rail retired (DimensionSearchBox/PresetBar/CatalogSliderSidebar/RightPanelStack
+deleted). Phase 41 owns: temporal scrubber, e2e re-baseline vs
+`__ACTIVITY_UNIVERSE_TEST__` (bridge now carries groupBy/colorBy/strength/morphCount/
+ambientActive), headed D3D11 ≥50fps hard gate, time-to-graph re-measure, milestone
+close (incl. instance-era orphan sweep + AccInstanceEmbedding drop — CONCERNS §3.11).
+Owner live morph-quality review pending on the deployed build.
