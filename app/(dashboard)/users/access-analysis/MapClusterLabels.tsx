@@ -20,7 +20,17 @@
  */
 import { useEffect, useMemo, useRef } from "react";
 import { useTheme } from "next-themes";
-import type { GraphCanvasHandle } from "./GraphCanvas";
+import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
+
+/**
+ * Minimal graph-handle union. Formerly exported by GraphCanvas.tsx (the 2D/3D
+ * switch), which retired with the instance path in v2.7 Phase 39 — the "3d"
+ * arm survives only so this kept-for-Phase-40 component's mode logic still
+ * typechecks; 3D itself was deleted (owner decision 1).
+ */
+export type GraphCanvasHandle =
+  | { mode: "2d"; handle: GraphCanvas2DHandle | null }
+  | { mode: "3d"; handle: unknown };
 import { OTHER_GREY, type LegendEntry, type RGB } from "./bucketedColors";
 import { liveLabelCenter, labelCandidateClusters, selectVisibleLabels, type LabelCandidate } from "./clusterLabelLayout";
 

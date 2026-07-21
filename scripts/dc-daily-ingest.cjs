@@ -136,14 +136,9 @@ async function main() {
       } catch (e) {
         log('person-graph rebuild failed (non-fatal): ' + e.message);
       }
-      try {
-        log('Building per-instance embedding (features → PaCMAP)...');
-        const { execSync } = require('node:child_process');
-        execSync('npx tsx scripts/build-instance-features.ts', { stdio: 'inherit' });
-        execSync('python scripts/compute_instance_embeddings.py', { stdio: 'inherit' });
-      } catch (e) {
-        log('instance-embedding build failed (non-fatal): ' + e.message);
-      }
+      // v2.7 Phase 39 (ACT-03): the nightly per-instance embedding build
+      // (build-instance-features.ts + compute_instance_embeddings.py) retired
+      // with the user×project instance graph.
       // v2.7 Phase 38 (owner decision: manual refresh only): the activity-
       // universe embedding is NOT rebuilt nightly (~34 min full fit). This
       // block only LOGS how many unified activity events have no position yet

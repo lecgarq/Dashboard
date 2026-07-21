@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { MapClusterLabels } from "./MapClusterLabels";
 import type { LegendEntry } from "./bucketedColors";
-import type { GraphCanvasHandle } from "./GraphCanvas";
+import type { GraphCanvasHandle } from "./MapClusterLabels";
 
 vi.mock("next-themes", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
 
