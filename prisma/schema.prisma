@@ -932,3 +932,29 @@ model AccInstanceEmbedding {
   embeddingRunId String
   updatedAt      DateTime @default(now()) @updatedAt
 }
+
+// ============ MODULE: ACTIVITY UNIVERSE EMBEDDING (v2.7 Phase 38) ============
+// One row per extracted activity event (unified corpus: AccActivityAccds +
+// AccActivity backfill/admin). Positions from the offline full-fit PaCMAP
+// pipeline (scripts/compute_activity_embeddings.py); attribute columns are
+// dictionary codes whose labels live in .embedding/activity-universe-dicts.json
+// and ship in the binary payload meta. Created via raw-SQL migration +
+// `prisma migrate resolve` (pgvector shadow-DB: never `migrate dev`).
+// Code 0 = Unknown/none for authorId/roleId/companyId/folderId (ACT-02).
+
+model AccActivityEmbedding {
+  id             String   @id // "a:"+accdsActivityId | "d:"+AccActivity.id (two ID spaces)
+  x              Float    @db.Real
+  y              Float    @db.Real
+  verbId         Int      @db.SmallInt
+  objectTypeId   Int      @db.SmallInt
+  moduleId       Int      @db.SmallInt
+  monthId        Int      @db.SmallInt // months since corpus floor
+  roleId         Int      @db.SmallInt // author role via mergeRoleNames; 0 = Unknown
+  companyId      Int      @db.SmallInt // 0 = Unknown
+  projectId      Int
+  authorId       Int // 0 = Unknown author
+  folderId       Int // 0 = none
+  embeddingRunId String
+  updatedAt      DateTime @default(now())
+}
