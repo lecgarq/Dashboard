@@ -24,6 +24,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "../access-analysis/GraphCanvas2D";
 import { createAmbientFpsController, type AmbientTier } from "../access-analysis/ambientMotion";
+import { decodeColumnarPayload } from "./columnar";
 import { createSpikePhysicsStub } from "./spikePhysicsStub";
 import {
   SPIKE_DEFAULT_COUNT,
@@ -49,10 +50,23 @@ interface ScenarioResult {
   note?: string;
 }
 
+interface PayloadResult {
+  bytesOnWire: number;
+  contentLength: number | null;
+  fetchMs: number;
+  decodeMs: number;
+  deriveColorsMs: number;
+  uploadMs: number;
+  totalMs: number;
+  count: number;
+}
+
 interface SpikeBridge {
   isReady(): boolean;
   getInfo(): Record<string, unknown>;
   runScenario(name: string, durationMs?: number): Promise<ScenarioResult>;
+  /** SCALE-01 track (b): fetch → decode → GPU-upload timing of the binary columnar route. */
+  runPayload(n?: number): Promise<PayloadResult>;
   getResults(): Record<string, unknown>;
   setResult(key: string, value: unknown): void;
 }
@@ -264,6 +278,36 @@ export function ScaleSpikeClient(props: ScaleSpikeClientProps): React.JSX.Elemen
         all[name] = full;
         resultsRef.current.scenarios = all;
         return full;
+      },
+      async runPayload(n = props.count): Promise<PayloadResult> {
+        const handle = handleRef.current;
+        if (!handle?.setPointSet) throw new Error("scale-spike: not ready");
+        const t0 = performance.now();
+        const res = await fetch(`/api/scale-spike/payload?n=${n}&seed=${props.seed}`);
+        if (!res.ok) throw new Error(`payload route ${res.status}`);
+        const contentLength = res.headers.get("content-length");
+        const buf = await res.arrayBuffer();
+        const t1 = performance.now();
+        const decoded = decodeColumnarPayload(buf);
+        const positions = decoded.columns.positions as Float32Array;
+        const t2 = performance.now();
+        // Realistic derived-buffer cost: colors come FROM a payload column client-side.
+        const colors = colorsFromVerbColumn(decoded.columns.verbId as Uint8Array);
+        const t3 = performance.now();
+        handle.setPointSet(positions, colors);
+        const t4 = performance.now();
+        const result: PayloadResult = {
+          bytesOnWire: buf.byteLength,
+          contentLength: contentLength ? Number(contentLength) : null,
+          fetchMs: Math.round(t1 - t0),
+          decodeMs: Math.round((t2 - t1) * 10) / 10,
+          deriveColorsMs: Math.round(t3 - t2),
+          uploadMs: Math.round((t4 - t3) * 10) / 10,
+          totalMs: Math.round(t4 - t0),
+          count: decoded.count,
+        };
+        resultsRef.current.payload = result;
+        return result;
       },
       getResults: () => ({ ...resultsRef.current, info: bridge.getInfo() }),
       setResult: (key, value) => {

@@ -6,8 +6,8 @@ current_phase: 37
 current_phase_name: "Scale Feasibility Spike & Fallback Ladder"
 status: executing
 current_plan: "37-03"
-stopped_at: "37-01 render harness COMPLETE (4/4 vitest, tsc 0, repo-map pass) — executing 37-03 embedding estimate (wave 1), then 37-02 payload (wave 2), 37-04 measurement+checkpoint"
-last_updated: "2026-07-21T10:25:00-06:00"
+stopped_at: "37-01 + 37-02 COMPLETE (harness f772f5bc, payload codec committed); 37-03 embedding ladder RUNNING in background (100k done incl. determinism, 500k fitting) — then 37-04 measurement run + owner checkpoint"
+last_updated: "2026-07-21T10:50:00-06:00"
 ---
 
 # Project State
