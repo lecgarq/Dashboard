@@ -5,8 +5,8 @@ milestone_name: "Activity Universe"
 current_phase: 38
 current_phase_name: "Activity Data Pipeline & Embedding"
 status: executing
-current_plan: "38-02"
-stopped_at: "38-01 COMPLETE (fa2502c2: table live, sidecar 22,279 rows, unified corpus 4,904,886, author resolvedEmailRate 94.41%); executing 38-02 (full-fit pipeline) — resume: /lecg-phase 38"
+current_plan: "38-03"
+stopped_at: "38-02 COMPLETE (4,904,886 rows durable, run 80e4cff2, fits 50.0+50.4min, gate PASS); artifact built 149.7MB; 38-03 remaining: :3100 build + median-of-5 budget spec + ingest staleness proof — resume: /lecg-phase 38"
 last_updated: "2026-07-21T13:45:00-06:00"
 ---
 
