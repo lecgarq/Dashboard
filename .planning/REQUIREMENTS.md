@@ -1,163 +1,218 @@
-# Requirements: LECG Dashboard — v2.6 Full-Rate Graph
+# Requirements: LECG Dashboard — v2.7 Activity Universe
 
 **Defined:** 2026-07-20
 **Core Value:** Truthful, fast analytics over the fully extracted ACC dataset — every metric
 derivable from the local Prisma DB and honest about coverage.
-**Source:** owner scope selection 2026-07-20 (seeded from the v2.5 close's Deferred Items +
-CONCERNS Ph30/Ph32/Ph33 debt): renderer rethink headline + health sweep supporting, hard
-≥50fps Tier-0 bar. Tier-3 dims and data-truth items explicitly not picked this cycle.
-**Prior milestone:** v2.5 Living Graph (16/16 shipped 2026-07-20) — requirements archived to
-`.planning/milestones/v2.5-REQUIREMENTS.md`, retrospective in `MILESTONES.md`.
+**Source:** direct owner goal 2026-07-20 ("nodes for all the instances of activities that I
+have extracted — every activity has an author and that author's properties conform the
+graph") + owner scope decisions recorded below. The previously stated v2.7 entry ticket
+(ISSUE-GRAPH-01 resolution spike) was superseded by this goal and stays deferred.
+**Prior milestone:** v2.6 Full-Rate Graph (8/8 shipped 2026-07-20) — requirements archived to
+`.planning/milestones/v2.6-REQUIREMENTS.md`, retrospective in `MILESTONES.md`.
 
-**Milestone goal:** The similarity web renders off the Canvas2D rasterization ceiling so that
-full ambient life + the full 14.2k-link web sustain **≥50 fps at Tier 0** on the workshop
-machine — the hard gate v2.5's LIFE-03 could not pass — and the repo's automated suites can
-gate again (e2e re-baselined, unit suite fully green, guard-bash powershell gap closed,
-embedding pipeline pruned).
+**Milestone goal:** The spatial graph's node universe changes grain: instead of one node per
+user×project instance (22,279 nodes), **one node per extracted activity event** — the full
+raw corpus — with each node inheriting its author's properties (role, company, modules,
+project) plus its own event properties (verb, service/module, object type, folder, month).
+The dimension slider surface survives the swap at the new grain, a temporal scrubber lands
+(TIME-01, finally unblocked because month IS a node attribute now), and the v2.6 hard
+**≥50 fps Tier-0** bar applies at the shipped scale.
 
 ---
 
 ## ⚠️ Read Before Planning
 
-Verified at the v2.5 close (2026-07-20); primary evidence `MILESTONES.md` v2.5 retrospective
-and CONCERNS Ph32/Ph33 roll-forwards. Phase dirs 29–33 are pruned from disk — `33-BASELINE.md`
-(LINK-PERF profiling evidence) lives in git history, last present at commit `27297514`.
+Measured 2026-07-20 (read-only census, scratchpad `activity-grain-census.cjs` pattern from
+`scripts/count-acc-data.cjs`):
 
-1. **NAME COLLISION (standing).** `app/(dashboard)/access-analysis/` is the 23-panel charts
-   page. `app/(dashboard)/users/access-analysis/` is the **spatial-graph shell** this
-   milestone touches. `/users/spatial-graph` and `/users/access-analysis` render the same UI.
+| Fact | Value |
+|---|---|
+| `AccActivityAccds` rows (grew since 2026-06-23 census) | **4,862,301** |
+| Unified source adds (DC backfill + admin, v2.6-era census) | +41,714 +871 |
+| Last 12 months | 4,458,926 |
+| Distinct authors (`userEmail`) | 2,313 |
+| Current graph node count (user×project) | 22,279 |
+| Bounded-grain reference points | user+project+verb+month = 106,196 · user+project+month = 40,166 |
 
-2. **The ceiling is rasterization, not JS.** LINK-PERF profiling: JS tick ~1.4 ms/draw vs
-   ~40 ms/frame Canvas2D raster for the 14.2k-bezier web (`SimilarityWebOverlay.tsx` — a
-   separate Canvas2D overlay; cosmos itself draws zero links on the live path). The shipped
-   mitigations (ambient-only ~10 Hz redraw throttle + Path2D batching + empty-stroke skip)
-   banked +94% → 41.33 fps and are the last cheap levers. The three renderer levers on the
-   table: **OffscreenCanvas worker rasterization**, **cosmos-native links**, **zoom-based
-   edge decimation**.
+1. **This is a ~220× scale jump on every layer.** v2.6 proved 60 fps at 22,279 nodes /
+   18,000 GPU links; the embedding pipeline (PaCMAP), the hydration payload (compact JSON,
+   2,386.7 ms median), the CPU/rAF morph path, and the e2e baselines are ALL sized for 22k.
+   None of them carries to 4.86M unchanged. The milestone opens with a feasibility spike
+   (SCALE-01) whose measured numbers pick the shipped rung on an owner-approved fallback
+   ladder — the same written-clause discipline that let v2.5 LIFE-03 close honestly.
 
-3. **The render contract is FROZEN.** cosmos.gl runs `enableSimulation:false`; all motion is
-   CPU/rAF `pushPositions` on the static layer. PERF-02 frozen-handle invariant
-   (`GraphCanvas.test.ts`) must stay green. If the cosmos-native-links lever is chosen, it
-   must not start the simulation or mutate cluster/anchor/config state.
+2. **Owner accepted the risk explicitly (2026-07-20):** offered the bounded grains above,
+   the owner chose **all raw events** + full replace + the hard ≥50 fps bar + TIME-01
+   folded in. The ladder exists so a failed rung produces a recorded owner decision, not a
+   dead milestone.
 
-4. **Phase-32 link expression is a shipped visual contract.** Real-score weak/medium/strong
-   bands at locked boundaries, monotone width/alpha, ambient<selected<hover draw order,
-   25%-opacity-floor morph web, reduced-motion snap — pinned by `similarityWeb.test.ts`.
-   The renderer rethink changes *where* pixels are produced, not *what* they express.
+3. **The PERF-02 frozen-handle contract must evolve deliberately.** All motion today is
+   CPU/rAF `pushPositions` over a frozen cosmos handle — a per-node JS loop that cannot run
+   4.86M nodes at 50 fps. Slider morph/grouping and ambient life must move GPU-side (or be
+   proven at scale). The invariant's tests are updated as a deliberate, recorded contract
+   change — never silently weakened.
 
-5. **The three-tier fps controller ships today** (Tier 0 full → 1 reduced → 2 static) and
-   degrades below 50 fps by design. v2.6 keeps it as the safety net for non-workshop
-   machines; the gate is that it **never engages on the workshop machine**.
+4. **A new Prisma table + migration is expected** (unlike v2.5/v2.6's zero-migration
+   guardrail): activity-grain positions/attributes (~4.86M rows) do not fit
+   `AccInstanceEmbedding`'s per-instance shape. The pgvector shadow-DB trap stands:
+   raw-SQL migration + `prisma migrate resolve`, never `prisma migrate dev`.
 
-6. **e2e drift is pre-existing, not renderer-caused.** `acc-dc-graph.spec.ts`: 14 failures
-   from node count 16,942→22,279 + dead physics-shell sidebar testids; Ph30 additionally
-   proved the curated-slider selectors ("User name thumb") dead — the real path is
-   `group-by-select` + "Grouping strength thumb". Re-baseline before renderer work so the
-   suite can gate it.
+5. **JSON node payloads are dead at this scale.** 22k nodes were already 14.5 MB before
+   v2.6's compact hydration. 4.86M nodes require a binary columnar path (typed-array
+   buffers) with its own honest time-to-graph budget — the 3,913.7 ms cutoff does NOT
+   carry; the spike sets the new budget from evidence.
 
-**Overarching guardrails:** no new data source, no new Prisma table or migration, zero new
-npm dependencies without explicit owner approval (OffscreenCanvas is a web platform API;
-cosmos-native links use the installed cosmos.gl). No new WebGL on data surfaces (the spatial
-graph already runs cosmos.gl). Zinc theme preserved; `prefers-reduced-motion` → fully static
-graph. Existing characterization tests (TEST-01/02/03) and the PERF-02 frozen-handle
-invariant stay green. `npx tsc --noEmit` before any rebuild. Layouts stay organic — never a
-fixed grid. Isolated builds are **PowerShell-only**, single-quoted from bash (v2.5 trap #2).
+6. **NAME COLLISION (standing).** `app/(dashboard)/access-analysis/` is the 23-panel charts
+   page (untouched this milestone). `app/(dashboard)/users/access-analysis/` is the
+   spatial-graph shell this milestone rebuilds. `/users/spatial-graph` and
+   `/users/access-analysis` render the same UI.
+
+7. **Author resolution is not 100%.** `userEmail` is nullable on both activity tables;
+   the null/unresolvable-author rate is unmeasured. Nodes with unresolved authors are
+   disclosed with honest coverage labels — never silently dropped (AGENTS.md data rule).
+
+**Overarching guardrails:** analytics source stays the local Prisma DB; no new external
+data source. Zinc theme; ECharts/graph colors theme-resolved. Layouts organic — never a
+fixed grid. `prefers-reduced-motion` → fully static. No new WebGL on data surfaces (the
+spatial graph already runs cosmos.gl; this milestone stays inside that canvas).
+`npx tsc --noEmit` before any build; deploy = stop `LECG Dashboard Local` task → build →
+restart → probe. Isolated builds PowerShell-only. TEST-01/02/03 characterization pins stay
+green (they guard `/access-analysis` + `/template-mty`, untouched surfaces). Commit by
+explicit path only.
 
 ---
 
-## v2.6 Requirements
+## v2.7 Requirements
 
-Each maps to exactly one roadmap phase (numbering continues from Phase 33 → **starts at
-Phase 34**).
+Each maps to exactly one roadmap phase (numbering continues from Phase 36 → **starts at
+Phase 37**).
 
-### Renderer (REND)
+### Scale Feasibility (SCALE)
 
-Data authority for all REND requirements: the existing similarity edge set —
-`AccInstanceEmbedding.neighbors` (v2.5 de-twinned payload) → `similarityEdgeSet.ts` →
-`SimilarityWebOverlay.tsx`. No new data; the rethink changes rendering architecture only.
+Data authority: the live corpus itself (census above) + measured prototypes on the
+workshop machine.
 
-- [x] **REND-01**: The similarity web renders **off the main-thread Canvas2D raster path**.
-      The three levers (OffscreenCanvas worker rasterization, cosmos-native links,
-      zoom-based edge decimation — alone or combined) are prototyped and measured against
-      the live 14.2k-link web; the chosen approach is implemented and the decision recorded
-      with the measured numbers (not vibes). Main-thread raster cost measurably drops vs
-      the 33-BASELINE ~40 ms/frame figure.
+- [ ] **SCALE-01**: A feasibility spike **measures, on the workshop machine**, before any
+      build phase: (a) cosmos.gl render of the full 4,862,301-point set (synthetic or real
+      positions) — fps at rest, during pan/zoom, and with ambient motion; GPU memory; (b)
+      binary payload size + load/parse time for positions + minimal attributes; (c)
+      offline embedding runtime estimate at activity grain. The results pick the shipped
+      rung on this **written fallback ladder**, owner-approved per rung: **L0** all 4.86M
+      events, all animated → **L1** all events resident + rendered, ambient motion on a
+      decimated subset → **L2** all events resident, far-zoom LOD decimation of rendering →
+      **L3** bounded grain (user+project+verb+month, 106,196 nodes — every activity still
+      counted, none dropped). The chosen rung + numbers land in `37-BASELINE.md`.
 
-- [x] **REND-02**: **Hard perf gate, measured last:** Tier-0 full ambient motion + the full
-      link web sustain **≥50 fps** on the workshop machine at the full 22,279-node /
-      ~14.2k-link set, measured with the LIFE-03 methodology (≥10 s sample, recorded in the
-      phase verification). The three-tier controller stays in place as the safety net but is
-      **observed not to engage** on the workshop machine during the sample. This is the gate
-      v2.5 closed via its degradation clause; v2.6 exists to pass it outright.
+- [ ] **SCALE-02**: Activity node data reaches the client as **binary columnar payloads**
+      (typed-array positions + attribute columns; no per-node JSON array), cached and
+      streamed appropriately; a new honest time-to-graph budget is set from the spike
+      evidence and the shipped route meets it (median-of-5, `:3100` methodology, recorded).
 
-- [x] **REND-03**: The **Phase-32 visual contract survives the renderer swap** — real-score
-      strength bands at the locked boundaries, monotone width/alpha, ambient<selected<hover
-      draw order, the 25%-opacity-floor morph web, and reduced-motion snap all behave
-      identically on the new renderer; `similarityWeb.test.ts` pins stay green (extended,
-      not weakened, where the renderer boundary moves) and the PERF-02 frozen-handle
-      invariant stays green.
+### Activity Universe (ACT)
 
-### E2E Health (E2E)
+Data authority: unified activity source — `lib/server/unifiedActivitySource.ts` merge of
+`AccActivityAccds` (4,862,301 rows, primary) + `AccActivity` (DC backfill 41,714 + admin
+871). Counts re-measured at pipeline build time.
 
-Data authority: the existing Playwright suite + isolated `:3100` prod-build harness
-(`NEXT_PUBLIC_ACC_GRAPH_TEST`, minted NextAuth cookie auth).
+- [ ] **ACT-01**: One graph node per extracted activity event at the shipped ladder rung —
+      each node carrying its event properties: `activityVerb`, `serviceGroup`/module
+      classification (via the established `lib/acc/activityClassification.ts`),
+      `objectType`, folder, project, and month (`createdAt`). Node sizing/appearance is
+      derived from real event data, theme-resolved.
 
-- [x] **E2E-01**: `tests/e2e/acc-dc-graph.spec.ts` is **re-baselined and green** on an
-      isolated `:3100` production build — node-count expectations updated to the live
-      22,279-node snapshot, dead physics-shell sidebar testids and curated-slider selectors
-      ("User name thumb") replaced with the real v2.4+ surface (`group-by-select`,
-      "Grouping strength thumb"); 0 of the 14 pre-existing drift failures remain. The suite
-      can gate the v2.6 renderer phases.
+- [ ] **ACT-02**: Every activity node **inherits its author's properties** — role (via the
+      established `mergeRoleNames` AccRole fallback), company, provisioned modules, and
+      author identity — joined from `userEmail`. The null/unresolved-author rate is
+      measured and disclosed as an honest coverage label on the graph surface; unresolved
+      nodes render with an explicit "Unknown author" grouping, never dropped.
 
-- [x] **E2E-02**: The lasso e2e flake is closed (CONCERNS §3.4) — `acc-3d-lasso.spec.ts` no
-      longer times out at the 120 s global budget under machine load (scoped timeout /
-      `test.slow()` / reduced fixture, whichever the evidence supports); passes recorded on
-      consecutive runs.
+- [ ] **ACT-03**: The activity universe **fully replaces** the user×project instance graph
+      on `/users/spatial-graph` + `/users/access-analysis` (owner decision: full replace,
+      no mode toggle). The user-instance data path, its per-instance embedding payload,
+      and dead code retire with a clean diff; no orphaned loader keeps shipping bytes.
 
-### Unit Suite (TEST — continues v2.1 numbering)
+- [ ] **ACT-04**: Hover/click on an activity node shows the event honestly (verb, object
+      name/type, folder, project, date, author) and the author's profile (reusing the
+      established `UserProfilePanel` surface where it fits); selection/lasso still works
+      at the shipped scale.
 
-- [x] **TEST-04**: The 3 pre-existing `usePredicateEngine` banded-catalog aperture failures
-      (proven pre-existing WIP at v2.4 Phase 25, stash-and-rerun) are resolved — code fixed
-      or the tests corrected against real intended behavior, with the rationale recorded —
-      so `npm test` is **fully green** with zero carried failures.
+### Embedding (EMB — continues v2.5 numbering)
 
-### Tooling Guard (GUARD)
+Data authority: offline Python pipeline (`scripts/compute_instance_embeddings.py` lineage,
+pacmap + faiss-cpu already installed) over the unified activity source.
 
-Data authority: `.claude/hooks/guard-bash.cjs` (existing PreToolUse hook).
+- [ ] **EMB-07**: An offline pipeline computes 2D positions for the full activity corpus —
+      full-fit PaCMAP if the spike proves runtime tractable, otherwise **sample-fit +
+      nearest-neighbor projection of the remainder** (decision recorded with measured
+      runtimes). Deterministic (fixed seed, proven twice), gate-conditional write (a
+      quality-gate regression aborts before any write — v2.5 EMB-05 discipline), stored in
+      a new activity-grain Prisma table via raw-SQL migration + `migrate resolve`.
+      Feature vector spans author properties AND event properties so that "the author's
+      properties conform the graph" (owner's words) is literally true of the layout.
 
-- [x] **GUARD-01**: The guard-bash powershell-wrap gap is closed — `powershell -Command`
-      invocations that wrap `next build`/`npm run build` are denied while `:3000` serves,
-      same as bare invocations; the double-quoted-`$env:`-expands-empty trap is documented
-      at the rule. A regression check (hook unit test or recorded manual matrix) covers the
-      wrapped forms. This gap overwrote the live `.next` once during Phase 33.
+### Dimensions (DIM — continues v2.4 numbering)
 
-### Pipeline Hygiene (PIPE — continues v2.3 numbering)
+- [ ] **DIM-07**: The dimension slider surface (group-by / color-by / strength sliders)
+      **survives the swap** (owner: "full replace but I need to have dimensions slider
+      still") — rebuilt activity-native: verb, module/serviceGroup, objectType, month,
+      author role, author company, project at minimum; organic dimension-driven layouts
+      (never a grid); per-dimension honest coverage labels (established
+      `dimensionCoverage` pattern).
 
-Data authority: `AccInstanceEmbedding` (Prisma) + `scripts/compute_instance_embeddings.py`
-upsert path.
+### Performance (PERF — continues v2.4/v2.5 numbering)
 
-- [x] **PIPE-02**: The embedding pipeline **prunes stale rows** — after each run, rows whose
-      nodeId is absent from the current run's snapshot set are deleted (983 stale old-shape
-      rows today → 0 after the first pruned run); the prune count is reported in the run
-      output. Delete-only, additive to the existing gate-conditional upsert — a trustworthiness
-      regression still aborts before any write, including the prune.
+- [ ] **PERF-07**: Slider morph, grouping transitions, and ambient life run at the shipped
+      scale without dropping under the Tier-0 bar — the CPU/rAF per-node morph path is
+      replaced or augmented GPU-side as the spike evidence dictates; the PERF-02
+      frozen-handle invariant is **evolved deliberately**: its tests are rewritten to pin
+      the new motion contract (what may and may not mutate cosmos state), recorded as a
+      contract change in the phase artifacts — never silently weakened.
+
+### Temporal (TIME — deferred since v2.4, unblocked by this grain)
+
+- [ ] **TIME-01**: A temporal scrubber filters (and can animate) the graph by month across
+      the corpus — month is now a native node attribute, dissolving the original blocker
+      ("time is not a node attribute"). GPU-mask or equivalent filtering keeps scrubbing
+      inside the perf bar; `prefers-reduced-motion` → no auto-animation, static stepping
+      only.
+
+### Renderer Gate (REND — continues v2.6 numbering)
+
+- [ ] **REND-04**: **Hard perf gate, measured last:** Tier-0 with ambient life + the
+      shipped activity universe sustains **≥50 fps** on the workshop machine over a ≥10 s
+      LIFE-03-methodology sample, tier controller observed idle, recorded in the closeout
+      verification. The gate applies at the owner-approved ladder rung shipped by
+      SCALE-01; passing at a lower rung than L0 is honest only with the recorded owner
+      sign-off from Phase 37.
+
+### E2E Health (E2E — continues v2.6 numbering)
+
+- [ ] **E2E-03**: `tests/e2e/acc-dc-graph.spec.ts` (+ lasso spec) is re-baselined to the
+      activity universe — node-count expectations, selectors, and fixture scale updated —
+      and passes green on the isolated `:3100` production harness so it can gate the
+      closeout. The `NEXT_PUBLIC_ACC_GRAPH_TEST` fixture path gets an activity-grain
+      equivalent sized for CI sanity, with the full-scale gate remaining a workshop-machine
+      measurement.
 
 ---
 
 ## Coverage
 
-8 requirements — E2E-01/02, TEST-04, GUARD-01, PIPE-02 → Phase 34 · REND-01/03 → Phase 35 ·
-REND-02 → Phase 36. **8/8 mapped, each to exactly one phase.**
+12 requirements — SCALE-01 → Phase 37 · SCALE-02, EMB-07, ACT-02 → Phase 38 ·
+ACT-01, ACT-03, ACT-04 → Phase 39 · DIM-07, PERF-07 → Phase 40 ·
+TIME-01, REND-04, E2E-03 → Phase 41. **12/12 mapped, each to exactly one phase.**
 
 ## Deferred (recorded, not planned)
 
-- **Tier-3 graph dims** — ISSUE-GRAPH-01 (`AccIssue.createdBy`→`AccDcUser` resolution-rate
-  spike is the v2.7 entry ticket) + TIME-01 temporal scrubber → v2.7 candidates.
-- **SVC-01** service-override attribution refinement; **DIM-05** 550/1,153 denominator verify
-  (`VERIFY:` in `dimensionCoverage.ts`) — data-truth items, not picked this cycle.
+- **ISSUE-GRAPH-01** — `AccIssue.createdBy`→`AccDcUser` resolution-rate spike (was the
+  stated v2.7 entry ticket; superseded by this owner goal, stays a v2.8 candidate) +
+  issue dims on the graph.
+- **SVC-01** service-override attribution refinement; **DIM-05** 550/1,153 denominator
+  verify (`VERIFY:` in `dimensionCoverage.ts`) — data-truth items, again not picked.
 - **DC-01 / DC-02** — external Account Admin provisioning blocker, unchanged.
-- **PaCMAP MN_ratio/FP_ratio tuning** — package defaults; revisit only on owner UAT ask.
-- **Standing:** COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01 (CONCERNS §8.2/8.3 giant test
-  files — NOT covered by E2E-01, which re-baselines assertions without splitting files),
-  MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune, Phase-17 SPLIT-04 owner visual
-  sign-off, per-folder terrain projection seed.
+- **PaCMAP MN_ratio/FP_ratio tuning** — revisit only on owner UAT ask.
+- **Focus-session camera restore** (CONCERNS §3.8), **default e2e dev harness** (§3.9),
+  **cluster-label chips owner decision** (§3.10).
+- **Standing:** COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01, MILESTONES v2.1/v2.2 backfill,
+  v2.3 phase-dir prune, Phase-17 SPLIT-04 owner visual sign-off, per-folder terrain
+  projection seed.

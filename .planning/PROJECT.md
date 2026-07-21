@@ -70,50 +70,64 @@ tree; tags and git history are the authoritative detailed record. Deploy = rebui
 (not a branch merge); v2.3's final phase (23) rebuilt `:3000` and captured the owner's
 graph-by-graph sign-off before closing.
 
-**Current focus:** v2.6 Full-Rate Graph — opened 2026-07-20. See "Current Milestone" below.
+**Current focus:** v2.7 Activity Universe — opened 2026-07-20. See "Current Milestone" below.
 
-## Current Milestone: v2.6 Full-Rate Graph
+## Current Milestone: v2.7 Activity Universe
 
-**Goal:** Take the similarity web off the Canvas2D rasterization ceiling so full ambient
-life + the full 14.2k-link web sustain **≥50 fps at Tier 0** on the workshop machine (tier
-controller retained as safety net but never engaged there) — and restore the repo's gating
-power with a test/guard health sweep (e2e re-baseline, lasso budget, unit suite fully green,
-guard-bash powershell gap, stale-embedding prune).
+**Goal:** Change the spatial graph's node grain from user×project instances (22,279 nodes)
+to **one node per extracted activity event** — the full raw corpus (4,862,301
+`AccActivityAccds` rows + DC backfill/admin, measured 2026-07-20) — with every node
+inheriting its author's properties (role, company, modules) plus its own event properties
+(verb, module, objectType, folder, month). Full replace of the user-instance graph with the
+dimension slider surface preserved, the TIME-01 temporal scrubber folded in, and the v2.6
+hard **≥50 fps Tier-0** bar applied at the shipped scale.
 
-**Why this is needed** (evidence from the v2.5 close, 2026-07-20):
+**Why this is the milestone** (direct owner goal, 2026-07-20): "instead of nodes for every
+instance of user … nodes for all the instances of activities that I have extracted — every
+activity has an author and that author has properties that would conform the entirety of
+the spatial graph." The activity corpus is the richest extracted dataset (4.86M events,
+2,313 authors, 956 projects) and today it is only visible as aggregate charts — never as
+the graph's actual universe.
 
-- LIFE-03's hard ≥50fps gate **failed on the shipped path** (20.68 fps at 14.2k moving
-  links); it closed via its written degradation clause. LINK-PERF profiling proved the
-  ceiling is **Canvas2D rasterization** (~40 ms/frame raster vs 1.4 ms JS tick); the redraw
-  throttle (+94% → 41.33 fps) was the last cheap lever. Further gains need a renderer
-  rethink: OffscreenCanvas worker, cosmos-native links, or zoom decimation (MILESTONES v2.5
-  trap #3, CONCERNS Ph33).
-- `tests/e2e/acc-dc-graph.spec.ts` carries 14 pre-existing drift failures (node count
-  16,942→22,279, dead physics-shell/curated-slider selectors) and **cannot gate**; the lasso
-  spec still flakes at its 120s budget (CONCERNS §3.4); 3 pre-existing `usePredicateEngine`
-  unit failures keep `npm test` from being fully green.
-- guard-bash's build-deny rule is bypassed by powershell-wrapped invocations — this
-  overwrote the live `.next` once during Phase 33 (CONCERNS `[NEW Ph33]`).
-- The embedding pipeline never prunes: 983 stale `AccInstanceEmbedding` rows accumulate
-  harmlessly today but grow with every snapshot change (CONCERNS Ph30).
+**Scale reality (measured 2026-07-20):** raw grain = 4,862,301 nodes, ~220× the proven 22k.
+Renderer, embedding pipeline, payload, morph path, and e2e baselines are all sized for 22k.
+The milestone therefore opens with a feasibility spike (Phase 37) whose measured numbers
+pick the shipped rung on an owner-approved fallback ladder (L0 all-animated → L1 decimated
+ambient → L2 far-zoom LOD → L3 verb+month grain 106,196 — every activity still counted at
+every rung). v2.5's LIFE-03 written-clause discipline, applied up front this time.
 
-**Target features (8 requirements — REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02):**
+**Target features (12 requirements — SCALE-01/02, ACT-01–04, EMB-07, DIM-07, PERF-07,
+TIME-01, REND-04, E2E-03):**
 
-- Similarity-web renderer chosen from measured prototypes of the three levers, implemented
-  with the Phase-32 link-expression contract preserved byte-for-byte in tests
-- Hard gate measured last: Tier-0 full ambient + full links sustained ≥50 fps, LIFE-03
-  methodology, recorded — the gate v2.5 could not pass
-- e2e suite re-baselined and green; lasso budget fixed; unit suite fully green; guard-bash
-  denies powershell-wrapped builds; pipeline prunes stale embedding rows
+- Feasibility spike with recorded numbers + owner-approved ladder rung before any build
+- Activity-grain embedding pipeline (author + event features shape the layout), new Prisma
+  table, binary columnar payload with an evidence-based time-to-graph budget
+- Full universe swap: one node per activity event, author properties inherited, honest
+  unresolved-author coverage, user-instance path retired clean
+- Dimension sliders preserved activity-native; motion contract evolved deliberately
+  (PERF-02 rewrite, recorded); temporal scrubber (TIME-01)
+- Hard gate measured last: ≥50 fps Tier-0 at the shipped rung, e2e re-baselined
 
-**Owner scope decisions (2026-07-20):** renderer rethink headline + health sweep supporting
-(picked from the seeded candidates); **hard ≥50fps Tier-0 bar** (not best-effort); Tier-3
-dims (ISSUE-GRAPH-01 spike + TIME-01 scrubber) stay deferred — the ISSUE-GRAPH-01 resolution
-spike is the v2.7 entry ticket; data-truth items (SVC-01, DIM-05 denominator) not in scope.
+**Owner scope decisions (2026-07-20):** ALL raw events chosen over the offered bounded
+grains (106k / 40k) with the fallback ladder as the safety mechanism; **full replace**, no
+mode toggle, but dimension sliders must survive; **hard ≥50fps Tier-0 bar** retained;
+TIME-01 folded in. ISSUE-GRAPH-01 (the previously stated v2.7 entry ticket) superseded by
+this goal — stays deferred.
 
-**Explicitly deferred to v2.7:** issue dims on the graph (needs the `AccIssue.createdBy` →
-`AccDcUser` resolution-rate spike first), temporal scrubber, SVC-01, DIM-05 denominator
-verify, DC-01/02 (external Account Admin blocker).
+**Explicitly deferred to v2.8+:** issue dims on the graph + ISSUE-GRAPH-01 resolution
+spike, SVC-01, DIM-05 denominator verify, DC-01/02 (external Account Admin blocker),
+focus-camera restore (§3.8), dev e2e harness (§3.9), cluster-chip owner decision (§3.10).
+
+## Shipped Milestone: v2.6 Full-Rate Graph — ✅ SHIPPED 2026-07-20
+
+**Goal:** Similarity web off the Canvas2D rasterization ceiling (hard ≥50fps Tier-0 gate)
++ test/guard health sweep. **Achieved outright:** Cosmos-native GPU links won the measured
+bake-off (60.03 fps vs Canvas2D 39.79); final sample 60.016 fps / 10.014 s at 22,279 nodes
+/ 18,000 links, Tier 0 idle; e2e re-baselined 16 green / 0 failed, lasso budget fixed, unit
+suite fully green (2,629), guard-bash PowerShell gap closed, 983 stale embeddings pruned.
+Closeout removed a route bottleneck: compact graph hydration + on-demand rail loading →
+median time-to-graph 2,386.7 ms (39% under cutoff). Zero new deps or migrations.
+Retrospective in `MILESTONES.md`; archived to `.planning/milestones/v2.6-*`.
 
 ## Shipped Milestone: v2.3 New Graphs — ✅ SHIPPED 2026-07-14
 
@@ -192,15 +206,21 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
   click/hover/ambient choreography on the frozen path, PERF-05/06 hydration + chunk-split
   closed; LIFE-03 shipped via its written degradation clause; deployed BUILD_ID
   `-zcfnulR0rESok3UDom50` 2026-07-20)
+- ✓ **Full-Rate Graph** (REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02) — v2.6
+  (8/8 requirements; Cosmos-native GPU links, 60.016 fps / 10.014 s at 22,279 nodes /
+  18,000 links Tier 0, e2e re-baselined green, unit suite fully green, guard PowerShell
+  gap closed, 983 stale embeddings pruned, median time-to-graph 2,386.7 ms; deployed
+  BUILD_ID `39p7DFRd3DbgM8WjWU2Pz` 2026-07-20)
 
 ### Active
 
-<!-- v2.5 Living Graph shipped → moved to Validated (2026-07-20). The renderer rethink it seeded is now the ACTIVE v2.6 milestone. SVC-01, DC-01/02 remain deferred candidates. -->
+<!-- v2.6 Full-Rate Graph shipped → moved to Validated (2026-07-20). The ACTIVE milestone is now v2.7 Activity Universe (direct owner goal). SVC-01, DC-01/02 remain deferred candidates. -->
 
-- [ ] **v2.6 Full-Rate Graph** (ACTIVE — see "Current Milestone" above) — similarity-web
-  renderer off the Canvas2D ceiling (measured lever choice, Phase-32 contract preserved,
-  hard ≥50fps Tier-0 gate measured last) + test/guard health sweep (e2e re-baseline, lasso
-  budget, unit suite fully green, guard-bash powershell gap, stale-embedding prune).
+- [ ] **v2.7 Activity Universe** (ACTIVE — see "Current Milestone" above) — spatial graph
+  node grain becomes one node per extracted activity event (4.86M corpus, owner-chosen over
+  bounded grains, fallback ladder as safety), author properties inherited onto every node,
+  full replace with dimension sliders preserved, TIME-01 temporal scrubber, hard ≥50fps
+  Tier-0 gate at the shipped rung measured last.
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
@@ -301,7 +321,11 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | **Full ambient motion, behind a hard ≥50fps gate + degradation rule** | Owner-chosen 2026-07-16 over the recommended "subtle ambient". Risk accepted deliberately: per-frame updates on ~22k frozen nodes; the gate + auto-degrade rule (LIFE-03) is the safety net, and reduced-motion stays static | 🟡 Honest partial — gate FAILED on the final 14.2k-link path (20.68 fps); shipped via the written degradation clause; Canvas2D raster proven the ceiling → v2.6 |
 | **PERF-05/06 (SSR-hydration app-wide + shell-chunk split) folded into v2.5** | The 4s dead gap and multi-MB refetches sit on this exact route; "nodes feel alive" is unachievable behind them. Fix at the shared boundary (helper + test), measure last (Phase 33) | ✓ Good — zero refetch both routes, chunk −18.3%, time-to-graph −23.5% (median 3,914 ms); bonus RSC client-proxy root-cause fix (`cachePolicy.ts`) |
 | **v2.6 = renderer rethink (hard ≥50fps Tier-0 bar) + health sweep** | Owner-chosen 2026-07-20 from the seeded candidates (1+3). The renderer is the only path to the gate v2.5 couldn't pass; the health sweep restores gating power the renderer work itself needs. Tier-3 dims stay deferred (spike = v2.7 entry ticket) | — Pending |
-| **Health sweep sequenced FIRST (Phase 34), renderer after** | The renderer phases need a trustworthy e2e gate; re-baselining `acc-dc-graph.spec.ts` before touching the web means regressions surface as failures, not noise | — Pending |
+| **Health sweep sequenced FIRST (Phase 34), renderer after** | The renderer phases need a trustworthy e2e gate; re-baselining `acc-dc-graph.spec.ts` before touching the web means regressions surface as failures, not noise | ✓ Good — suite gated Phases 35–36; renderer regressions surfaced as failures |
+| **v2.7 = activity-event node grain, ALL 4.86M raw events** | Direct owner goal 2026-07-20; owner chose the literal raw grain over offered bounded grains (106k/40k) with full awareness of the ~220× scale risk | — Pending |
+| **Feasibility spike FIRST (Phase 37) with an owner-approved fallback ladder** | Hard ≥50fps bar + 220× scale jump cannot both be assumed; measured numbers pick the shipped rung (L0→L3, every activity counted at every rung) so a failed rung is a recorded decision, not a dead milestone — v2.5 LIFE-03 clause discipline applied up front | — Pending |
+| **Full replace of the user-instance graph, sliders preserved** | Owner explicit: no mode toggle, but "I need to have dimensions slider still"; PERF-02 motion contract must evolve deliberately (GPU-side morph) with rewritten pins, never silent weakening | — Pending |
+| **TIME-01 folded into v2.7** | Month becomes a native node attribute at activity grain — the original blocker ("time is not a node attribute") dissolves with this redesign | — Pending |
 
 ---
-*Last updated: 2026-07-20 — opened milestone **v2.6 Full-Rate Graph** (see "Current Milestone" above): similarity-web renderer off the Canvas2D ceiling behind a hard ≥50fps Tier-0 gate, plus the test/guard health sweep. Prior: closed v2.5 Living Graph (16/16 requirements shipped, deployed `-zcfnulR0rESok3UDom50`).*
+*Last updated: 2026-07-20 — opened milestone **v2.7 Activity Universe** (see "Current Milestone" above): spatial graph node grain becomes one node per extracted activity event (4.86M corpus, owner-chosen, fallback ladder + feasibility spike first), author properties inherited, sliders preserved, TIME-01 folded in, hard ≥50fps Tier-0 gate at the shipped rung. Prior: closed v2.6 Full-Rate Graph (8/8 shipped, deployed `39p7DFRd3DbgM8WjWU2Pz`).*

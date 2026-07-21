@@ -1,46 +1,48 @@
 ---
 lecg_state_version: 2
-milestone: v2.6
-milestone_name: "Full-Rate Graph"
-current_phase: 36
-current_phase_name: "Full-Rate Gate & Closeout"
+milestone: v2.7
+milestone_name: "Activity Universe"
+current_phase: 37
+current_phase_name: "Scale Feasibility Spike & Fallback Ladder"
 status: ready_to_plan
 current_plan: null
-stopped_at: "milestone v2.6 closed — next: $lecg-new-milestone"
-last_updated: "2026-07-20T17:35:44-06:00"
+stopped_at: "milestone v2.7 opened (phases 37-41 approved) — next: $lecg-discuss-phase 37"
+last_updated: "2026-07-21T08:50:48-06:00"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-07-20)
+See: `.planning/PROJECT.md` (updated 2026-07-21)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.6 Full-Rate Graph closed; next milestone not yet defined.
+**Current focus:** v2.7 Activity Universe — spatial graph node grain becomes one node per
+extracted activity event.
 
 ## Current Position
 
-- **Milestone:** **v2.6 Full-Rate Graph — SHIPPED 2026-07-20.** All 8 requirements
-  shipped across Phases 34–36. Retrospective and evidence audit are in `MILESTONES.md`;
-  requirements and roadmap are archived under `.planning/milestones/v2.6-*`.
-- **Phase 34 (Test & Guard Health Sweep) COMPLETE 2026-07-20:** 4/4 plans summarized,
-  5/5 success criteria verified, debt rolled to CONCERNS, and local production deployed
-  as BUILD_ID `CV_frbgC6hmbArjJ53Qi7` (`/api/health` 200, database connected).
-- **Prior milestones:** v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`),
-  v2.4 (18/18, 2026-07-16), v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 —
-  all in `MILESTONES.md` / `milestones/`.
-- **Phase 35 (Similarity-Web Renderer Rethink) COMPLETE 2026-07-20:** Cosmos-native curved
-  GPU links replaced the Canvas2D raster path; 22,279 nodes / 18,000 links held 60.07 fps
-  at Tier 0 over 10.02 s; Phase-32 focus/morph/reduced-motion contracts stayed green; live
-  BUILD_ID `lzC97Z2E6chNTArdzDZd0` verified with a populated WebGL framebuffer.
-- **Phase 36 (Full-Rate Gate & Closeout) COMPLETE 2026-07-20:** compact graph hydration
-  plus on-demand single-user rail loading removed the full-directory critical/background
-  payloads. Final N=5 median 2,386.7 ms passed the strict 3,913.7 ms cutoff; the last
-  full-rate sample held 60.016 fps for 10.014 s at 22,279 nodes / 18,000 native links,
-  Tier 0 before/after. Local production BUILD_ID `39p7DFRd3DbgM8WjWU2Pz` passed health,
-  redirect, and authenticated populated-graph probes.
-  Codebase docs are current (map refreshed post-v2.5, commit `680dde86`).
+- **Milestone:** **v2.7 Activity Universe — OPENED 2026-07-21** (owner goal given
+  2026-07-20). 12 requirements (SCALE-01/02, ACT-01–04, EMB-07, DIM-07, PERF-07, TIME-01,
+  REND-04, E2E-03), phases 37–41, 12/12 mapped, breakdown owner-approved 2026-07-21.
+- **Owner scope decisions (recorded in REQUIREMENTS "Read Before Planning"):** ALL
+  4,862,301 raw activity events chosen over offered bounded grains (106k/40k); full
+  replace of the user-instance graph, no mode toggle, dimension sliders must survive;
+  hard ≥50fps Tier-0 bar retained; TIME-01 temporal scrubber folded in. Safety mechanism:
+  Phase-37 feasibility spike picks the shipped rung on an owner-approved fallback ladder
+  (L0 all-animated → L1 decimated ambient → L2 far-zoom LOD → L3 verb+month grain
+  106,196) — every activity counted at every rung.
+- **Grain census (measured 2026-07-21, read-only):** `AccActivityAccds` 4,862,301 rows
+  (grew from the 2026-06-23 census 4,554,785) · last 12 months 4,458,926 · distinct
+  authors 2,313 · user+project+verb+month 106,196 · user+project+month 40,166 · current
+  graph 22,279 nodes.
+- **Next:** Phase 37 (Scale Feasibility Spike & Fallback Ladder) — needs CONTEXT
+  (`/lecg-discuss-phase 37`): spike harness shape, measurement methodology, ladder
+  sign-off format.
+- **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
+  v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
+  v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
+  Codebase docs current (map refreshed post-v2.5, commit `680dde86`).
 
 ## Status (data baseline — still current)
 
@@ -79,14 +81,13 @@ spot-check reconciles.
 
 ## Deferred Items
 
-Updated at the v2.6 open (2026-07-20). **Absorbed into v2.6 requirements** (dropped from
-this list): similarity-web renderer rethink (→ REND-01–03), guard-bash powershell-wrap gap
-(→ GUARD-01), e2e drift re-baseline + lasso budget (→ E2E-01/02), 3 `usePredicateEngine`
-failures (→ TEST-04), stale-embedding prune (→ PIPE-02).
+Updated at the v2.7 open (2026-07-21). **Absorbed into v2.7 requirements** (dropped from
+this list): TIME-01 temporal scrubber (→ TIME-01, unblocked — month is a native node
+attribute at activity grain).
 
-1. **Tier-3 graph dims** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser` resolution
-   spike, unmeasured rate — **the v2.7 entry ticket**) + TIME-01 temporal scrubber →
-   v2.7 candidates (owner explicitly left them out of v2.6).
+1. **Issue dims on the graph** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser`
+   resolution spike, unmeasured rate). Was the stated v2.7 entry ticket; **superseded by
+   the owner's activity-universe goal** → v2.8 candidate.
 2. **Data-truth items** — SVC-01 service-override attribution refinement; DIM-05
    project-coverage denominator (verify whether 550/1,153 is correct before ever displaying
    it; `VERIFY:` in `dimensionCoverage.ts`). Not picked for v2.6.
@@ -134,5 +135,7 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `$lecg-new-milestone`.** Seed it from Deferred Items and the live debt in
-`.planning/codebase/CONCERNS.md`; Tier-3 ISSUE-GRAPH-01 remains the stated v2.7 entry ticket.
+**Run `$lecg-discuss-phase 37`** (Scale Feasibility Spike & Fallback Ladder). Gray areas
+to settle in CONTEXT: spike harness shape (route flag vs scratch page), synthetic vs real
+positions for the 4.86M-point render test, LIFE-03 measurement adaptation at scale, binary
+payload format candidates (raw typed arrays vs Arrow), and the ladder sign-off format.
