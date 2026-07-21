@@ -723,3 +723,31 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   distinct folders — int codes only). Phase 39 hover fetches folder/object
   strings on-demand per node; a folder DIMENSION label surface in Phase 40
   would need its own bounded lookup, not a 132k-entry dict in the meta.
+
+- **[NEW Ph39 2026-07-21] Instance-graph e2e suite is EXPECTEDLY red until
+  Phase 41.** The ACT-03 sweep deleted the instance shell + the
+  `__ACC_GRAPH_TEST__` bridge; `acc-dc-graph.spec.ts`,
+  `spatial-graph-baseline.spec.ts`, lasso/cluster-labels/ambient specs assert
+  the retired 22,279-node universe. E2E-03 re-baselines them against
+  `window.__ACTIVITY_UNIVERSE_TEST__` (`isReady()`/`getState()`); do NOT
+  "fix" them piecemeal before that.
+- **[NEW Ph39] Region-LOD viewport filter is an O(4.9M) JS scan per debounced
+  interaction-end** (`activity/lodSample.ts` viewportIndices, ~10–30 ms class).
+  Fine single-user/static; Phase 41's time-to-graph + fps measurements decide
+  whether it needs a spatial index or GPU mask.
+- **[NEW Ph39] eventDetail index→id depends on artifact/meta consistency.**
+  Row order = build-time ORDER BY id; meta idAnchors are recorded at build.
+  After any table change, REBUILD the payload artifact
+  (`build-activity-universe-payload.ts`, ~70 s) or clicks answer
+  `{stale: "project mismatch…"}` (honest, not wrong). The nightly staleness
+  log block in dc-daily-ingest.cjs is the drift beacon.
+- **[Ph39 note] Kept-but-unmounted instance machinery (~40 files:
+  CatalogSliderSidebar, DimensionSlider, GroupByControls, RightPanelStack,
+  physics layer, MapClusterLabels…) is deliberate Phase-40 inventory** (owner
+  decision 2). If Phase 40 rebuilds activity-native instead of reusing, sweep
+  the leftovers at milestone close. `AccInstanceEmbedding` TABLE drop is also
+  a milestone-close item.
+- **[Ph39 note] Stale Prisma comment:** `AccActivityEmbedding.id` doc says
+  `"a:"/"d:"` — real spaces are `"accds:"+accdsActivityId` / plain
+  AccActivity cuid (see compute_activity_embeddings.py). Fix with the next
+  schema-touching change.

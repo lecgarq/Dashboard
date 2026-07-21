@@ -4,10 +4,10 @@ milestone: v2.7
 milestone_name: "Activity Universe"
 current_phase: 39
 current_phase_name: "Activity Universe Swap"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 39 context gathered (39-CONTEXT.md: 3D retires, instance-bound surfaces hide until Ph40 (instance-ONLY code deletes), first-paint color=module, LOD=uniform sample ≤500k + honest label; all owner-locked 2026-07-21) — next: /lecg-phase 39"
-last_updated: "2026-07-21T16:05:00-06:00"
+status: executing
+current_plan: "39-03"
+stopped_at: "39-01 + 39-02 DONE (f5514155 render swap, d1bda10d interaction; artifact rebuilt with idAnchors). Executing 39-03 retire sweep (ACT-03) — next: continue /lecg-phase 39"
+last_updated: "2026-07-21T17:20:00-06:00"
 ---
 
 # Project State
