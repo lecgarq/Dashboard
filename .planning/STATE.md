@@ -5,9 +5,9 @@ milestone_name: "Activity Universe"
 current_phase: 37
 current_phase_name: "Scale Feasibility Spike & Fallback Ladder"
 status: executing
-current_plan: "37-03"
-stopped_at: "37-01 + 37-02 COMPLETE (harness f772f5bc, payload codec committed); 37-03 embedding ladder RUNNING in background (100k done incl. determinism, 500k fitting) — then 37-04 measurement run + owner checkpoint"
-last_updated: "2026-07-21T10:50:00-06:00"
+current_plan: "37-04"
+stopped_at: "37-01/02/03 COMPLETE; 37-04 measurements DONE on :3100 hardware D3D11 (37-BASELINE.md written: L0/L1 FAIL, L2 viable ≤~500k rendered, L3 green incl. ambient; payload 73MB in 1,072ms; embed full-fit est ~34min) — BLOCKED on owner ladder-rung checkpoint"
+last_updated: "2026-07-21T12:10:00-06:00"
 ---
 
 # Project State

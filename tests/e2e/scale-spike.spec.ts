@@ -54,6 +54,22 @@ function mergeOutput(patch: Record<string, unknown>): void {
 
 test.describe.configure({ mode: "serial" });
 
+// Headless Chromium falls back to SwiftShader (software rasterization) — measured
+// 0.4–1 fps that had nothing to do with the workshop GPU. Run HEADED with the
+// D3D11 ANGLE backend so the numbers are the real hardware's.
+test.use({
+  headless: false,
+  launchOptions: { args: ["--use-angle=d3d11"] },
+});
+
+/** Refuse to record software-rasterized numbers as GPU evidence. */
+function assertHardwareRenderer(info: Record<string, unknown>): void {
+  const renderer = String(info.renderer ?? "");
+  expect(renderer, `SwiftShader fallback — not the workshop GPU: ${renderer}`).not.toContain(
+    "SwiftShader",
+  );
+}
+
 test("frozen pass: rest / panzoom / cpuAmbient / payload", async ({ page }) => {
   test.setTimeout(READY_TIMEOUT_MS + SCENARIO_MS * 4 + 240_000);
   await openSpike(page, `n=${COUNT}`);
@@ -79,6 +95,7 @@ test("frozen pass: rest / panzoom / cpuAmbient / payload", async ({ page }) => {
   expect(payload.bytesOnWire).toBeGreaterThan(0);
   const info = (results.info ?? {}) as { count?: number };
   expect(info.count).toBe(COUNT);
+  assertHardwareRenderer(info as Record<string, unknown>);
 
   mergeOutput({ requestedCount: COUNT, frozenPass: results });
 });
@@ -98,6 +115,7 @@ test("gpu pass: gpuDrift", async ({ page }) => {
 
   const scenarios = results.scenarios as Record<string, { frames: number }>;
   expect(scenarios.gpuDrift.frames).toBeGreaterThan(0);
+  assertHardwareRenderer((results.info ?? {}) as Record<string, unknown>);
 
   mergeOutput({ gpuPass: results });
 });
