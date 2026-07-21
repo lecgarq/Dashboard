@@ -25,6 +25,9 @@ export interface ActivityUniverseCoverage {
   unknownAuthorRate: number;
 }
 
+/** Row-index → id anchor spacing: every ANCHOR_STRIDE-th id is recorded in meta. */
+export const ID_ANCHOR_STRIDE = 10_000;
+
 export interface ActivityUniverseMeta {
   version: 1;
   embeddingRunId: string;
@@ -34,6 +37,14 @@ export interface ActivityUniverseMeta {
   dicts: Record<string, unknown>;
   /** ACT-02 honest author-coverage figures (38-01 measurement). */
   coverage: ActivityUniverseCoverage;
+  /**
+   * Phase 39 (ACT-04): ids of rows 0, 10000, 20000, … in the artifact's
+   * ORDER BY id stream. Row index → id resolution = anchor + ≤10k OFFSET on
+   * the PK index. Anchors MUST come from the build (not runtime) so they stay
+   * consistent with the payload ordering even if the table drifts afterwards.
+   * Optional: absent on pre-39 artifacts (eventDetail then reports stale).
+   */
+  idAnchors?: string[];
 }
 
 /** Pure meta assembly — the single shape the route serves and Phase 39 consumes. */
@@ -43,8 +54,24 @@ export function assembleActivityUniverseMeta(args: {
   count: number;
   dicts: Record<string, unknown>;
   coverage: ActivityUniverseCoverage;
+  idAnchors?: string[];
 }): ActivityUniverseMeta {
   return { version: 1, ...args };
+}
+
+/**
+ * Anchor lookup for a row index: returns the anchor id and the remaining
+ * offset within the anchor's stride window, or null when the index is out of
+ * range for the recorded anchors.
+ */
+export function anchorFor(
+  idAnchors: readonly string[],
+  index: number,
+): { anchorId: string; offset: number } | null {
+  if (!Number.isInteger(index) || index < 0) return null;
+  const slot = Math.floor(index / ID_ANCHOR_STRIDE);
+  if (slot >= idAnchors.length) return null;
+  return { anchorId: idAnchors[slot], offset: index % ID_ANCHOR_STRIDE };
 }
 
 export function activityUniversePaths(cwd = process.cwd()): { bin: string; meta: string } {

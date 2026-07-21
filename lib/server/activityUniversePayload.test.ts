@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  ID_ANCHOR_STRIDE,
+  anchorFor,
   assembleActivityUniverseMeta,
   readActivityUniverseMeta,
   type ActivityUniverseCoverage,
@@ -55,5 +57,17 @@ describe("activityUniversePayload", () => {
     expect(readActivityUniverseMeta(dir)).toBeNull();
     writeFileSync(join(emb, "activity-universe.bin"), Buffer.from([1, 2, 3]));
     expect(readActivityUniverseMeta(dir)?.embeddingRunId).toBe("r");
+  });
+
+  it("anchorFor resolves index → (anchor, offset) within the stride window", () => {
+    const anchors = ["id-0", "id-10000", "id-20000"];
+    expect(anchorFor(anchors, 0)).toEqual({ anchorId: "id-0", offset: 0 });
+    expect(anchorFor(anchors, 9_999)).toEqual({ anchorId: "id-0", offset: 9_999 });
+    expect(anchorFor(anchors, ID_ANCHOR_STRIDE)).toEqual({ anchorId: "id-10000", offset: 0 });
+    expect(anchorFor(anchors, 25_432)).toEqual({ anchorId: "id-20000", offset: 5_432 });
+    // Out of range / invalid → null (honest failure upstream).
+    expect(anchorFor(anchors, 30_000)).toBeNull();
+    expect(anchorFor(anchors, -1)).toBeNull();
+    expect(anchorFor(anchors, 1.5)).toBeNull();
   });
 });

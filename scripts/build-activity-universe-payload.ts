@@ -17,6 +17,7 @@ import {
   type ColumnArray,
 } from "../lib/acc/columnarPayload";
 import {
+  ID_ANCHOR_STRIDE,
   activityUniversePaths,
   assembleActivityUniverseMeta,
   type ActivityUniverseCoverage,
@@ -93,6 +94,10 @@ async function main(): Promise<void> {
     let i = 0;
     let lastId = "";
     let runId = "";
+    // ACT-04: record every ID_ANCHOR_STRIDE-th id (rows 0, 10000, …) so the
+    // eventDetail procedure can resolve a payload row index to its id with an
+    // anchor seek + ≤10k OFFSET — anchors are build-consistent by construction.
+    const idAnchors: string[] = [];
     for (;;) {
       const rows = await db.$queryRawUnsafe<EmbeddingRow[]>(
         `SELECT * FROM "AccActivityEmbedding" WHERE id > $1 ORDER BY id LIMIT ${CHUNK}`,
@@ -100,6 +105,7 @@ async function main(): Promise<void> {
       );
       if (rows.length === 0) break;
       for (const r of rows) {
+        if (i % ID_ANCHOR_STRIDE === 0) idAnchors.push(r.id);
         positions[i * 2] = r.x;
         positions[i * 2 + 1] = r.y;
         verbId[i] = r.verbId;
@@ -146,6 +152,7 @@ async function main(): Promise<void> {
       count: n,
       dicts,
       coverage,
+      idAnchors,
     });
 
     const { bin, meta: metaPath } = activityUniversePaths();

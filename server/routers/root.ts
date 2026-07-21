@@ -20,6 +20,7 @@ import { accFoldersRouter } from "./acc-folders";
 import { accMembersRouter } from "./acc-members";
 import { accGraphRouter } from "./acc-graph";
 import { accDcGraphRouter } from "./acc-dc-graph";
+import { activityUniverseRouter } from "./activity-universe";
 import { accPersonGraphRouter } from "./acc-person-graph";
 import { accCoordinationRouter } from "./acc-coordination";
 
@@ -45,6 +46,7 @@ export const appRouter = router({
   accMembers: accMembersRouter,
   accGraph: accGraphRouter,
   accDcGraph: accDcGraphRouter,
+  activityUniverse: activityUniverseRouter,
   accPersonGraph: accPersonGraphRouter,
   accCoordination: accCoordinationRouter,
 });

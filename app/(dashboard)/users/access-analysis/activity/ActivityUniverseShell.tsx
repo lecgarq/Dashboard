@@ -1,19 +1,25 @@
 "use client";
 
 /**
- * ActivityUniverseShell.tsx — v2.7 Phase 39 (ACT-01).
+ * ActivityUniverseShell.tsx — v2.7 Phase 39 (ACT-01 + ACT-04).
  *
  * The activity universe: one node per extracted activity event (4,904,886
  * resident at rung L2), rendered by the production GraphCanvas2D in frozen
  * mode. Far zoom shows a deterministic uniform sample ≤ ~500k with an honest
  * label; zooming in flips to exact viewport detail via the setPointSet LOD
- * seam. First-paint color-by = module/serviceGroup (owner decision 3). Static
- * this phase — Phase 40 owns motion/sliders; Phase 41 owns the fps gate.
+ * seam. First-paint color-by = module/serviceGroup (owner decision 3).
+ *
+ * Interaction (ACT-04): hover tooltip from resident ints + meta dicts (zero
+ * fetches), click → ActivityDetailRail (on-demand event story + author
+ * profile), lasso over the RENDERED subset with an honest selected count.
+ * Static this phase — Phase 40 owns motion/sliders; Phase 41 owns the fps gate.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
+import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "../GraphCanvas2D";
+import { LassoOverlay } from "../LassoOverlay";
 import { GraphLoadingSkeleton } from "@/components/ui/GraphLoadingSkeleton";
 import {
   useActivityUniversePayload,
@@ -33,6 +39,9 @@ import {
 } from "./lodSample";
 import { createActivityPhysicsStub, toStride3 } from "./activityPhysicsStub";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
+import { resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
+import { ActivityTooltip } from "./ActivityTooltip";
+import { ActivityDetailRail } from "./ActivityDetailRail";
 
 const LOD_DEBOUNCE_MS = 250;
 
@@ -74,6 +83,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const moduleLabels = (data.meta.dicts.module as string[]) ?? [];
   const monthCount = (data.meta.dicts.monthCount as number) ?? 1;
   const monthFloor = (data.meta.dicts.monthFloor as string) ?? "";
+  const coverage = data.meta.coverage;
+
+  // Project GUID → display name for tooltips (957 rows, cached indefinitely).
+  const projectNames = trpc.activityUniverse.projectNames.useQuery(undefined, {
+    staleTime: Infinity,
+  }).data;
 
   // Full-set derived buffers — built once per payload (4.9M table lookups, ~tens of ms).
   const fullColors = useMemo(
@@ -106,6 +121,46 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     renderedCount: sampleIdx.length,
   });
 
+  // ACT-04 interaction state. Hover/selection hold FULL-set indices.
+  const [hover, setHover] = useState<{
+    fullIndex: number;
+    screenXY: [number, number];
+  } | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number | null>(null);
+  const [lassoActive, setLassoActive] = useState(false);
+  const [selectedRendered, setSelectedRendered] = useState<number[]>([]);
+
+  const clearSelection = useCallback((): void => {
+    setSelectedRendered([]);
+    handleRef.current?.setSelectedIndices?.([]);
+    setActivityTestState({ selectedCount: 0 });
+  }, []);
+
+  const hoverLabels: ActivityHoverLabels | null = useMemo(
+    () =>
+      hover
+        ? resolveActivityHoverLabels({
+            index: hover.fullIndex,
+            columns: data.columns,
+            dicts: data.meta.dicts,
+            projectNames,
+          })
+        : null,
+    [hover, data.columns, data.meta.dicts, projectNames],
+  );
+  const detailLabels: ActivityHoverLabels | null = useMemo(
+    () =>
+      detailIndex !== null
+        ? resolveActivityHoverLabels({
+            index: detailIndex,
+            columns: data.columns,
+            dicts: data.meta.dicts,
+            projectNames,
+          })
+        : null,
+    [detailIndex, data.columns, data.meta.dicts, projectNames],
+  );
+
   // Test bridge (Phase-41 re-baseline seam).
   useEffect(() => {
     const uninstall = installActivityTestBridge();
@@ -118,8 +173,43 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     return uninstall;
   }, [data.count, sampleIdx.length]);
 
+  // Hover/click handlers via the canvas's ref-indirect seam. Rendered index →
+  // full index through the CURRENT mapping.
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!handle) return;
+    handle.setEventHandlers({
+      onPointClick: (renderedIndex) => {
+        if (renderedIndex === undefined) {
+          setDetailIndex(null);
+          return;
+        }
+        const full = renderedToFullRef.current[renderedIndex];
+        if (full !== undefined) setDetailIndex(full);
+      },
+      onPointHover: (renderedIndex, screenXY) => {
+        const full = renderedToFullRef.current[renderedIndex];
+        if (full !== undefined) setHover({ fullIndex: full, screenXY });
+      },
+      onPointHoverEnd: () => setHover(null),
+    });
+    // Handler install is idempotent (ref-indirection) — safe on every render pass.
+  });
+
+  // Escape: close the detail rail, then clear the selection.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== "Escape") return;
+      if (detailIndex !== null) setDetailIndex(null);
+      else clearSelection();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [detailIndex, clearSelection]);
+
   // LOD state machine: after pan/zoom settles, flip between the uniform sample
-  // (region over cap) and exact viewport detail (region fits the cap).
+  // (region over cap) and exact viewport detail (region fits the cap). A set
+  // switch invalidates rendered-index meaning → hover/selection are cleared.
   useEffect(() => {
     const div = containerRef.current;
     if (!div) return;
@@ -139,20 +229,25 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         maxY: Math.max(a[1], b[1]),
       };
       const region = viewportIndices(positions, bounds);
+      const switchTo = (indices: Uint32Array, mode: LodMode, p: Float32Array, c: Float32Array, s: Float32Array): void => {
+        handle.setPointSet?.(p, c, s);
+        renderedToFullRef.current = indices;
+        setHover(null);
+        setSelectedRendered([]);
+        handle.setSelectedIndices?.([]);
+        setLod({ mode, renderedCount: indices.length });
+        setActivityTestState({ lodMode: mode, renderedCount: indices.length, selectedCount: 0 });
+      };
       if (region) {
-        handle.setPointSet?.(
+        switchTo(
+          region,
+          "region",
           gatherPositions(positions, region),
           gatherRgba(fullColors, region),
           gatherScalar(fullSizes, region),
         );
-        renderedToFullRef.current = region;
-        setLod({ mode: "region", renderedCount: region.length });
-        setActivityTestState({ lodMode: "region", renderedCount: region.length });
       } else if (renderedToFullRef.current !== sampleIdx) {
-        handle.setPointSet?.(sampled.positions, sampled.colors, sampled.sizes);
-        renderedToFullRef.current = sampleIdx;
-        setLod({ mode: "sample", renderedCount: sampleIdx.length });
-        setActivityTestState({ lodMode: "sample", renderedCount: sampleIdx.length });
+        switchTo(sampleIdx, "sample", sampled.positions, sampled.colors, sampled.sizes);
       }
     };
 
@@ -169,6 +264,17 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       div.removeEventListener("pointerup", schedule);
     };
   }, [positions, fullColors, fullSizes, sampleIdx, sampled]);
+
+  // Lasso hit-test over the RENDERED subset (visible = selectable at L2).
+  const lassoHitTest = useCallback((path: [number, number][]): number[] => {
+    return handleRef.current?.findPointsInPolygon(path) ?? [];
+  }, []);
+  const onLassoComplete = useCallback((matched: number[]): void => {
+    setSelectedRendered(matched);
+    handleRef.current?.setSelectedIndices?.(matched);
+    setActivityTestState({ selectedCount: matched.length });
+    setLassoActive(false);
+  }, []);
 
   const fmt = (n: number): string => n.toLocaleString("en-US");
 
@@ -191,14 +297,53 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           }}
         />
       </div>
+      <LassoOverlay active={lassoActive} hitTest={lassoHitTest} onComplete={onLassoComplete} />
 
-      {/* Caption stack — muted, honest (LOD state + data floor). */}
+      {/* Caption stack — muted, honest (LOD state, data floor, author coverage). */}
       <div className="pointer-events-none absolute left-4 top-3 z-10 space-y-0.5 font-mono text-[11px] text-muted-foreground">
         <div className="text-sm font-semibold text-foreground">Activity universe</div>
         <div>{lodLabel(lod.mode, lod.renderedCount, data.count)}</div>
         <div>
           {fmt(data.count)} events · data from {monthFloorLabel(monthFloor)}
         </div>
+        <div>
+          author resolution {(coverage.resolvedEmailRate * 100).toFixed(2)}% · unknown authors{" "}
+          {(coverage.unknownAuthorRate * 100).toFixed(2)}%
+        </div>
+      </div>
+
+      {/* Lasso toggle + honest selected count (visible = selectable at L2). */}
+      <div className="absolute bottom-3 left-4 z-10 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (lassoActive) setLassoActive(false);
+            else {
+              clearSelection();
+              setLassoActive(true);
+            }
+          }}
+          aria-pressed={lassoActive}
+          className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
+            lassoActive
+              ? "border-primary bg-primary/10 text-foreground"
+              : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
+          }`}
+        >
+          Lasso
+        </button>
+        {selectedRendered.length > 0 && (
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {fmt(selectedRendered.length)} of rendered {fmt(lod.renderedCount)} selected
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="ml-2 rounded border px-1.5 py-0.5 text-[10px] hover:bg-accent"
+            >
+              Clear
+            </button>
+          </span>
+        )}
       </div>
 
       {/* Module legend — the first-paint color language (owner decision 3). */}
@@ -220,6 +365,28 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           ))}
         </ul>
       </div>
+
+      <ActivityTooltip
+        anchorScreenXY={hover?.screenXY ?? null}
+        labels={hoverLabels}
+        canvasOriginXY={
+          containerRef.current
+            ? [
+                containerRef.current.getBoundingClientRect().left,
+                containerRef.current.getBoundingClientRect().top,
+              ]
+            : undefined
+        }
+      />
+
+      {detailIndex !== null && detailLabels && (
+        <ActivityDetailRail
+          index={detailIndex}
+          labels={detailLabels}
+          unknownAuthorRate={coverage.unknownAuthorRate}
+          onClose={() => setDetailIndex(null)}
+        />
+      )}
     </div>
   );
 }
