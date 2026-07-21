@@ -691,3 +691,35 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
 - **[NEW Ph37] scale-spike surface lifecycle.** `/users/scale-spike` +
   `/api/scale-spike/payload` are committed, flag-gated (`NEXT_PUBLIC_ACC_SCALE_SPIKE`),
   404/dead without the flag. Remove or re-gate at v2.7 milestone close.
+
+## Phase 38 debt roll-forward (2026-07-21 — Activity Data Pipeline & Embedding)
+
+- **[NEW Ph38 2026-07-21] 🔑 psycopg3 implicit-transaction savepoint rollback
+  trap.** In psycopg3 non-autocommit mode, the FIRST execute on a connection
+  opens an implicit transaction; a later `with conn.transaction()` then creates
+  a SAVEPOINT, not a top-level transaction, and `conn.close()` without
+  `commit()` rolls back EVERYTHING — while same-connection post-write SELECTs
+  still see the rows. Run #2 of `compute_activity_embeddings.py` printed "COPY
+  wrote 4904886 rows … DONE" and left a durably empty table (cost: one ~112-min
+  pipeline run). Fix pattern (now in the script): explicit `conn.commit()`
+  before close + a row-count on a FRESH connection. Same family as v2.6's
+  "counters aren't visual proof": in-session verification can lie — verify from
+  outside the session. Applies to any future psycopg writer.
+- **[NEW Ph38] Full-fit pipeline economics.** Measured: 50 min per full-corpus
+  PaCMAP fit (×2 for the determinism proof → ~102 min total), peak RSS 15.7 GB
+  (24 GB cap, owner-approved), COPY 84 s. The 37-BASELINE ~34-min/~6-GB figures
+  were extrapolations — superseded. If reruns become frequent (owner decision
+  currently: manual only), revisit single-fit + stored-checksum determinism or
+  IVF/HNSW incremental projection.
+- **[NEW Ph38] Activity-grain trustworthiness baseline is 0.8085** (k=10,
+  n=5000) vs ~0.9+ at instance grain — first baseline, gate enforces monotone
+  non-regression. Phase 40 dimension tuning may motivate feature-weight work;
+  change the 71-dim layout deliberately (it invalidates the baseline).
+- **[Ph38 note] Payload route buffers 149.7 MB per non-304 request**
+  (`ponytail:` comment in `app/api/activity-universe/payload/route.ts`).
+  Fine single-user; stream if concurrency ever matters. ETag/304 keyed by
+  embeddingRunId keeps repeat loads cheap.
+- **[Ph38 note] Folder labels intentionally absent from payload meta** (132k
+  distinct folders — int codes only). Phase 39 hover fetches folder/object
+  strings on-demand per node; a folder DIMENSION label surface in Phase 40
+  would need its own bounded lookup, not a 132k-entry dict in the meta.
