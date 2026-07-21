@@ -204,7 +204,9 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None,
                     help="smoke-test row cap — NEVER writes to the DB")
     ap.add_argument("--cap-minutes", type=float, default=90.0)
-    ap.add_argument("--cap-rss-gb", type=float, default=12.0)
+    # 24 GB cap owner-approved 2026-07-21 after the 12 GB estimate-derived cap
+    # tripped on a SUCCESSFUL 58.7-min fit (peak 15.45 GB on a 63.4 GB machine).
+    ap.add_argument("--cap-rss-gb", type=float, default=24.0)
     args = ap.parse_args()
     smoke = args.limit is not None
 
