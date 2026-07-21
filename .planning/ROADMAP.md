@@ -1112,9 +1112,12 @@ TEST-01/02/03 stay green.
 
 ## Phases
 
-- [ ] **Phase 37: Scale Feasibility Spike & Fallback Ladder** - Measure 4.86M-point render,
+- [x] **Phase 37: Scale Feasibility Spike & Fallback Ladder** - Measure 4.86M-point render,
   binary payload, and embedding runtime on the workshop machine; owner picks the shipped
-  ladder rung from recorded numbers
+  ladder rung from recorded numbers — COMPLETE 2026-07-21, **owner locked L2 (LOD
+  rendering)**; evidence in 37-BASELINE.md (L0/L1 fail at 8 fps static, ≥50 fps ceiling
+  ~500k rendered, L3 green; payload 73 MB in 1,072 ms; embed full-fit est ~34 min);
+  deployed BUILD_ID `LGy8KOP1nWXoeczYd5-8J`
 - [ ] **Phase 38: Activity Data Pipeline & Embedding** - Offline activity-grain features +
   embedding at scale, new storage table, binary columnar payload route, author-coverage
   measurement

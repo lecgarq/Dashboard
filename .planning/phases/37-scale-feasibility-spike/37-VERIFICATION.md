@@ -56,4 +56,11 @@ worth taking; the columnar header-stabilization loop stays (correctness over cle
 
 ## Deploy (autoDeploy policy)
 
-_Appended below after the `:3000` deploy-sequence run._
+Deploy-sequence run 2026-07-21: `LECG Dashboard Local` task stopped, `:3000` freed
+(Listen-state clean), `npx tsc --noEmit` = 0, `npm run build` exit 0, task restarted
+(state Running), **BUILD_ID `LGy8KOP1nWXoeczYd5-8J`**. Probes: `/api/health` **200**,
+`/users/spatial-graph` **307** (auth redirect — established normal),
+`/api/scale-spike/payload` **404** (flag off in prod — isolation proven),
+`/users/scale-spike` **307** (auth middleware fires before the page's `notFound()` gate;
+flag-off 404 enforced in-page by code, API 404 is the observable proof). `:3100` demo
+server stopped after the checkpoint.

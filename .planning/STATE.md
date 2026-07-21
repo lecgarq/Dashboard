@@ -2,12 +2,12 @@
 lecg_state_version: 2
 milestone: v2.7
 milestone_name: "Activity Universe"
-current_phase: 37
-current_phase_name: "Scale Feasibility Spike & Fallback Ladder"
-status: executing
-current_plan: "37-04"
-stopped_at: "37-01/02/03 COMPLETE; 37-04 measurements DONE on :3100 hardware D3D11 (37-BASELINE.md written: L0/L1 FAIL, L2 viable ≤~500k rendered, L3 green incl. ambient; payload 73MB in 1,072ms; embed full-fit est ~34min) — BLOCKED on owner ladder-rung checkpoint"
-last_updated: "2026-07-21T12:10:00-06:00"
+current_phase: 38
+current_phase_name: "Activity Data Pipeline & Embedding"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 37 COMPLETE (owner locked L2 LOD rendering; 37-BASELINE.md; deployed LGy8KOP1nWXoeczYd5-8J) — next: /lecg-discuss-phase 38 (no 38-CONTEXT.md yet)"
+last_updated: "2026-07-21T12:35:00-06:00"
 ---
 
 # Project State
@@ -36,12 +36,16 @@ extracted activity event.
   (grew from the 2026-06-23 census 4,554,785) · last 12 months 4,458,926 · distinct
   authors 2,313 · user+project+verb+month 106,196 · user+project+month 40,166 · current
   graph 22,279 nodes.
-- **Phase 37 CONTEXT captured 2026-07-21** (`37-CONTEXT.md`, 5 locked decisions):
-  committed flag-gated spike route reusing GraphCanvas2D + graphTestBridge; synthetic
-  positions at real 4,862,301 scale + real attribute cardinalities; GPU-shader ambient
-  drift counts as L0 "all animated" (CPU full-set push still measured for the record);
-  payload = raw typed-array buffers, zero deps (Arrow rejected barring evidence);
-  ladder sign-off = owner checkpoint with 37-BASELINE.md numbers + live demo.
+- **Phase 37 COMPLETE 2026-07-21 — owner locked ladder rung L2 (LOD rendering).**
+  Evidence (`37-BASELINE.md`, hardware D3D11 Intel iGPU): full 4,862,301-point render
+  8 fps static (L0/L1 FAIL), ≥50 fps static ceiling ≈ 500k rendered points, L3 grain
+  106,196 green everywhere (73 fps CPU ambient); binary columnar payload 73 MB in
+  1,072 ms total; PaCMAP 1M fit 379.8 s measured, full-fit ~34 min (extrapolation),
+  determinism identical; cosmos GPU force sim NOT the ambient path (20.4 fps @500k);
+  faiss flat projection slower than full fit. Spike surfaces flag-gated
+  (`NEXT_PUBLIC_ACC_SCALE_SPIKE`), 404 in prod. Deployed BUILD_ID
+  `LGy8KOP1nWXoeczYd5-8J` (health 200). SwiftShader measurement trap recorded in
+  CONCERNS (fps specs must run headed + D3D11 + renderer guard).
 - **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
   v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
   v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
@@ -138,6 +142,7 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `$lecg-phase 37`** (Scale Feasibility Spike & Fallback Ladder). Context is locked
-in `37-CONTEXT.md`; the phase plans the three measurement tracks (render / payload /
-embedding-estimate), executes the spike, and ends at the ladder-rung owner checkpoint.
+**Run `/lecg-discuss-phase 38`** (Activity Data Pipeline & Embedding — SCALE-02, EMB-07,
+ACT-02). No `38-CONTEXT.md` yet. Phase-37 inputs: L2 rung locked; payload budget input
+≤ ~2.5 s median-of-5; full-fit PaCMAP tractable (~34 min est, ~6 GB RSS est — verify);
+if projection wanted, benchmark IVF/HNSW first (flat index measured slower than full fit).
