@@ -1124,7 +1124,7 @@ TEST-01/02/03 stay green.
   determinism identical, trust 0.8085), payload 149.7 MB served in 424 ms median vs
   2,500 ms budget, author coverage 94.41% resolved / 5.59% unknown; deployed BUILD_ID
   `je7yDXXumvtzNylv874vC`
-- [ ] **Phase 39: Activity Universe Swap** - The graph renders activity nodes at the shipped
+- [x] **Phase 39: Activity Universe Swap** (2026-07-21) - The graph renders activity nodes at the shipped
   rung; user-instance path fully retired; node hover/click shows event + author
 - [ ] **Phase 40: Dimensions & Sliders at Scale** - Activity-native dimension surface with
   the slider UX preserved; morph/grouping GPU-side within the perf bar

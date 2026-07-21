@@ -110,6 +110,23 @@ specs import no app modules — tsc/vitest unaffected.
   organic regions on the live iGPU, not noise (39-CONTEXT flagged; UI hint =
   owner sees the live universe).
 
-## Deploy (autoDeploy: true)
+## Deploy (autoDeploy: true) — PASSED 2026-07-21
 
-See appended probe result below after /lecg-ship.
+- Sequence: task stopped → port freed → tsc clean → `npm run build` OK →
+  task restarted (`Running`, :3000 `Listen`). **BUILD_ID `8Va2aGSw6-sTC0SXkgNxO`.**
+- Probes: `/users/spatial-graph` **200** (10,338 B); payload `?meta=1` **200**
+  (139,322 B) serving count 4,904,886 / 491 idAnchors / run
+  `20260721T210323Z-80e4cff2` / resolvedEmailRate 0.94405.
+- Live browser check (screenshots taken): activity universe renders on :3000 —
+  ~490,489 of 4,904,886 sampled points, organic regions with visible structure
+  (docs-blue mass, issues-orange archipelagos, voids — VERIFY "reads as
+  organic, not noise" satisfied at far zoom; owner UAT to confirm taste);
+  module legend with live counts (docs 4,545,x / issues 313,542 /
+  sheets 28,821 / admin 14,243 / (none) 848 / submittals 806 / rfis 636);
+  LOD + month-floor + coverage captions correct; Lasso control present;
+  pan/zoom responsive; **zero console errors**; theme-reactive canvas
+  background confirmed in BOTH themes (pane happened to render light mode —
+  white bg + legible captions).
+- Not exercised live (deliberate): region-LOD flip needs ~10× zoom (unit-
+  tested; Phase 41 e2e pins it); hover/click detail needs an interactive
+  session (procedure logic vitest-covered + live DB probe in 39-02).
