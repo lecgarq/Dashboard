@@ -4,10 +4,10 @@ milestone: v2.7
 milestone_name: "Activity Universe"
 current_phase: 40
 current_phase_name: "Dimensions & Sliders at Scale"
-status: ready_to_plan
-current_plan: null
-stopped_at: "Phase 40 context captured (40-CONTEXT.md, 4 owner decisions locked: decimated CPU ambient ~100k, GPU lerp morph with decimated fallback clause, sidebar shell reuse with 8 activity dims, all-categories group-by with top-N labels). Ready to plan — next: /lecg-phase 40"
-last_updated: "2026-07-21T18:45:00-06:00"
+status: executing
+current_plan: "40-01"
+stopped_at: "Phase 40 planned (40-01 pure dims/layout/colors · 40-02 GPU morph seam + ambient + contract pins · 40-03 sidebar/wiring/retirement, wave 2). Key plan-time find: cosmos v3 built-in GPU position transition (render(undefined, durationMs) per-call override + transitionEasing) IS the morph seam — no custom shader patch. Executing 40-01 — resume: /lecg-phase 40"
+last_updated: "2026-07-21T19:40:00-06:00"
 ---
 
 # Project State
