@@ -124,6 +124,13 @@ export interface GraphCanvas2DHandle {
   /** LOD: position-only update for the CURRENT set (any count), with the no-op skip. */
   pushPointSet?(positions2: Float32Array): void;
   /**
+   * PERF-07: GPU-animated morph of the CURRENT set to new positions. One CPU
+   * upload; cosmos v3's built-in position transition (source→target FBOs +
+   * interpolatePosition shader, easing from config.transitionEasing) animates
+   * every frame GPU-side — no per-frame CPU writes. durationMs 0 snaps.
+   */
+  morphPointSet?(positions2: Float32Array, durationMs: number): void;
+  /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
    */
@@ -277,6 +284,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       g = new Graph(div, {
         enableSimulation: props.gpuSimulation === true,
         transitionDuration: 0,
+        // PERF-07 morph seam: the config default stays 0 (every existing call
+        // path still snaps); morphPointSet alone passes a per-call duration via
+        // render(undefined, durationMs). Easing applies only to those cycles.
+        transitionEasing: "quad-in-out",
         ...(props.gpuSimulation
           ? mapDominantForceConfig(
               Math.max(0, ...Object.values(props.physics.getSliders())),
@@ -791,6 +802,18 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           prevUploaded.set(positions2);
           g!.setPointPositions(positions2, true);
           g!.render();
+        },
+
+        // PERF-07 — GPU-animated morph for the CURRENT set. setPointPositions
+        // queues the Positions transition property; render's second arg
+        // overrides the transition duration for THIS cycle only (public seam,
+        // index.d.ts:375), so cosmos interpolates source→target GPU-side.
+        // prevUploaded resets so the next ambient push isn't no-op-skipped
+        // against pre-morph coordinates.
+        morphPointSet(positions2: Float32Array, durationMs: number): void {
+          g!.setPointPositions(positions2, true);
+          g!.render(undefined, durationMs);
+          prevUploaded = null;
         },
 
         // ---- Phase 4-01 Task 2 primitives ---------------------------------

@@ -35,7 +35,7 @@ import {
   viewportIndices,
   type LodMode,
 } from "./lodSample";
-import { createActivityPhysicsStub, toStride3 } from "./activityPhysicsStub";
+import { createActivityPhysicsStub, toStride3 } from "./activityMotion";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
 import { ActivityTooltip } from "./ActivityTooltip";
