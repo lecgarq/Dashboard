@@ -430,14 +430,22 @@ def main() -> None:
                         int(code_project[i]), int(code_author[i]), int(code_folder[i]),
                         run_id,
                     ))
-    with conn.cursor() as cur:
+    # COMMIT the outer implicit transaction. psycopg3 (non-autocommit) opened it
+    # at the first SELECT, which demoted conn.transaction() above to a SAVEPOINT
+    # — without this commit, conn.close() ROLLS BACK the entire COPY while the
+    # same-connection count below still sees the rows (2026-07-21 data-loss run).
+    conn.commit()
+    conn.close()
+    # Durability proof on a FRESH connection — never trust the writing session.
+    conn2 = psycopg.connect(_db_url())
+    with conn2.cursor() as cur:
         cur.execute('SELECT COUNT(*) FROM "AccActivityEmbedding"')
         written = cur.fetchone()[0]
-    conn.close()
-    print(f"COPY wrote {written} rows in {time.time() - t_w:.1f}s "
-          f"(run {run_id})")
+    conn2.close()
+    print(f"COPY wrote {written} rows (fresh-connection count) in "
+          f"{time.time() - t_w:.1f}s (run {run_id})")
     if written != n:
-        raise SystemExit(f"post-write count {written} != {n}")
+        raise SystemExit(f"DURABILITY FAIL: fresh-connection count {written} != {n}")
     print(f"DONE: {n} rows, fit {fit1_s / 60:.1f}+{fit2_s / 60:.1f} min, "
           f"peak RSS {peak_rss_mb()} MB, total {(time.time() - t0) / 60:.1f} min")
 
