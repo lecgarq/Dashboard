@@ -15,7 +15,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import {
   encodeColumnarPayload,
   type ColumnArray,
-} from "../app/(dashboard)/users/scale-spike/columnar";
+} from "../lib/acc/columnarPayload";
 import {
   activityUniversePaths,
   assembleActivityUniverseMeta,

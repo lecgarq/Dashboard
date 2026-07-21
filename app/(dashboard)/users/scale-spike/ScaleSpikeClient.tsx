@@ -24,7 +24,7 @@
 import { useEffect, useRef, useState } from "react";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "../access-analysis/GraphCanvas2D";
 import { createAmbientFpsController, type AmbientTier } from "../access-analysis/ambientMotion";
-import { decodeColumnarPayload } from "./columnar";
+import { decodeColumnarPayload } from "@/lib/acc/columnarPayload";
 import { createSpikePhysicsStub } from "./spikePhysicsStub";
 import {
   SPIKE_DEFAULT_COUNT,

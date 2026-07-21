@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { decodeColumnarPayload } from "../../app/(dashboard)/users/scale-spike/columnar";
+import { decodeColumnarPayload } from "../../lib/acc/columnarPayload";
 
 /**
  * activity-payload.spec.ts — Phase 38 SCALE-02 budget gate.

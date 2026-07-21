@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ACC_SNAPSHOT_STALE_TIME_MS,
-  prefetchAccessAnalysisRouteData,
   prefetchUsersRouteAccData,
 } from "./acc-route-hydration";
 
@@ -53,23 +52,5 @@ describe("ACC route hydration", () => {
       undefined,
       { staleTime: 5 * 60_000 },
     );
-  });
-
-  it("prefetches the compact graph snapshot instead of the heavy bulk-user payload", async () => {
-    const helpers = makeHelpers();
-
-    await prefetchAccessAnalysisRouteData(helpers as never);
-
-    expect(helpers.accDcGraph.bulkUsers.prefetch).not.toHaveBeenCalled();
-    expect(helpers.accDcGraph.graphSnapshot.prefetch).toHaveBeenCalledWith(undefined, {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    });
-    // The embedding prefetch input (undefined) must match the client's no-input
-    // useQuery so the 2D embedding map hydrates from cache instead of refetching.
-    expect(helpers.accDcGraph.instanceEmbedding.prefetch).toHaveBeenCalledWith(undefined, {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    });
-    expect(helpers.users.bulkAccSummary.prefetch).not.toHaveBeenCalled();
-    expect(helpers.accMembers.enrichedUsers.prefetch).not.toHaveBeenCalled();
   });
 });

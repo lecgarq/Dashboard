@@ -1,7 +1,7 @@
 import {
   encodeColumnarPayload,
   type ColumnArray,
-} from "@/app/(dashboard)/users/scale-spike/columnar";
+} from "@/lib/acc/columnarPayload";
 import {
   SPIKE_DEFAULT_COUNT,
   SPIKE_DEFAULT_SEED,

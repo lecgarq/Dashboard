@@ -1,22 +1,14 @@
-import { HydrationBoundary } from "@tanstack/react-query";
-import {
-  createAccRouteHelpers,
-  prefetchAccessAnalysisRouteData,
-} from "@/lib/server/acc-route-hydration";
-import { deserializeHydrationState } from "@/lib/server/hydrationState";
 import { AccessAnalysisShellClient } from "../access-analysis/AccessAnalysisShellClient";
 
-// "Spatial Graph" (nav: Organization → Spatial Graph) now renders the access-analysis
-// similarity graph. The previous force-directed SpatialGraphOnly view is retired.
-export default async function Page(): Promise<React.JSX.Element> {
-  const helpers = await createAccRouteHelpers();
-  await prefetchAccessAnalysisRouteData(helpers);
-
+// "Spatial Graph" (nav: Organization → Spatial Graph) renders the activity
+// universe (v2.7): the 4.9M-event payload is fetched client-side as one binary
+// artifact (/api/activity-universe/payload), so there is no tRPC prefetch or
+// hydration boundary here — the instance graphSnapshot/instanceEmbedding
+// prefetch retired with the user×project instance graph (ACT-03).
+export default function Page(): React.JSX.Element {
   return (
-    <HydrationBoundary state={deserializeHydrationState(helpers.dehydrate())}>
-      <div className="h-screen">
-        <AccessAnalysisShellClient />
-      </div>
-    </HydrationBoundary>
+    <div className="h-screen">
+      <AccessAnalysisShellClient />
+    </div>
   );
 }

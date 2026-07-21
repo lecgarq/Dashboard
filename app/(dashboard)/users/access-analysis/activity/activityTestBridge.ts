@@ -1,0 +1,65 @@
+/**
+ * activityTestBridge.ts — v2.7 Phase 39 (ACT-01).
+ *
+ * Minimal counter bridge for the activity universe, the Phase-41 e2e
+ * re-baseline seam (the instance graphTestBridge retires with its shell).
+ * Installed only under NEXT_PUBLIC_ACC_GRAPH_TEST=1, same env the retired
+ * bridge used, so the harness wiring carries over.
+ */
+
+export interface ActivityUniverseTestApi {
+  isReady(): boolean;
+  getResidentCount(): number;
+  getRenderedCount(): number;
+  getLodMode(): "sample" | "region";
+  getSampleStride(): number;
+  getSelectedCount(): number;
+}
+
+export interface ActivityTestState {
+  ready: boolean;
+  residentCount: number;
+  renderedCount: number;
+  lodMode: "sample" | "region";
+  sampleStride: number;
+  selectedCount: number;
+}
+
+declare global {
+  interface Window {
+    __ACTIVITY_UNIVERSE_TEST__?: ActivityUniverseTestApi;
+  }
+}
+
+const state: ActivityTestState = {
+  ready: false,
+  residentCount: 0,
+  renderedCount: 0,
+  lodMode: "sample",
+  sampleStride: 1,
+  selectedCount: 0,
+};
+
+export const testBridgeEnabled = (): boolean =>
+  process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
+
+export function setActivityTestState(patch: Partial<ActivityTestState>): void {
+  if (!testBridgeEnabled()) return;
+  Object.assign(state, patch);
+}
+
+/** Install window.__ACTIVITY_UNIVERSE_TEST__ once; returns an uninstall fn. */
+export function installActivityTestBridge(): () => void {
+  if (!testBridgeEnabled() || typeof window === "undefined") return () => {};
+  window.__ACTIVITY_UNIVERSE_TEST__ = {
+    isReady: () => state.ready,
+    getResidentCount: () => state.residentCount,
+    getRenderedCount: () => state.renderedCount,
+    getLodMode: () => state.lodMode,
+    getSampleStride: () => state.sampleStride,
+    getSelectedCount: () => state.selectedCount,
+  };
+  return () => {
+    delete window.__ACTIVITY_UNIVERSE_TEST__;
+  };
+}
