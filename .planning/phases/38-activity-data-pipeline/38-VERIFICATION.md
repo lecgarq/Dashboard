@@ -77,6 +77,14 @@
 - None blocking. Phase-39 consumers (graph render, hover strings on-demand,
   coverage label surface) are the next phase's scope by design.
 
+## Deploy (autoDeploy policy — 2026-07-21)
+
+Full deploy sequence run (stop `LECG Dashboard Local` task → tsc 0 → `npm run
+build` 0 → restart): **BUILD_ID `je7yDXXumvtzNylv874vC`**, task Running. Live
+`:3000` probes: `/api/health` **200** · `/api/activity-universe/payload?meta=1`
+**200** · payload **200, 156,957,160 B in 0.43 s** · `If-None-Match` run-id →
+**304**. Changed route verified live.
+
 ## Ponytail review (phase added shared modules)
 
 Inline scan of the phase diff: `activityAuthorAttributes.ts` (1 pure fn),

@@ -1118,9 +1118,12 @@ TEST-01/02/03 stay green.
   rendering)**; evidence in 37-BASELINE.md (L0/L1 fail at 8 fps static, ≥50 fps ceiling
   ~500k rendered, L3 green; payload 73 MB in 1,072 ms; embed full-fit est ~34 min);
   deployed BUILD_ID `LGy8KOP1nWXoeczYd5-8J`
-- [ ] **Phase 38: Activity Data Pipeline & Embedding** - Offline activity-grain features +
+- [x] **Phase 38: Activity Data Pipeline & Embedding** - Offline activity-grain features +
   embedding at scale, new storage table, binary columnar payload route, author-coverage
-  measurement
+  measurement — COMPLETE 2026-07-21: 4,904,886 positions durable (full-fit 50 min ×2,
+  determinism identical, trust 0.8085), payload 149.7 MB served in 424 ms median vs
+  2,500 ms budget, author coverage 94.41% resolved / 5.59% unknown; deployed BUILD_ID
+  `je7yDXXumvtzNylv874vC`
 - [ ] **Phase 39: Activity Universe Swap** - The graph renders activity nodes at the shipped
   rung; user-instance path fully retired; node hover/click shows event + author
 - [ ] **Phase 40: Dimensions & Sliders at Scale** - Activity-native dimension surface with
