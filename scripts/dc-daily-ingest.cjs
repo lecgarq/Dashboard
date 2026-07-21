@@ -59,12 +59,10 @@ function ts() {
 }
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log(`[dc-daily-ingest ${ts()}]`, ...args);
 }
 
 function logErr(...args) {
-  // eslint-disable-next-line no-console
   console.error(`[dc-daily-ingest ${ts()}]`, ...args);
 }
 
@@ -145,6 +143,46 @@ async function main() {
         execSync('python scripts/compute_instance_embeddings.py', { stdio: 'inherit' });
       } catch (e) {
         log('instance-embedding build failed (non-fatal): ' + e.message);
+      }
+      // v2.7 Phase 38 (owner decision: manual refresh only): the activity-
+      // universe embedding is NOT rebuilt nightly (~34 min full fit). This
+      // block only LOGS how many unified activity events have no position yet
+      // so staleness is visible; a manual compute_activity_embeddings.py +
+      // build-activity-universe-payload.ts run clears it. Non-fatal always.
+      try {
+        const [{ built }] = await prisma.$queryRawUnsafe(
+          'SELECT COUNT(*)::int AS built FROM "AccActivityEmbedding"',
+        );
+        if (built === 0) {
+          log('[activity-universe] embedding not built yet — skipping staleness check');
+        } else {
+          // ponytail: two anti-join PK probes over ~4.9M ids (~seconds,
+          // nightly offline); switch to a watermark column if it ever hurts.
+          const [{ missing }] = await prisma.$queryRawUnsafe(`
+            SELECT (
+              (SELECT COUNT(*) FROM "AccActivityAccds" a
+                WHERE NOT EXISTS (SELECT 1 FROM "AccActivityEmbedding" e
+                                  WHERE e.id = 'accds:' || a."accdsActivityId"))
+              +
+              (SELECT COUNT(*) FROM "AccActivity" d
+                LEFT JOIN (
+                  SELECT "projectId", MIN("createdAt") AS s
+                  FROM "AccActivityAccds" GROUP BY "projectId"
+                ) ast ON ast."projectId" = d."projectId"
+                WHERE (d."projectId" IS NULL OR d."projectId" = ''
+                       OR ast.s IS NULL OR d."createdAt" < ast.s)
+                  AND NOT EXISTS (SELECT 1 FROM "AccActivityEmbedding" e
+                                  WHERE e.id = d.id))
+            )::int AS missing
+          `);
+          if (missing > 0) {
+            log(`[activity-universe] ${missing} new events without positions — manual pipeline run needed`);
+          } else {
+            log('[activity-universe] positions current (0 unpositioned events)');
+          }
+        }
+      } catch (e) {
+        log('[activity-universe] staleness check failed (non-fatal): ' + e.message);
       }
     }
     process.exit(
