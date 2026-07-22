@@ -276,6 +276,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
     void (async () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
       // CRITICAL config flags (Pattern 1 from RESEARCH):
       // - enableSimulation: false  → frozen mode; cosmos.gl never drives physics
       // - transitionDuration: 0   → no GPU tweens; rAF drives all animation (REND-05)
@@ -295,15 +296,17 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           : {}),
         renderLinks: true,
         linkWidth: 0.5,
-        curvedLinks: true,
-        curvedLinkControlPointDistance: 0.14,
+        curvedLinks: false,
+        linkOpacity: 0.28,
+        pointOpacity: 0.94,
+        pointSizeScale: 1.15,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
         fitViewOnInit: true,
         fitViewDelay: 250,
         fitViewPadding: 0.1,
-        pixelRatio: window.devicePixelRatio,
+        pixelRatio,
         renderHoveredPointRing: true,
         hoveredPointRingColor: "#3b82f6",
         // -- Phase 4-01 event wiring (ref-indirect — Pitfall 5) --------------
@@ -354,7 +357,6 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Luma's canvas ResizeObserver can miss the first non-zero size when this
       // absolute slot settles during hydration. Sync the drawing buffer once at
       // readiness; the observer continues to own subsequent responsive resizes.
-      const pixelRatio = window.devicePixelRatio || 1;
       const canvasContext = (
         g as unknown as {
           device?: {

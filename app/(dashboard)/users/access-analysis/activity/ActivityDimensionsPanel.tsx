@@ -35,6 +35,10 @@ export interface ActivityDimensionsPanelProps {
   onGroupByChange: (id: string) => void;
   onColorByChange: (id: string) => void;
   onStrengthChange: (v: number) => void;
+  authorQuery: string;
+  onAuthorQueryChange: (query: string) => void;
+  matchedAuthorCount: number;
+  searchPending: boolean;
   /** "covered/total" for the active group-by dim (null when none / no sentinel gap). */
   groupCoverageText: string | null;
   groupByLabel: string | null;
@@ -56,6 +60,10 @@ export function ActivityDimensionsPanel({
   onGroupByChange,
   onColorByChange,
   onStrengthChange,
+  authorQuery,
+  onAuthorQueryChange,
+  matchedAuthorCount,
+  searchPending,
   groupCoverageText,
   groupByLabel,
   colorCoverageText,
@@ -74,6 +82,26 @@ export function ActivityDimensionsPanel({
         <h2 className="text-sm font-semibold">Dimensions</h2>
       </header>
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Search users</span>
+          <input
+            type="search"
+            value={authorQuery}
+            onChange={(event) => onAuthorQueryChange(event.target.value)}
+            placeholder="Name or email…"
+            aria-label="Search users"
+            data-testid="activity-author-search"
+            className="rounded-md border bg-background px-2 py-1.5 text-sm placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          />
+          {authorQuery.trim() ? (
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              {searchPending
+                ? "Searching…"
+                : `${matchedAuthorCount.toLocaleString("en-US")} user${matchedAuthorCount === 1 ? "" : "s"} matched`}
+            </span>
+          ) : null}
+        </label>
+
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium">Group into</span>
           <select

@@ -19,7 +19,7 @@ describe("activityColorBy (DIM-07)", () => {
     expect(legend.reduce((s, e) => s + e.count, 0)).toBe(4);
   });
 
-  it("high-cardinality: top-N colored, remainder + sentinel grey, honest legend sums", () => {
+  it("high-cardinality: every real category gets its own color and legend row", () => {
     const dim = activityDimensionById("verb")!;
     const k = 30;
     const labels = Array.from({ length: k }, (_, i) => (i === 0 ? "(none)" : `verb-${i}`));
@@ -28,19 +28,15 @@ describe("activityColorBy (DIM-07)", () => {
     for (let c = 1; c < k; c++) for (let j = 0; j < c; j++) arr.push(c);
     for (let j = 0; j < 5; j++) arr.push(0);
     const ids = Uint16Array.from(arr);
-    const { colors, legend, categoryColors } = buildDimColors(ids, dim, labels, 12);
+    const { colors, legend, categoryColors } = buildDimColors(ids, dim, labels);
 
-    // 12 colored rows + one grey "(+K more)" row.
-    expect(legend).toHaveLength(13);
-    const other = legend[legend.length - 1];
-    expect(other.isOther).toBe(true);
-    expect(other.label).toMatch(/more\)$/);
+    expect(legend).toHaveLength(k);
+    expect(legend.some((entry) => /other|more/i.test(entry.label))).toBe(false);
     expect(legend.reduce((s, e) => s + e.count, 0)).toBe(ids.length);
 
-    // Sentinel slot never earns a hue.
+    // Sentinel is its own honestly-labelled category; every real category is distinct.
     expect(categoryColors[0]).toEqual(OTHER_GREY);
-    // Top category (29) is colored distinctly from grey.
-    expect(categoryColors[29]).not.toEqual(OTHER_GREY);
+    expect(new Set(categoryColors.slice(1).map((rgb) => rgb.join(","))).size).toBe(k - 1);
 
     // Buffer alignment: node colored per its category.
     const first = ids[0];
@@ -55,7 +51,7 @@ describe("activityColorBy (DIM-07)", () => {
     const { legend, categoryColors } = buildDimColors(ids, dim, labels);
     const hues = new Set([1, 2, 3].map((c) => categoryColors[c].join(",")));
     expect(hues.size).toBe(3);
-    expect(legend.find((e) => e.isOther)?.count).toBe(1); // the sentinel row
+    expect(legend.find((e) => e.label === "Unknown")?.count).toBe(1);
   });
 
   it("recounts an active month without changing corpus category colors", () => {

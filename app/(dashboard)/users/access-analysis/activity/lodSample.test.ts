@@ -12,13 +12,13 @@ describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
   it("samples the real corpus size under the cap with a deterministic stride", () => {
     const total = 4_904_886;
     const stride = sampleStride(total);
-    expect(stride).toBe(10); // ceil(4,904,886 / 500,000)
+    expect(stride).toBe(25); // ceil(4,904,886 / 200,000)
     const idx = uniformSampleIndices(total);
-    expect(idx.length).toBe(Math.ceil(total / stride)); // 490,489
+    expect(idx.length).toBe(Math.ceil(total / stride)); // 196,196
     expect(idx.length).toBeLessThanOrEqual(LOD_CAP);
     expect(idx[0]).toBe(0);
-    expect(idx[1]).toBe(10);
-    expect(idx[idx.length - 1]).toBe((idx.length - 1) * 10);
+    expect(idx[1]).toBe(25);
+    expect(idx[idx.length - 1]).toBe((idx.length - 1) * 25);
     // Deterministic: same inputs, identical output.
     expect(uniformSampleIndices(total)).toEqual(idx);
   });
@@ -61,8 +61,8 @@ describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
   });
 
   it("labels are honest for both modes", () => {
-    expect(lodLabel("sample", 490_489, 4_904_886)).toBe(
-      "rendering ~490,489 of 4,904,886 — zoom for detail",
+    expect(lodLabel("sample", 196_196, 4_904_886)).toBe(
+      "rendering ~196,196 of 4,904,886 — zoom for detail",
     );
     expect(lodLabel("region", 12_345, 4_904_886)).toBe("full detail — 12,345 events in view");
   });

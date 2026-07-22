@@ -3,9 +3,8 @@
  *
  * Color-by buffers + honest legends for any activity dimension. Module keeps
  * its established 7-color language (delegates to moduleColors). Every other
- * dimension gets top-N distinct hues (CATEGORICAL_PALETTE, legible both
- * themes) with the remainder — and the slot-0 sentinel — in muted grey; the
- * legend carries honest counts including an explicit "(+K more)" grey row.
+ * dimension gives every dictionary category its own stable color. The slot-0
+ * sentinel remains muted grey but keeps its real label — no "Other" bucket.
  * Pure — no React/DOM/IO.
  */
 
@@ -17,10 +16,7 @@ export interface ActivityLegendEntry {
   label: string;
   colorHex: string;
   count: number;
-  isOther?: boolean;
 }
-
-export const MAX_DIM_COLORS = 12;
 
 function rgbToHex([r, g, b]: RGB): string {
   const h = (v: number): string =>
@@ -39,8 +35,20 @@ export interface DimColorResult {
   categoryColors: RGB[];
 }
 
-const sameRgb = (a: RGB, b: RGB): boolean =>
-  a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+const GOLDEN_RATIO = 0.618033988749895;
+
+/** Stable brand-palette variants: distinct per category without an Other bucket. */
+function categoryColor(category: number): RGB {
+  if (category === 0) return OTHER_GREY;
+  const index = category - 1;
+  const base = CATEGORICAL_PALETTE[index % CATEGORICAL_PALETTE.length];
+  const round = Math.floor(index / CATEGORICAL_PALETTE.length);
+  if (round === 0) return base;
+
+  const mix = 0.08 + ((round * GOLDEN_RATIO) % 1) * 0.2;
+  const target = round % 2 === 0 ? 1 : 0;
+  return base.map((channel) => Math.fround(channel + (target - channel) * mix)) as RGB;
+}
 
 /** Active-period legend using a corpus-stable category palette. */
 export function buildDimLegend(
@@ -57,28 +65,11 @@ export function buildDimLegend(
       .filter((entry) => entry.count > 0)
       .sort((a, b) => b.count - a.count);
   }
-  const colored: ActivityLegendEntry[] = labels
+  return labels
     .map((label, c) => ({ label, colorHex: rgbToHex(categoryColors[c] ?? OTHER_GREY), count: counts[c], c }))
-    .filter((entry) => entry.count > 0 && !sameRgb(categoryColors[entry.c] ?? OTHER_GREY, OTHER_GREY))
+    .filter((entry) => entry.count > 0)
     .sort((a, b) => b.count - a.count || a.c - b.c)
     .map(({ c: _c, ...entry }) => entry);
-  let otherCount = 0;
-  let otherCats = 0;
-  for (let c = 0; c < counts.length; c++) {
-    if (counts[c] > 0 && sameRgb(categoryColors[c] ?? OTHER_GREY, OTHER_GREY)) {
-      otherCount += counts[c];
-      otherCats += 1;
-    }
-  }
-  if (otherCount > 0) {
-    colored.push({
-      label: `(+${otherCats.toLocaleString("en-US")} more)`,
-      colorHex: rgbToHex(OTHER_GREY),
-      count: otherCount,
-      isOther: true,
-    });
-  }
-  return colored;
 }
 
 /**
@@ -90,7 +81,6 @@ export function buildDimColors(
   ids: ArrayLike<number>,
   dim: ActivityDimension,
   labels: readonly string[],
-  maxColors: number = MAX_DIM_COLORS,
 ): DimColorResult {
   const k = Math.max(1, labels.length);
 
@@ -106,21 +96,9 @@ export function buildDimColors(
     return { colors: buildModuleColorBuffer(u16, labels), legend, categoryColors };
   }
 
-  const counts = new Uint32Array(k);
-  for (let i = 0; i < ids.length; i++) {
-    const c = ids[i] < k ? ids[i] : 0;
-    counts[c] += 1;
-  }
-  // Top-N by count — the sentinel slot never earns a hue (always grey).
-  const ranked = Array.from({ length: k }, (_, c) => c)
-    .filter((c) => counts[c] > 0 && !(dim.hasSentinel && c === 0))
-    .sort((a, b) => counts[b] - counts[a] || a - b);
-  const colored = ranked.slice(0, maxColors);
-
-  const categoryColors: RGB[] = new Array(k).fill(OTHER_GREY);
-  colored.forEach((c, i) => {
-    categoryColors[c] = CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length];
-  });
+  const categoryColors: RGB[] = Array.from({ length: k }, (_, c) =>
+    dim.hasSentinel && c === 0 ? OTHER_GREY : categoryColor(c),
+  );
 
   // Palette table → single O(n) lookup pass.
   const palette = new Float32Array(k * 4);

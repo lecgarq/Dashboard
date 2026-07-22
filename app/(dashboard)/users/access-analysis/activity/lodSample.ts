@@ -9,7 +9,7 @@
  * so hover/click/lasso resolve honestly against the full corpus.
  */
 
-export const LOD_CAP = 500_000;
+export const LOD_CAP = 200_000;
 
 export type LodMode = "sample" | "region";
 

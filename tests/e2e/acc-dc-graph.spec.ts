@@ -44,9 +44,33 @@ test.describe("activity universe contract", () => {
       expect(state.positionsFinite, route).toBe(true);
       expect(state.positionMaxAbs, route).toBeGreaterThan(0);
       expect(state.monthCount, route).toBe(MONTH_COUNT);
+      expect(state.linkCount, route).toBeGreaterThan(0);
       await expect(page.locator("canvas").first(), route).toBeVisible();
       await expect(page.getByTestId("activity-dimensions-panel"), route).toBeVisible();
+      await expect(page.getByLabel("Search users"), route).toBeVisible();
+      const swatches = await page.getByTestId("activity-color-legend").locator("li > span:first-child")
+        .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).backgroundColor));
+      expect(new Set(swatches).size, `${route} module colors`).toBeGreaterThan(1);
     }
+  });
+
+  test("user search filters events and keeps rendered author links aligned", async ({ page }) => {
+    await gotoActivity(page);
+    await page.getByLabel("Search users").fill("Ada");
+    await page.waitForFunction(() => {
+      const state = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
+      return state?.searchQuery === "Ada" && state.matchedAuthorCount === 1 && state.activeCount > 0;
+    });
+    const filtered = await activityState(page);
+    expect(filtered.activeCount).toBeLessThan(FIXTURE_COUNT);
+    expect(filtered.linkCount).toBeGreaterThan(0);
+    await expect(page.getByText("1 user matched")).toBeVisible();
+
+    await page.getByLabel("Search users").fill("");
+    await page.waitForFunction(
+      (count) => window.__ACTIVITY_UNIVERSE_TEST__?.getState().activeCount === count,
+      FIXTURE_COUNT,
+    );
   });
 
   test("dimensions compose with exact-month, All, and playback truth", async ({ page }, testInfo) => {

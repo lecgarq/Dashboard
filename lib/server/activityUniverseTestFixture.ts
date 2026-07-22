@@ -61,7 +61,7 @@ export function buildActivityUniverseTestFixture(): ActivityUniverseTestFixture 
     dicts: {
       verb: ["Unknown", "View", "Edit", "Create", "Download"],
       objectType: ["Unknown", "File", "Issue", "Model"],
-      module: ["Docs", "Build", "Model Coordination"],
+      module: ["docs", "issues", "admin"],
       monthFloor: "2026-01",
       monthCount: ACTIVITY_TEST_FIXTURE_MONTH_COUNT,
       role: ["Unknown", "Project Admin", "Member"],

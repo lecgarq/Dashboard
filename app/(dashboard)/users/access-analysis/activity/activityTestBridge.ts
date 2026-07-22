@@ -17,6 +17,7 @@ export interface ActivityTestState {
   ready: boolean;
   residentCount: number;
   renderedCount: number;
+  linkCount: number;
   lodMode: "sample" | "region";
   sampleStride: number;
   selectedCount: number;
@@ -28,6 +29,8 @@ export interface ActivityTestState {
   ambientActive: boolean;
   temporalMode: "all" | "month";
   selectedMonth: number | null;
+  searchQuery: string;
+  matchedAuthorCount: number;
   monthCount: number;
   activeCount: number;
   playing: boolean;
@@ -49,6 +52,7 @@ const state: ActivityTestState = {
   ready: false,
   residentCount: 0,
   renderedCount: 0,
+  linkCount: 0,
   lodMode: "sample",
   sampleStride: 1,
   selectedCount: 0,
@@ -59,6 +63,8 @@ const state: ActivityTestState = {
   ambientActive: false,
   temporalMode: "all",
   selectedMonth: null,
+  searchQuery: "",
+  matchedAuthorCount: 0,
   monthCount: 0,
   activeCount: 0,
   playing: false,

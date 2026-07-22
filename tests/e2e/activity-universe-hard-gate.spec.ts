@@ -52,6 +52,33 @@ test("activity universe sustains the headed D3D11 Tier-0 hard gate", async ({ pa
   );
   const after = await page.evaluate(() => window.__ACTIVITY_UNIVERSE_TEST__!.getState());
 
+  const canvas = page.getByTestId("activity-universe-canvas");
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.evaluate(() => {
+    const probe = { startedAt: performance.now(), frames: 0, running: true };
+    (window as unknown as { __ACTIVITY_ZOOM_PROBE__?: typeof probe }).__ACTIVITY_ZOOM_PROBE__ = probe;
+    const tick = (): void => {
+      if (!probe.running) return;
+      probe.frames += 1;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  for (let i = 0; i < 16; i++) {
+    await page.mouse.wheel(0, i % 2 === 0 ? -450 : 450);
+    await page.waitForTimeout(100);
+  }
+  const zoomSample = await page.evaluate(() => {
+    const probe = (window as unknown as {
+      __ACTIVITY_ZOOM_PROBE__: { startedAt: number; frames: number; running: boolean };
+    }).__ACTIVITY_ZOOM_PROBE__;
+    probe.running = false;
+    const elapsedMs = performance.now() - probe.startedAt;
+    return { elapsedMs, frames: probe.frames, fps: (probe.frames * 1_000) / elapsedMs };
+  });
+
   const evidence = {
     measuredAt: new Date().toISOString(),
     scenarioMs: SCENARIO_MS,
@@ -60,6 +87,7 @@ test("activity universe sustains the headed D3D11 Tier-0 hard gate", async ({ pa
     renderedCount: after.renderedCount,
     renderer: after.renderer,
     sample,
+    zoomSample,
     before: {
       ambientActive: before.ambientActive,
       ambientTier: before.ambientTier,
@@ -84,4 +112,6 @@ test("activity universe sustains the headed D3D11 Tier-0 hard gate", async ({ pa
   expect(sample.elapsedMs).toBeGreaterThanOrEqual(10_000);
   expect(sample.frames).toBeGreaterThan(0);
   expect(sample.fps).toBeGreaterThanOrEqual(FPS_FLOOR);
+  expect(zoomSample.frames).toBeGreaterThan(0);
+  expect(zoomSample.fps).toBeGreaterThanOrEqual(FPS_FLOOR);
 });

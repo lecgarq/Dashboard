@@ -40,12 +40,16 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
     onGroupByChange: vi.fn(),
     onColorByChange: vi.fn(),
     onStrengthChange: vi.fn(),
+    authorQuery: "",
+    onAuthorQueryChange: vi.fn(),
+    matchedAuthorCount: 0,
+    searchPending: false,
     groupCoverageText: null as string | null,
     groupByLabel: null as string | null,
     colorCoverageText: "4,904,886/4,904,886",
     colorByLabel: "Module",
     residentCount: 4_904_886,
-    renderedCount: 490_489,
+    renderedCount: 196_196,
     ...over,
   };
   render(<ActivityDimensionsPanel {...props} />);
@@ -72,7 +76,7 @@ describe("ActivityDimensionsPanel", () => {
       groupByLabel: "Verb",
       groupCoverageText: "4,630,553/4,904,886",
     });
-    expect(screen.getByText(/4,904,886 events · rendering ~490,489/)).toBeTruthy();
+    expect(screen.getByText(/4,904,886 events · rendering ~196,196/)).toBeTruthy();
     expect(screen.getByTestId("activity-group-coverage").textContent).toContain(
       "Verb data · 4,630,553/4,904,886 events",
     );
@@ -106,6 +110,14 @@ describe("ActivityDimensionsPanel", () => {
     const role = Array.from(select.options).find((o) => o.value === "role");
     expect(role?.disabled).toBe(true);
     expect(role?.text).toContain("unavailable");
+  });
+
+  it("searches users by name or email and reports the matched-user count", () => {
+    const props = renderPanel({ authorQuery: "luis", matchedAuthorCount: 1 });
+    const search = screen.getByLabelText("Search users");
+    expect(screen.getByText("1 user matched")).toBeTruthy();
+    fireEvent.change(search, { target: { value: "ana@" } });
+    expect(props.onAuthorQueryChange).toHaveBeenCalledWith("ana@");
   });
 });
 

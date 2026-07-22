@@ -6,13 +6,14 @@
  *
  * The activity universe: one node per extracted activity event (4,904,886
  * resident at rung L2), rendered by the production GraphCanvas2D in frozen
- * mode. Far zoom shows a deterministic uniform sample ≤ ~500k with an honest
+ * mode. Far zoom shows a deterministic uniform sample ≤ ~200k with an honest
  * label; zooming in flips to exact viewport detail via the setPointSet LOD
  * seam.
  *
  * Interaction (ACT-04): hover tooltip from resident ints + meta dicts (zero
  * fetches), click → ActivityDetailRail (on-demand event story + author
- * profile), lasso over the RENDERED subset with an honest selected count.
+ * profile), user search, bounded same-author links, and lasso over the
+ * RENDERED subset with an honest selected count.
  *
  * Dimensions (DIM-07, Phase 40): the ActivityDimensionsPanel drives
  * group-by / color-by / strength over the rendered set. Strength morphs the
@@ -24,7 +25,7 @@
  * prefers-reduced-motion → fully static, morphs snap.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "../GraphCanvas2D";
@@ -62,7 +63,12 @@ import {
 } from "./activityDimensions";
 import { buildGroupLayout, mixPositions, type GroupLayout } from "./activityGroupLayout";
 import { buildDimColors, buildDimLegend } from "./activityColorBy";
-import { indicesForMonth, sampleFullIndices } from "./activityTime";
+import { sampleFullIndices } from "./activityTime";
+import {
+  buildActivityAuthorLinks,
+  buildAuthorMatch,
+  filterActivityIndices,
+} from "./activityGraphData";
 import {
   ActivityDimensionsPanel,
   GROUP_BY_NONE,
@@ -78,6 +84,7 @@ const LOD_DEBOUNCE_MS = 250;
 const MORPH_DRAG_MS = 120;
 const MORPH_COMMIT_MS = 250;
 const MORPH_GROUP_SWITCH_MS = 600;
+const MAX_VISIBLE_LEGEND_ROWS = 24;
 
 export function ActivityUniverseShell(): React.JSX.Element {
   const payload = useActivityUniversePayload();
@@ -125,12 +132,23 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
 
   const positions = data.columns.positions as Float32Array;
   const monthId = data.columns.monthId as Uint16Array;
+  const authorId = data.columns.authorId as Uint32Array;
   const dicts = data.meta.dicts as Record<string, unknown>;
   const monthCount = (dicts.monthCount as number) ?? 1;
   const monthFloor = (dicts.monthFloor as string) ?? "";
   const coverage = data.meta.coverage;
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [authorQuery, setAuthorQuery] = useState("");
+  const deferredAuthorQuery = useDeferredValue(authorQuery);
+  const authorLabels = useMemo(
+    () => (Array.isArray(dicts.author) ? dicts.author.map(String) : []),
+    [dicts],
+  );
+  const authorMatch = useMemo(
+    () => buildAuthorMatch(authorLabels, deferredAuthorQuery),
+    [authorLabels, deferredAuthorQuery],
+  );
 
   // Project GUID → display name for tooltips + project dim labels (957 rows).
   const projectNames = trpc.activityUniverse.projectNames.useQuery(undefined, {
@@ -201,8 +219,13 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   // Exact-month selection keeps the payload resident and changes only the
   // current full-index set. All stays explicit (null), never a fake month id.
   const activeFullIdx = useMemo(
-    () => (selectedMonth === null ? null : indicesForMonth(monthId, selectedMonth)),
-    [monthId, selectedMonth],
+    () => filterActivityIndices({
+      authorId,
+      monthId,
+      selectedMonth,
+      authorMask: authorMatch.mask,
+    }),
+    [authorId, authorMatch.mask, monthId, selectedMonth],
   );
   const activeCount = activeFullIdx?.length ?? data.count;
 
@@ -243,6 +266,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     [dimColors, sampleIdx],
   );
   const sampledSizes = useMemo(() => gather(fullSizes, sampleIdx, 1), [fullSizes, sampleIdx]);
+  const sampledLinks = useMemo(
+    () => buildActivityAuthorLinks(authorId, sampleIdx, authorLabels.length),
+    [authorId, authorLabels.length, sampleIdx],
+  );
   // GraphCanvas2D init reads stride-3 positions from a PhysicsLayer; frozen stub.
   const physics = useMemo(
     () => createActivityPhysicsStub(toStride3(sampledPositions)),
@@ -304,9 +331,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
 
   // renderedIndex → fullIndex mapping for the CURRENT point set (hover/click/lasso seam).
   const renderedToFullRef = useRef<Uint32Array>(sampleIdx);
-  const [lod, setLod] = useState<{ mode: LodMode; renderedCount: number }>({
+  const [lod, setLod] = useState<{ mode: LodMode; renderedCount: number; linkCount: number }>({
     mode: "sample",
     renderedCount: sampleIdx.length,
+    linkCount: sampledLinks.length / 2,
   });
 
   // ACT-04 interaction state. Hover/selection hold FULL-set indices.
@@ -358,10 +386,13 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     setActivityTestState({
       residentCount: data.count,
       renderedCount: sampleIdx.length,
+      linkCount: sampledLinks.length / 2,
       lodMode: "sample",
       sampleStride: sampleStride(activeCount),
       temporalMode: selectedMonth === null ? "all" : "month",
       selectedMonth,
+      searchQuery: deferredAuthorQuery,
+      matchedAuthorCount: authorMatch.matchedAuthorCount,
       monthCount,
       activeCount,
       playing,
@@ -377,7 +408,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     reducedMotion,
     sampleIdx.length,
     sampledPositionStats,
+    sampledLinks.length,
     selectedMonth,
+    deferredAuthorQuery,
+    authorMatch.matchedAuthorCount,
   ]);
 
   // ── PERF-07 motion layer (ambient + GPU morph seam) ───────────────────────
@@ -395,7 +429,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     motionRef.current = motion;
     // Ambient runs only while the SAMPLE set is rendered (the layer is
     // per-rendered-set; the LOD effect stops/starts it across set flips).
-    if (renderedToFullRef.current === sampleIdx) {
+    if (sampleIdx.length > 0 && renderedToFullRef.current === sampleIdx) {
       motion.startAmbient();
       setActivityTestState({ ambientActive: motion.isAmbientRunning() });
     }
@@ -414,17 +448,19 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     if (!handle) return;
     if (motionRef.current?.isAmbientRunning()) motionRef.current.stopAmbient();
     handle.setPointSet?.(sampledPositions, sampledColors, sampledSizes);
+    handle.setLinks(sampledLinks);
     renderedToFullRef.current = sampleIdx;
     setHover(null);
     setDetailIndex(null);
     setLassoActive(false);
     setSelectedRendered([]);
     handle.setSelectedIndices?.([]);
-    setLod({ mode: "sample", renderedCount: sampleIdx.length });
+    setLod({ mode: "sample", renderedCount: sampleIdx.length, linkCount: sampledLinks.length / 2 });
     motionRef.current?.setBase(sampledPositions);
-    motionRef.current?.startAmbient();
+    if (sampleIdx.length > 0) motionRef.current?.startAmbient();
     setActivityTestState({
       renderedCount: sampleIdx.length,
+      linkCount: sampledLinks.length / 2,
       lodMode: "sample",
       sampleStride: sampleStride(activeCount),
       selectedCount: 0,
@@ -437,6 +473,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     sampleIdx,
     sampledPositions,
     sampledSizes,
+    sampledLinks,
   ]);
 
   useEffect(() => {
@@ -586,18 +623,21 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       // Stop ambient BEFORE the set flip — its working buffer is sample-length.
       motionRef.current?.stopAmbient();
       handle.setPointSet?.(p, c, s);
+      const links = buildActivityAuthorLinks(authorId, indices, authorLabels.length);
+      handle.setLinks(links);
       renderedToFullRef.current = indices;
       setHover(null);
       setSelectedRendered([]);
       handle.setSelectedIndices?.([]);
-      setLod({ mode, renderedCount: indices.length });
-      if (mode === "sample") {
+      setLod({ mode, renderedCount: indices.length, linkCount: links.length / 2 });
+      if (mode === "sample" && indices.length > 0) {
         motionRef.current?.setBase(p);
         motionRef.current?.startAmbient();
       }
       setActivityTestState({
         lodMode: mode,
         renderedCount: indices.length,
+        linkCount: links.length / 2,
         selectedCount: 0,
         ambientActive: motionRef.current?.isAmbientRunning() ?? false,
       });
@@ -651,6 +691,8 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     };
   }, [
     activeFullIdx,
+    authorId,
+    authorLabels.length,
     positions,
     dimColors,
     fullSizes,
@@ -686,12 +728,17 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             physics={physics}
             nodeColors={sampledColors}
             nodeSizes={sampledSizes}
+            links={sampledLinks}
             backgroundColor={bg}
             onHandleReady={(h) => {
               handleRef.current = h;
               labelsGraphRef.current = { mode: "2d", handle: h };
               setHandleReady(true);
-              setActivityTestState({ ready: true, renderer: webGlRenderer(containerRef.current) });
+              setActivityTestState({
+                ready: true,
+                linkCount: h.getRenderState().linkCount,
+                renderer: webGlRenderer(containerRef.current),
+              });
             }}
           />
         </div>
@@ -719,6 +766,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         <div className="pointer-events-none absolute left-4 top-3 z-10 space-y-0.5 font-mono text-[11px] text-muted-foreground">
           <div className="text-sm font-semibold text-foreground">Activity universe</div>
           <div>{lodLabel(lod.mode, lod.renderedCount, activeCount)}</div>
+          <div>{fmt(lod.linkCount)} same-author links</div>
           <div>
             {fmt(activeCount)} events · data from {monthLabel(monthFloor, 0)}
           </div>
@@ -770,8 +818,8 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {colorDim.label}
           </div>
-          <ul className="space-y-0.5">
-            {activeLegend.map((e) => (
+          <ul className="max-h-72 space-y-0.5 overflow-y-auto pr-1">
+            {activeLegend.slice(0, MAX_VISIBLE_LEGEND_ROWS).map((e) => (
               <li key={e.label} className="flex items-center gap-2 text-[11px] text-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -783,7 +831,20 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               </li>
             ))}
           </ul>
+          {activeLegend.length > MAX_VISIBLE_LEGEND_ROWS ? (
+            <p className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
+              {MAX_VISIBLE_LEGEND_ROWS} of {fmt(activeLegend.length)} shown · all categories colored individually
+            </p>
+          ) : null}
         </div>
+
+        {activeCount === 0 ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+            <div className="rounded-md border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
+              No activity found for this user search and month.
+            </div>
+          </div>
+        ) : null}
 
         <div
           data-testid="activity-time-scrubber"
@@ -876,6 +937,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         onGroupByChange={onGroupByChange}
         onColorByChange={onColorByChange}
         onStrengthChange={onStrengthChange}
+        authorQuery={authorQuery}
+        onAuthorQueryChange={setAuthorQuery}
+        matchedAuthorCount={authorMatch.matchedAuthorCount}
+        searchPending={authorQuery !== deferredAuthorQuery}
         groupCoverageText={groupCoverageText}
         groupByLabel={groupDim?.label ?? null}
         colorCoverageText={colorCoverageText}
