@@ -5,9 +5,9 @@ milestone_name: "Activity Universe"
 current_phase: 41
 current_phase_name: "Time Scrubber, Hard Gate & Closeout"
 status: executing
-current_plan: "41-03"
-stopped_at: "41-01 complete (f2c7bad8); executing wave-1 plan 41-03 proven instance-era cleanup — next: /lecg-phase 41"
-last_updated: "2026-07-21T18:35:30-06:00"
+current_plan: "41-02"
+stopped_at: "41-03 complete (c28cb962); executing plan 41-02 fixture-backed Playwright contract — next: /lecg-phase 41"
+last_updated: "2026-07-21T18:44:06-06:00"
 ---
 
 # Project State
@@ -142,14 +142,8 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `/lecg-discuss-phase 41`** (Time Scrubber, Hard Gate & Closeout — TIME-01,
-REND-04, E2E-03). No `41-CONTEXT.md` yet. Phase 40 shipped 2026-07-21 (commits
-`6b7be17a`/`2356e659`/`5f11dada`, deployed `nisFtHzavDZXZs-Ej75XB`): 8 activity dims,
-ActivityDimensionsPanel sidebar, GPU morph via cosmos-native transition, decimated
-ambient ≤100k, MapClusterLabels riding the morph, region-LOD suspended at strength>0,
-instance rail retired (DimensionSearchBox/PresetBar/CatalogSliderSidebar/RightPanelStack
-deleted). Phase 41 owns: temporal scrubber, e2e re-baseline vs
-`__ACTIVITY_UNIVERSE_TEST__` (bridge now carries groupBy/colorBy/strength/morphCount/
-ambientActive), headed D3D11 ≥50fps hard gate, time-to-graph re-measure, milestone
-close (incl. instance-era orphan sweep + AccInstanceEmbedding drop — CONCERNS §3.11).
-Owner live morph-quality review pending on the deployed build.
+**Continue `/lecg-phase 41` with plan 41-02**: install the deterministic activity
+fixture and re-baseline Playwright against `__ACTIVITY_UNIVERSE_TEST__`, including
+timeline playback, selector composition, lasso, finite positions, and real-canvas
+proof. Plans 41-01 and 41-03 are complete; the retired instance-embedding table has
+been dropped successfully.
