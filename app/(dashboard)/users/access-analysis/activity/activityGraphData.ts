@@ -24,30 +24,54 @@ export function buildAuthorMatch(labels: readonly string[], query: string): Auth
   return { mask, matchedAuthorCount };
 }
 
-/** Compose exact-month and author filters in one pass; null means no filters. */
+/**
+ * Selected-project set → one byte per project dictionary slot. Null when the
+ * selection covers every project (no filter) so the composed filter can stay
+ * on its fast null path.
+ */
+export function buildProjectSelectionMask(
+  projectDict: readonly string[],
+  selected: ReadonlySet<string>,
+): Uint8Array | null {
+  if (projectDict.length === 0) return null;
+  let all = true;
+  const mask = new Uint8Array(projectDict.length);
+  for (let id = 0; id < projectDict.length; id++) {
+    if (selected.has(projectDict[id])) mask[id] = 1;
+    else all = false;
+  }
+  return all ? null : mask;
+}
+
+/** Compose exact-month, author, and project filters in one pass; null means no filters. */
 export function filterActivityIndices(args: {
   authorId: Uint32Array;
   monthId: Uint16Array;
   selectedMonth: number | null;
   authorMask: Uint8Array | null;
+  projectId?: Uint16Array | Uint32Array;
+  projectMask?: Uint8Array | null;
 }): Uint32Array | null {
   const { authorId, monthId, selectedMonth, authorMask } = args;
-  if (selectedMonth === null && authorMask === null) return null;
+  const projectMask = args.projectMask ?? null;
+  const projectId = projectMask !== null ? args.projectId : undefined;
+  if (selectedMonth === null && authorMask === null && (projectMask === null || !projectId)) {
+    return null;
+  }
+
+  const keep = (i: number): boolean => {
+    if (selectedMonth !== null && monthId[i] !== selectedMonth) return false;
+    if (authorMask !== null && authorMask[authorId[i]] !== 1) return false;
+    if (projectId && projectMask !== null && projectMask[projectId[i]] !== 1) return false;
+    return true;
+  };
 
   let count = 0;
-  for (let i = 0; i < authorId.length; i++) {
-    if (selectedMonth !== null && monthId[i] !== selectedMonth) continue;
-    if (authorMask !== null && authorMask[authorId[i]] !== 1) continue;
-    count += 1;
-  }
+  for (let i = 0; i < authorId.length; i++) if (keep(i)) count += 1;
 
   const indices = new Uint32Array(count);
   let cursor = 0;
-  for (let i = 0; i < authorId.length; i++) {
-    if (selectedMonth !== null && monthId[i] !== selectedMonth) continue;
-    if (authorMask !== null && authorMask[authorId[i]] !== 1) continue;
-    indices[cursor++] = i;
-  }
+  for (let i = 0; i < authorId.length; i++) if (keep(i)) indices[cursor++] = i;
   return indices;
 }
 

@@ -41,10 +41,11 @@ describe("activityDimensions (DIM-07)", () => {
     expect(dimensionCardinality(dim, DICTS)).toBe(3);
   });
 
-  it("project labels map GUIDs through projectNames, falling back to the GUID", () => {
+  it("project labels map GUIDs through projectNames, falling back to an honest unnamed label", () => {
     const dim = activityDimensionById("project")!;
     const labels = dimensionLabels(dim, DICTS, { "guid-a": "Torre Norte" });
-    expect(labels).toEqual(["(none)", "Torre Norte", "guid-b"]);
+    expect(labels).toEqual(["Admin / Account Activity", "Torre Norte", "Unnamed project · guid-b"]);
+    expect(dimensionLabels(dim, DICTS)[0]).toBe("Admin / Account Activity");
   });
 
   it("sentinel coverage counts nonzero ids; month reports full corpus", () => {

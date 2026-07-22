@@ -42,6 +42,7 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
     onStrengthChange: vi.fn(),
     authorQuery: "",
     onAuthorQueryChange: vi.fn(),
+    authorSuggestions: ["Unknown author", "ana@hermosillo.com", "luis@hermosillo.com"],
     matchedAuthorCount: 0,
     searchPending: false,
     groupCoverageText: null as string | null,
@@ -112,10 +113,21 @@ describe("ActivityDimensionsPanel", () => {
     expect(role?.text).toContain("unavailable");
   });
 
-  it("searches users by name or email and reports the matched-user count", () => {
+  it("suggests matched users on focus and commits an exact email on click", () => {
     const props = renderPanel({ authorQuery: "luis", matchedAuthorCount: 1 });
-    const search = screen.getByLabelText("Search users");
+    const search = screen.getByLabelText("Search users") as HTMLInputElement;
     expect(screen.getByText("1 user matched")).toBeTruthy();
+
+    // Suggestion dropdown is focus-gated (no native datalist).
+    fireEvent.focus(search);
+    const suggestions = screen.getByTestId("activity-author-suggestions");
+    const options = Array.from(suggestions.querySelectorAll('[role="option"]'));
+    // The needle "luis" filters out the non-matching "ana@" and sentinel row.
+    expect(options.map((o) => o.textContent)).toEqual(["luis@hermosillo.com"]);
+
+    fireEvent.click(options[0]);
+    expect(props.onAuthorQueryChange).toHaveBeenCalledWith("luis@hermosillo.com");
+
     fireEvent.change(search, { target: { value: "ana@" } });
     expect(props.onAuthorQueryChange).toHaveBeenCalledWith("ana@");
   });

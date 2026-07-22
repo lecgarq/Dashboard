@@ -55,14 +55,34 @@ describe("activityEventLabels (ACT-04 hover, zero-fetch)", () => {
       index: 1,
       columns,
       dicts,
-      projectNames: undefined, // names not loaded yet → GUID fallback
+      projectNames: undefined, // names not loaded yet → honest short fallback
     });
     expect(labels.isUnknownAuthor).toBe(true);
     expect(labels.author).toBe("Unknown author");
     expect(labels.role).toBe("Unknown");
     expect(labels.company).toBe("Unknown");
-    expect(labels.project).toBe("guid-2");
+    expect(labels.project).toBe("Unnamed project · guid-2");
     expect(labels.module).toBe("(none)");
     expect(labels.month).toBe("Jan 2026");
+  });
+
+  it("trims hub names so padded names neither render nor sort with whitespace", () => {
+    const labels = resolveActivityHoverLabels({
+      index: 0,
+      columns,
+      dicts,
+      projectNames: { "guid-1": "  ACC Test Demo 1 " },
+    });
+    expect(labels.project).toBe("ACC Test Demo 1");
+  });
+
+  it("labels projectless admin events as account-level activity", () => {
+    const labels = resolveActivityHoverLabels({
+      index: 0,
+      columns: { ...columns, projectId: new Uint32Array([0]) },
+      dicts,
+      projectNames: {},
+    });
+    expect(labels.project).toBe("Admin / Account Activity");
   });
 });

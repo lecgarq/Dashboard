@@ -67,8 +67,11 @@ import { sampleFullIndices } from "./activityTime";
 import {
   buildActivityAuthorLinks,
   buildAuthorMatch,
+  buildProjectSelectionMask,
   filterActivityIndices,
 } from "./activityGraphData";
+import { ProjectPicker } from "@/app/(dashboard)/access-analysis/components/ProjectPicker";
+import type { ProjectOption } from "@/lib/acc/projectFilter";
 import {
   ActivityDimensionsPanel,
   GROUP_BY_NONE,
@@ -85,6 +88,31 @@ const MORPH_DRAG_MS = 120;
 const MORPH_COMMIT_MS = 250;
 const MORPH_GROUP_SWITCH_MS = 600;
 const MAX_VISIBLE_LEGEND_ROWS = 24;
+/** Magnetic hover: snap to the nearest rendered node within this screen radius. */
+const MAGNET_RADIUS_PX = 32;
+/** Temporal set swaps fade through instead of hard-cutting (reduced motion snaps). */
+const TEMPORAL_FADE_MS = 650;
+
+/**
+ * Magnetic preselect halo — an animated DOM ring anchored to the snapped node.
+ * cosmos's hovered-point ring is a static shader with no tween seam, so the
+ * cinematic "ping" on snap-to-new-node is a keyed overlay element that replays
+ * this keyframe each time `hover.fullIndex` changes (reduced motion suppresses
+ * the overlay; the cosmos ring still marks focus).
+ */
+const HOVER_RING_CSS = `
+@keyframes auHoverPing {
+  from { transform: translate(-50%, -50%) scale(1.75); opacity: 0; }
+  55%  { opacity: 0.95; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 0.95; }
+}
+.au-hover-ring {
+  width: 26px; height: 26px; border-radius: 9999px;
+  border: 1.5px solid #3b82f6;
+  box-shadow: 0 0 10px 1px rgba(59, 130, 246, 0.45);
+  animation: auHoverPing 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+`;
 
 export function ActivityUniverseShell(): React.JSX.Element {
   const payload = useActivityUniversePayload();
@@ -138,6 +166,11 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const monthFloor = (dicts.monthFloor as string) ?? "";
   const coverage = data.meta.coverage;
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  // The slider/label/play controls read `selectedMonth` immediately; the heavy
+  // filter→sample→point-set-swap chain reads the DEFERRED value so a fast scrub
+  // renders one settle-time swap (and one fade) instead of a full universe
+  // rebuild per integer tick.
+  const deferredMonth = useDeferredValue(selectedMonth);
   const [playing, setPlaying] = useState(false);
   const [authorQuery, setAuthorQuery] = useState("");
   const deferredAuthorQuery = useDeferredValue(authorQuery);
@@ -151,9 +184,42 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   );
 
   // Project GUID → display name for tooltips + project dim labels (957 rows).
-  const projectNames = trpc.activityUniverse.projectNames.useQuery(undefined, {
+  const projectNamesQuery = trpc.activityUniverse.projectNames.useQuery(undefined, {
     staleTime: Infinity,
-  }).data;
+  });
+  const projectNames = projectNamesQuery.data;
+
+  // ── Project filter (the /access-analysis picker, driving the resident set) ──
+  const projectIdCol = data.columns.projectId as Uint32Array;
+  const projectDict = useMemo(
+    () => (Array.isArray(dicts.project) ? dicts.project.map(String) : []),
+    [dicts],
+  );
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(
+    () => new Set(Array.isArray(dicts.project) ? dicts.project.map(String) : []),
+  );
+  const projectMask = useMemo(
+    () => buildProjectSelectionMask(projectDict, selectedProjects),
+    [projectDict, selectedProjects],
+  );
+  const projectDim = activityDimensionById("project");
+  const projectOptions: ProjectOption[] = useMemo(() => {
+    if (!projectDim) return [];
+    const labels = dimensionLabels(projectDim, dicts, projectNames);
+    return projectDict
+      .map((guid, i) => ({ id: guid, name: labels[i] ?? guid }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [projectDim, projectDict, dicts, projectNames]);
+  const projectCounts = useMemo(() => {
+    const perSlot = new Uint32Array(Math.max(1, projectDict.length));
+    for (let i = 0; i < projectIdCol.length; i++) {
+      const slot = projectIdCol[i];
+      if (slot < perSlot.length) perSlot[slot] += 1;
+    }
+    const map = new Map<string, number>();
+    projectDict.forEach((guid, i) => map.set(guid, perSlot[i]));
+    return map;
+  }, [projectDict, projectIdCol]);
 
   // ── DIM-07 state ──────────────────────────────────────────────────────────
   const [groupBy, setGroupBy] = useState<string>(GROUP_BY_NONE);
@@ -222,10 +288,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     () => filterActivityIndices({
       authorId,
       monthId,
-      selectedMonth,
+      selectedMonth: deferredMonth,
       authorMask: authorMatch.mask,
+      projectId: projectIdCol,
+      projectMask,
     }),
-    [authorId, authorMatch.mask, monthId, selectedMonth],
+    [authorId, authorMatch.mask, monthId, projectIdCol, projectMask, deferredMonth],
   );
   const activeCount = activeFullIdx?.length ?? data.count;
 
@@ -342,6 +410,11 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     fullIndex: number;
     screenXY: [number, number];
   } | null>(null);
+  // Magnetic hover: nearest rendered node within MAGNET_RADIUS_PX of the
+  // pointer, in RENDERED index space. Cleared on every set swap (mapping dies).
+  const magnetRef = useRef<{ renderedIndex: number; fullIndex: number } | null>(null);
+  // Stride-2 positions of the CURRENT rendered set (the magnet's search space).
+  const currentPositionsRef = useRef<Float32Array>(sampledPositions);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [lassoActive, setLassoActive] = useState(false);
   const [selectedRendered, setSelectedRendered] = useState<number[]>([]);
@@ -450,6 +523,15 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     handle.setPointSet?.(sampledPositions, sampledColors, sampledSizes);
     handle.setLinks(sampledLinks);
     renderedToFullRef.current = sampleIdx;
+    currentPositionsRef.current = sampledPositions;
+    magnetRef.current = null;
+    // Cinematic temporal seam: fade the swapped set in instead of a hard cut.
+    if (!reducedMotion) {
+      containerRef.current?.animate?.(
+        [{ opacity: 0.3 }, { opacity: 1 }],
+        { duration: TEMPORAL_FADE_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      );
+    }
     setHover(null);
     setDetailIndex(null);
     setLassoActive(false);
@@ -470,6 +552,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   }, [
     activeCount,
     handleReady,
+    reducedMotion,
     sampleIdx,
     sampledPositions,
     sampledSizes,
@@ -573,18 +656,23 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     if (!handle) return;
     handle.setEventHandlers({
       onPointClick: (renderedIndex) => {
+        // Magnetic click: an off-point click still opens the snapped node.
         if (renderedIndex === undefined) {
+          const magnet = magnetRef.current;
+          if (magnet) {
+            setDetailIndex(magnet.fullIndex);
+            return;
+          }
           setDetailIndex(null);
           return;
         }
         const full = renderedToFullRef.current[renderedIndex];
         if (full !== undefined) setDetailIndex(full);
       },
-      onPointHover: (renderedIndex, screenXY) => {
-        const full = renderedToFullRef.current[renderedIndex];
-        if (full !== undefined) setHover({ fullIndex: full, screenXY });
-      },
-      onPointHoverEnd: () => setHover(null),
+      // Hover is owned by the magnetic pointermove seam below — the native
+      // pixel-perfect events would fight it (instant hover-end flicker).
+      onPointHover: () => {},
+      onPointHoverEnd: () => {},
     });
     // Handler install is idempotent (ref-indirection) — safe on every render pass.
   });
@@ -599,6 +687,90 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [detailIndex, clearSelection]);
+
+  // Magnetic hover: rAF-throttled nearest-node snap over the CURRENT rendered
+  // set. The pointer doesn't need to land on a dot — the closest node within
+  // MAGNET_RADIUS_PX gets the ring + tooltip, so hover feels magnetic.
+  // Suspended while a morph owns positions (strength > 0) or the lasso is up.
+  useEffect(() => {
+    const div = containerRef.current;
+    if (!div || !handleReady) return;
+    let raf = 0;
+    let pending: [number, number] | null = null;
+
+    const clearMagnet = (): void => {
+      if (magnetRef.current !== null) {
+        magnetRef.current = null;
+        handleRef.current?.setHoveredIndex?.(null);
+      }
+      setHover(null);
+    };
+
+    const runMagnet = (): void => {
+      raf = 0;
+      const handle = handleRef.current;
+      const point = pending;
+      if (!handle || !point) return;
+      if (strengthRef.current > 0 || lassoActive) return;
+      const positions2 = currentPositionsRef.current;
+      const n = positions2.length / 2;
+      if (n === 0) {
+        clearMagnet();
+        return;
+      }
+      const [sx, sy] = point;
+      // Screen-radius → space-radius via a 1-probe conversion at the pointer.
+      const a = handle.screenToSpace([sx, sy]);
+      const b = handle.screenToSpace([sx + MAGNET_RADIUS_PX, sy]);
+      const radiusSq = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2;
+      let best = -1;
+      let bestSq = radiusSq;
+      for (let i = 0; i < n; i++) {
+        const dx = positions2[i * 2] - a[0];
+        const dy = positions2[i * 2 + 1] - a[1];
+        const d = dx * dx + dy * dy;
+        if (d < bestSq) {
+          bestSq = d;
+          best = i;
+        }
+      }
+      if (best < 0) {
+        clearMagnet();
+        return;
+      }
+      const full = renderedToFullRef.current[best];
+      if (full === undefined) {
+        clearMagnet();
+        return;
+      }
+      if (magnetRef.current?.renderedIndex !== best) {
+        magnetRef.current = { renderedIndex: best, fullIndex: full };
+        handle.setHoveredIndex?.(best);
+      }
+      // Tooltip anchors to the NODE (not the pointer) — the snap is visible.
+      setHover({
+        fullIndex: full,
+        screenXY: handle.spaceToScreen([positions2[best * 2], positions2[best * 2 + 1]]),
+      });
+    };
+
+    const onMove = (event: PointerEvent): void => {
+      const rect = div.getBoundingClientRect();
+      pending = [event.clientX - rect.left, event.clientY - rect.top];
+      if (!raf) raf = requestAnimationFrame(runMagnet);
+    };
+    const onLeave = (): void => {
+      pending = null;
+      clearMagnet();
+    };
+    div.addEventListener("pointermove", onMove);
+    div.addEventListener("pointerleave", onLeave);
+    return () => {
+      div.removeEventListener("pointermove", onMove);
+      div.removeEventListener("pointerleave", onLeave);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [handleReady, lassoActive]);
 
   // LOD state machine: after pan/zoom settles, flip between the uniform sample
   // (region over cap) and exact viewport detail (region fits the cap). A set
@@ -626,6 +798,8 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       const links = buildActivityAuthorLinks(authorId, indices, authorLabels.length);
       handle.setLinks(links);
       renderedToFullRef.current = indices;
+      currentPositionsRef.current = p;
+      magnetRef.current = null;
       setHover(null);
       setSelectedRendered([]);
       handle.setSelectedIndices?.([]);
@@ -744,6 +918,30 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         </div>
         <LassoOverlay active={lassoActive} hitTest={lassoHitTest} onComplete={onLassoComplete} />
 
+        {/* Magnetic preselect halo — replays a subtle ping on each snap-to-node. */}
+        <style>{HOVER_RING_CSS}</style>
+        {!reducedMotion && hover ? (
+          <div
+            key={hover.fullIndex}
+            aria-hidden
+            data-testid="activity-hover-ring"
+            className="au-hover-ring pointer-events-none absolute z-10"
+            style={{ left: hover.screenXY[0], top: hover.screenXY[1] }}
+          />
+        ) : null}
+
+        {/* Project filter — the same search-driven picker as /access-analysis. */}
+        <div className="absolute left-1/2 top-3 z-20 w-[380px] -translate-x-1/2">
+          <ProjectPicker
+            options={projectOptions}
+            counts={projectCounts}
+            countNoun="events"
+            selected={selectedProjects}
+            onChange={setSelectedProjects}
+            testIdPrefix="activity-project"
+          />
+        </div>
+
         {/* Top-N category labels ride the morph (rest→footprint lerp on live strength). */}
         {groupLayout && groupDim ? (
           <MapClusterLabels
@@ -841,7 +1039,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         {activeCount === 0 ? (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <div className="rounded-md border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
-              No activity found for this user search and month.
+              No activity found for this user search, project selection, and month.
             </div>
           </div>
         ) : null}
@@ -939,6 +1137,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         onStrengthChange={onStrengthChange}
         authorQuery={authorQuery}
         onAuthorQueryChange={setAuthorQuery}
+        authorSuggestions={authorLabels}
         matchedAuthorCount={authorMatch.matchedAuthorCount}
         searchPending={authorQuery !== deferredAuthorQuery}
         groupCoverageText={groupCoverageText}

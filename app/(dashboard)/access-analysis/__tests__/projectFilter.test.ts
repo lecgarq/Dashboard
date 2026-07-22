@@ -23,6 +23,19 @@ describe("projectOptions", () => {
       { id: "p2", name: "Tower B" },
     ]);
   });
+
+  it("trims padded hub names and labels blank names honestly (no mystery rows on top)", () => {
+    const padded: ProjectRoleRow[] = [
+      { projectId: "p9", projectName: "  ACC Test Demo 1 ", roles: [] },
+      { projectId: "abcd1234-guid", projectName: "   ", roles: [] },
+      { projectId: "p1", projectName: "Tower A", roles: [] },
+    ];
+    expect(projectOptions(padded)).toEqual([
+      { id: "p9", name: "ACC Test Demo 1" },
+      { id: "p1", name: "Tower A" },
+      { id: "abcd1234-guid", name: "Unnamed project · abcd1234" },
+    ]);
+  });
 });
 
 describe("filterProjectOptions", () => {

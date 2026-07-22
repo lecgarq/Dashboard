@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildActivityAuthorLinks,
   buildAuthorMatch,
+  buildProjectSelectionMask,
   filterActivityIndices,
 } from "./activityGraphData";
 
@@ -20,6 +21,34 @@ describe("activityGraphData", () => {
       authorMask: match.mask,
     })!)).toEqual([3, 5]);
     expect(filterActivityIndices({ authorId, monthId, selectedMonth: null, authorMask: null })).toBeNull();
+  });
+
+  it("filters by selected projects and stays on the fast null path when all are selected", () => {
+    const projectDict = ["(none)", "guid-a", "guid-b"];
+    const projectId = Uint16Array.from([0, 1, 2, 1, 2, 1]);
+
+    expect(buildProjectSelectionMask(projectDict, new Set(projectDict))).toBeNull();
+
+    const mask = buildProjectSelectionMask(projectDict, new Set(["guid-a"]));
+    expect(Array.from(mask!)).toEqual([0, 1, 0]);
+    expect(Array.from(filterActivityIndices({
+      authorId,
+      monthId,
+      selectedMonth: null,
+      authorMask: null,
+      projectId,
+      projectMask: mask,
+    })!)).toEqual([1, 3, 5]);
+
+    // Composes with the month filter in the same pass.
+    expect(Array.from(filterActivityIndices({
+      authorId,
+      monthId,
+      selectedMonth: 1,
+      authorMask: null,
+      projectId,
+      projectMask: mask,
+    })!)).toEqual([3, 5]);
   });
 
   it("builds bounded same-author chains in rendered-index space", () => {

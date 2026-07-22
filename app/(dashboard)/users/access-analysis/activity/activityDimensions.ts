@@ -11,7 +11,7 @@
  * id. Month has no sentinel (derived from the event timestamp) → full corpus.
  */
 
-import { monthLabel } from "./activityEventLabels";
+import { activityProjectLabel, monthLabel } from "./activityEventLabels";
 
 export type ActivityDimensionId =
   | "verb"
@@ -74,8 +74,8 @@ export function dimensionLabels(
   }
   const raw = dicts[dim.dictKey];
   const labels = Array.isArray(raw) ? raw.map(String) : [];
-  if (dim.labelViaProjectNames && projectNames) {
-    return labels.map((guid, i) => (i === 0 ? guid : (projectNames[guid] ?? guid)));
+  if (dim.labelViaProjectNames) {
+    return labels.map((guid) => activityProjectLabel(guid, projectNames));
   }
   return labels;
 }

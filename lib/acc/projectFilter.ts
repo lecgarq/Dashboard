@@ -33,10 +33,19 @@ export interface ProjectOption {
   name: string;
 }
 
-/** Distinct projects as {id, name}, sorted alphabetically by name. */
+/**
+ * Distinct projects as {id, name}, sorted alphabetically by name. Names are
+ * trimmed (ACC hub names can carry leading whitespace, which otherwise sorts
+ * those rows to the top of the picker) and blank names get an honest label
+ * instead of an empty row.
+ */
 export function projectOptions(rows: ReadonlyArray<ProjectNamed>): ProjectOption[] {
   const byId = new Map<string, string>();
-  for (const r of rows) if (!byId.has(r.projectId)) byId.set(r.projectId, r.projectName);
+  for (const r of rows) {
+    if (!byId.has(r.projectId)) {
+      byId.set(r.projectId, r.projectName?.trim() || `Unnamed project · ${r.projectId.slice(0, 8)}`);
+    }
+  }
   return [...byId.entries()]
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name));

@@ -39,6 +39,20 @@ export function monthLabel(monthFloor: string, monthId: number): string {
 const dictAt = (dict: unknown, i: number): string =>
   Array.isArray(dict) && i >= 0 && i < dict.length ? String(dict[i]) : `#${i}`;
 
+export function activityProjectLabel(
+  projectGuid: string,
+  projectNames: Record<string, string> | undefined,
+): string {
+  if (projectGuid === "(none)") return "Admin / Account Activity";
+  // Trim: ACC hub names can carry leading whitespace ("  ACC Test Demo 1 "),
+  // which sorts those rows to the top of every alphabetical project list.
+  const name = projectNames?.[projectGuid]?.trim();
+  if (name) return name;
+  // Unmapped/unloaded GUID → honest short label, never a naked GUID that
+  // reads as a mystery "unknown project" in legends and pickers.
+  return `Unnamed project · ${projectGuid.slice(0, 8)}`;
+}
+
 export function resolveActivityHoverLabels(args: {
   index: number;
   columns: Record<string, ColumnArray>;
@@ -58,7 +72,7 @@ export function resolveActivityHoverLabels(args: {
   return {
     verb: dictAt(dicts.verb, verbId),
     module: dictAt(dicts.module, moduleId),
-    project: projectNames?.[projectGuid] ?? projectGuid,
+    project: activityProjectLabel(projectGuid, projectNames),
     projectGuid,
     month: monthLabel(String(dicts.monthFloor ?? ""), monthId),
     author: dictAt(dicts.author, authorId),
