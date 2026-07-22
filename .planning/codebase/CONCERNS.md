@@ -173,18 +173,18 @@
 - **What it is:** `blobDesc` is only built when the 3D flag is on, so `MapClusterLabels` receives empty labels and renders nothing on the default flag-OFF embedding map — even with grouping active at full strength. The e2e assertion was deleted accordingly (E2E-01).
 - **Impact:** If the owner expects named cluster chips on the default map (they shipped there pre-redesign), this is a silent feature regression of the uncommitted redesign branch, not an e2e problem.
 
-### 3.11 Instance-era sidebar orphans pending milestone-close sweep (2026-07-21, Phase 40)
+### 3.11 Instance-era sidebar closeout audit (2026-07-21, Phase 40; resolved Phase 41)
 
 - **Files:** `app/(dashboard)/users/access-analysis/` — `GroupByControls.tsx` (+test), `SliderContext.tsx`, `sidebarWidth.ts` (+test), `SelectionPanel.tsx`, `SelectionContext.tsx`, `groupByDimensions.ts`, `dimensionCoverage.ts`; WIP-carrying: `catalogTargets.ts`, `dimensionCatalog.types.ts`, `catalogTargets.test.ts`
-- **What it is:** Phase 40-03 retired `DimensionSearchBox`/`PresetBar`/`CatalogSliderSidebar`/`RightPanelStack` (clean, zero importers). That orphaned the listed instance-era modules — some are still type-imported by kept files (physicsLayer types via GroupByControls chain), and three carry uncommitted WIP so they must NOT be deleted casually.
-- **Impact:** Dead-weight only; no runtime path reaches them from the activity shell.
-- **Guardrail:** Milestone-close sweep — verify importers per file (`rg`), check `git status` per file, delete only clean+zero-importer ones. `AccInstanceEmbedding` table drop is the same milestone-close item (Phase 40 CONTEXT).
+- **Resolution:** Phase 41 re-audited every named file. Only `SelectionContext.tsx` was clean with zero importers and was deleted; every other candidate still has a source importer and was retained. The dirty catalog trio was preserved unchanged. `AccInstanceEmbedding` had no runtime consumer, so its table, Prisma model, create SQL/script, stale mocks, and ERD block were retired. The last clean E2E targeting the removed catalog sidebar was deleted after the live probe proved its selectors obsolete.
+- **Status:** ✅ RESOLVED. No unproved instance-embedding runtime path or casually deleted WIP remains.
 
-### 3.12 Ambient pushes the full rendered-set buffer per frame (2026-07-21, Phase 40)
+### 3.12 Ambient full-buffer upload cadence (2026-07-21, Phase 40; resolved Phase 41)
 
 - **Files:** `app/(dashboard)/users/access-analysis/activity/activityMotion.ts`
-- **What it is:** Ambient mutates only its ≤100k decimated subset, but `pushPointSet` uploads the whole ~490k-point working buffer each ambient frame. 37-BASELINE showed the CPU write loop, not the upload, was the killer — advisory until measured.
-- **Impact:** Unknown until the Phase 41 headed D3D11 ≥50fps gate; if it fails, subset-only upload (or a cosmos partial-update seam) is the first lever.
+- **Measured impact:** The first binding headed D3D11 sample ran 12.002 s / 574 frames at 47.8238 fps and demoted Tier 0→2, confirming the full rendered-buffer upload cadence as a blocker.
+- **Resolution:** `activityMotion.ts` now emits new ambient targets at bounded cadence (Tier 0 10 Hz, Tier 1 5 Hz) while cosmos performs GPU interpolation between targets. The rebuilt full-artifact sample ran 12.004 s / 807 frames at 67.225 fps with ambient active and Tier 0→0 across 490,489 rendered / 4,904,886 resident events.
+- **Status:** ✅ RESOLVED by Phase 41 REND-04 evidence.
 
 ### 3.5 Hydration-key mismatch history — prefetch cache miss
 

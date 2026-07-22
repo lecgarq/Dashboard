@@ -1129,8 +1129,10 @@ TEST-01/02/03 stay green.
 - [x] **Phase 40: Dimensions & Sliders at Scale** - Activity-native dimension surface with
   the slider UX preserved; morph/grouping GPU-side within the perf bar (2026-07-21,
   deployed `nisFtHzavDZXZs-Ej75XB`)
-- [ ] **Phase 41: Time Scrubber, Hard Gate & Closeout** - TIME-01 temporal scrubber, e2e
-  re-baseline, measure-last ≥50fps Tier-0 gate, deploy + milestone close
+- [x] **Phase 41: Time Scrubber, Hard Gate & Closeout** - TIME-01 temporal scrubber, E2E
+  re-baseline, and measure-last hard gate complete 2026-07-21: payload 451 ms median,
+  navigation-ready 1,699.7 ms median, headed D3D11 67.225 fps / Tier 0→0; deployed
+  BUILD_ID `QJVfBFWLtaVk9USrIvqbD`. Milestone audit/close follows separately.
 
 ## Phase Details
 

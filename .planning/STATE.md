@@ -4,10 +4,10 @@ milestone: v2.7
 milestone_name: "Activity Universe"
 current_phase: 41
 current_phase_name: "Time Scrubber, Hard Gate & Closeout"
-status: executing
-current_plan: "41-04"
-stopped_at: "41-02 complete (2eefe742); executing plan 41-04 full hard gates, deploy, and phase verification — next: /lecg-phase 41"
-last_updated: "2026-07-21T19:01:06-06:00"
+status: ready_to_plan
+current_plan: null
+stopped_at: "Phase 41 complete and deployed (BUILD_ID QJVfBFWLtaVk9USrIvqbD; D3D11 67.225 fps Tier 0→0; authenticated 4,904,886-event probe green) — next: $lecg-close-milestone"
+last_updated: "2026-07-21T19:26:43-06:00"
 ---
 
 # Project State
@@ -46,6 +46,12 @@ extracted activity event.
   (`NEXT_PUBLIC_ACC_SCALE_SPIKE`), 404 in prod. Deployed BUILD_ID
   `LGy8KOP1nWXoeczYd5-8J` (health 200). SwiftShader measurement trap recorded in
   CONCERNS (fps specs must run headed + D3D11 + renderer guard).
+- **Phase 41 COMPLETE + DEPLOYED 2026-07-21.** TIME-01 exact-month scrubber,
+  E2E-03 activity fixture/re-baseline, instance-embedding cleanup, and REND-04
+  are verified. Full artifact: payload 451 ms median, navigation-ready 1,699.7
+  ms median, headed D3D11 67.225 fps over 12.004 s with ambient active and Tier
+  0→0. BUILD_ID `QJVfBFWLtaVk9USrIvqbD`; health 200/database connected;
+  authenticated route showed 4,904,886 / 4,904,886 events.
 - **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
   v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
   v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
@@ -142,7 +148,6 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Continue `/lecg-phase 41` with plan 41-04**: run the full test/repo-map gates,
-measure the full artifact's median-of-five fetch+decode and navigation-to-ready,
-bind the headed D3D11 ≥50 fps Tier-0 sample, auto-deploy, probe the authenticated
-populated route, and write phase verification. Plans 41-01/02/03 are complete.
+**Run `$lecg-close-milestone`**: audit all 12 v2.7 requirements against the
+phase verification files, append the retrospective, archive the milestone
+requirements/roadmap, prune completed phase directories, and close v2.7.

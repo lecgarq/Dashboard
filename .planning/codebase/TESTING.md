@@ -94,23 +94,20 @@ lib/server/
   accessInstanceView.test.ts      # co-located
 ```
 
-**E2E layout (full inventory, verified 2026-07-20):**
+**E2E layout (full inventory, verified 2026-07-21):**
 ```
 tests/e2e/
-  acc-dc-graph.spec.ts             # spatial graph bridge assertions
-  acc-3d-lasso.spec.ts             # gated on NEXT_PUBLIC_ACC_3D_GRAPH=1
-  acc-cluster-blobs.spec.ts
-  acc-cluster-labels.spec.ts
+  acc-dc-graph.spec.ts             # activity fixture, time, dimensions, both route aliases
+  acc-3d-lasso.spec.ts             # activity lasso + time-change clearing
   acc-person-graph.spec.ts
-  acc-positioning.spec.ts
   access-analysis-scroll.spec.ts
-  catalog-preview-lazy.spec.ts     # v2.4 Phase 26 lazy catalog preview
+  activity-payload.spec.ts         # real full-artifact median-of-five payload budget
+  activity-universe-hard-gate.spec.ts # headed D3D11 Tier-0 ≥50 fps gate
   folder-activity-by-role.spec.ts
   forma-proposal.spec.ts
-  phase31-focus.spec.ts            # v2.5 focus choreography (hover/click via bridge)
-  phase32-ambient.spec.ts          # v2.5 ambient-life tiers (getAmbientStats bridge)
+  scale-spike.spec.ts              # Phase 37 isolated renderer measurements
   sidebar-resize.spec.ts
-  spatial-graph-baseline.spec.ts   # v2.4 perf baseline harness
+  spatial-graph-baseline.spec.ts   # full-artifact navigation-ready baseline
   uat-workshop.spec.ts             # 38-test Phase 7 UAT harness
   uat-helpers.ts                   # shared helpers (parseTrpcBatch, toggleTheme, etc.)
 playwright/
@@ -234,22 +231,28 @@ vi.mock("@tanstack/react-virtual", () => ({
 **Auth:** `playwright/global-setup.ts` mints a real NextAuth v5 JWT via `@auth/core/jwt`'s `encode`, reads the admin user from the DB by `ADMIN_EMAIL`, and writes `playwright/.auth/storageState.json`. Every test loads this via `use.storageState`. Required env vars: `AUTH_SECRET`, `ADMIN_EMAIL`, `DATABASE_URL`.
 
 **Feature flags:**
-- `NEXT_PUBLIC_ACC_GRAPH_TEST=1` — enables `window.__ACC_GRAPH_TEST__` bridge for spatial graph assertions (position stats, hover/click simulation, color buffer, clustering score, lasso, edges).
+- `NEXT_PUBLIC_ACC_GRAPH_TEST=1` — enables the current
+  `window.__ACTIVITY_UNIVERSE_TEST__` bridge and build-time activity test seams.
+- `ACC_ACTIVITY_TEST_FIXTURE=1` — server-only second key that selects the
+  deterministic 180-event activity payload; never set for full-scale gates.
 - `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1` — enables the redesigned `/access-analysis` dashboard.
-- `NEXT_PUBLIC_ACC_3D_GRAPH=1` — enables 3D physics shell. Many e2e tests use `test.skip(!ACC_3D_GRAPH, ...)` to gate 3D-specific assertions.
+- `NEXT_PUBLIC_ACC_PERSON_GRAPH=1` — opt-in bridge for the separate person
+  similarity graph; `acc-person-graph.spec.ts` skips without it.
 
-**Test bridge pattern (`window.__ACC_GRAPH_TEST__`):**
+**Test bridge pattern (`window.__ACTIVITY_UNIVERSE_TEST__`):**
 ```ts
 // Wait for graph ready via bridge
-await page.waitForFunction(() => !!window.__ACC_GRAPH_TEST__?.isReady(), undefined, { timeout: 120_000 });
+await page.waitForFunction(
+  () => window.__ACTIVITY_UNIVERSE_TEST__?.isReady() === true,
+  undefined,
+  { timeout: 120_000 },
+);
 
 // Read state from bridge
-const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
-expect(stats.anyNaN).toBe(false);
-expect(stats.count).toBe(EXPECTED_NODE_COUNT); // 16,942
-
-// Simulate production handler when real mouse hit misses (WebGL picking):
-await page.evaluate((id) => window.__ACC_GRAPH_TEST__!.simulateHover(id!), nodeId);
+const state = await page.evaluate(() => window.__ACTIVITY_UNIVERSE_TEST__!.getState());
+expect(state.positionsFinite).toBe(true);
+expect(state.renderedCount).toBeGreaterThan(0);
+expect(state.totalCount).toBe(180); // fixture harness only
 ```
 
 **Screenshot / proof artifacts:**
@@ -259,34 +262,33 @@ async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<
   await testInfo.attach(name, { body, contentType: "image/png" });
 }
 ```
-Always attach a `proofShot` at the end of assertions that exercise real UI. Config has `trace: "on"` and `screenshot: "on"` globally.
+Attach a `proofShot` when a real interaction needs a review artifact. The
+production verification config keeps screenshots on and traces off.
 
-**Timeouts (both configs):**
-- Global test timeout: `120_000ms`
+**Timeouts:**
+- Default config: `120_000ms`; production verification config: `360_000ms`.
 - `expect` timeout: `20_000ms`
 - Workers: 1 (no parallel tests — graph tests are memory-heavy)
 - Retries: 0
 - Viewport: `1600×1000`
-
-**waitForFreeze vs smoke:**
-```ts
-// Use waitForFreeze only for tests that drive real mouse to a screen pixel.
-// Smoke/bridge-read tests must NOT call waitForFreeze (adds minutes per run).
-async function waitForFreeze(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getFrozen() === true, undefined, { timeout: 90_000 });
-}
-```
 
 ## Spatial Graph Test Conventions (`/users/spatial-graph`)
 
 NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but its test conventions are documented here because the owner has explicitly scoped them in for reference.
 
 - URL under test: `GRAPH_URL = "/users/spatial-graph"`.
-- `gotoGraph(page)` helper: navigates, waits for bridge ready + finite non-NaN positions.
-- Node count constant: `EXPECTED_NODE_COUNT = 16_942` (still in `tests/e2e/acc-dc-graph.spec.ts:17` as of 2026-07-20). Asserted exactly — bump only if the DC dataset changes. The 2026-07-14 dependency-update verification observed the live dataset at 22,279 nodes, so those exact-count assertions fail as pre-existing drift (not a regression) until the constant is re-baselined. The v2.5 specs sidestep this: `phase31-focus.spec.ts` waits for `stats.count > 22_000` instead of asserting an exact count.
-- 3D tests skip when `NEXT_PUBLIC_ACC_3D_GRAPH !== "1"` via `test.skip(!ACC_3D_GRAPH, ...)`.
-- Slider interactions use `page.keyboard.press("End")` (Radix Slider keyboard API) not drag.
-- **v2.5 bridge extensions** (used by `phase31-focus.spec.ts` / `phase32-ambient.spec.ts`): `simulateClick(nodeId)`, `simulateHoverEnd()`, `getCentermostNodeId()`, `getIsolatedNodeId()`, `getHighlightedNodeCount()`, `getAmbientStats()` (tier/fps/animated-node counts), `exerciseAmbientController()` (drives the tier 0→1→2 fallback sequence in-page).
+- `gotoActivity(page)` navigates and waits for `__ACTIVITY_UNIVERSE_TEST__`
+  readiness plus finite, nonzero rendered positions.
+- The CI fixture is exactly 180 activity events across three 60-event months;
+  it requires both `NEXT_PUBLIC_ACC_GRAPH_TEST=1` and the server-only
+  `ACC_ACTIVITY_TEST_FIXTURE=1`.
+- The full-scale payload, navigation, and renderer specs must run against the
+  real isolated production artifact without the fixture flag. Renderer proof
+  is headed Chromium with `--use-angle=d3d11`; SwiftShader or Tier demotion is
+  a hard failure.
+- Temporal interaction uses the native range input and asserts exact active /
+  total event counts. Reduced-motion coverage pins disabled autoplay and
+  static manual stepping.
 
 ## UAT Workshop Tests (`tests/e2e/uat-workshop.spec.ts`)
 
@@ -321,10 +323,13 @@ No enforced coverage thresholds. The access-analysis surfaces have the densest u
 
 **Dashboard self-check:**
 - Context: `vitest.config.ts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright/global-setup.ts`, test files in `app/`, `lib/server/`, `server/routers/`, `tests/e2e/`, `package.json` scripts.
-- Evidence: all test files and patterns verified by direct Read and Grep.
+- Evidence: full E2E inventory and activity bridge patterns verified by direct
+  reads and `rg` on 2026-07-21.
 - Constraints: no jest-dom, no real DB in unit tests, e2e on :3100 with NEXT_DIST_DIR=.next-e2e.
 - Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
   `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
   sequence for an explicitly requested local rebuild.
-- VERIFY: (1) total unit test pass count drifts as phases add tests — file count (337) verified 2026-07-20, pass count not re-run; (2) EXPECTED_NODE_COUNT 16,942 vs live 22,279 drift — constant verified in-tree, live count from the 2026-07-14 verification run, not re-measured here.
+- Latest full unit gate (2026-07-21): 339 files passed / 1 skipped; 2,562
+  tests passed / 1 skipped (2,563 total). Counts drift as phases add tests;
+  Phase 41 verification is the authority for this snapshot.
 - Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (verified 2026-07-20): several `app/(dashboard)/users/` components are deleted in the working tree, but their replacements' tests are committed co-located files; the only deleted test files are the three `scripts/scratch/monitor-*` tests. Several access-analysis and users tests are modified (e.g. `app/(dashboard)/access-analysis/__tests__/roleCounts.test.ts`, `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`). Counts above are from tracked files (`git ls-files`).
