@@ -3,10 +3,12 @@
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-22 — v2.7 milestone-close reconciliation; Phase 37/39 transient
 debt resolved or bounded by Phase 41 evidence, standing operational ceilings retained.
+**Refreshed:** 2026-07-22 (pm) — post-close perf-fix session (commits 22633278 + c998db1e);
+new cosmos.gl patch/fitView/dual-GPU/link-visibility/cadence traps appended at the end.
 **Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 status update (repo-map basis unchanged, 2026-06-19)
 **Refreshed:** 2026-07-16 — post-v2.4 close (d3768490) status sweep; repo-map re-run (`node scripts/repo-map/check.cjs` PASS: 2 dependency-cruiser warnings, 236 ast-grep findings, 0 blocking). See the "2026-07-16 Refresh" section at the end.
 **Repo-map date:** 2026-07-14 (ast-grep-report.json `generatedAt`)
-**Branch:** feat/access-analysis-redesign (⚠️ 222 uncommitted WIP entries — see 2026-07-16 Refresh §D)
+**Branch:** feat/access-analysis-redesign (⚠️ ~223 uncommitted WIP entries as of 2026-07-22 — see 2026-07-16 Refresh §D; the access-analysis redesign WIP is still in flight and un-committed)
 
 > **Reading note (2026-07-02):** v2.1 Concerns Hardening (Phases 09–14) and
 > v2.2 Structural Refactors (Phases 15–19) were built directly against this
@@ -193,6 +195,7 @@ debt resolved or bounded by Phase 41 evidence, standing operational ceilings ret
 - **Measured impact:** The first binding headed D3D11 sample ran 12.002 s / 574 frames at 47.8238 fps and demoted Tier 0→2, confirming the full rendered-buffer upload cadence as a blocker.
 - **Resolution:** `activityMotion.ts` now emits new ambient targets at bounded cadence (Tier 0 10 Hz, Tier 1 5 Hz) while cosmos performs GPU interpolation between targets. The rebuilt full-artifact sample ran 12.004 s / 807 frames at 67.225 fps with ambient active and Tier 0→0 across 490,489 rendered / 4,904,886 resident events.
 - **Status:** ✅ RESOLVED by Phase 41 REND-04 evidence.
+- **Cadence update (2026-07-22, c998db1e):** the 10 Hz / 5 Hz figures above are superseded — `TIER_0_TARGET_MS = 250`, `TIER_1_TARGET_MS = 450` (4 Hz / ~2.2 Hz). See the 2026-07-22 perf-fix section item 5 for the measured rationale and the test pin.
 
 ### 3.5 Hydration-key mismatch history — prefetch cache miss
 
@@ -789,3 +792,83 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   schema-touching change.
   **Status (2026-07-22): RESOLVED.** The schema now documents the real
   `"accds:"+accdsActivityId | AccActivity.id` convention.
+
+---
+
+## 2026-07-22 Perf-fix session (post-v2.7-close, commits 22633278 + c998db1e)
+
+These commits post-date the v2.7 close (88704d88). All claims below verified
+against the working tree 2026-07-22 pm. Surface: `app/(dashboard)/users/access-analysis/`
+(spatial-graph shell) — NOT the ECharts charts page (§C trap still applies).
+
+1. **cosmos.gl 3.3.0 patch now carries FOUR LECG hunks** — any cosmos version
+   bump must re-port all four and rerun the activity hard gate ×3.
+   `patches/@cosmos.gl+graph+3.3.0.patch` (verified hunk-by-hunk):
+   - `GraphData.update()` memoized by input identity + count (`__lecgUpdateMemo`)
+     so per-frame `render()` calls with unchanged data skip the
+     adjacency/degree/color/size rebuilds. Unpatched, `render()` rebuilds ALL
+     derived state per call — 60–140 ms main-thread stalls per ambient tick.
+   - Same-count `setPointPositions` upload skips the unrelated GPU-buffer
+     invalidation (colors/sizes/shapes/links/cluster/force flags stay valid
+     when only positions change).
+   - `createDevice` gets `powerPreference: "high-performance"` (dual-GPU hint,
+     see item 3).
+   - The prior position-shader clamp removal (`clamp(pointPosition, 0, spaceSize)`
+     commented out).
+
+2. **cosmos `fitView`-family APIs are UNUSABLE on the activity/frozen path.**
+   `store.scaleX/scaleY` are corrupted by a racing first rescale, so
+   `fitView`/`fitViewByPointPositions`/`zoomToPointByIndex`-style camera calls
+   land off-center at speck zoom. `GraphCanvas2D.tsx` instead does an empirical
+   screen-space fit: probe `spaceToScreenPosition` over sample points, then a
+   d3 `scaleBy`/`translateBy` sign-learning loop in a 450 ms `setTimeout`
+   (lines ~341–524), plus forced `resizeCanvas(true)`. Anyone "simplifying"
+   this back to `fitView*` reintroduces the off-center-speck bug.
+
+3. **Dual-GPU adapter lottery ⇒ bimodal fps.** Workshop machine has Intel iGPU
+   + RTX 5070 Ti; Chrome picks the WebGL adapter per launch, so identical
+   builds measure ~30 fps (Intel floor) or 55–77 fps (NVIDIA). The
+   `powerPreference` patch hunk hints high-performance but Windows may ignore
+   it. **Perf verification must run ×3 launches; single runs lie.** This also
+   retro-explains variance in past single-run fps evidence.
+
+4. **cosmos default `linkVisibilityDistanceRange` starts at 50 px** (default
+   `[50, 150]`) and multiplies with `linkOpacity`, silently fading long links
+   to near-invisible (~7% effective alpha at prior settings). The activity
+   path overrides in `GraphCanvas2D.tsx` (lines ~298–305):
+   `linkVisibilityDistanceRange: [80, 1200]`, `linkVisibilityMinTransparency: 0.35`,
+   `linkOpacity: 0.42`, `linkWidth: 0.7`. Dropping these overrides makes user
+   links look "missing" at normal zoom.
+
+5. **Ambient tier-0 cadence is 250 ms** (`TIER_0_TARGET_MS = 250`,
+   `TIER_1_TARGET_MS = 450` in `activity/activityMotion.ts`) — halved from
+   10 Hz because each position upload costs ~90 ms of synchronous GPU-blocked
+   work against a busy GPU (measured 2026-07-22: idle 31 fps with 30 long
+   tasks/6 s at 100 ms cadence). `activity/activityMotion.test.ts` pins the
+   cadence (targets at 0/256/512 ms; morph `durationMs === 270`). Lowering the
+   cadence without re-measuring reintroduces the jank; supersedes the §3.12
+   10 Hz / 5 Hz resolution figures.
+
+6. **Working-tree / doc-drift notes.** `GraphCanvas2D.tsx` is now 1,042 lines
+   (committed) — the §E table's 792 is stale; it has crossed the 1,000-line
+   hotspot threshold and joins the watch list (flag, don't split speculatively).
+   The ~223-entry uncommitted redesign WIP (§D) is unchanged in character:
+   `Person*.tsx`/directory-list deletions under `app/(dashboard)/users/` and
+   modified chart modules under `app/(dashboard)/access-analysis/` remain
+   un-committed — file-level claims in this doc are still verified against
+   HEAD, not the WIP.
+
+### Dashboard Self-Check (2026-07-22 pm refresh)
+
+- **Context:** `patches/@cosmos.gl+graph+3.3.0.patch` (all 4 hunks read),
+  `app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx`,
+  `app/(dashboard)/users/access-analysis/activity/activityMotion.ts` + `.test.ts`,
+  `node_modules/@cosmos.gl/graph/dist/index.js` (default link range),
+  `git show --stat 22633278 c998db1e`, `git status` (223 entries).
+- **Evidence:** patch hunks quoted from the patch file; link-config values and
+  empirical-fit mechanics grepped with line numbers; cadence constants and the
+  270 ms test pin read from source.
+- **Gates:** docs-only update; no code changed; no build/tsc gates applicable.
+- **VERIFY (new):** none — all session claims resolved against the tree. The
+  ~90 ms-per-upload and 60–140 ms-stall figures are session-measured (recorded
+  in the patch comments/memory), not re-measurable from static source.

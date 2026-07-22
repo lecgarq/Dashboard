@@ -3,6 +3,7 @@
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-16 — unified activity source (`lib/server/unifiedActivitySource.ts`, accds-primary + DC-backfill merge) documented; DC admin-snapshot weekly refresh + `DC_SKIP_ADMIN_SNAPSHOT` added; ACCDS session env vars resolved; Task Scheduler task name corrected to `LECG Dashboard Local`; several stale VERIFY items closed
 **Refreshed:** 2026-07-20 — post v2.5 close: unified-activity consumer list corrected (per-panel views do the merge in raw SQL, not via imports); DC env flag names corrected (`RESERVE` → `DC_FAIRNESS_RESERVE`, added `DC_PROGRESSIVE_SLICE_DAYS` + `DC_BACKFILL_CUTOFF_DATE`); Electron pin corrected to `^43.1.0`; dead `KV_REST_API_*` aliases removed; Redis usage resolved; `NEXT_PUBLIC_ACC_3D_GRAPH` flag added
+**Refreshed:** 2026-07-22 — post v2.7 "Activity Universe" close (commits through `c998db1e`): activity-universe embedding artifact + payload route documented; nightly instance-embedding step removed from the DC daily ingest description (retired `c28cb962`); `NEXT_PUBLIC_*` flag list re-grepped at HEAD (`NEXT_PUBLIC_ACC_GPU_2D`, `NEXT_PUBLIC_ACC_JS_SNAPSHOT`, `NEXT_PUBLIC_ACC_SIM_WEB` retired with the old instance graph; `NEXT_PUBLIC_ACC_SCALE_SPIKE` added); `ACC_ACTIVITY_TEST_FIXTURE` server flag added
 
 ---
 
@@ -127,10 +128,11 @@ note that role names reflect the live APS state, not the DC snapshot date.
   `/access-analysis`; the runtime hot-cache adds <=10min (sliding-TTL ceiling <=1h) on top.
 - REFRESH + STALENESS BOUND (SC#4): `scripts/dc-daily-ingest.cjs` re-runs
   `scripts/backfill-folder-perm-summary.cjs` as the first step of its success branch,
-  non-fatal, after every successful daily ingest — before the person-graph rebuild and
-  before `build-instance-features.ts` (which reads this same projection via
-  `includePermissionSummary`, PROJ-02), so the same run's embedding sees fresh data.
-  Staleness bound: **<=1 daily ingest cycle**.
+  non-fatal, after every successful daily ingest — before the person-graph rebuild.
+  (The nightly per-instance embedding build that used to follow —
+  `build-instance-features.ts` + `compute_instance_embeddings.py` — was RETIRED in
+  v2.7 Ph39 (ACT-03) along with the user×project instance graph; the ingest script's
+  own comment records this.) Staleness bound: **<=1 daily ingest cycle**.
 - CAVEAT (honest): the projection's SOURCE (`AccFolderPermission`) is updated by the
   SEPARATE folder-crawl task (`scripts/folder-crawl-cron.cjs`), not by the DC ingest.
   Folder-permission changes made by a crawl between ingest runs lag until the next
@@ -153,6 +155,14 @@ note that role names reflect the live APS state, not the DC snapshot date.
 - Direct importers of the helper module: `lib/server/acc-hot-cache.ts`, `lib/server/projectCoverageView.ts`, `server/routers/acc-activity.ts`, `server/routers/acc-members.ts`, `server/routers/users/acc-profile.ts`
 - The per-panel view modules (`lib/server/activityByActorView.ts`, `activityRecencyView.ts`, `activityTimelineView.ts`, `moduleActivityView.ts`, `folderActivityView.ts`, `folderActivityByCompanyView.ts`, `workflowToolsView.ts`) implement the SAME accds-primary + DC-backfill policy as raw-SQL `UNION ALL` queries over `AccActivityAccds`/`AccActivity` directly — they do NOT import `unifiedActivitySource.ts` (correcting the 2026-07-16 consumer list)
 - EXCEPTION (`lib/server/workflowToolsView.ts`): ACCDS never emits `rfi-`/`submittal-` family verbs, so RFI/submittal rows are taken from `AccActivity` (DC) unconditionally — the naive merge would undercount those workflows ~20×
+
+**Activity-universe embedding artifact (v2.7 Ph38, SHIPPED):**
+- Offline pipeline: `scripts/build-activity-author-attributes.ts` (author sidecar + ACT-02 coverage measurement) → `scripts/compute_activity_embeddings.py` (full-fit PaCMAP over the unified corpus read directly from PostgreSQL via `psycopg`; mirrors the `UNIFIED_ACTIVITY_CTE` merge semantics of `lib/server/unifiedActivitySource.ts`, including the two id spaces `"accds:"+accdsActivityId` vs plain `AccActivity.id`; TRUNCATE+COPY into `AccActivityEmbedding`) → `scripts/build-activity-universe-payload.ts` (keyset-paginated stream of `AccActivityEmbedding` into the binary columnar codec `lib/acc/columnarPayload.ts`)
+- Artifacts (gitignored, under `.embedding/`): `activity-universe.bin` (~149.7MB, 4,904,886 events verified on disk) + `activity-universe-meta.json` + `activity-universe-dicts.json` + gate/coverage sidecars
+- Serving: `app/api/activity-universe/payload/route.ts` — whole-file bytes per request, `ETag = embeddingRunId` (artifact only changes on a manual pipeline rerun; owner decision: NO nightly refit), `?meta=1` returns the JSON meta with the honest author-coverage figures; no session gate (matches other local data routes). Shared path/meta logic: `lib/server/activityUniversePayload.ts`; client hook `app/(dashboard)/users/access-analysis/activity/useActivityUniversePayload.ts`
+- Test fixture: `NEXT_PUBLIC_ACC_GRAPH_TEST=1` + `ACC_ACTIVITY_TEST_FIXTURE=1` makes the route serve `lib/server/activityUniverseTestFixture.ts` instead of the real artifact
+- TRAP: after any `AccActivityEmbedding` table change, the binary artifact must be rebuilt (`build-activity-universe-payload.ts`) or the route serves stale positions/dicts
+- The predecessor per-instance pipeline (`build-instance-features.ts` + `compute_instance_embeddings.py` + `AccInstanceEmbedding`) is fully retired (commit `c28cb962`; drop migration `prisma/migrations-raw/2026-07-21-drop-acc-instance-embedding.sql`)
 
 ---
 
@@ -446,15 +456,18 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 **UploadThing:**
 - `UPLOADTHING_TOKEN`
 
-**Feature Flags (NEXT_PUBLIC_ — client-visible):**
+**Feature Flags (NEXT_PUBLIC_ — client-visible; re-grepped at HEAD 2026-07-22):**
 - `NEXT_PUBLIC_ACC_3D_GRAPH` — 3D physics graph mode (`app/(dashboard)/users/access-analysis/graphModeFlag.ts`)
-- `NEXT_PUBLIC_ACC_GPU_2D` — enable GPU 2D physics (default on)
-- `NEXT_PUBLIC_ACC_GRAPH_TEST` — Playwright E2E test mode for ACC graph
-- `NEXT_PUBLIC_ACC_JS_SNAPSHOT` — JS-side snapshot flag
+- `NEXT_PUBLIC_ACC_GRAPH_TEST` — Playwright E2E test mode for ACC graph (also gates the activity-universe payload fixture together with `ACC_ACTIVITY_TEST_FIXTURE`)
 - `NEXT_PUBLIC_ACC_PERSON_GRAPH` — person graph feature flag
-- `NEXT_PUBLIC_ACC_SIM_WEB` — similarity web view flag
+- `NEXT_PUBLIC_ACC_SCALE_SPIKE` — scale-spike diagnostic surface (`app/(dashboard)/users/scale-spike/`, `app/api/scale-spike/payload/route.ts`)
 - `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` — new ECharts-based access analysis dashboard
 - `NEXT_PUBLIC_YJS_WS_URL` — Yjs WebSocket URL override (default `ws://localhost:4444`)
+- `NEXT_PUBLIC_LOD_CHECKER_URL` — set by `scripts/patch-env.js` at dev-stack start (points at a `:5173` checker UI); no app-code consumer at HEAD
+- Retired with the old instance graph (v2.7 Ph39): `NEXT_PUBLIC_ACC_GPU_2D`, `NEXT_PUBLIC_ACC_JS_SNAPSHOT`, `NEXT_PUBLIC_ACC_SIM_WEB` — no longer referenced anywhere in `app`/`lib`/`components`/`server`/`scripts`
+
+**Activity universe (server-side):**
+- `ACC_ACTIVITY_TEST_FIXTURE` — with `NEXT_PUBLIC_ACC_GRAPH_TEST=1`, makes `/api/activity-universe/payload` serve the in-memory test fixture instead of the ~149.7MB artifact
 
 **LOD Engine:**
 - `LOD_SIGLIP_MODEL_ID` — HuggingFace model ID override
@@ -465,4 +478,4 @@ These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daem
 
 ---
 
-*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree. Refreshed 2026-07-20 (post v2.5 close, working tree includes the uncommitted `feat/access-analysis-redesign` state): unified-activity consumers re-derived by import grep; DC env flags re-verified from `scripts/dc-daily-ingest.cjs` header + `lib/acc/dcIngest.ts`/`dcProgressiveBackfill.ts`; Redis usage from `lib/redis.ts` importers; `NEXT_PUBLIC_*` flags re-grepped across `app`/`lib`/`components`/`server`.*
+*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree. Refreshed 2026-07-20 (post v2.5 close, working tree includes the uncommitted `feat/access-analysis-redesign` state): unified-activity consumers re-derived by import grep; DC env flags re-verified from `scripts/dc-daily-ingest.cjs` header + `lib/acc/dcIngest.ts`/`dcProgressiveBackfill.ts`; Redis usage from `lib/redis.ts` importers; `NEXT_PUBLIC_*` flags re-grepped across `app`/`lib`/`components`/`server`. Refreshed 2026-07-22 (post v2.7 close): activity-universe pipeline verified from `scripts/compute_activity_embeddings.py`, `scripts/build-activity-universe-payload.ts`, `scripts/build-activity-author-attributes.ts`, `lib/server/activityUniversePayload.ts`, `app/api/activity-universe/payload/route.ts`; instance-pipeline retirement verified from commit `c28cb962` + `scripts/dc-daily-ingest.cjs` comment; flag list re-grepped at HEAD (working tree carries uncommitted access-analysis-redesign WIP with the same flag set).*

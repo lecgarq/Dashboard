@@ -1,10 +1,10 @@
-<!-- refreshed: 2026-07-20 -->
+<!-- refreshed: 2026-07-22 -->
 # Codebase Structure
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-20 — post-v2.5 "Living Graph" (phases 29–33) update, described against the **current working tree** on `feat/access-analysis-redesign`
+**Refreshed:** 2026-07-22 — post-v2.7 "Activity Universe" (phases 37–41 + perf fix c998db1e), described against **committed HEAD** on `feat/access-analysis-redesign`; repo-map basis 2026-07-21 (gate passing)
 
-> **In-flight note (2026-07-20):** the working tree has ~221 uncommitted entries. Deletions are treated as real: in `app/(dashboard)/users/`, `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` are **deleted** — do not reference them. Also deleted (uncommitted): root `CHANGELOG.md`, `GSD-STYLE.md`, `PROJECT_RULES.md`, `docs/runbook.md`, all of `scripts/scratch/`, and the `docs/archive/planning/2026-05-18/gsd/` archive.
+> **In-flight WIP note (2026-07-22):** the working tree has ~224 uncommitted entries (access-analysis redesign in flight). At HEAD the following **exist** but are **deleted in the working tree**: `app/(dashboard)/users/` `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` (all already unused by the DataTable-driven directory shell at HEAD — the WIP prunes dead card/row presentation); also root `CHANGELOG.md`, `GSD-STYLE.md`, `PROJECT_RULES.md`, `docs/runbook.md`, `scripts/scratch/`, and the `docs/archive/planning/2026-05-18/gsd/` archive. ~75 files carry uncommitted modifications, concentrated in `app/(dashboard)/access-analysis/` and `app/(dashboard)/users/` (+ its `access-analysis/` module). This doc describes HEAD; do not treat WIP deletions as landed.
 
 ## Directory Layout
 
@@ -15,7 +15,7 @@ C:/LECG/Dashboard/
 │   ├── (dashboard)/             # Main product group
 │   │   ├── layout.tsx           # Auth gate + Sidebar + main overflow-hidden
 │   │   ├── access-analysis/     # /access-analysis — RSC charts dashboard (ECharts, 6 tabs, terrain)
-│   │   ├── users/               # /users — directory + spatial-graph module (users/access-analysis/ = graph module dir; its page.tsx redirects to /users/spatial-graph)
+│   │   ├── users/               # /users — directory + spatial-graph module (users/access-analysis/ = graph module dir incl. activity/ universe; its page.tsx redirects to /users/spatial-graph)
 │   │   ├── template-mty/        # /template-mty — template analytics
 │   │   ├── forma-proposal/      # /forma-proposal — folder/org hierarchy editor
 │   │   ├── home/                # /home
@@ -30,6 +30,7 @@ C:/LECG/Dashboard/
 │   │   └── trello/              # /trello
 │   ├── api/                     # Next.js API routes
 │   │   ├── trpc/[trpc]/         # tRPC handler mount point
+│   │   ├── activity-universe/   # payload/route.ts — serves the binary activity-universe artifact (v2.7)
 │   │   ├── auth/                # NextAuth callback
 │   │   ├── chat/                # Chat stream/media/upload
 │   │   ├── gmail/               # Gmail attachment proxy
@@ -55,7 +56,7 @@ C:/LECG/Dashboard/
 │   │   ├── cachePolicy.ts       # ACC_SNAPSHOT_STALE_TIME_MS
 │   │   ├── mty-allowlist.json   # MTY project ID allowlist
 │   │   ├── template-mty.ts      # TEMPLATE_MTY_ID / TEMPLATE_MTY_NAME constants
-│   │   ├── embedding/           # Instance embeddings + similarity edge set (+ neighborPayload.ts — v2.5 structured-neighbors normalizer)
+│   │   ├── embedding/           # Person-graph feature/layout helpers (buildPersonFeatures, cosineGraph, kmeans, packedLayout[3D], tfidf) — instance-embedding neighborPayload.ts retired in v2.7 (c28cb962)
 │   │   └── __tests__/           # Unit tests for acc helpers
 │   ├── server/                  # Server-only view builders + integrations
 │   │   ├── acc-route-hydration.ts  # createAccRouteHelpers + prefetch helpers for RSC pages
@@ -74,6 +75,7 @@ C:/LECG/Dashboard/
 │   │   ├── issueFunnelView.ts / workflowToolsView.ts / projectClashView.ts          # v2.3 issue/workflow/clash views
 │   │   ├── dcCoverageView.ts / ingestFreshnessView.ts / provisionedModulesView.ts   # v2.3 coverage/freshness views
 │   │   ├── unifiedActivitySource.ts # accds-primary + DC-backfill merged activity source
+│   │   ├── activityUniversePayload.ts # v2.7: canonical .embedding/ artifact paths + meta reader shared by builder script and /api/activity-universe/payload (+ activityUniverseTestFixture.ts)
 │   │   ├── templateView.ts / templateFolderTerrain.ts / templateRoleTree.ts / templateRoleSimilarity.ts
 │   │   ├── formaFolderTree.ts
 │   │   ├── integrations/         # ai.ts (OpenAI), aps.ts (Autodesk SDK)
@@ -93,8 +95,10 @@ C:/LECG/Dashboard/
 │   └── wiki/                    # Wiki access/media helpers
 ├── server/                      # API boundary — tRPC routers + auth + db
 │   ├── routers/
-│   │   ├── root.ts              # appRouter — composes all sub-routers
-│   │   ├── acc-dc-graph.ts      # accDcGraph: bulkUsers, bulkUser, instanceEmbedding, instanceNeighbors
+│   │   ├── root.ts              # appRouter — composes all sub-routers (24)
+│   │   ├── acc-dc-graph.ts      # accDcGraph: dataVersion, bulkUsers, bulkUser (graphSnapshot/instanceEmbedding/instanceNeighbors/similarityEdges retired in v2.7)
+│   │   ├── activity-universe.ts # activityUniverse: projectNames, eventDetail (hover/click detail lookups; the bulk payload goes via /api/activity-universe/payload, not tRPC) (v2.7)
+│   │   ├── acc-coordination.ts  # accCoordination: Model Coordination panel data
 │   │   ├── acc-activity.ts      # accActivity: lastFileActivityByEmailAll, timeline, coverage
 │   │   ├── acc-members.ts       # accMembers: enrichedUsers, kpi
 │   │   ├── acc-folders.ts       # accFolders: folder tree, permissions
@@ -131,8 +135,10 @@ C:/LECG/Dashboard/
 │   ├── repo-map/                # Repo-map generator + checker (generate.cjs, check.cjs)
 │   ├── acc-*.cjs                # ACC member/folder sync scripts
 │   ├── dc-*.cjs                 # Data Connector extraction scripts
-│   ├── build-instance-features.ts  # Hybrid feature export → instance-features jsonl (WARN: imports 3 app/ modules — no-scripts-to-app, still open)
-│   ├── compute_instance_embeddings.py  # PaCMAP hybrid embedding + trustworthiness gate + twin-collapsed neighbors (v2.5 Ph29–30)
+│   ├── compute_activity_embeddings.py  # v2.7 activity-embedding pipeline (replaces the retired instance pipeline — build-instance-features.ts and compute_instance_embeddings.py are deleted)
+│   ├── build-activity-universe-payload.ts  # Builds .embedding/activity-universe.bin + -meta.json after each pipeline run (v2.7 Ph38)
+│   ├── build-activity-author-attributes.ts # Author-attribute enrichment (WARN: imports graphNodesFromUsers from app/ — no-scripts-to-app, still open)
+│   ├── create-activity-embedding-table.ts  # AccActivityEmbedding table setup
 │   ├── diag-activity-service-xtab.cjs  # Diagnostic script (app-import WARN resolved in v2.1 Ph10)
 │   └── progress-monitor.cjs     # Standalone progress monitor web app (localhost:4321)
 ├── services/
@@ -180,9 +186,9 @@ C:/LECG/Dashboard/
 
 ## Focus Area: `/users` (`app/(dashboard)/users/`)
 
-**Purpose:** ACC member directory (DataTable), profile panels, stat cards, and the nested `/access-analysis` physics graph and `/spatial-graph` view.
+**Purpose:** ACC member directory (DataTable), profile panels, stat cards, and the nested `access-analysis/` graph module served at `/users/spatial-graph` (the activity universe since v2.7).
 
-**Deleted in the working tree (do not reference):** `PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx` — the card/row directory presentation is gone; the DataTable stack below is the surviving surface.
+**In-flight WIP:** the legacy card/row presentation files (`PersonCard.tsx`, `PersonRow.tsx`, `PersonRowList.tsx`, `PersonDetailModal.tsx`, `ActivityAuditPanel.tsx`, `CollapsibleGroup.tsx`, `DirectoryListHeader.tsx`, `ModuleBadge.tsx`) exist at HEAD but are already unused by `UsersDirectoryClient` (DataTable-driven since Plan 04-03; a comment notes DrillSheet replaced `PersonDetailModal`); the working tree deletes them uncommitted. Do not build on them.
 
 **Key files in `app/(dashboard)/users/` (all verified extant):**
 - `page.tsx` — RSC shell; TanStack prefetch via `prefetchUsersRouteAccData`; `deserializeHydrationState(helpers.dehydrate())` → `<HydrationBoundary><UsersDirectoryClient />` (v2.5 Ph33 hydration fix)
@@ -197,37 +203,44 @@ C:/LECG/Dashboard/
 - `AccProfileSection.tsx` — profile detail section
 - `HeaderParticleAccent.tsx` — R3F particle accent (approved /users surface only)
 
-**`app/(dashboard)/users/access-analysis/` — Physics Graph Module (explicit in-scope):**
+**`app/(dashboard)/users/access-analysis/` — Graph Module (explicit in-scope):**
 
-**Do not conflate with `app/(dashboard)/access-analysis/`** (the top-level ECharts charts page) — this subdirectory (~180 files) hosts the full 3D physics graph and ALL graph infrastructure. It is served at `/users/spatial-graph` via `AccessAnalysisShellClient`; its own `page.tsx` is a **redirect** to `/users/spatial-graph` (kept for old links). The former 59 KB `HybridAnalyticsSurface.tsx` monolith was split in v2.2 Ph17 (SPLIT-03/04) into a thin shell + `useHybridAnalytics.ts` (data/queries) + `hybridAnalyticsTransforms.ts` (pure transforms) + view/panel/drilldown modules, all ≤400 lines.
+**Do not conflate with `app/(dashboard)/access-analysis/`** (the top-level ECharts charts page) — this subdirectory (~274 committed files) hosts the spatial-graph infrastructure. It is served at `/users/spatial-graph` via `AccessAnalysisShellClient`; its own `page.tsx` is a **redirect** to `/users/spatial-graph` (kept for old links).
 
-Key structural groups:
+**v2.7 Ph39 retirement (−8,936 lines, committed):** the user×project instance graph is GONE. Deleted at HEAD: `AccessAnalysisShell.tsx`, `GraphCanvas.tsx`, `GraphCanvas3D.tsx` (Three.js renderer), `GraphInteractions.tsx`, `SelectionContext.tsx`, `CatalogSliderSidebar.tsx`, `DimensionSearchBox.tsx`, `PresetBar.tsx`, `similarityWeb.ts`, `SimilarityWebOverlay.tsx`, `NeighborMatchesPanel.tsx`, `RightPanelStack.tsx`, `lasso3d.ts`, `graphTestBridge.ts`. The served surface is the **`activity/` subdirectory** (activity universe). The former 59 KB `HybridAnalyticsSurface.tsx` monolith split (v2.2 Ph17: thin shell + `useHybridAnalytics.ts` + `hybridAnalyticsTransforms.ts` + view/panel modules) survives.
+
+Key structural groups (HEAD):
 
 | Group | Key Files | Purpose |
 |-------|-----------|---------|
-| Shell | `AccessAnalysisShell.tsx`, `AccessAnalysisShellClient.tsx`, `AccessAnalysisPage.tsx` | Graph page composition, context wiring |
-| Contexts | `SliderContext.tsx`, `FilterContext.tsx`, `SelectionContext.tsx` | Slider state (physics), filter chips, lasso selection |
-| Physics engine | `physicsLayer.ts`, `physicsLayerWorker.ts`, `physicsWorkerScript.ts`, `staticLayer.ts` | d3-force-3d simulation + web worker bridge; PHYSICS + MASK buses |
-| Renderers | `GraphCanvas.tsx`, `GraphCanvas3D.tsx` (Three.js), `GraphCanvas2D.tsx` (cosmos.gl) | CSS-visibility swap; no remount on mode change |
-| Interactions | `GraphInteractions.tsx`, `usePredicateEngine.ts`, `LassoOverlay.tsx`, `lasso3d.ts`, `NodeTooltip.tsx` | Click/hover/lasso; MASK bus channel |
-| Data pipeline | `graphNodesFromUsers.ts`, `featureSnapshot.ts`, `graphTables.ts`, `graphSql.ts`, `duckdbClient.ts`, `positionsCache.ts` | BulkAccUser → Arrow tables → DuckDB → features |
-| Dimension catalog | `dimensionCatalog.ts` + `.structural.ts` / `.actions.ts` / `.folder.ts` / `.folderLive.ts`, `dimensionCatalog.types.ts` | Full 208-entry catalog vocabulary (pinned by `catalogSliders.test.ts`); v2.4 exposed 205 of 208 as user-facing dims |
-| Catalog widening (v2.4) | `catalogSliders.ts` (lazy-loaded preview), `catalogSearch.ts`, `groupByDimensions.ts`, `GroupByControls.tsx`, `activeGrouping.ts`, `dimensionCoverage.ts`, `dimensionIdSpace.ts`, `dimensionBands.ts`, `DimensionFilterPopover.tsx`, `curatedSliders.ts` | Group-by/color-by/slider selection over the widened catalog (was capped at 3 presets) |
+| Shell | `AccessAnalysisShellClient.tsx`, `AccessAnalysisPage.tsx`, `graphVariant.ts` | Entry: dynamic-imports `ActivityUniverseShell` (default) or opt-in `PersonGraph3D.tsx` projector (`NEXT_PUBLIC_ACC_PERSON_GRAPH=1`) |
+| **Activity universe (v2.7, `activity/`)** | `ActivityUniverseShell.tsx`, `useActivityUniversePayload.ts`, `ActivityDimensionsPanel.tsx`, `ActivityDetailRail.tsx`, `ActivityTooltip.tsx`, `activityDimensions.ts` (8 dims: verb, module, objectType, month, role, company, project, author), `activityGroupLayout.ts`, `activityColorBy.ts`, `moduleColors.ts`, `activitySizes.ts`, `activityEventLabels.ts`, `activityTime.ts`, `lodSample.ts` (`LOD_CAP = 200_000` deterministic far-zoom sample ↔ exact viewport membership), `activityMotion.ts` (cosmos-native GPU morph + ambient ≤100k subset), `activityGraphData.ts` (bounded same-author link chains), `activityTestBridge.ts` | One node per activity event (~4.9M); binary payload fetched client-side; exact-month scrubber; e2e `tests/e2e/activity-universe-hard-gate.spec.ts` |
+| Renderer | `GraphCanvas2D.tsx` (cosmos.gl, 43 KB) | Sole graph renderer at HEAD; frozen-path empirical screen-space fit (cosmos `fitView*` unusable there), `fitViewOnInit` disabled when frozen, forced `resizeCanvas(true)` after init, `linkVisibilityDistanceRange: [80, 1200]`, links ride GPU morph position texture |
+| Interactions | `usePredicateEngine.ts`, `LassoOverlay.tsx`, `NodeTooltip.tsx`, `MapClusterLabels.tsx` | Hover/click/lasso; cluster labels |
+| Physics engine (retained, no served live-sim consumer) | `physicsLayer.ts`, `physicsLayerWorker.ts`, `physicsWorkerScript.ts`, `staticLayer.ts` | d3-force-3d + worker bridge; PHYSICS + MASK buses; the activity universe uses the frozen path of `GraphCanvas2D`'s `physics` handle |
+| Contexts (retained) | `SliderContext.tsx`, `FilterContext.tsx`, `AccessAnalysisContext.tsx` | Slider/filter state (`SelectionContext.tsx` deleted in Ph39) |
+| Data pipeline | `graphNodesFromUsers.ts`, `featureSnapshot.ts`, `graphTables.ts`, `graphSql.ts`, `duckdbClient.ts`, `positionsCache.ts` | BulkAccUser → Arrow tables → DuckDB → features (analytics surfaces) |
+| Dimension catalog | `dimensionCatalog.ts` + `.structural.ts` / `.actions.ts` / `.folder.ts` / `.folderLive.ts`, `dimensionCatalog.types.ts` | Full 208-entry catalog vocabulary (pinned by `catalogSliders.test.ts`); primary served consumer (instance sidebar) retired in Ph39 |
+| Catalog widening (v2.4) | `catalogSliders.ts`, `catalogSearch.ts`, `groupByDimensions.ts`, `GroupByControls.tsx`, `activeGrouping.ts`, `dimensionCoverage.ts`, `dimensionIdSpace.ts`, `dimensionBands.ts`, `DimensionFilterPopover.tsx`, `curatedSliders.ts` | Group-by/color-by/slider selection over the widened catalog |
 | Taxonomy | `accTaxonomy.ts`, `accTaxonomyStatic.ts`, `accTaxonomyActions.generated.ts`, `accTaxonomy.types.ts` | ACC action/module/group taxonomy |
 | Layout engines | `catalogTargets.ts`, `featureTargets.ts`, `restLayout.ts`, `gridLayout.ts`, `blobDescriptor.ts`, `clusterPacking.ts`, `clusterForceLayout.ts` | Anchor positions per dimension kind |
-| Sidebar UI | `CatalogSliderSidebar.tsx`, `CatalogCollapse.tsx`, `CatalogTreeSection.tsx`, `DimensionSlider.tsx`, `DimensionSearchBox.tsx`, `PresetBar.tsx` | Per-dimension slider tree |
-| Visual encoding | `nodeColors.ts`, `nodeSizes.ts`, `bucketedColors.ts`, `clusterColors.ts`, `chartColors.ts`, `linkEmphasis.ts` | Color/alpha/size computation |
-| Right panels | `RightPanelStack.tsx`, `SelectionPanel.tsx`, `RiskAccessPanel.tsx`, `DistributionPanel.tsx`, `HeadlineInsights.tsx`, `NeighborMatchesPanel.tsx` | Post-selection and analytics panels; NeighborMatchesPanel redesigned in v2.5 Ph30–31 (twin affordance + why-similar chips, unified focus rail) |
-| Living graph (v2.5) | `similarityWeb.ts`, `SimilarityWebOverlay.tsx`, `ambientMotion.ts`, `whySimilar.ts`, `graphTestBridge.ts` | Similarity-edge overlay w/ link strength + ambient redraw throttle (LINK-PERF); ambient idle motion (reduced-motion aware); why-similar contribution chips; e2e bridge (`tests/e2e/phase32-ambient.spec.ts`) |
-| Embedding feature export | `instanceFeatureNumerics.ts`, `instanceFeatureTokens.ts` | Hybrid raw-numerics + coverage-token export consumed by `scripts/build-instance-features.ts` → `scripts/compute_instance_embeddings.py` (PaCMAP, v2.5 Ph29) |
+| Sidebar UI (retained) | `CatalogCollapse.tsx`, `CatalogTreeSection.tsx`, `DimensionSlider.tsx`, `SliderGroup.tsx`, `Toolbar.tsx` | Per-dimension slider tree pieces (`CatalogSliderSidebar.tsx` deleted) |
+| Visual encoding | `nodeColors.ts`, `nodeSizes.ts`, `bucketedColors.ts`, `clusterColors.ts`, `chartColors.ts`, `linkEmphasis.ts`, `sameUserEdges.ts` | Color/alpha/size computation; same-user edge derivation |
+| Panels (retained) | `SelectionPanel.tsx`, `RiskAccessPanel.tsx`, `DistributionPanel.tsx`, `HeadlineInsights.tsx`, `PermissionRiskPanel.tsx`, `ComplianceScanPanel.tsx`, `DeferredAnalyticsSection.tsx` | Analytics panels (`RightPanelStack.tsx` / `NeighborMatchesPanel.tsx` deleted) |
+| v2.5 survivors | `ambientMotion.ts` (FPS controller reused by `activityMotion.ts`), `whySimilar.ts`, `embeddingBlobDescriptor.ts`, `embeddingFit.ts` | Retained utilities from the Living Graph era |
+| Feature export (legacy) | `instanceFeatureNumerics.ts`, `instanceFeatureTokens.ts` | Retained in-tree; their script consumers (`build-instance-features.ts`, `compute_instance_embeddings.py`) were deleted with the instance-embedding retirement (c28cb962) |
 | Analytics | `analyticsFindings.ts`, `analyticsQueries.ts`, `accessFacets.ts`, `riskFlags.ts`, `actionBuckets.ts`, `catalogWeights.ts` | Risk/perm analytics on feature snapshots |
 | Graph KPI | `ChartPanel.tsx`, `DonutPanel.tsx`, `KpiHeroStrip.tsx` | In-graph chart panels |
-| Runtime registry (NOT legacy-dead) | `dimensionRegistry.ts`, `dimensionGroups.ts` | Runtime slider/physics dimension subset; actively imported by `SliderContext.tsx`, `AccessAnalysisShell.tsx`, `nodeColors.ts`, `featureTargets.ts`, `bucketedColors.ts`, `sliderPresets.ts`, `featureSnapshot.ts`, `dimensionCatalog.structural.ts` |
+| Runtime registry (NOT legacy-dead) | `dimensionRegistry.ts`, `dimensionGroups.ts` | Runtime slider/physics dimension subset; imported by `SliderContext.tsx`, `nodeColors.ts`, `featureTargets.ts`, `bucketedColors.ts`, `sliderPresets.ts`, `featureSnapshot.ts`, `dimensionCatalog.structural.ts` |
+
+**In-flight WIP:** ~10 files in this module carry uncommitted modifications (e.g. `HybridAnalyticsView.tsx`, `catalogTargets.ts`, `dimensionCatalog.types.ts`) as part of the access-analysis redesign.
 
 **`app/(dashboard)/users/spatial-graph/`:**
-- `page.tsx` — prefetches via `prefetchAccessAnalysisRouteData`; applies **`deserializeHydrationState(helpers.dehydrate())`** (`lib/server/hydrationState.ts`) before `<HydrationBoundary>` — `createServerSideHelpers({ transformer: superjson })` returns a `{ json, meta }` wrapper that App Router's boundary can't hydrate raw (v2.4 PERF-04, generalized to the shared boundary in v2.5 Ph33 PERF-05)
+- `page.tsx` — thin `h-screen` shell rendering `AccessAnalysisShellClient`. **No tRPC prefetch and no `<HydrationBoundary>` since v2.7** — the graphSnapshot/instanceEmbedding prefetch retired with the instance graph (ACT-03); the activity payload is fetched client-side from `/api/activity-universe/payload`
 - `loading.tsx` — route-level loading skeleton
-- The former hydration miss on `app/(dashboard)/layout.tsx` and `app/(dashboard)/users/page.tsx` is **closed** — both now call `deserializeHydrationState` (commit e7e14e64)
+- The superjson hydration fix (`deserializeHydrationState`, commit e7e14e64) still guards the two remaining boundaries: `app/(dashboard)/layout.tsx` and `app/(dashboard)/users/page.tsx`
+
+**`app/(dashboard)/users/scale-spike/`:** perf-spike route (`ScaleSpikeClient.tsx`, `spikePhysicsStub.ts`, `spikeSynthetic.ts`) — synthetic-scale GraphCanvas2D testbed, not a product surface.
 
 ## Focus Area: `/template-mty` (`app/(dashboard)/template-mty/`)
 
@@ -281,7 +294,7 @@ Key structural groups:
 - `/template-mty`: `AccFolder`, `AccFolderPermission`, `AccProjectMember`, `AccRole`, `AccProjectRole`, `AccProject`
 - `/forma-proposal`: `AccFolder`, `AccProject`
 - `/users` directory: `AccDcUser`, `AccDcProjectUser`, `AccDcProjectUserRole`, `AccDcProjectUserProduct`, `AccProjectMember`, `AccRole` (via `accDcGraph.bulkUsers` → `lib/server/acc-hot-cache`)
-- `/users/spatial-graph`: same as /users directory + `AccInstanceEmbedding`, `AccGraphLayoutCache`, `AccPersonGraphSnapshot`, `AccFolderPermission` (for folder-reach dims)
+- `/users/spatial-graph` (activity universe): `AccActivityEmbedding` (offline pipeline → `.embedding/` binary artifact; `AccInstanceEmbedding` was **dropped** in v2.7, migration `2026-07-21-drop-acc-instance-embedding.sql`) + `activityUniverse.eventDetail` raw lookups against activity tables; opt-in projector uses `AccPersonGraphSnapshot` / `AccGraphLayoutCache`
 - **`AccFolderPermissionSummary`** (v2.2 Ph18): materialized per-(projectId, roleId) projection (~22k rows) — `folderCount`, `totalBytes` (BigInt), `permTypes[]`. Serves `includePermissionSummary` in `lib/server/acc-hot-cache.ts`; refreshed by the dc-daily-ingest cron. Since v2.3 it is charted: `lib/server/permissionUserView.ts` joins it for the `/access-analysis` `PermissionUsersDonut`.
 
 **UI primitives (always use these):**
@@ -335,7 +348,11 @@ Key structural groups:
 - `lib/server/<helperName>.ts` (server-only; may use `db`)
 - Do NOT add to `app/(dashboard)/` route directories — that creates `no-scripts-to-app` violations
 
-**New graph dimension:**
+**New activity-universe dimension (the served graph):**
+- Add to `ACTIVITY_DIMENSIONS` in `app/(dashboard)/users/access-analysis/activity/activityDimensions.ts` (needs a columnar id column + dict in the payload — extend `scripts/build-activity-universe-payload.ts` and `lib/server/activityUniversePayload.ts` meta dicts, then rebuild the artifact)
+- Trap: after any embedding-table change, the `.embedding/` artifact must be rebuilt or the payload/meta pair goes inconsistent
+
+**New catalog graph dimension (analytics surfaces):**
 - Add to `dimensionCatalog.structural.ts` (structural) or `dimensionCatalog.folder.ts` / `dimensionCatalog.folderLive.ts`
 - Action dims are generated from `accTaxonomyActions.generated.ts` (taxonomy-driven)
 - Update `interactionTypes.ts` if new feature field on `NodeFeatureSnapshot`
@@ -358,6 +375,11 @@ Key structural groups:
 - Generated: By the lecg-* skills (plain markdown, no external runtime)
 - Committed: Yes
 
+**`.embedding/` (gitignored):**
+- Purpose: Activity-universe binary payload artifacts (`activity-universe.bin` + `activity-universe-meta.json`, ~149.7 MB) plus embedding-pipeline outputs
+- Generated: Yes (`scripts/build-activity-universe-payload.ts` after each `scripts/compute_activity_embeddings.py` run)
+- Committed: No — served at runtime by `app/api/activity-universe/payload/route.ts` via `lib/server/activityUniversePayload.ts`
+
 **`public/duckdb-wasm/`:**
 - Purpose: Self-hosted DuckDB-Wasm bundles (populated by postinstall)
 - Generated: Yes (postinstall)
@@ -372,11 +394,10 @@ Key structural groups:
 
 ## Dashboard Self-Check
 
-- **Context:** repo-map architecture-summary.md (2026-07-16, working-tree regeneration) + v2.5 commit log (phases 29–33) + `git status --short` for the ~221 uncommitted entries on `feat/access-analysis-redesign`; this refresh describes the current working tree, deletions included.
-- **Evidence:** Every named path verified extant in the working tree by direct file-existence check (all v2.5 modules, all surviving `/users` files); deleted files verified from `git status` and excluded. No invented paths.
+- **Context:** repo-map architecture-summary.md (2026-07-21, gate passing) + v2.7 commit log (f2c7bad8 scrubber, 22633278 links, c28cb962 embeddings retirement, c998db1e perf fix) + `git ls-files` / `git cat-file -e` / `git grep` against **HEAD** + `git status --short` for the ~224 uncommitted WIP entries.
+- **Evidence:** Every named path verified extant at HEAD (274 committed files enumerated in the graph module incl. the `activity/` subdirectory; Ph39 deletions confirmed per-file as GONE; `activity-universe.ts` procedures read from source: `projectNames`, `eventDetail`; 8 activity dimensions enumerated from `activityDimensions.ts`; `AccActivityEmbedding` at `prisma/schema.prisma:930`, `AccInstanceEmbedding` absent). WIP deletions/modifications flagged, not treated as landed.
 - **Constraints:** No `src/` root. No Prisma in `components/`. Page scroll ownership noted.
 - **Gates:** Map artifact only — no compilation.
-- **Resolved prior VERIFY:** `dimensionRegistry.ts` / `dimensionGroups.ts` are still active runtime imports (SliderContext, nodeColors, featureTargets, etc.), coexisting with the widened `dimensionCatalog`.
-- **VERIFY:** the exact 3 unexposed dimensions in the 205-of-208 v2.4 split (208 is test-pinned; 205 is from the milestone close, not re-derived here).
+- **VERIFY:** payload size ~149.7 MB and coverage 94.41% are Ph38 milestone figures (`.embedding/` is gitignored; not re-measured). The repo-map summary (2026-07-21) still lists `AccInstanceEmbedding` in its Prisma model dump — stale relative to HEAD schema, where it is dropped.
 
-*Structure analysis: 2026-06-23; targeted refresh 2026-07-20 (post v2.5 Living Graph; working tree = feat/access-analysis-redesign WIP)*
+*Structure analysis: 2026-06-23; targeted refresh 2026-07-22 (post v2.7 Activity Universe Ph40–41 + perf fix; committed HEAD primary, access-analysis redesign WIP in working tree)*

@@ -8,6 +8,9 @@ the current tree; no external workflow framework is required.
 - Run `git status --short` and preserve unrelated edits and deletions.
 - Find the real call path with `rg`, `git ls-files`, tests, `package.json`,
   `prisma/schema.prisma`, and `.tools/repo-map/` before naming files or APIs.
+- Read the codebase map in `.planning/codebase/` (especially `CONCERNS.md`,
+  which records durable traps and known debt) before touching shared modules,
+  the spatial graph, or the data pipeline.
 - For a bug, inspect every caller of the shared function and fix the root cause
   once at the narrowest shared boundary.
 - Never read or reproduce `.env*`, credentials, tokens, or secret values.

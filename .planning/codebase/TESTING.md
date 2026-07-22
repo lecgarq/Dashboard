@@ -1,7 +1,7 @@
 # Testing Patterns
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-20 — post v2.5 close (phase 31/32 e2e specs, bridge extensions, test-count refresh, redesign-branch WIP note). Previous refreshes 2026-07-16, 2026-07-02.
+**Refreshed:** 2026-07-22 — post v2.7 close + activity perf fix (e2e rebaseline `2eefe742`, catalog-preview retirement `8aa4c3e2`, ambient-cadence pin, hard-gate ×3 convention, test-count refresh). Previous refreshes 2026-07-21, 2026-07-20, 2026-07-16, 2026-07-02.
 
 ## Test Framework
 
@@ -94,7 +94,7 @@ lib/server/
   accessInstanceView.test.ts      # co-located
 ```
 
-**E2E layout (full inventory, verified 2026-07-21):**
+**E2E layout (full inventory, verified 2026-07-22):** the v2.7 Phase 41 rebaseline (`2eefe742`) deleted the stale full-inventory specs (`acc-cluster-blobs`, `acc-cluster-labels`, `acc-positioning`, `phase31-focus`, `phase32-ambient`), slimmed `acc-dc-graph.spec.ts` (~1,265 → 170 lines) and `acc-3d-lasso.spec.ts` (→ 69 lines) to the activity-universe surface, and added `activity-universe-hard-gate.spec.ts` plus `lib/server/activityUniverseTestFixture.ts(.test.ts)`. `catalog-preview-lazy.spec.ts` was retired separately (`8aa4c3e2`).
 ```
 tests/e2e/
   acc-dc-graph.spec.ts             # activity fixture, time, dimensions, both route aliases
@@ -290,6 +290,24 @@ NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but 
   total event counts. Reduced-motion coverage pins disabled autoplay and
   static manual stepping.
 
+**Ambient cadence pin (`app/(dashboard)/users/access-analysis/activity/activityMotion.test.ts`):**
+the tier-0 ambient cadence is a measured perf constant (`TIER_0_TARGET_MS = 250`,
+halved from 100ms→250ms upload rate in `c998db1e`) and the test pins it: it steps
+16ms frames to 560ms and asserts exactly 3 morph uploads (targets at 0/256/512ms)
+each with `durationMs === 270` (= `TIER_0_TARGET_MS` 250 + `TRANSITION_OVERLAP_MS`
+20 in `activityMotion.ts`). **Any change to the cadence or overlap constants must
+update these assertions in the same commit** — the pin exists so cadence changes
+are deliberate, not drive-by.
+
+**Hard-gate fps runs must be repeated ×3 on this box:** the dev machine is
+dual-GPU (Intel iGPU vs RTX 5070 Ti) and browser adapter selection is a lottery —
+single fps samples are bimodal (measured ~31fps iGPU floor vs 55–77fps discrete,
+`c998db1e`). The cosmos patch requests `powerPreference: "high-performance"` but
+that is a hint, not a guarantee. Convention: run
+`activity-universe-hard-gate.spec.ts` (headed, `--use-angle=d3d11`) three
+consecutive times and judge the set; one bad run is adapter noise, three is a
+regression.
+
 ## UAT Workshop Tests (`tests/e2e/uat-workshop.spec.ts`)
 
 - Run under `playwright.verify.config.ts` (no `webServer` block — a prod `next start` on `:3100` is started out-of-band).
@@ -317,19 +335,23 @@ Convention: any future split of a large module (or query-owner change) must add 
 
 ## Coverage
 
-No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **337 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-20; 114 live under `__tests__/` directories). The working tree additionally carries 5 untracked new tests (`app/(dashboard)/users/statCardBoundaries.test.ts`, `lib/acc/issueBackfillAudit.test.ts`, `lib/acc/issueListQuery.test.ts`, `lib/acc/modelCoordinationGrant.test.ts`, `scripts/lib/tolerance-audit.test.ts`) and 3 working-tree deletions, all under `scripts/scratch/` (monitor-* tests). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 passed at the 2026-07-14 dependency-update verification. VERIFY: current pass count not re-run for this refresh.
+No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **339 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-22; 109 live under `__tests__/` directories). The working tree additionally carries 4 untracked new tests (`app/(dashboard)/users/statCardBoundaries.test.ts`, `lib/acc/issueBackfillAudit.test.ts`, `lib/acc/issueListQuery.test.ts`, `lib/acc/modelCoordinationGrant.test.ts`) and 3 working-tree deletions, all under `scripts/scratch/` (monitor-* tests). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 at the 2026-07-14 dependency-update verification; 2,565 green at the c998db1e activity perf fix (2026-07-22).
 
 ---
 
 **Dashboard self-check:**
 - Context: `vitest.config.ts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright/global-setup.ts`, test files in `app/`, `lib/server/`, `server/routers/`, `tests/e2e/`, `package.json` scripts.
 - Evidence: full E2E inventory and activity bridge patterns verified by direct
-  reads and `rg` on 2026-07-21.
+  reads and `rg` on 2026-07-21; e2e inventory, cadence pin, and unit-gate
+  counts re-verified 2026-07-22 (suite re-run).
 - Constraints: no jest-dom, no real DB in unit tests, e2e on :3100 with NEXT_DIST_DIR=.next-e2e.
 - Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
   `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
   sequence for an explicitly requested local rebuild.
-- Latest full unit gate (2026-07-21): 339 files passed / 1 skipped; 2,562
-  tests passed / 1 skipped (2,563 total). Counts drift as phases add tests;
-  Phase 41 verification is the authority for this snapshot.
-- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (verified 2026-07-20): several `app/(dashboard)/users/` components are deleted in the working tree, but their replacements' tests are committed co-located files; the only deleted test files are the three `scripts/scratch/monitor-*` tests. Several access-analysis and users tests are modified (e.g. `app/(dashboard)/access-analysis/__tests__/roleCounts.test.ts`, `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`). Counts above are from tracked files (`git ls-files`).
+- Latest full unit gate (re-run 2026-07-22 for this refresh): 339 files passed
+  / 1 skipped; 2,564 tests passed / 1 skipped (2,566 total) with 1 failure —
+  `app/(dashboard)/users/access-analysis/clusterForceLayout.test.ts` wall-clock
+  perf guard (`expect(ms).toBeLessThan(2500)` measured 2506ms under a loaded
+  box; environment-sensitive, green at the c998db1e gate where the suite was
+  2,565 green). Counts drift as phases add tests.
+- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (re-verified 2026-07-22): several `app/(dashboard)/users/` components are deleted in the working tree, but their replacements' tests are committed co-located files; the only deleted test files are the three `scripts/scratch/monitor-*` tests. Several access-analysis and users tests are modified (e.g. `app/(dashboard)/access-analysis/__tests__/roleCounts.test.ts`, `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`). Counts above are from tracked files (`git ls-files`).

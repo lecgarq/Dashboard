@@ -1,7 +1,7 @@
 # Coding Conventions
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-20 — post v2.5 close (directive-free shared-constant rule, `test` commit type, WIP note for the access-analysis redesign branch). Previous refreshes 2026-07-16, 2026-07-02.
+**Refreshed:** 2026-07-22 — post v2.7 close + activity perf fix (`perf` commit type, patch-package convention, measured-constant pin rule, WIP note refresh). Previous refreshes 2026-07-20, 2026-07-16, 2026-07-02.
 
 ## TypeScript & Next.js App Router Idioms
 
@@ -252,8 +252,8 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 
 ## Git & Commit Conventions
 
-**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-20:
-- Types in active use: `feat`, `fix`, `refactor`, `docs`, `test` (v2.5 added standalone test commits, e.g. `test(31): verify production focus choreography`).
+**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-22:
+- Types in active use: `feat`, `fix`, `refactor`, `docs`, `test`, `perf` (v2.5 added standalone test commits; v2.7 added `perf`, e.g. `perf(activity): bound ambient uploads`).
 - Scope is either the phase number (`feat(33): ...`, `docs(27-02): ...`, `feat(30-03): ...`), the surface (`feat(spatial-graph): ...`, `feat(users): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.5 milestone`).
 - Subject is imperative, lowercase, no trailing period. Plan/requirement IDs appear in the subject when relevant (`(26-02)`, `(PERF-03)`).
 
@@ -261,11 +261,17 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 
 **Build guard:** the same hook denies `npm run build` / `next build` while `:3000` is live (probes the port), unless the command sets `NEXT_DIST_DIR` to a non-default dir (e.g. `.next-e2e`) — isolated-dist builds never touch the live `.next`. These denials are intentional; do not retry the same command.
 
+## Dependency Patching & Measured Constants
+
+**patch-package for vendored dependency fixes:** behavior fixes to installed packages live in `patches/` (`@cosmos.gl+graph+3.3.0.patch`, `server-only+0.0.1.patch`) and are applied by the `postinstall` script (`prisma generate && patch-package && ...`). Do not fork or vendor package source; extend the existing patch file. The cosmos.gl patch currently carries the GraphData.update memoization, same-count upload skip, `powerPreference: "high-performance"`, and clamp fixes (c998db1e) — any cosmos upgrade must re-roll it.
+
+**Measured perf constants get a pinning test:** when a constant encodes a measured performance decision (e.g. `TIER_0_TARGET_MS = 250` in `app/(dashboard)/users/access-analysis/activity/activityMotion.ts`, halved from 100ms after profiling), the module comment records the measurement and a unit test pins the value's observable effect (see `activityMotion.test.ts` — asserts upload count and `durationMs === 270`). Changing the constant means updating the pin in the same commit; see `TESTING.md`.
+
 ---
 
 **Dashboard self-check:**
-- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `git log`, direct file reads (refresh 2026-07-20).
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `patches/`, `package.json`, `git log`, direct file reads (refresh 2026-07-22).
 - Evidence: all patterns verified from actual source files listed above.
 - Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root, explicit-path staging enforced by hook.
-- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (verified 2026-07-20): the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Route-level file examples in this doc reflect the committed tree.
+- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (re-verified 2026-07-22): root docs `CHANGELOG.md`/`GSD-STYLE.md`/`PROJECT_RULES.md` are deleted in the working tree, and the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Route-level file examples in this doc reflect the committed tree.
 - VERIFY: none — all claims grounded in verified source.

@@ -2,7 +2,8 @@
 
 **Analysis Date:** 2026-06-23 (original full scan)
 **Refreshed:** 2026-07-16 — pins re-verified against `package.json` after the full dependency refresh (commit `0bfe0962`, 2026-07-14): cosmos.gl 3.3.0, three 0.185, googleapis 173, csv-parse 7, fast-check 4, electron 43, Tiptap 3.27; `ws`/`y-protocols` no longer direct deps; Task Scheduler task name corrected to `LECG Dashboard Local`
-**Refreshed:** 2026-07-20 — post v2.5 "Living Graph" close (phases 29–33, close commit `04d26799`): no `package.json` dependency changes since 2026-07-16 (all pins re-checked, still exact); added the Python PaCMAP embedding pipeline (`scripts/compute_instance_embeddings.py`) and the shared SSR-hydration fix (`lib/server/hydrationState.ts`). Working tree carries the in-flight access-analysis redesign (branch `feat/access-analysis-redesign`, uncommitted) — no stack/dependency impact, mostly `app/(dashboard)/access-analysis` + `/users` component churn and legacy-file deletions.
+**Refreshed:** 2026-07-20 — post v2.5 "Living Graph" close (phases 29–33, close commit `04d26799`): no `package.json` dependency changes since 2026-07-16 (all pins re-checked, still exact); added the Python PaCMAP embedding pipeline (then `scripts/compute_instance_embeddings.py`) and the shared SSR-hydration fix (`lib/server/hydrationState.ts`). Working tree carries the in-flight access-analysis redesign (branch `feat/access-analysis-redesign`, uncommitted) — no stack/dependency impact, mostly `app/(dashboard)/access-analysis` + `/users` component churn and legacy-file deletions.
+**Refreshed:** 2026-07-22 — post v2.7 "Activity Universe" close (commits through `c998db1e`): no `package.json` dependency changes since `0bfe0962` (2026-07-14; re-verified via `git log -- package.json`). Instance-embedding pipeline RETIRED (`c28cb962` — `scripts/compute_instance_embeddings.py`, `scripts/build-instance-features.ts`, and the `AccInstanceEmbedding` model are gone); replaced by the activity-event embedding pipeline (`scripts/compute_activity_embeddings.py` → `AccActivityEmbedding` → `scripts/build-activity-universe-payload.ts` binary artifact, ~4.9M events / ~149.7MB served by `app/api/activity-universe/payload/route.ts`). `patches/@cosmos.gl+graph+3.3.0.patch` grew to 4 LECG hunks (see patch-package entry).
 
 ---
 
@@ -10,7 +11,7 @@
 
 **Primary:**
 - TypeScript 6.x (`^6.0.3`) — all application code under `app/`, `components/`, `lib/`, `server/`, and most `scripts/`
-- Python 3.x — `services/lod-engine/server.py` (FastAPI image/LOD service), `scripts/run_dev_stack.py`, and `scripts/compute_instance_embeddings.py` (v2.5 Ph29/30 spatial-graph embedding pipeline: PaCMAP 2D projection + KMeans clustering + twin-collapsed cosine kNN neighbors; deps `pacmap` (0.9.1 verified in-source), `scikit-learn`, `scipy`, `numpy`; unit tests in `scripts/test_compute_instance_embeddings.py`; input `.embedding/instance-features.jsonl` produced by `scripts/build-instance-features.ts`)
+- Python 3.x — `services/lod-engine/server.py` (FastAPI image/LOD service), `scripts/run_dev_stack.py`, and `scripts/compute_activity_embeddings.py` (v2.7 Ph38 EMB-07 activity-universe embedding pipeline: reads the UNIFIED activity corpus straight from PostgreSQL via `psycopg` (`DIRECT_URL`/`DATABASE_URL`), hashed one-hot author+event features joined from the `.embedding/activity-author-attributes.json` sidecar, full-fit PaCMAP 2D projection with `random_state=42` + determinism double-run + trustworthiness gate, then TRUNCATE+COPY into `AccActivityEmbedding`; deps `numpy`, `pacmap`, `scikit-learn` (trustworthiness), `psycopg`, optional `psutil` (RSS cap); unit tests in `scripts/test_compute_activity_embeddings.py`; spike lineage `scripts/spike_activity_embedding_estimate.py`). The former per-instance pipeline (`scripts/compute_instance_embeddings.py` + `scripts/build-instance-features.ts`) was RETIRED in v2.7 Ph39 (commit `c28cb962`) — do not cite it.
 
 **Secondary:**
 - JavaScript (`.cjs`, `.mjs`, `.js`) — operational scripts in `scripts/` that run as Node CJS outside Next.js bundler
@@ -47,7 +48,7 @@
 - Tailwind CSS `^4.3.0` + `@tailwindcss/postcss ^4.3.0` — utility-first styling; dark zinc theme (`#09090B` background)
 - shadcn `^4.7.0` (devDependency generator) + `radix-ui ^1.4.3` — accessible UI primitives
 - ESLint `^10.3.0` + `eslint-config-next ^16.2.6` — linting (`npm run lint`)
-- `patch-package ^8.0.1` — applied in `postinstall` hook
+- `patch-package ^8.0.1` — applied in `postinstall` hook. Two patches live in `patches/`: `server-only+0.0.1.patch` and `@cosmos.gl+graph+3.3.0.patch`. The cosmos.gl patch carries FOUR LECG hunks (all tagged `[LECG patch]` in the diff): (1) `GraphData.update()` memoization — per-frame `render()` calls with identical input arrays skip the adjacency/degree/color/size rebuilds; (2) GLSL position-clamp removal — the `clamp(pointPosition, 0, spaceSize)` lines are commented out so positions run unclamped; (3) same-count `setPointPositions` upload skip — a position upload with an unchanged point count no longer re-flags colors/sizes/shapes/links/cluster/force GPU state; (4) `powerPreference: "high-performance"` on device creation — dual-GPU machines otherwise lottery onto the iGPU (1–20fps vs 55–70fps). These hunks MUST survive any dependency refresh: re-diff and re-roll the patch after every cosmos.gl (or lockfile-subtree) bump, then verify `patch-package` applies cleanly in `postinstall`.
 - `repomix ^1.14.1` — source digest generation for `scripts/repo-map/`
 - `dependency-cruiser ^17.4.3` — import graph and boundary enforcement (`npm run repo-map:check`)
 - `knip ^6.12.2` — unused exports/files detection (`npm run knip`)
@@ -68,12 +69,12 @@
 - `next-themes ^0.4.6` — theme provider for zinc dark/light toggle
 
 **3D / Graph (spatial-graph — explicitly in-scope):**
-- `three ^0.185.1` — Three.js; used in `GraphCanvas3D.tsx` via InstancedMesh + OrbitControls (NOT via R3F)
-- `@cosmos.gl/graph 3.3.0` (exact pin; upgraded from `3.0.0-beta.9` in the 2026-07-14 dep refresh) — GPU physics simulation for 2D layout in `AccessAnalysisShell.tsx`; NOTE: cosmos.gl v3 progress value is INVERTED (`1 - progress = alpha`) — version-sensitive, re-verify on any further cosmos.gl bump
+- `three ^0.185.1` — Three.js; direct importers at HEAD: `app/(dashboard)/users/access-analysis/PersonGraph3D.tsx` (3D physics graph, behind `NEXT_PUBLIC_ACC_3D_GRAPH`), plus the R3F accent surfaces `HeaderParticleAccent.tsx` and `FormaParticleAccent.tsx` (the former `GraphCanvas3D.tsx` no longer exists)
+- `@cosmos.gl/graph 3.3.0` (exact pin; upgraded from `3.0.0-beta.9` in the 2026-07-14 dep refresh) — GPU physics simulation for the 2D graph under `app/(dashboard)/users/access-analysis/` (`AccessAnalysisShellClient.tsx` / `GraphCanvas2D.tsx` — the old `AccessAnalysisShell.tsx` name is gone); patched locally via `patches/@cosmos.gl+graph+3.3.0.patch` (4 LECG hunks — see patch-package entry above; hunks must survive dependency refreshes); NOTE: cosmos.gl v3 progress value is INVERTED (`1 - progress = alpha`) — version-sensitive, re-verify on any further cosmos.gl bump
 - `d3-force-3d ^3.0.6` — 3D force simulation driving `physicsLayer.ts` PHYSICS BUS; note TWO-BUS ARCHITECTURE (physics bus vs mask bus — see `physicsLayer.ts`)
 - `d3-force ^3.0.0` — 2D force helpers
 - `d3-hierarchy ^3.1.2` — tree layout for `/forma-proposal` hierarchy view
-- `@duckdb/duckdb-wasm ^1.33.1-dev45.0` — in-browser DuckDB for `duckdbClient.browser.ts`; WASM alias wired in `next.config.ts` (`@duckdb/duckdb-wasm$` → `duckdb-browser.mjs`; node stub in `lib/client/emptyDuckDbNode.ts`)
+- `@duckdb/duckdb-wasm ^1.33.1-dev45.0` — in-browser DuckDB for `app/(dashboard)/users/access-analysis/duckdbClient.ts` (the separate `duckdbClient.browser.ts` file is gone — consolidated; browser behavior tested in `duckdbClient.browser.test.ts`); WASM alias wired in `next.config.ts` (`@duckdb/duckdb-wasm$` → `duckdb-browser.mjs`; node stub in `lib/client/emptyDuckDbNode.ts`)
 - `@uwdata/mosaic-core ^0.25.0` + `@uwdata/mosaic-sql ^0.25.0` + `@uwdata/vgplot ^0.25.0` — Mosaic cross-filter bridge between DuckDB and canvas in `CosmosCanvasClient.ts`
 - `apache-arrow ^17.0.0` — Arrow table format used by Mosaic/DuckDB pipeline
 - `@react-three/fiber ^9.6.1` — React Three Fiber; scoped to R3F accent surfaces ONLY: `/users` header and `/forma-proposal` background (`FormaParticleAccent.tsx`); NOT on data surfaces
@@ -110,7 +111,7 @@
 - `d3-scale-chromatic ^3.1.0` — color scales for chart dimension coloring
 - `@dnd-kit/core ^6.3.1` + `@dnd-kit/sortable ^10.0.0` — drag-and-drop for form and table reordering
 - `class-variance-authority ^0.7.1` + `clsx ^2.1.1` + `tailwind-merge ^3.6.0` — Tailwind class utilities
-- `tsx ^4.21.0` — direct TS script execution (e.g. `scripts/sync-acc-users.ts`, `scripts/build-instance-features.ts`)
+- `tsx ^4.21.0` — direct TS script execution (e.g. `scripts/sync-acc-users.ts`, `scripts/build-activity-universe-payload.ts`, `scripts/build-activity-author-attributes.ts`)
 - `server-only ^0.0.1` — build-time guard against server modules leaking into client bundles
 - `playwright ^1.59.1` — also a runtime dependency (ACCDS session login `scripts/accds-login.cjs`), not just the test runner
 
@@ -145,7 +146,7 @@
 - Key settings: webpack mode forced, DuckDB WASM alias, `serverExternalPackages` for Google libs, `optimisticClientCache`, `removeConsole` in production
 
 **Prisma:**
-- Schema: `prisma/schema.prisma` (65 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection and the newer `AccIssueType` + `AccInstanceEmbedding` models; `AccInstanceEmbedding.neighbors Json` now carries the v2.5 Ph30 twin-collapsed structured payload — k distinct matches with per-match "why" contribution keys plus an exact-twin summary)
+- Schema: `prisma/schema.prisma` (65 models; includes the v2.2 Ph18 `AccFolderPermissionSummary` materialized projection, `AccIssueType`, and the v2.7 Ph38 `AccActivityEmbedding` model — one row per unified activity event with PaCMAP `x`/`y` positions and dictionary-coded attribute columns whose labels live in `.embedding/activity-universe-dicts.json`; created via raw-SQL migration + `prisma migrate resolve` because the pgvector shadow DB breaks `migrate dev`. The former `AccInstanceEmbedding` model was DROPPED in v2.7 Ph39 — commit `c28cb962`, raw migration `prisma/migrations-raw/2026-07-21-drop-acc-instance-embedding.sql`)
 - Generator: `prisma-client-js` + `prisma-erd-generator` (ERD → `docs/erd.md`)
 - Client generation in `postinstall` hook: `prisma generate && patch-package && node scripts/copy-duckdb-wasm.cjs`
 - Note (Ph18 deviation): `prisma migrate dev` chokes on the pgvector extension — the Ph18 projection shipped via a raw SQL migration; long server-side `INSERT .. SELECT` writes need the `$transaction` timeout widened (300s used)
@@ -192,9 +193,9 @@ over the live server.
 **Development:**
 - Windows 11 (primary; PowerShell scripts `start-local.ps1`, `dc-daily-cron.ps1`)
 - Node.js >=22
-- Python 3.x (for `services/lod-engine/`, `scripts/run_dev_stack.py`, `scripts/compute_instance_embeddings.py`)
+- Python 3.x (for `services/lod-engine/`, `scripts/run_dev_stack.py`, `scripts/compute_activity_embeddings.py`)
 - PyTorch + HuggingFace Transformers (for LOD engine SigLIP model)
-- pacmap + scikit-learn + scipy + numpy (for the spatial-graph embedding pipeline)
+- numpy + pacmap + scikit-learn + psycopg (+ optional psutil) — for the activity-universe embedding pipeline (`scipy` no longer imported anywhere in `scripts/` after the instance-pipeline retirement)
 - Local PostgreSQL 18 (trust auth localhost; managed via `scripts/postgres-local.js`)
 - Task Scheduler task `LECG Dashboard Local` (boot on logon)
 - Task Scheduler task `LECG Postgres Local` (Postgres boot on logon)
@@ -206,4 +207,4 @@ over the live server.
 
 ---
 
-*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-16: all pins re-checked against `package.json` after the 2026-07-14 dependency refresh (commit `0bfe0962`); config filenames, Prisma model count (65), and Task Scheduler task name verified against the tree. Refreshed 2026-07-20 (post v2.5): pins unchanged; Python pipeline verified from `scripts/compute_instance_embeddings.py`; hydration fix verified from `lib/server/hydrationState.ts` + its three page consumers; Prisma model count re-verified (65).*
+*Stack analysis: 2026-06-23 — verified from `package.json`, `tsconfig.json`, `next.config.ts`, `server/db.ts`, `auth.config.ts`, `scripts/start-local.ps1`, `physicsLayer.ts`, `CosmosCanvasClient.ts`, `GraphCanvas3D.tsx`, `services/lod-engine/server.py`, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-16: all pins re-checked against `package.json` after the 2026-07-14 dependency refresh (commit `0bfe0962`); config filenames, Prisma model count (65), and Task Scheduler task name verified against the tree. Refreshed 2026-07-20 (post v2.5): pins unchanged; Python pipeline verified from the then-current `scripts/compute_instance_embeddings.py`; hydration fix verified from `lib/server/hydrationState.ts` + its three page consumers; Prisma model count re-verified (65). Refreshed 2026-07-22 (post v2.7 close): pins unchanged since `0bfe0962`; activity pipeline verified from `scripts/compute_activity_embeddings.py`, `scripts/build-activity-universe-payload.ts`, `lib/server/activityUniversePayload.ts`, `app/api/activity-universe/payload/route.ts`, and `prisma/schema.prisma` (`AccActivityEmbedding`; model count still 65); cosmos.gl patch hunks read directly from `patches/@cosmos.gl+graph+3.3.0.patch`; artifact size verified on disk (`.embedding/activity-universe.bin` = 156,957,160 bytes ≈ 149.7MB, meta count 4,904,886 events).*
