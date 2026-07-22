@@ -295,15 +295,24 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             )
           : {}),
         renderLinks: true,
-        linkWidth: 0.5,
+        linkWidth: 0.7,
         curvedLinks: false,
-        linkOpacity: 0.28,
+        linkOpacity: 0.42,
+        // Default [50,150]px fades any link longer than 150px to ~7% alpha —
+        // at the far-zoom sample almost every same-author link is longer, so
+        // the whole layer reads as absent and never appears to ride the nodes.
+        linkVisibilityDistanceRange: [80, 1200],
+        linkVisibilityMinTransparency: 0.35,
         pointOpacity: 0.94,
         pointSizeScale: 1.15,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
-        fitViewOnInit: true,
+        // Frozen sources own their init framing below (deferred exact-buffer
+        // fit): cosmos's fitViewOnInit tween reads a possibly-stale GPU bbox
+        // and, firing at 250ms with a ~250ms tween, lands AFTER and stomps any
+        // corrective fit — the cloud then sits as an off-center speck.
+        fitViewOnInit: !props.physics.frozen,
         fitViewDelay: 250,
         fitViewPadding: 0.1,
         pixelRatio,
@@ -418,6 +427,102 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       (g as unknown as { renderFrame?: (timestamp?: number) => void }).renderFrame?.(
         performance.now(),
       );
+
+      // Deterministic init framing (frozen sources only): fitViewOnInit races
+      // the async first position upload — on slow inits it frames a stale bbox
+      // and the cloud lands as an off-center speck. Positions on a frozen
+      // source never move on their own, so after cosmos's own 250ms attempt
+      // has passed, re-frame the EXACT uploaded buffer.
+      // fitViewByPointPositions only sets the camera transform (no rescale).
+      if (props.physics.frozen) {
+        // Deterministic init framing for frozen sources. The fitView* family
+        // maps positions through store.scaleX/scaleY, which on this path are
+        // rebuilt from a RACING first rescale and end up garbage (measured:
+        // world ±350 → [-2008,-1308]) — so every cosmos fit frames a speck.
+        // spaceToScreenPosition IS render-consistent (hover/lasso rely on it),
+        // so frame empirically: probe the rendered screen bbox and correct the
+        // d3 camera via scaleBy/translateBy until the cloud fills the view.
+        const fitFrozenView = (): void => {
+          const gAny = g as unknown as {
+            getPointPositions?: () => number[];
+            spaceToScreenPosition?: (xy: [number, number]) => [number, number];
+            zoomInstance?: {
+              eventTransform?: { k: number };
+              behavior?: {
+                scaleBy: (sel: unknown, k: number, p: [number, number]) => void;
+                translateBy: (sel: unknown, x: number, y: number) => void;
+              };
+            };
+            canvasD3Selection?: unknown;
+            render: () => void;
+          };
+          const pts = gAny.getPointPositions?.();
+          const behavior = gAny.zoomInstance?.behavior;
+          const sel = gAny.canvasD3Selection;
+          if (!pts || pts.length < 4 || !behavior || !sel || !gAny.spaceToScreenPosition) return;
+          const toScreen = (p: [number, number]): [number, number] =>
+            gAny.spaceToScreenPosition!(p);
+          const W = div.clientWidth;
+          const H = div.clientHeight;
+          if (W < 2 || H < 2) return;
+          // Space-bbox center probe point (space coords are what toScreen maps).
+          let sMinX = Infinity, sMaxX = -Infinity, sMinY = Infinity, sMaxY = -Infinity;
+          const stride = Math.max(2, Math.floor(pts.length / 2 / 2000) * 2);
+          for (let i = 0; i + 1 < pts.length; i += stride) {
+            const px = pts[i], py = pts[i + 1];
+            if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+            if (px < sMinX) sMinX = px; if (px > sMaxX) sMaxX = px;
+            if (py < sMinY) sMinY = py; if (py > sMaxY) sMaxY = py;
+          }
+          if (!Number.isFinite(sMinX) || !Number.isFinite(sMinY)) return;
+          const spaceCenter: [number, number] = [(sMinX + sMaxX) / 2, (sMinY + sMaxY) / 2];
+          const corners: [number, number][] = [
+            [sMinX, sMinY], [sMinX, sMaxY], [sMaxX, sMinY], [sMaxX, sMaxY],
+          ];
+          // The translate axes' sign conventions are probed, not assumed.
+          let signX = 1;
+          let signY = 1;
+          for (let iter = 0; iter < 4; iter++) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (const c of corners) {
+              const [sx, sy] = toScreen(c);
+              if (!Number.isFinite(sx) || !Number.isFinite(sy)) return;
+              if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
+              if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+            }
+            const bw = Math.max(1, maxX - minX);
+            const bh = Math.max(1, maxY - minY);
+            const bc: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
+            const s = Math.min((W * 0.86) / bw, (H * 0.86) / bh);
+            const centered =
+              Math.abs(bc[0] - W / 2) < 4 && Math.abs(bc[1] - H / 2) < 4;
+            if (Math.abs(s - 1) < 0.02 && centered) break;
+            behavior.scaleBy(sel, s, bc);
+            const k = gAny.zoomInstance?.eventTransform?.k ?? 1;
+            const before = toScreen(spaceCenter);
+            behavior.translateBy(
+              sel,
+              (signX * (W / 2 - before[0])) / k,
+              (signY * (H / 2 - before[1])) / k,
+            );
+            const after = toScreen(spaceCenter);
+            // If a translate axis moved the cloud AWAY from center, its sign
+            // convention is inverted — learn it for the next iteration.
+            if (Math.abs(after[0] - W / 2) > Math.abs(before[0] - W / 2) + 1) signX = -signX;
+            if (Math.abs(after[1] - H / 2) > Math.abs(before[1] - H / 2) + 1) signY = -signY;
+          }
+          gAny.render();
+        };
+        window.setTimeout(() => {
+          if (cancelled || !g) return;
+          // Slow first loads (cold payload) can leave luma's canvas backing in
+          // a degraded state that renders at a fraction of normal fps until a
+          // real resize lands (measured: 1–20fps cold vs ~66fps after resize).
+          // Force one authoritative resize before framing.
+          (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+          fitFrozenView();
+        }, 450);
+      }
 
       // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs) -----------------
       // The shell computes, from the highest slider: per-node clusterIds + a

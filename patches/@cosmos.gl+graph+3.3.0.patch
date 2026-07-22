@@ -1,8 +1,41 @@
 diff --git a/node_modules/@cosmos.gl/graph/dist/index.js b/node_modules/@cosmos.gl/graph/dist/index.js
-index 07a1abf..76ef0e9 100644
+index 07a1abf..2af3096 100644
 --- a/node_modules/@cosmos.gl/graph/dist/index.js
 +++ b/node_modules/@cosmos.gl/graph/dist/index.js
-@@ -5552,8 +5552,9 @@ void main() {
+@@ -486,7 +486,31 @@ class mt {
+     this.inputPointClusters === void 0 || this.inputPointClusters.length !== this.pointsNumber ? this.pointClusters = void 0 : this.pointClusters = this.inputPointClusters, this.inputClusterPositions === void 0 ? this.clusterPositions = void 0 : this.clusterPositions = this.inputClusterPositions, this.inputClusterStrength === void 0 || this.inputClusterStrength.length !== this.pointsNumber ? this.clusterStrength = void 0 : this.clusterStrength = this.inputClusterStrength;
+   }
+   update() {
+-    this.updatePoints(), this.updatePointColor(), this.updatePointSize(), this.updatePointShape(), this.updatePointImageIndices(), this.updatePointImageSizes(), this.updateLinks(), this.updateLinkColor(), this.updateLinkWidth(), this.updateArrows(), this.updateLinkStyles(), this.updateLinkStrength(), this.updateClusters(), this._createAdjacencyLists(), this._calculateDegrees();
++    // [LECG patch] memoize derived-state rebuilds by input identity + count so
++    // per-frame render() calls with unchanged data skip the adjacency/degree/
++    // color/size rebuilds - see patches/@cosmos.gl+graph+3.3.0.patch
++    this.updatePoints();
++    const lecgMemo = [
++      this.pointsNumber,
++      this.inputPointColors,
++      this.inputPointSizes,
++      this.inputPointShapes,
++      this.inputPointImageIndices,
++      this.inputPointImageSizes,
++      this.inputLinks,
++      this.inputLinkColors,
++      this.inputLinkWidths,
++      this.linkArrowsBoolean,
++      this.inputLinkStyles,
++      this.inputLinkStrength,
++      this.inputPointClusters,
++      this.inputClusterPositions,
++      this.inputClusterStrength
++    ];
++    const lecgPrev = this.__lecgUpdateMemo;
++    if (lecgPrev && lecgMemo.every((v, i) => v === lecgPrev[i])) return;
++    this.__lecgUpdateMemo = lecgMemo;
++    this.updatePointColor(), this.updatePointSize(), this.updatePointShape(), this.updatePointImageIndices(), this.updatePointImageSizes(), this.updateLinks(), this.updateLinkColor(), this.updateLinkWidth(), this.updateArrows(), this.updateLinkStyles(), this.updateLinkStrength(), this.updateClusters(), this._createAdjacencyLists(), this._calculateDegrees();
+   }
+   /**
+    * Returns unique point indices that are neighbors of the given point(s) —
+@@ -5552,8 +5576,9 @@ void main() {
  
    pointPosition.rg += pointVelocity.rg;
  
@@ -14,3 +47,30 @@ index 07a1abf..76ef0e9 100644
    
    fragColor = pointPosition;
  }`, oi = `#version 300 es
+@@ -7439,9 +7464,13 @@ class Li {
+   setPointPositions(e, t) {
+     var n;
+     if (this._isDestroyed || this.ensureDevice(() => this.setPointPositions(e, t))) return;
++    // [LECG patch] a same-count position upload leaves colors/sizes/shapes/
++    // links/cluster/force GPU state valid - only re-flag them when the point
++    // count changes - see patches/@cosmos.gl+graph+3.3.0.patch
++    const lecgSameCount = this.graph.pointsNumber !== void 0 && e != null && e.length / 2 === this.graph.pointsNumber;
+     this.graph.inputPointPositions = e, this.points.shouldSkipRescale = t, this.isPointPositionsUpdateNeeded = !0;
+     const i = (n = this.points) == null ? void 0 : n.currentPositionTexture;
+-    i && !i.destroyed && this.transition.queue(I.Positions), this.isLinksUpdateNeeded = !0, this.isPointColorUpdateNeeded = !0, this.isPointSizeUpdateNeeded = !0, this.isPointShapeUpdateNeeded = !0, this.isPointImageIndicesUpdateNeeded = !0, this.isPointImageSizesUpdateNeeded = !0, this.isPointClusterUpdateNeeded = !0, this.isForceManyBodyUpdateNeeded = !0, this.isForceLinkUpdateNeeded = !0, this.isForceCenterUpdateNeeded = !0;
++    i && !i.destroyed && this.transition.queue(I.Positions), lecgSameCount || (this.isLinksUpdateNeeded = !0, this.isPointColorUpdateNeeded = !0, this.isPointSizeUpdateNeeded = !0, this.isPointShapeUpdateNeeded = !0, this.isPointImageIndicesUpdateNeeded = !0, this.isPointImageSizesUpdateNeeded = !0, this.isPointClusterUpdateNeeded = !0, this.isForceManyBodyUpdateNeeded = !0, this.isForceLinkUpdateNeeded = !0, this.isForceCenterUpdateNeeded = !0);
+   }
+   /**
+    * Sets the colors for the graph points.
+@@ -8199,6 +8228,11 @@ class Li {
+     return await $e.createDevice({
+       type: "webgl",
+       adapters: [Ke],
++      // [LECG patch] dual-GPU machines: without a powerPreference hint the
++      // browser picks the DEFAULT adapter per launch (often the iGPU), which
++      // renders this workload at 1-20fps vs 55-70fps on the discrete GPU.
++      // See patches/@cosmos.gl+graph+3.3.0.patch
++      powerPreference: "high-performance",
+       createCanvasContext: {
+         canvas: e,
+         // Provide existing canvas

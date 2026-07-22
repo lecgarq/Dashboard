@@ -132,11 +132,12 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     const h = harness();
     const m = motionWith(h, base10());
     m.startAmbient();
-    for (const nowMs of [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224]) {
+    for (let nowMs = 0; nowMs <= 560; nowMs += 16) {
       h.step(nowMs);
     }
-    expect(h.handle.morphs).toHaveLength(3); // 0, 112, 224 ms targets
-    expect(h.handle.morphs.every((entry) => entry.durationMs === 120)).toBe(true);
+    // 250ms tier-0 cadence → targets at 0, 256, 512 ms only.
+    expect(h.handle.morphs).toHaveLength(3);
+    expect(h.handle.morphs.every((entry) => entry.durationMs === 270)).toBe(true);
     expect(h.handle.pushes).toHaveLength(0);
   });
 

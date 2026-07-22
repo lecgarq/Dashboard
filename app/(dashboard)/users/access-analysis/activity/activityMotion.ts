@@ -88,9 +88,14 @@ export interface ActivityMotion {
 export const AMBIENT_SUBSET_CAP = 100_000;
 /** 37-BASELINE choreography constants (73 fps @106k proven). */
 const DRIFT_AMP = 2.4;
-/** Full-set uploads are the measured bottleneck; GPU interpolation fills the frames. */
-const TIER_0_TARGET_MS = 100;
-const TIER_1_TARGET_MS = 200;
+/**
+ * Full-set uploads are the measured bottleneck; GPU interpolation fills the
+ * frames. 250ms cadence: at 100ms each upload's synchronous GPU work blocked
+ * the main thread ~90ms/tick on the iGPU once the view was correctly framed
+ * (measured 2026-07-22: idle 31fps with 30 long tasks/6s → cadence halved).
+ */
+const TIER_0_TARGET_MS = 250;
+const TIER_1_TARGET_MS = 450;
 const TRANSITION_OVERLAP_MS = 20;
 
 export interface CreateActivityMotionOpts {
