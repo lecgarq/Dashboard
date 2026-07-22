@@ -1,6 +1,8 @@
 # Codebase Concerns
 
 **Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-22 — v2.7 milestone-close reconciliation; Phase 37/39 transient
+debt resolved or bounded by Phase 41 evidence, standing operational ceilings retained.
 **Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 status update (repo-map basis unchanged, 2026-06-19)
 **Refreshed:** 2026-07-16 — post-v2.4 close (d3768490) status sweep; repo-map re-run (`node scripts/repo-map/check.cjs` PASS: 2 dependency-cruiser warnings, 236 ast-grep findings, 0 blocking). See the "2026-07-16 Refresh" section at the end.
 **Repo-map date:** 2026-07-14 (ast-grep-report.json `generatedAt`)
@@ -159,6 +161,9 @@
 - **What it is:** Isolating a node runs a deliberate camera focus session (`focusPoint` → cosmos `zoomToPointByIndex`, scale 2.25). On Escape, `restoreView` calls cosmos `setZoomTransformByPointPositions(view.center, duration, view.zoom, 0, false)` but the camera stays at the focused level — measured live on the e2e harness: zoom 1.000 (pre-focus) → 0.265 (focused) → 0.252 (after Escape). Isolation state itself clears correctly.
 - **Impact:** Presenter must manually re-zoom after every node inspection; the "reversible" half of the focus-session contract is unimplemented in effect. The re-baselined e2e (Phase 34) deliberately does NOT assert restore — a fix should re-add that assertion.
 - **Guardrail seed:** verify the cosmos.gl `setZoomTransformByPointPositions` argument semantics (center/scale/padding) against the installed 3.3.0 API; `fitViewByPointPositions` with the captured spread may be the correct restore primitive.
+- **Status (2026-07-22, v2.7 close): SUPERSEDED.** The user-instance focus interaction
+  was retired by ACT-03. Activity-node clicks now open the event detail rail without a
+  camera-focus session, so there is no restore contract on the shipped route.
 
 ### 3.9 Default e2e dev-server harness broken; verify-config is the real path (2026-07-20, Phase 34)
 
@@ -172,6 +177,9 @@
 - **Files:** `app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx` (`blobDesc` gated on `ACC_3D_GRAPH_ENABLED`), `MapClusterLabels.tsx`
 - **What it is:** `blobDesc` is only built when the 3D flag is on, so `MapClusterLabels` receives empty labels and renders nothing on the default flag-OFF embedding map — even with grouping active at full strength. The e2e assertion was deleted accordingly (E2E-01).
 - **Impact:** If the owner expects named cluster chips on the default map (they shipped there pre-redesign), this is a silent feature regression of the uncommitted redesign branch, not an e2e problem.
+- **Status (2026-07-22, v2.7 close): SUPERSEDED.** ACT-03 removed the instance-map flag
+  path. DIM-07 now supplies activity-native cluster labels during group morphs through
+  `ActivityUniverseShell` → `MapClusterLabels`, independent of the retired 3D flag.
 
 ### 3.11 Instance-era sidebar closeout audit (2026-07-21, Phase 40; resolved Phase 41)
 
@@ -696,6 +704,9 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   full-set push dead ≥250k. Phase 40 must ship custom GPU-shader displacement
   or bounded-subset (~100k class, 73 fps proven) ambient — decided from
   37-BASELINE.md, not re-measured assumptions.
+  **Status (2026-07-22): RESOLVED.** Phase 40 shipped the bounded ≤100k ambient subset;
+  Phase 41 bounded target uploads to 10 Hz at Tier 0 / 5 Hz at Tier 1 and measured
+  67.225 fps with ambient active and Tier 0→0.
 - **[NEW Ph37] faiss flat-index projection slower than full fit.** IndexFlatL2
   kNN projection measured 840 rows/s (~77 min for the 3.86M remainder) vs ~34 min
   extrapolated full-corpus PaCMAP fit. If Phase 38 wants sample-fit+projection
@@ -704,6 +715,9 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
 - **[NEW Ph37] scale-spike surface lifecycle.** `/users/scale-spike` +
   `/api/scale-spike/payload` are committed, flag-gated (`NEXT_PUBLIC_ACC_SCALE_SPIKE`),
   404/dead without the flag. Remove or re-gate at v2.7 milestone close.
+  **Close decision (2026-07-22): RETAIN.** The existing production-off flag is the
+  smallest reusable workshop-machine regression harness; live production proved the API
+  404 with the flag off. Remove only if the scale gate is permanently retired.
 
 ## Phase 38 debt roll-forward (2026-07-21 — Activity Data Pipeline & Embedding)
 
@@ -744,10 +758,16 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   the retired 22,279-node universe. E2E-03 re-baselines them against
   `window.__ACTIVITY_UNIVERSE_TEST__` (`isReady()`/`getState()`); do NOT
   "fix" them piecemeal before that.
+  **Status (2026-07-22): RESOLVED.** E2E-03 replaced the retired bridge with the
+  deterministic activity fixture; both route aliases, time, dimensions, reduced motion,
+  and lasso passed 4/4 on the isolated production harness.
 - **[NEW Ph39] Region-LOD viewport filter is an O(4.9M) JS scan per debounced
   interaction-end** (`activity/lodSample.ts` viewportIndices, ~10–30 ms class).
   Fine single-user/static; Phase 41's time-to-graph + fps measurements decide
   whether it needs a spatial index or GPU mask.
+  **Close evidence:** no index needed at the shipped scale: navigation-ready median
+  1,699.7 ms and the binding renderer gate held 67.225 fps. Revisit only if corpus growth
+  or interaction-end latency regresses.
 - **[NEW Ph39] eventDetail index→id depends on artifact/meta consistency.**
   Row order = build-time ORDER BY id; meta idAnchors are recorded at build.
   After any table change, REBUILD the payload artifact
@@ -760,7 +780,12 @@ These are *source* ceilings, not bugs — new analytics must disclose them rathe
   decision 2). If Phase 40 rebuilds activity-native instead of reusing, sweep
   the leftovers at milestone close. `AccInstanceEmbedding` TABLE drop is also
   a milestone-close item.
+  **Status (2026-07-22): RESOLVED.** Phase 40 removed the clean retired sidebar shell;
+  Phase 41 re-audited the remainder, deleted only zero-importer `SelectionContext`, and
+  dropped the dead instance-embedding table/model/scripts/mocks while preserving WIP.
 - **[Ph39 note] Stale Prisma comment:** `AccActivityEmbedding.id` doc says
   `"a:"/"d:"` — real spaces are `"accds:"+accdsActivityId` / plain
   AccActivity cuid (see compute_activity_embeddings.py). Fix with the next
   schema-touching change.
+  **Status (2026-07-22): RESOLVED.** The schema now documents the real
+  `"accds:"+accdsActivityId | AccActivity.id` convention.

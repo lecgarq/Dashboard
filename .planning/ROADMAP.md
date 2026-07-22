@@ -11,7 +11,7 @@
 - ✅ **v2.4 Spatial Graph Dimensions** - Phases 24-28 (+28.1) (shipped 2026-07-16)
 - ✅ **v2.5 Living Graph** - Phases 29-33 (shipped 2026-07-20)
 - ✅ **v2.6 Full-Rate Graph** - Phases 34-36 (shipped 2026-07-20)
-- 🚧 **v2.7 Activity Universe** - Phases 37-41 (ACTIVE — opened 2026-07-20)
+- ✅ **v2.7 Activity Universe** - Phases 37-41 (shipped 2026-07-22)
 
 ---
 
@@ -1086,7 +1086,7 @@ v2.4 Phase 28 / v2.5 Phase 33).
 
 ---
 
-## 🚧 v2.7 Activity Universe (ACTIVE — opened 2026-07-20)
+## ✅ v2.7 Activity Universe (Opened 2026-07-20 — Shipped 2026-07-22)
 
 **Milestone goal:** Change the spatial graph's node grain from user×project instances
 (22,279 nodes) to **one node per extracted activity event** — the full raw corpus
@@ -1132,7 +1132,7 @@ TEST-01/02/03 stay green.
 - [x] **Phase 41: Time Scrubber, Hard Gate & Closeout** - TIME-01 temporal scrubber, E2E
   re-baseline, and measure-last hard gate complete 2026-07-21: payload 451 ms median,
   navigation-ready 1,699.7 ms median, headed D3D11 67.225 fps / Tier 0→0; deployed
-  BUILD_ID `QJVfBFWLtaVk9USrIvqbD`. Milestone audit/close follows separately.
+  BUILD_ID `QJVfBFWLtaVk9USrIvqbD`. Milestone audit closed 2026-07-22 with 12/12 shipped.
 
 ## Phase Details
 

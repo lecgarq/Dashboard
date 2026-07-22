@@ -6,8 +6,8 @@ current_phase: 41
 current_phase_name: "Time Scrubber, Hard Gate & Closeout"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 41 complete and deployed (BUILD_ID QJVfBFWLtaVk9USrIvqbD; D3D11 67.225 fps Tier 0→0; authenticated 4,904,886-event probe green) — next: $lecg-close-milestone"
-last_updated: "2026-07-21T19:26:43-06:00"
+stopped_at: "milestone v2.7 closed — next: $lecg-new-milestone"
+last_updated: "2026-07-22T10:19:37-06:00"
 ---
 
 # Project State
@@ -17,41 +17,19 @@ last_updated: "2026-07-21T19:26:43-06:00"
 See: `.planning/PROJECT.md` (updated 2026-07-21)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.7 Activity Universe — spatial graph node grain becomes one node per
-extracted activity event.
+**Current focus:** v2.7 Activity Universe closed; next milestone not yet defined.
 
 ## Current Position
 
-- **Milestone:** **v2.7 Activity Universe — OPENED 2026-07-21** (owner goal given
-  2026-07-20). 12 requirements (SCALE-01/02, ACT-01–04, EMB-07, DIM-07, PERF-07, TIME-01,
-  REND-04, E2E-03), phases 37–41, 12/12 mapped, breakdown owner-approved 2026-07-21.
-- **Owner scope decisions (recorded in REQUIREMENTS "Read Before Planning"):** ALL
-  4,862,301 raw activity events chosen over offered bounded grains (106k/40k); full
-  replace of the user-instance graph, no mode toggle, dimension sliders must survive;
-  hard ≥50fps Tier-0 bar retained; TIME-01 temporal scrubber folded in. Safety mechanism:
-  Phase-37 feasibility spike picks the shipped rung on an owner-approved fallback ladder
-  (L0 all-animated → L1 decimated ambient → L2 far-zoom LOD → L3 verb+month grain
-  106,196) — every activity counted at every rung.
-- **Grain census (measured 2026-07-21, read-only):** `AccActivityAccds` 4,862,301 rows
-  (grew from the 2026-06-23 census 4,554,785) · last 12 months 4,458,926 · distinct
-  authors 2,313 · user+project+verb+month 106,196 · user+project+month 40,166 · current
-  graph 22,279 nodes.
-- **Phase 37 COMPLETE 2026-07-21 — owner locked ladder rung L2 (LOD rendering).**
-  Evidence (`37-BASELINE.md`, hardware D3D11 Intel iGPU): full 4,862,301-point render
-  8 fps static (L0/L1 FAIL), ≥50 fps static ceiling ≈ 500k rendered points, L3 grain
-  106,196 green everywhere (73 fps CPU ambient); binary columnar payload 73 MB in
-  1,072 ms total; PaCMAP 1M fit 379.8 s measured, full-fit ~34 min (extrapolation),
-  determinism identical; cosmos GPU force sim NOT the ambient path (20.4 fps @500k);
-  faiss flat projection slower than full fit. Spike surfaces flag-gated
-  (`NEXT_PUBLIC_ACC_SCALE_SPIKE`), 404 in prod. Deployed BUILD_ID
-  `LGy8KOP1nWXoeczYd5-8J` (health 200). SwiftShader measurement trap recorded in
-  CONCERNS (fps specs must run headed + D3D11 + renderer guard).
-- **Phase 41 COMPLETE + DEPLOYED 2026-07-21.** TIME-01 exact-month scrubber,
-  E2E-03 activity fixture/re-baseline, instance-embedding cleanup, and REND-04
-  are verified. Full artifact: payload 451 ms median, navigation-ready 1,699.7
-  ms median, headed D3D11 67.225 fps over 12.004 s with ambient active and Tier
-  0→0. BUILD_ID `QJVfBFWLtaVk9USrIvqbD`; health 200/database connected;
-  authenticated route showed 4,904,886 / 4,904,886 events.
+- **Milestone:** **v2.7 Activity Universe — SHIPPED 2026-07-22.** All 12 requirements
+  shipped across Phases 37–41. Retrospective and evidence audit are in `MILESTONES.md`;
+  requirements and roadmap are archived under `.planning/milestones/v2.7-*`.
+- **Outcome:** owner-approved L2 keeps all 4,904,886 activity events resident/countable
+  while 490,489 render at far zoom; 94.41% author resolution, eight activity dimensions,
+  exact-month playback, 451 ms payload median, and 1,699.7 ms navigation-ready median.
+- **Final proof:** headed Intel D3D11 held 67.225 fps for 12.004 s with ambient active and
+  Tier 0→0. BUILD_ID `QJVfBFWLtaVk9USrIvqbD`; health/database probe and authenticated
+  4,904,886-event route probe passed.
 - **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
   v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
   v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
@@ -59,8 +37,8 @@ extracted activity event.
 
 ## Status (data baseline — still current)
 
-- **State:** Data extraction COMPLETE and VERIFIED (census below), unchanged since
-  2026-06-23. v2.1–v2.4 all shipped on this baseline; v2.5 adds no new data source.
+- **State:** Data extraction COMPLETE and VERIFIED (historical census below). v2.7 added
+  derived activity embeddings and a binary artifact, not a new external data source.
 
 ## Data Extraction — Verified 2026-06-23
 
@@ -94,32 +72,32 @@ spot-check reconciles.
 
 ## Deferred Items
 
-Updated at the v2.7 open (2026-07-21). **Absorbed into v2.7 requirements** (dropped from
-this list): TIME-01 temporal scrubber (→ TIME-01, unblocked — month is a native node
-attribute at activity grain).
+Carried forward after the v2.7 close (2026-07-22). TIME-01 and the activity-universe
+renderer work are shipped and removed from this list.
 
 1. **Issue dims on the graph** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser`
    resolution spike, unmeasured rate). Was the stated v2.7 entry ticket; **superseded by
    the owner's activity-universe goal** → v2.8 candidate.
 2. **Data-truth items** — SVC-01 service-override attribution refinement; DIM-05
    project-coverage denominator (verify whether 550/1,153 is correct before ever displaying
-   it; `VERIFY:` in `dimensionCoverage.ts`). Not picked for v2.6.
-3. **PaCMAP MN_ratio/FP_ratio tuning** — package defaults shipped; revisit only on owner
-   UAT ask (CONCERNS, phase-29 tagged).
+   it; `VERIFY:` in `dimensionCoverage.ts`).
+3. **Activity embedding economics/tuning** — PaCMAP defaults shipped; a full fit costs
+   about 50 minutes and 15.7 GB RSS. Tune ratios/features or add incremental projection
+   only on owner UAT or materially more frequent rebuilds (CONCERNS Phase 38).
 4. **DC-01 / DC-02** — external Account Admin provisioning blocker, unchanged.
 5. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
-   ORPHAN-01 (PresetBar/SliderGroup/dimensionSearch/dimensionWeights orphans), TEST-SPLIT-01
+   ORPHAN-01 (remaining SliderGroup/dimensionSearch/dimensionWeights orphans), TEST-SPLIT-01
    (CONCERNS §8.2/8.3 giant test files — E2E-01 re-baselines assertions, does NOT split
    files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20–23 + 07 still on disk),
    Phase-17 SPLIT-04 owner visual sign-off (test-basis-only, no live mount), per-folder
    terrain projection seed.
-6. **Focus-session camera restore** — Escape clears isolation but does not restore the
-   pre-focus camera (`CONCERNS.md` §3.8); re-add the e2e assertion when fixed.
-7. **Default e2e dev harness** — `playwright.config.ts` still stalls on `/login`; the
+6. **Default e2e dev harness** — `playwright.config.ts` still stalls on `/login`; the
    established production-build `playwright.verify.config.ts` harness remains the real gate
    (`CONCERNS.md` §3.9).
-8. **Cluster-label chips on the default graph** — currently flag-ON-only; owner decision
-   required before treating this as a regression (`CONCERNS.md` §3.10).
+7. **Activity-universe operational ceilings** — payload route buffers 149.7 MB per
+   non-304 request; region LOD scans 4.9M rows at interaction end; event detail depends on
+   artifact/meta/table order. Current measured gates pass; harden only when concurrency,
+   corpus growth, or latency makes a ceiling real (CONCERNS Ph38/Ph39).
 
 ## Accumulated Context
 
@@ -133,8 +111,7 @@ attribute at activity grain).
 - Server-side SQL/`groupBy` for any large-table aggregate, never `findMany` + JS reduce
   (TEST-01 OOM-guard class).
 - `prisma migrate dev` chokes on the pre-existing pgvector shadow-DB requirement — raw-SQL
-  + `migrate resolve` is the established fallback (should be unneeded this milestone: no
-  migration planned).
+  + `migrate resolve` is the established fallback.
 - Layouts organic, never a fixed grid (standing owner constraint).
 - `prefers-reduced-motion` → static; interaction motion ≤200ms.
 - PERF-02 frozen-handle invariant + TEST-01/02/03 stay green throughout.
@@ -148,6 +125,5 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Run `$lecg-close-milestone`**: audit all 12 v2.7 requirements against the
-phase verification files, append the retrospective, archive the milestone
-requirements/roadmap, prune completed phase directories, and close v2.7.
+**Run `$lecg-new-milestone`.** Seed it from Deferred Items and the live debt in
+`.planning/codebase/CONCERNS.md`; ISSUE-GRAPH-01 remains the leading v2.8 candidate.

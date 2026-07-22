@@ -1,5 +1,82 @@
 # Milestones — LECG Dashboard
 
+## v2.7 Activity Universe (Shipped: 2026-07-22)
+
+**Phases:** 5 (37–41) · **Requirements:** 12/12 shipped · **Span:** 2026-07-20 →
+2026-07-22 · **Tag:** _local-only_
+
+**Goal vs outcome:** Replace the 22,279-node user×project spatial graph with one node per
+extracted activity event, preserve dimension-driven exploration, add time, and still pass
+the workshop machine's hard ≥50 fps Tier-0 gate. **Achieved at the owner-approved L2
+rung:** all 4,904,886 events stay resident and counted while a deterministic 490,489-point
+far-zoom set renders. The graph now carries event and author properties, exposes eight
+activity-native dimensions, supports exact-month playback, and serves a 149.7 MB binary
+columnar artifact in 451 ms median. The final headed D3D11 sample held 67.225 fps for
+12.004 seconds with ambient active and Tier 0 unchanged; navigation-ready median was
+1,699.7 ms. The instance graph and embedding storage were retired cleanly.
+
+**Per-requirement audit:**
+
+| Req | Verdict | Phase | Evidence |
+|---|---|---|---|
+| SCALE-01 full-scale feasibility + ladder | ✅ shipped | 37 | Full 4,862,301-point render, payload, memory, and embedding probes recorded; L0/L1 failed and owner locked L2; `37-BASELINE.md`, `37-VERIFICATION.md`, `f772f5bc` |
+| SCALE-02 binary payload + budget | ✅ shipped | 38 | 4,904,886-row typed-array artifact, ETag/304 route, 424 ms median vs 2,500 ms; closeout remeasure 451 ms; `38-VERIFICATION.md`, `41-VERIFICATION.md`, `19735550` |
+| ACT-01 one event node at shipped rung | ✅ shipped | 39 | 4,904,886 resident / 490,489 rendered at L2 with real event columns, module colors, recency sizing, and PaCMAP layout; `39-VERIFICATION.md`, `f5514155` |
+| ACT-02 author inheritance + coverage | ✅ shipped | 38 | Author sidecar uses the `mergeRoleNames` path; 94.41% resolved / 5.59% unknown, reconciled and surfaced with explicit Unknown author; `38-VERIFICATION.md`, `39-VERIFICATION.md`, `fa2502c2` |
+| ACT-03 full instance-graph replacement | ✅ shipped | 39 | Both route aliases resolve to the activity surface; old payload/loaders/3D/kNN path removed, then dead instance table/model/scripts/mocks retired in Phase 41; `39-VERIFICATION.md`, `41-VERIFICATION.md`, `f805a887` + `c28cb962` |
+| ACT-04 honest event interaction | ✅ shipped | 39 | Resident hover labels, on-demand event detail, `UserProfilePanel`, Unknown-author state, and rendered-subset lasso; fixture lasso green; `39-VERIFICATION.md`, `41-VERIFICATION.md`, `d1bda10d` |
+| EMB-07 deterministic activity embedding | ✅ shipped | 38 | 71-dim author+event full-fit PaCMAP, seed 42, two byte-identical 4,904,886-row fits, quality gate before write, raw-SQL migration, fresh-connection durability proof; `38-VERIFICATION.md`, `eaf402cb` |
+| DIM-07 activity-native dimensions | ✅ shipped | 40 | Eight descriptors, honest coverage, organic group layout, color-by, and strength controls; activity sweep 37/37; `40-VERIFICATION.md`, `6b7be17a` + `5f11dada` |
+| PERF-07 GPU morph + evolved contract | ✅ shipped | 40 | Cosmos-native GPU position transitions, bounded ambient subset, and explicit may/may-not motion contract pins; final Tier-0 proof in Phase 41; `40-VERIFICATION.md`, `41-VERIFICATION.md`, `2356e659` |
+| TIME-01 temporal scrubber | ✅ shipped | 41 | All/exact-month filtering, one-second playback, atomic point-set/count/legend updates, and reduced-motion static stepping; `41-VERIFICATION.md`, `f2c7bad8` |
+| REND-04 hard ≥50 fps Tier-0 gate | ✅ shipped | 41 | Headed Intel D3D11, 67.225 fps over 12.004 s, ambient active, Tier 0→0, 4,904,886 resident / 490,489 rendered; `41-VERIFICATION.md`, `72a8b71d` |
+| E2E-03 activity-universe harness | ✅ shipped | 41 | Deterministic 180-event fixture; route aliases, time, dimensions, reduced motion, and lasso passed 4/4 in 11.8 s on isolated production harness; `41-VERIFICATION.md`, `2eefe742` |
+
+**Phases shipped:** 37 Scale Feasibility Spike & Fallback Ladder (2026-07-21,
+BUILD_ID `LGy8KOP1nWXoeczYd5-8J`) · 38 Activity Data Pipeline & Embedding
+(2026-07-21, `je7yDXXumvtzNylv874vC`) · 39 Activity Universe Swap (2026-07-21,
+`8Va2aGSw6-sTC0SXkgNxO`) · 40 Dimensions & Sliders at Scale (2026-07-21,
+`nisFtHzavDZXZs-Ej75XB`) · 41 Time Scrubber, Hard Gate & Closeout (2026-07-21,
+`QJVfBFWLtaVk9USrIvqbD`, authenticated 4,904,886-event production probe).
+
+**Durable traps & decisions (carry forward):**
+
+1. Full residency is not full rendering. L2 keeps every event resident/countable while
+   far-zoom rendering is deterministically decimated; the owner chose this from measured
+   L0/L1 failures, not as an invisible fallback.
+2. FPS evidence must be headed, forced to D3D11, and reject SwiftShader. Headless software
+   raster numbers are not workshop-hardware evidence.
+3. At 490k rendered points, Cosmos GPU interpolation works, but per-frame full-buffer
+   target uploads do not. Bound ambient targets to 10 Hz at Tier 0 / 5 Hz at Tier 1.
+4. A 149.7 MB whole-file payload is acceptable for the current single-user local service
+   because ETag/304 and the 451 ms gate hold. Stream only if concurrency or memory proves it
+   necessary.
+5. Full-corpus PaCMAP costs about 50 minutes and 15.7 GB RSS per fit, not the spike's
+   extrapolated 34 minutes / 6 GB. Psycopg writes require an explicit commit plus a fresh-
+   connection proof; same-session counts can lie after a savepoint rollback.
+6. Event detail depends on payload/meta/table row-order consistency. Rebuild the artifact
+   after table changes; the live path returns an honest stale result instead of wrong data.
+7. The scale-spike route stays behind its existing production-off flag as the smallest
+   reusable regression harness. Production returned 404 with the flag off.
+
+**Deferred items (destinations):**
+
+- ISSUE-GRAPH-01 issue-author resolution spike + issue dimensions → v2.8 candidate.
+- SVC-01 attribution refinement and DIM-05 550/1,153 denominator verification → future
+  data-truth phase; DC-01/DC-02 remain externally blocked.
+- Activity PaCMAP ratio/feature tuning and incremental projection → only on owner UAT or
+  materially more frequent rebuilds; current full-fit is manual and quality-gated.
+- Default Playwright dev harness repair → tooling phase; the isolated production harness
+  remains authoritative (`CONCERNS.md` §3.9).
+- Payload streaming, region-LOD spatial indexing, and artifact/meta coupling hardening →
+  only when concurrency, corpus growth, or measured latency makes the present ceilings real.
+- Standing COMPANY-GRAIN-01, ORPHAN-01, TEST-SPLIT-01, MILESTONES v2.1/v2.2 backfill,
+  v2.3 phase-dir prune, Phase-17 SPLIT-04 owner visual sign-off, and terrain seed debt carry.
+
+**Archive:** [`milestones/v2.7-ROADMAP.md`](milestones/v2.7-ROADMAP.md) · [`milestones/v2.7-REQUIREMENTS.md`](milestones/v2.7-REQUIREMENTS.md)
+
+---
+
 ## v2.6 Full-Rate Graph (Shipped: 2026-07-20)
 
 **Phases:** 3 (34–36) · **Requirements:** 8/8 shipped · **Span:** 2026-07-20 · **Tag:** _local-only_
