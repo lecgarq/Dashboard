@@ -4,23 +4,20 @@
 /**
  * scripts/measure-spatial-graph-baseline.cjs
  *
- * Re-runnable orchestrator for the /users/spatial-graph first-paint /
- * time-to-graph-rendered baseline (Phase 24, PERF-04). Phase 28 re-runs this
- * SAME script against the same isolated :3100 prod-build mechanism, so the
- * no-regression comparison stays apples-to-apples.
+ * Re-runnable Phase-41 orchestrator for the full activity-universe payload,
+ * navigation-to-ready, and headed D3D11 frame-rate gates.
  *
  * This script does NOT build or start the server itself — that stays an
  * explicit, owner-visible step (printed below on preflight failure). It only:
  *   1. Preflights that :3100 is already up.
  *   2. Records the measurement conditions (cosmos.gl version, patch presence,
  *      BUILD_ID, commit hash, date).
- *   3. Runs the Playwright spec that performs the actual N=5 measured loads.
- *   4. Merges the spec's JSON output with the environment record and prints
- *      the final JSON block (24-BASELINE.md is written from this).
+ *   3. Runs the payload, N=5 navigation, and headed hard-gate Playwright specs.
+ *   4. Merges their JSON artifacts with the environment record.
  *
  * Re-run instructions (PowerShell, from repo root):
  *   $env:NEXT_PUBLIC_ACC_GRAPH_TEST="1"; $env:NEXT_DIST_DIR=".next-e2e"; npx next build --webpack
- *   $env:NEXT_DIST_DIR=".next-e2e"; npx next start -p 3100
+ *   $env:NEXT_DIST_DIR=".next-e2e"; Remove-Item Env:ACC_ACTIVITY_TEST_FIXTURE -ErrorAction SilentlyContinue; npx next start -p 3100
  *   node scripts/measure-spatial-graph-baseline.cjs
  */
 
@@ -30,15 +27,19 @@ const { spawnSync } = require("node:child_process");
 
 const REPO_ROOT = path.join(__dirname, "..");
 const PREFLIGHT_URL = "http://localhost:3100/login";
-const SPEC_NAME = "spatial-graph-baseline";
-const SPEC_OUTPUT = path.join(REPO_ROOT, "test-results", "spatial-graph-baseline.json");
+const SPEC_NAMES = ["activity-payload", "spatial-graph-baseline", "activity-universe-hard-gate"];
+const SPEC_OUTPUTS = {
+  payload: path.join(REPO_ROOT, "test-results", "activity-payload.json"),
+  navigation: path.join(REPO_ROOT, "test-results", "spatial-graph-baseline.json"),
+  hardGate: path.join(REPO_ROOT, "test-results", "activity-universe-hard-gate.json"),
+};
 
 const BUILD_INSTRUCTIONS = `
 :3100 is not responding. This script does not build/start the server itself
 (kept side-effect free). Run these first, from the repo root (PowerShell):
 
   $env:NEXT_PUBLIC_ACC_GRAPH_TEST="1"; $env:NEXT_DIST_DIR=".next-e2e"; npx next build --webpack
-  $env:NEXT_DIST_DIR=".next-e2e"; npx next start -p 3100
+  $env:NEXT_DIST_DIR=".next-e2e"; Remove-Item Env:ACC_ACTIVITY_TEST_FIXTURE -ErrorAction SilentlyContinue; npx next start -p 3100
 
 Then re-run: node scripts/measure-spatial-graph-baseline.cjs
 `;
@@ -75,7 +76,7 @@ function recordEnvironment() {
 function runPlaywright() {
   const result = spawnSync(
     "npx",
-    ["playwright", "test", SPEC_NAME, "--config", "playwright.verify.config.ts"],
+    ["playwright", "test", ...SPEC_NAMES, "--config", "playwright.verify.config.ts"],
     { stdio: "inherit", cwd: REPO_ROOT, shell: process.platform === "win32" },
   );
   return result.status === 0;
@@ -97,16 +98,22 @@ async function main() {
     return;
   }
 
-  if (!existsSync(SPEC_OUTPUT)) {
-    console.error(`[measure-spatial-graph-baseline] Expected spec output not found: ${SPEC_OUTPUT}`);
-    process.exit(1);
-    return;
+  for (const output of Object.values(SPEC_OUTPUTS)) {
+    if (!existsSync(output)) {
+      console.error(`[measure-spatial-graph-baseline] Expected spec output not found: ${output}`);
+      process.exit(1);
+      return;
+    }
   }
 
-  const specResult = JSON.parse(readFileSync(SPEC_OUTPUT, "utf8"));
-  const merged = { ...environment, ...specResult };
+  const merged = {
+    ...environment,
+    payload: JSON.parse(readFileSync(SPEC_OUTPUTS.payload, "utf8")),
+    navigation: JSON.parse(readFileSync(SPEC_OUTPUTS.navigation, "utf8")),
+    hardGate: JSON.parse(readFileSync(SPEC_OUTPUTS.hardGate, "utf8")),
+  };
 
-  console.log("\n=== BASELINE RESULT (merged) ===");
+  console.log("\n=== ACTIVITY UNIVERSE GATE RESULT (merged) ===");
   console.log(JSON.stringify(merged, null, 2));
 }
 

@@ -3,6 +3,7 @@ import {
   activityUniversePaths,
   readActivityUniverseMeta,
 } from "@/lib/server/activityUniversePayload";
+import { activityUniverseTestFixture } from "@/lib/server/activityUniverseTestFixture";
 
 // v2.7 Phase 38 (SCALE-02): serves the activity-universe binary columnar
 // payload materialized by scripts/build-activity-universe-payload.ts.
@@ -16,7 +17,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
-  const meta = readActivityUniverseMeta();
+  const fixtureEnabled =
+    process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1" &&
+    process.env.ACC_ACTIVITY_TEST_FIXTURE === "1";
+  const fixture = fixtureEnabled ? activityUniverseTestFixture() : null;
+  const meta = fixture?.meta ?? readActivityUniverseMeta();
   if (!meta) {
     return Response.json(
       { error: "activity-universe artifact not built — run compute_activity_embeddings.py then build-activity-universe-payload.ts" },
@@ -33,10 +38,12 @@ export async function GET(request: Request): Promise<Response> {
       headers: { ETag: etag, "Cache-Control": "public, max-age=0, must-revalidate" },
     });
   }
-  // ponytail: whole-file Buffer per request (~73 MB); switch to a stream if
-  // concurrent readers ever matter on this single-user box.
-  const bytes = readFileSync(activityUniversePaths().bin);
-  return new Response(new Uint8Array(bytes), {
+  // ponytail: whole-file bytes per request (~149.7 MB on the real artifact);
+  // switch to a stream if concurrent readers ever matter on this single-user box.
+  const bytes = fixture
+    ? new Uint8Array(fixture.payload)
+    : new Uint8Array(readFileSync(activityUniversePaths().bin));
+  return new Response(bytes, {
     status: 200,
     headers: {
       "Content-Type": "application/octet-stream",
