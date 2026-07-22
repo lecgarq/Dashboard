@@ -4,7 +4,8 @@
  * this path (the instance physicsLayer tests keep pinning that module):
  *   - morph = ONE upload per commit via morphPointSet (GPU transition), never
  *     per-frame CPU writes during the transition window
- *   - ambient mutates ONLY its deterministic subset, around the current base
+ *   - ambient mutates ONLY its deterministic subset, around the current base,
+ *     and uploads bounded targets for GPU interpolation rather than every rAF
  *   - the layer can never reach a force-sim surface (handle slice is push/morph)
  *   - prefers-reduced-motion → fully static (no ambient, snap morphs)
  */
@@ -79,28 +80,27 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     const m = motionWith(h, base10());
     m.startAmbient();
     h.step(0); // first ambient frame
-    const pushesBefore = h.handle.pushes.length;
+    const morphsBefore = h.handle.morphs.length;
 
     const target = new Float32Array(20).fill(500);
     h.clock.now = 100;
     m.morphTo(target, 600);
-    expect(h.handle.morphs).toHaveLength(1);
-    expect(h.handle.morphs[0].durationMs).toBe(600);
+    expect(h.handle.morphs).toHaveLength(morphsBefore + 1);
+    expect(h.handle.morphs.at(-1)?.durationMs).toBe(600);
 
     // Frames inside the transition window: NO CPU position pushes.
     h.step(116);
     h.step(300);
     h.step(699);
-    expect(h.handle.pushes.length).toBe(pushesBefore);
-    expect(h.handle.morphs).toHaveLength(1);
+    expect(h.handle.morphs).toHaveLength(morphsBefore + 1);
 
     // After the window, ambient resumes around the NEW base.
     h.step(750);
     h.step(800);
-    const resumed = h.handle.pushes[h.handle.pushes.length - 1];
+    const resumed = h.handle.morphs.at(-1)?.positions;
     expect(resumed).toBeDefined();
     // Non-subset entries sit exactly on the morph target (new base).
-    expect(resumed[2]).toBe(500);
+    expect(resumed![2]).toBe(500);
   });
 
   it("ambient mutates ONLY the deterministic subset around the current base", () => {
@@ -110,21 +110,34 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     m.startAmbient();
     h.step(0);
     h.step(16);
-    const frame = h.handle.pushes[h.handle.pushes.length - 1];
+    const frame = h.handle.morphs.at(-1)?.positions;
+    expect(frame).toBeDefined();
     const subset = new Set([0, 4, 8]);
     let changed = 0;
     for (let i = 0; i < 10; i++) {
-      const moved = frame[i * 2] !== base[i * 2] || frame[i * 2 + 1] !== base[i * 2 + 1];
+      const moved = frame![i * 2] !== base[i * 2] || frame![i * 2 + 1] !== base[i * 2 + 1];
       if (moved) {
         changed += 1;
         expect(subset.has(i)).toBe(true);
         // Drift is bounded by the choreography amplitude.
-        expect(Math.abs(frame[i * 2] - base[i * 2])).toBeLessThanOrEqual(2.4 + 1e-6);
-        expect(Math.abs(frame[i * 2 + 1] - base[i * 2 + 1])).toBeLessThanOrEqual(2.4 * 0.72 + 1e-6);
+        expect(Math.abs(frame![i * 2] - base[i * 2])).toBeLessThanOrEqual(2.4 + 1e-6);
+        expect(Math.abs(frame![i * 2 + 1] - base[i * 2 + 1])).toBeLessThanOrEqual(2.4 * 0.72 + 1e-6);
       }
     }
     expect(changed).toBeGreaterThan(0);
     expect(changed).toBeLessThanOrEqual(3);
+  });
+
+  it("bounds ambient target uploads while GPU transitions interpolate between rAF frames", () => {
+    const h = harness();
+    const m = motionWith(h, base10());
+    m.startAmbient();
+    for (const nowMs of [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224]) {
+      h.step(nowMs);
+    }
+    expect(h.handle.morphs).toHaveLength(3); // 0, 112, 224 ms targets
+    expect(h.handle.morphs.every((entry) => entry.durationMs === 120)).toBe(true);
+    expect(h.handle.pushes).toHaveLength(0);
   });
 
   it("can never reach a force-sim surface: only pushPointSet/morphPointSet are touched", () => {

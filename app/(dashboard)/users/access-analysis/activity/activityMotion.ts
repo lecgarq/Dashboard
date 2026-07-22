@@ -9,9 +9,9 @@
  *      commit via handle.morphPointSet; cosmos's built-in GPU position
  *      transition interpolates every frame shader-side.
  *   2. Ambient — a deterministic ~100k subset (owner decision 1) of the
- *      rendered set drifts via the 37-BASELINE-proven CPU choreography;
- *      each frame writes ONLY subset entries into the working buffer, pushed
- *      whole via handle.pushPointSet.
+ *      rendered set drifts via the 37-BASELINE-proven CPU choreography. New
+ *      targets are computed at a bounded cadence and the existing cosmos GPU
+ *      transition interpolates between them; no per-rAF full-buffer upload.
  *   3. The LOD seam — setPointSet on zoom-detail flips (owned by the shell).
  * What may NOT (37-BASELINE: dead paths):
  *   - Per-rAF-frame FULL-buffer CPU position writes (28.8 fps @≥250k).
@@ -88,7 +88,10 @@ export interface ActivityMotion {
 export const AMBIENT_SUBSET_CAP = 100_000;
 /** 37-BASELINE choreography constants (73 fps @106k proven). */
 const DRIFT_AMP = 2.4;
-const TIER_1_FRAME_MS = 1_000 / 30;
+/** Full-set uploads are the measured bottleneck; GPU interpolation fills the frames. */
+const TIER_0_TARGET_MS = 100;
+const TIER_1_TARGET_MS = 200;
+const TRANSITION_OVERLAP_MS = 20;
 
 export interface CreateActivityMotionOpts {
   handle: ActivityMotionHandle;
@@ -133,7 +136,8 @@ export function createActivityMotion(opts: CreateActivityMotionOpts): ActivityMo
     const tier = fps.observeFrame(nowMs);
     if (tier === 2) return; // fps floor — park, controller may recover later
     startedAt ??= nowMs;
-    if (tier === 1 && nowMs - lastPushAt < TIER_1_FRAME_MS) return;
+    const targetMs = tier === 0 ? TIER_0_TARGET_MS : TIER_1_TARGET_MS;
+    if (nowMs - lastPushAt < targetMs) return;
     lastPushAt = nowMs;
     const t = (nowMs - startedAt) / 1000;
     // 37-spike choreography on the SUBSET ONLY — the contract's ambient bound.
@@ -143,7 +147,11 @@ export function createActivityMotion(opts: CreateActivityMotionOpts): ActivityMo
       working[j] = base[j] + Math.cos(phase + t) * DRIFT_AMP;
       working[j + 1] = base[j + 1] + Math.sin(phase * 0.83 + t) * DRIFT_AMP * 0.72;
     }
-    opts.handle.pushPointSet?.(working);
+    if (opts.handle.morphPointSet) {
+      opts.handle.morphPointSet(working, targetMs + TRANSITION_OVERLAP_MS);
+    } else {
+      opts.handle.pushPointSet?.(working);
+    }
   };
 
   return {
