@@ -36,6 +36,16 @@ describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
     expect(Array.from(inside!)).toEqual([0, 1]);
     const overCap = viewportIndices(positions, { minX: -200, maxX: 200, minY: -200, maxY: 200 }, 3);
     expect(overCap).toBeNull();
+    expect(
+      Array.from(
+        viewportIndices(
+          positions,
+          { minX: -200, maxX: 200, minY: -200, maxY: 200 },
+          3,
+          Uint32Array.from([1, 3]),
+        )!,
+      ),
+    ).toEqual([1, 3]);
   });
 
   it("gather round-trips positions, colors, and scalars through the index mapping", () => {

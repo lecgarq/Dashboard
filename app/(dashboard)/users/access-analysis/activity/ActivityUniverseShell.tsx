@@ -61,7 +61,8 @@ import {
   type ActivityDimension,
 } from "./activityDimensions";
 import { buildGroupLayout, mixPositions, type GroupLayout } from "./activityGroupLayout";
-import { buildDimColors } from "./activityColorBy";
+import { buildDimColors, buildDimLegend } from "./activityColorBy";
+import { indicesForMonth, sampleFullIndices } from "./activityTime";
 import {
   ActivityDimensionsPanel,
   GROUP_BY_NONE,
@@ -104,6 +105,16 @@ function gatherIds(column: Uint16Array, indices: Uint32Array): Uint16Array {
   return out;
 }
 
+function webGlRenderer(container: HTMLDivElement | null): string {
+  const canvas = container?.querySelector("canvas");
+  const gl = canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
+  if (!gl) return "";
+  const ext = gl.getExtension("WEBGL_debug_renderer_info") as
+    | { UNMASKED_RENDERER_WEBGL: number }
+    | null;
+  return String(gl.getParameter(ext?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER) ?? "");
+}
+
 function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<GraphCanvas2DHandle | null>(null);
@@ -118,6 +129,8 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const monthCount = (dicts.monthCount as number) ?? 1;
   const monthFloor = (dicts.monthFloor as string) ?? "";
   const coverage = data.meta.coverage;
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
 
   // Project GUID → display name for tooltips + project dim labels (957 rows).
   const projectNames = trpc.activityUniverse.projectNames.useQuery(undefined, {
@@ -135,6 +148,38 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     [],
   );
+  const onPlayToggle = useCallback((): void => {
+    if (reducedMotion) return;
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    setSelectedMonth((current) =>
+      current === null || current >= monthCount - 1 ? 0 : current,
+    );
+    setPlaying(true);
+  }, [monthCount, playing, reducedMotion]);
+
+  useEffect(() => {
+    if (!playing || selectedMonth === null) return;
+    if (selectedMonth >= monthCount - 1) {
+      setPlaying(false);
+      return;
+    }
+    const timer = setTimeout(
+      () => setSelectedMonth((current) => (current === null ? 0 : current + 1)),
+      1_000,
+    );
+    return () => clearTimeout(timer);
+  }, [monthCount, playing, selectedMonth]);
+
+  useEffect(() => {
+    const pauseWhenHidden = (): void => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener("visibilitychange", pauseWhenHidden);
+    return () => document.removeEventListener("visibilitychange", pauseWhenHidden);
+  }, []);
 
   const dimOption = useCallback(
     (d: ActivityDimension): ActivityDimensionOption => ({
@@ -153,7 +198,24 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const groupDim = groupBy === GROUP_BY_NONE ? undefined : activityDimensionById(groupBy);
   const colorDim = activityDimensionById(colorBy) ?? ACTIVITY_DIMENSIONS[1];
 
-  // ── Color-by buffers (full set — legend counts honest over the corpus) ────
+  // Exact-month selection keeps the payload resident and changes only the
+  // current full-index set. All stays explicit (null), never a fake month id.
+  const activeFullIdx = useMemo(
+    () => (selectedMonth === null ? null : indicesForMonth(monthId, selectedMonth)),
+    [monthId, selectedMonth],
+  );
+  const activeCount = activeFullIdx?.length ?? data.count;
+
+  // Rung-L2 far-zoom set composed with the active period.
+  const sampleIdx = useMemo(
+    () =>
+      activeFullIdx === null
+        ? uniformSampleIndices(data.count)
+        : sampleFullIndices(activeFullIdx),
+    [activeFullIdx, data.count],
+  );
+
+  // ── Corpus-stable colors + active-period legend ─────────────────────────
   const colorLabels = useMemo(
     () => dimensionLabels(colorDim, dicts, projectNames),
     [colorDim, dicts, projectNames],
@@ -162,10 +224,19 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     () => buildDimColors(data.columns[colorDim.column] as Uint16Array, colorDim, colorLabels),
     [data.columns, colorDim, colorLabels],
   );
+  const activeColorIds = useMemo(
+    () =>
+      activeFullIdx === null
+        ? (data.columns[colorDim.column] as Uint16Array)
+        : gatherIds(data.columns[colorDim.column] as Uint16Array, activeFullIdx),
+    [activeFullIdx, data.columns, colorDim],
+  );
+  const activeLegend = useMemo(
+    () => buildDimLegend(activeColorIds, colorDim, colorLabels, dimColors.categoryColors),
+    [activeColorIds, colorDim, colorLabels, dimColors.categoryColors],
+  );
   const fullSizes = useMemo(() => buildActivitySizes(monthId, monthCount), [monthId, monthCount]);
 
-  // Rung-L2 far-zoom set: deterministic uniform sample (owner decision 4).
-  const sampleIdx = useMemo(() => uniformSampleIndices(data.count), [data.count]);
   const sampledPositions = useMemo(() => gather(positions, sampleIdx, 2), [positions, sampleIdx]);
   const sampledColors = useMemo(
     () => gather(dimColors.colors, sampleIdx, 4),
@@ -177,6 +248,16 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     () => createActivityPhysicsStub(toStride3(sampledPositions)),
     [sampledPositions],
   );
+  const sampledPositionStats = useMemo(() => {
+    let finite = sampledPositions.length > 0;
+    let maxAbs = 0;
+    for (let i = 0; i < sampledPositions.length; i++) {
+      const value = sampledPositions[i];
+      if (!Number.isFinite(value)) finite = false;
+      maxAbs = Math.max(maxAbs, Math.abs(value));
+    }
+    return { finite, maxAbs };
+  }, [sampledPositions]);
 
   // ── Group-by layout over the SAMPLE (morphs only run on the sample set) ───
   const groupLayout: GroupLayout | null = useMemo(() => {
@@ -271,14 +352,33 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   // Test bridge (Phase-41 re-baseline seam).
   useEffect(() => {
     const uninstall = installActivityTestBridge();
+    return uninstall;
+  }, []);
+  useEffect(() => {
     setActivityTestState({
       residentCount: data.count,
       renderedCount: sampleIdx.length,
       lodMode: "sample",
-      sampleStride: sampleStride(data.count),
+      sampleStride: sampleStride(activeCount),
+      temporalMode: selectedMonth === null ? "all" : "month",
+      selectedMonth,
+      monthCount,
+      activeCount,
+      playing,
+      reducedMotion,
+      positionsFinite: sampledPositionStats.finite,
+      positionMaxAbs: sampledPositionStats.maxAbs,
     });
-    return uninstall;
-  }, [data.count, sampleIdx.length]);
+  }, [
+    activeCount,
+    data.count,
+    monthCount,
+    playing,
+    reducedMotion,
+    sampleIdx.length,
+    sampledPositionStats,
+    selectedMonth,
+  ]);
 
   // ── PERF-07 motion layer (ambient + GPU morph seam) ───────────────────────
   const [handleReady, setHandleReady] = useState(false);
@@ -305,6 +405,54 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       setActivityTestState({ ambientActive: false });
     };
   }, [handleReady, sampledPositions, reducedMotion, sampleIdx]);
+
+  // The temporal seam is an atomic point-set swap. The old per-set motion
+  // layer has already been disposed/recreated by the effect above.
+  useEffect(() => {
+    if (!handleReady) return;
+    const handle = handleRef.current;
+    if (!handle) return;
+    if (motionRef.current?.isAmbientRunning()) motionRef.current.stopAmbient();
+    handle.setPointSet?.(sampledPositions, sampledColors, sampledSizes);
+    renderedToFullRef.current = sampleIdx;
+    setHover(null);
+    setDetailIndex(null);
+    setLassoActive(false);
+    setSelectedRendered([]);
+    handle.setSelectedIndices?.([]);
+    setLod({ mode: "sample", renderedCount: sampleIdx.length });
+    motionRef.current?.setBase(sampledPositions);
+    motionRef.current?.startAmbient();
+    setActivityTestState({
+      renderedCount: sampleIdx.length,
+      lodMode: "sample",
+      sampleStride: sampleStride(activeCount),
+      selectedCount: 0,
+      activeCount,
+      ambientActive: motionRef.current?.isAmbientRunning() ?? false,
+    });
+  }, [
+    activeCount,
+    handleReady,
+    sampleIdx,
+    sampledPositions,
+    sampledSizes,
+  ]);
+
+  useEffect(() => {
+    if (!handleReady) return;
+    const update = (): void => {
+      const stats = motionRef.current?.getStats();
+      setActivityTestState({
+        ambientTier: stats?.tier ?? 0,
+        lastWindowFps: stats?.lastWindowFps ?? null,
+        ambientActive: motionRef.current?.isAmbientRunning() ?? false,
+      });
+    };
+    update();
+    const timer = setInterval(update, 500);
+    return () => clearInterval(timer);
+  }, [handleReady, sampledPositions]);
 
   // Morph commit: mix(rest, clump, s) into a reused buffer, ONE upload via
   // morphTo (GPU transition interpolates) — never per-rAF full-buffer writes.
@@ -474,7 +622,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         minY: Math.min(a[1], b[1]),
         maxY: Math.max(a[1], b[1]),
       };
-      const region = viewportIndices(positions, bounds);
+      const region = viewportIndices(positions, bounds, undefined, activeFullIdx ?? undefined);
       if (region) {
         switchTo(
           region,
@@ -501,7 +649,16 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       div.removeEventListener("wheel", schedule);
       div.removeEventListener("pointerup", schedule);
     };
-  }, [positions, dimColors, fullSizes, sampleIdx, sampledPositions, sampledColors, sampledSizes]);
+  }, [
+    activeFullIdx,
+    positions,
+    dimColors,
+    fullSizes,
+    sampleIdx,
+    sampledPositions,
+    sampledColors,
+    sampledSizes,
+  ]);
 
   // Lasso hit-test over the RENDERED subset (visible = selectable at L2).
   const lassoHitTest = useCallback((path: [number, number][]): number[] => {
@@ -534,7 +691,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               handleRef.current = h;
               labelsGraphRef.current = { mode: "2d", handle: h };
               setHandleReady(true);
-              setActivityTestState({ ready: true });
+              setActivityTestState({ ready: true, renderer: webGlRenderer(containerRef.current) });
             }}
           />
         </div>
@@ -561,9 +718,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         {/* Caption stack — muted, honest (LOD state, data floor, author coverage). */}
         <div className="pointer-events-none absolute left-4 top-3 z-10 space-y-0.5 font-mono text-[11px] text-muted-foreground">
           <div className="text-sm font-semibold text-foreground">Activity universe</div>
-          <div>{lodLabel(lod.mode, lod.renderedCount, data.count)}</div>
+          <div>{lodLabel(lod.mode, lod.renderedCount, activeCount)}</div>
           <div>
-            {fmt(data.count)} events · data from {monthLabel(monthFloor, 0)}
+            {fmt(activeCount)} events · data from {monthLabel(monthFloor, 0)}
           </div>
           <div>
             author resolution {(coverage.resolvedEmailRate * 100).toFixed(2)}% · unknown authors{" "}
@@ -572,7 +729,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         </div>
 
         {/* Lasso toggle + honest selected count (visible = selectable at L2). */}
-        <div className="absolute bottom-3 left-4 z-10 flex items-center gap-2">
+        <div className="absolute bottom-16 left-4 z-10 flex items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -605,13 +762,16 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           )}
         </div>
 
-        {/* Active color-by legend — honest counts over the full corpus. */}
-        <div className="absolute right-4 top-3 z-10 rounded-md border bg-card/80 px-3 py-2 backdrop-blur-sm">
+        {/* Active color-by legend — honest counts over the selected period. */}
+        <div
+          data-testid="activity-color-legend"
+          className="absolute right-4 top-3 z-10 rounded-md border bg-card/80 px-3 py-2 backdrop-blur-sm"
+        >
           <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {colorDim.label}
           </div>
           <ul className="space-y-0.5">
-            {dimColors.legend.map((e) => (
+            {activeLegend.map((e) => (
               <li key={e.label} className="flex items-center gap-2 text-[11px] text-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -623,6 +783,65 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               </li>
             ))}
           </ul>
+        </div>
+
+        <div
+          data-testid="activity-time-scrubber"
+          className="absolute bottom-3 left-4 right-4 z-10 flex items-center gap-3 rounded-md border bg-card/90 px-3 py-2 shadow-sm backdrop-blur-sm"
+        >
+          <button
+            type="button"
+            data-testid="activity-time-all"
+            aria-pressed={selectedMonth === null}
+            onClick={() => {
+              setPlaying(false);
+              setSelectedMonth(null);
+            }}
+            className={`rounded-md border px-2 py-1 text-xs transition-colors ${
+              selectedMonth === null
+                ? "border-primary bg-primary/10 text-foreground"
+                : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+            }`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            data-testid="activity-time-play"
+            onClick={onPlayToggle}
+            disabled={reducedMotion}
+            title={reducedMotion ? "Playback disabled by reduced motion" : undefined}
+            className="rounded-md border bg-background px-2 py-1 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {playing ? "Pause" : "Play"}
+          </button>
+          <span
+            data-testid="activity-time-label"
+            className="w-20 shrink-0 text-xs font-medium text-foreground"
+          >
+            {selectedMonth === null ? "All months" : monthLabel(monthFloor, selectedMonth)}
+          </span>
+          <input
+            type="range"
+            data-testid="activity-time-range"
+            aria-label="Activity month"
+            aria-valuetext={monthLabel(monthFloor, selectedMonth ?? 0)}
+            min={0}
+            max={Math.max(0, monthCount - 1)}
+            step={1}
+            value={selectedMonth ?? 0}
+            onChange={(event) => {
+              setPlaying(false);
+              setSelectedMonth(Number(event.target.value));
+            }}
+            className="min-w-24 flex-1 accent-primary"
+          />
+          <span
+            data-testid="activity-time-count"
+            className="shrink-0 font-mono text-[11px] text-muted-foreground"
+          >
+            {fmt(activeCount)} / {fmt(data.count)} events
+          </span>
         </div>
 
         <ActivityTooltip
@@ -661,7 +880,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         groupByLabel={groupDim?.label ?? null}
         colorCoverageText={colorCoverageText}
         colorByLabel={colorDim.label}
-        residentCount={data.count}
+        residentCount={activeCount}
         renderedCount={lod.renderedCount}
       />
     </div>

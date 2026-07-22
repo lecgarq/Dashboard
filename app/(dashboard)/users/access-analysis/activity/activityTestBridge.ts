@@ -26,6 +26,17 @@ export interface ActivityTestState {
   strength: number;
   morphCount: number;
   ambientActive: boolean;
+  temporalMode: "all" | "month";
+  selectedMonth: number | null;
+  monthCount: number;
+  activeCount: number;
+  playing: boolean;
+  reducedMotion: boolean;
+  positionsFinite: boolean;
+  positionMaxAbs: number;
+  ambientTier: 0 | 1 | 2;
+  lastWindowFps: number | null;
+  renderer: string;
 }
 
 declare global {
@@ -46,6 +57,17 @@ const state: ActivityTestState = {
   strength: 0,
   morphCount: 0,
   ambientActive: false,
+  temporalMode: "all",
+  selectedMonth: null,
+  monthCount: 0,
+  activeCount: 0,
+  playing: false,
+  reducedMotion: false,
+  positionsFinite: false,
+  positionMaxAbs: 0,
+  ambientTier: 0,
+  lastWindowFps: null,
+  renderer: "",
 };
 
 export const testBridgeEnabled = (): boolean =>

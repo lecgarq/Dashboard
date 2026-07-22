@@ -80,6 +80,7 @@ export interface ActivityMotion {
   startAmbient(): void;
   stopAmbient(): void;
   isAmbientRunning(): boolean;
+  getStats(): { tier: 0 | 1 | 2; lastWindowFps: number | null };
   dispose(): void;
 }
 
@@ -189,6 +190,10 @@ export function createActivityMotion(opts: CreateActivityMotionOpts): ActivityMo
 
     isAmbientRunning(): boolean {
       return running;
+    },
+
+    getStats() {
+      return { tier: fps.getTier(), lastWindowFps: fps.getLastWindowFps() };
     },
 
     dispose(): void {

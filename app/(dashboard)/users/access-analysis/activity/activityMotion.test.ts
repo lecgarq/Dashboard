@@ -190,6 +190,17 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     expect(() => m.setBase(new Float32Array(6))).toThrow(/per-rendered-set/);
   });
 
+  it("reports the live ambient controller tier and sampled fps", () => {
+    const h = harness();
+    const m = motionWith(h, base10());
+    m.startAmbient();
+    h.step(0);
+    h.step(3_100);
+    expect(m.getStats().lastWindowFps).not.toBeNull();
+    h.step(6_200);
+    expect(m.getStats().tier).toBe(1);
+  });
+
   it("Phase-39 init stub compat: frozen PhysicsLayer + stride-3 expansion", () => {
     const xyz = toStride3(Float32Array.from([1, 2, 3, 4]));
     expect(Array.from(xyz)).toEqual([1, 2, 0, 3, 4, 0]);

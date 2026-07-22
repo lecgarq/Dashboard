@@ -43,13 +43,15 @@ export function viewportIndices(
   positions: Float32Array,
   bounds: ViewportBounds,
   cap: number = LOD_CAP,
+  candidates?: Uint32Array,
 ): Uint32Array | null {
-  const total = positions.length / 2;
+  const total = candidates?.length ?? positions.length / 2;
   // First pass counts so we allocate once and can bail early past the cap.
   let count = 0;
   for (let i = 0; i < total; i++) {
-    const x = positions[i * 2];
-    const y = positions[i * 2 + 1];
+    const full = candidates?.[i] ?? i;
+    const x = positions[full * 2];
+    const y = positions[full * 2 + 1];
     if (x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY) {
       count += 1;
       if (count > cap) return null;
@@ -58,10 +60,11 @@ export function viewportIndices(
   const out = new Uint32Array(count);
   let j = 0;
   for (let i = 0; i < total; i++) {
-    const x = positions[i * 2];
-    const y = positions[i * 2 + 1];
+    const full = candidates?.[i] ?? i;
+    const x = positions[full * 2];
+    const y = positions[full * 2 + 1];
     if (x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY) {
-      out[j++] = i;
+      out[j++] = full;
     }
   }
   return out;

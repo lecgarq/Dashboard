@@ -10,7 +10,7 @@
  */
 
 import { CATEGORICAL_PALETTE, OTHER_GREY, type RGB } from "../bucketedColors";
-import { buildModuleColorBuffer, buildModuleLegend } from "./moduleColors";
+import { buildModuleColorBuffer, moduleColorHex } from "./moduleColors";
 import type { ActivityDimension } from "./activityDimensions";
 
 export interface ActivityLegendEntry {
@@ -39,6 +39,48 @@ export interface DimColorResult {
   categoryColors: RGB[];
 }
 
+const sameRgb = (a: RGB, b: RGB): boolean =>
+  a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+
+/** Active-period legend using a corpus-stable category palette. */
+export function buildDimLegend(
+  ids: ArrayLike<number>,
+  dim: ActivityDimension,
+  labels: readonly string[],
+  categoryColors: readonly RGB[],
+): ActivityLegendEntry[] {
+  const counts = new Uint32Array(Math.max(1, labels.length));
+  for (let i = 0; i < ids.length; i++) counts[ids[i] < counts.length ? ids[i] : 0] += 1;
+  if (dim.id === "module") {
+    return labels
+      .map((label, c) => ({ label, colorHex: moduleColorHex(label), count: counts[c] }))
+      .filter((entry) => entry.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }
+  const colored: ActivityLegendEntry[] = labels
+    .map((label, c) => ({ label, colorHex: rgbToHex(categoryColors[c] ?? OTHER_GREY), count: counts[c], c }))
+    .filter((entry) => entry.count > 0 && !sameRgb(categoryColors[entry.c] ?? OTHER_GREY, OTHER_GREY))
+    .sort((a, b) => b.count - a.count || a.c - b.c)
+    .map(({ c: _c, ...entry }) => entry);
+  let otherCount = 0;
+  let otherCats = 0;
+  for (let c = 0; c < counts.length; c++) {
+    if (counts[c] > 0 && sameRgb(categoryColors[c] ?? OTHER_GREY, OTHER_GREY)) {
+      otherCount += counts[c];
+      otherCats += 1;
+    }
+  }
+  if (otherCount > 0) {
+    colored.push({
+      label: `(+${otherCats.toLocaleString("en-US")} more)`,
+      colorHex: rgbToHex(OTHER_GREY),
+      count: otherCount,
+      isOther: true,
+    });
+  }
+  return colored;
+}
+
 /**
  * Color buffer + legend for one dimension over the given id column (full set
  * or a gathered subset). Counts — and therefore the legend — are honest over
@@ -55,16 +97,12 @@ export function buildDimColors(
   if (dim.id === "module") {
     // Established 7-color module language, unchanged (owner decision, Ph39).
     const u16 = ids instanceof Uint16Array ? ids : Uint16Array.from(ids as ArrayLike<number>);
-    const legend = buildModuleLegend(u16, labels).map((e) => ({
-      label: e.label,
-      colorHex: e.colorHex,
-      count: e.count,
-    }));
     const categoryColors: RGB[] = labels.map((label) => {
-      const hex = legend.find((e) => e.label === label)?.colorHex ?? rgbToHex(OTHER_GREY);
+      const hex = moduleColorHex(label);
       const n = parseInt(hex.replace("#", ""), 16);
       return [((n >> 16) & 0xff) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
     });
+    const legend = buildDimLegend(u16, dim, labels, categoryColors);
     return { colors: buildModuleColorBuffer(u16, labels), legend, categoryColors };
   }
 
@@ -102,26 +140,6 @@ export function buildDimColors(
     colors[i * 4 + 3] = 1;
   }
 
-  const legend: ActivityLegendEntry[] = colored.map((c) => ({
-    label: labels[c] ?? `#${c}`,
-    colorHex: rgbToHex(categoryColors[c]),
-    count: counts[c],
-  }));
-  let otherCount = 0;
-  let otherCats = 0;
-  for (let c = 0; c < k; c++) {
-    if (counts[c] > 0 && !colored.includes(c)) {
-      otherCount += counts[c];
-      otherCats += 1;
-    }
-  }
-  if (otherCount > 0) {
-    legend.push({
-      label: `(+${otherCats.toLocaleString("en-US")} more)`,
-      colorHex: rgbToHex(OTHER_GREY),
-      count: otherCount,
-      isOther: true,
-    });
-  }
+  const legend = buildDimLegend(ids, dim, labels, categoryColors);
   return { colors, legend, categoryColors };
 }

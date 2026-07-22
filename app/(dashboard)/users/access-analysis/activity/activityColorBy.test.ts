@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDimColors } from "./activityColorBy";
+import { buildDimColors, buildDimLegend } from "./activityColorBy";
 import { activityDimensionById } from "./activityDimensions";
 import { buildModuleColorBuffer } from "./moduleColors";
 import { OTHER_GREY } from "../bucketedColors";
@@ -56,5 +56,17 @@ describe("activityColorBy (DIM-07)", () => {
     const hues = new Set([1, 2, 3].map((c) => categoryColors[c].join(",")));
     expect(hues.size).toBe(3);
     expect(legend.find((e) => e.isOther)?.count).toBe(1); // the sentinel row
+  });
+
+  it("recounts an active month without changing corpus category colors", () => {
+    const dim = activityDimensionById("role")!;
+    const labels = ["Unknown", "Architect", "Engineer", "Owner"];
+    const corpus = buildDimColors(Uint16Array.from([1, 1, 2, 2, 2, 3, 0]), dim, labels);
+    const active = buildDimLegend(Uint16Array.from([1, 3, 3]), dim, labels, corpus.categoryColors);
+    expect(active.map((e) => [e.label, e.count])).toEqual([
+      ["Owner", 2],
+      ["Architect", 1],
+    ]);
+    expect(active[0].colorHex).toBe(corpus.legend.find((e) => e.label === "Owner")?.colorHex);
   });
 });
