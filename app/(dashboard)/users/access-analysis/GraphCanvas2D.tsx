@@ -147,8 +147,10 @@ export interface GraphCanvas2DHandle {
   spaceToScreen(spaceXY: [number, number]): [number, number];
   /** Highlight selected nodes via outlines and isolated node via focus ring. */
   setSelectedIndices?(indices: number[]): void;
-  /** Focus a point with a blue ring when hovered. */
+  /** Focus a point with a blue ring when hovered; also dims (greys) the rest. */
   setHoveredIndex?(index: number | null): void;
+  /** Re-sync the WebGL drawing buffer to the container size (heals rectangle clip). */
+  resize?(): void;
 }
 
 export interface GraphCanvas2DView {
@@ -272,6 +274,13 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // positions pins the page at ~5fps forever. Skipping no-op uploads recovers
     // to full fps once the blobs stop moving.
     let prevUploaded: Float32Array | null = null;
+    // Container-resize heal: cosmos/luma can leave the drawing buffer at a stale
+    // size (rail open/close, pane/window resize, or a degraded framebuffer after
+    // a fast zoom) → the cloud renders clipped to a rectangle. A ResizeObserver
+    // re-materializes the backing buffer on every size change; the handle also
+    // exposes resize() so the caller can heal after a zoom settles.
+    let resizeObserver: ResizeObserver | null = null;
+    let healRaf = 0;
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
@@ -366,25 +375,44 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Luma's canvas ResizeObserver can miss the first non-zero size when this
       // absolute slot settles during hydration. Sync the drawing buffer once at
       // readiness; the observer continues to own subsequent responsive resizes.
-      const canvasContext = (
-        g as unknown as {
-          device?: {
-            canvasContext?: {
-              resize?: (size: { width: number; height: number }) => void;
-              getCurrentFramebuffer?: () => unknown;
+      // Sync cosmos's WebGL drawing buffer to the container's current CSS size.
+      // Luma applies resize() lazily, so we also materialize the backing
+      // framebuffer (else the browser default 300×150 surface stays bound and
+      // renders transparent / clipped) and force one authoritative resizeCanvas.
+      // Reused at init, on every ResizeObserver tick, and via the handle.
+      const healCanvas = (): void => {
+        if (!g || cancelled) return;
+        const cc = (
+          g as unknown as {
+            device?: {
+              canvasContext?: {
+                resize?: (size: { width: number; height: number }) => void;
+                getCurrentFramebuffer?: () => unknown;
+              };
             };
-          };
-        }
-      ).device?.canvasContext;
-      canvasContext?.resize?.({
-        width: Math.max(1, Math.round(div.clientWidth * pixelRatio)),
-        height: Math.max(1, Math.round(div.clientHeight * pixelRatio)),
+          }
+        ).device?.canvasContext;
+        cc?.resize?.({
+          width: Math.max(1, Math.round(div.clientWidth * pixelRatio)),
+          height: Math.max(1, Math.round(div.clientHeight * pixelRatio)),
+        });
+        cc?.getCurrentFramebuffer?.();
+        (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+        g.render();
+      };
+      healCanvas();
+
+      // Re-heal on any container size change (detail rail open/close, pane or
+      // window resize) — coalesced to one rAF so a burst of resize callbacks
+      // costs a single re-materialize.
+      resizeObserver = new ResizeObserver(() => {
+        if (healRaf) return;
+        healRaf = requestAnimationFrame(() => {
+          healRaf = 0;
+          healCanvas();
+        });
       });
-      // Luma applies resize() lazily. Materialize the backing framebuffer before
-      // Cosmos creates point/link GPU resources or the browser default 300×150
-      // surface can remain bound and render transparent.
-      canvasContext?.getCurrentFramebuffer?.();
-      (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+      resizeObserver.observe(div);
 
       // Initial data load -------------------------------------------------------
 
@@ -975,12 +1003,20 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           g!.render();
         },
 
+        resize(): void {
+          healCanvas();
+        },
+
         setHoveredIndex(index: number | null): void {
-          const activeFocus = index !== null 
-            ? index 
+          const activeFocus = index !== null
+            ? index
             : (selectedIndicesRef.current.length === 1 ? selectedIndicesRef.current[0] : undefined);
           g!.setConfigPartial({
             focusedPointIndex: activeFocus,
+            // Highlighting the hovered node greys the rest (pointGreyoutOpacity) —
+            // this is the dim-others affordance cosmos's native hover used to give,
+            // lost when the magnetic pass NOOPed onPointMouseOver. undefined clears it.
+            highlightedPointIndices: index !== null ? [index] : undefined,
           });
           g!.render();
         },
@@ -990,6 +1026,8 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // Cleanup: cancel in-flight init, destroy cosmos.gl graph on unmount
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
+      if (healRaf) cancelAnimationFrame(healRaf);
       g?.destroy?.();
       graphRef.current = null;
       xy2Ref.current = null;

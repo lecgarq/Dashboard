@@ -525,6 +525,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     renderedToFullRef.current = sampleIdx;
     currentPositionsRef.current = sampledPositions;
     magnetRef.current = null;
+    handle.setHoveredIndex?.(null); // drop stale focus/greyout — indices remap on swap
     // Cinematic temporal seam: fade the swapped set in instead of a hard cut.
     if (!reducedMotion) {
       containerRef.current?.animate?.(
@@ -800,6 +801,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       renderedToFullRef.current = indices;
       currentPositionsRef.current = p;
       magnetRef.current = null;
+      handle.setHoveredIndex?.(null); // drop stale focus/greyout — indices remap on swap
       setHover(null);
       setSelectedRendered([]);
       handle.setSelectedIndices?.([]);
@@ -827,6 +829,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       const handle = handleRef.current;
       const el = containerRef.current;
       if (!handle || !el || disposed) return;
+      // A fast zoom can leave cosmos's drawing buffer degraded (cloud clipped to
+      // a rectangle); re-sync it once the wheel/pointer interaction settles.
+      handle.resize?.();
       if (strengthRef.current > 0) return; // morph owns positions — seam suspended
       const a = handle.screenToSpace([0, 0]);
       const b = handle.screenToSpace([el.clientWidth, el.clientHeight]);
