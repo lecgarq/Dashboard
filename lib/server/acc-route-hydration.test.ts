@@ -13,8 +13,6 @@ function makeHelpers() {
     },
     accDcGraph: {
       bulkUsers: { prefetch: vi.fn(async () => undefined) },
-      graphSnapshot: { prefetch: vi.fn(async () => undefined) },
-      instanceEmbedding: { prefetch: vi.fn(async () => undefined) },
     },
     accMembers: {
       enrichedUsers: { prefetch: vi.fn(async () => undefined) },

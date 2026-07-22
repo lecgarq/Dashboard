@@ -723,16 +723,6 @@ erDiagram
     }
   
 
-  "AccInstanceEmbedding" {
-    String nodeId "🗝️"
-    Float x 
-    Float y 
-    Int cluster "❓"
-    Json neighbors 
-    String embeddingRunId 
-    DateTime updatedAt 
-    }
-  
     "Account" }o--|| "User" : "user"
     "Session" }o--|| "User" : "user"
     "PendingRequest" |o--|o "User" : "user"

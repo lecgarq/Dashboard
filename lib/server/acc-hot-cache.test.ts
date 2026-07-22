@@ -65,13 +65,12 @@ function makeDcDb() {
 
 // Superset mock that also supports the heavy bulkUsers variant (folder-perm SQL
 // aggregate + activity grouping go through `$queryRaw`) and the other prewarm
-// targets (`user`, embedding, activity version probes).
+// targets (`user` and activity version probes).
 function makePrewarmDb(): any {
   const db: any = makeDcDb();
   db.user = versionedModel([{ email: "user@lecg.com", name: "User" }]);
   db.accActivity = versionedModel([]);
   db.accActivityAccds = versionedModel([]);
-  db.accInstanceEmbedding = { findMany: vi.fn(async () => []) };
   db.$queryRaw = vi.fn(async () => []);
   return db;
 }

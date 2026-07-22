@@ -918,21 +918,6 @@ model AccIssueType {
   @@index([parentTypeId])
 }
 
-// ============ MODULE: ACC INSTANCE EMBEDDING ============
-// Precomputed 2D similarity-embedding coordinates + neighbours per graph node.
-// Table is created via prisma/migrations-raw/2026-06-08-acc-instance-embedding.sql
-// (raw SQL, not prisma migrate) so that pgvector / migrate-choke is avoided.
-
-model AccInstanceEmbedding {
-  nodeId         String   @id
-  x              Float    @db.Real
-  y              Float    @db.Real
-  cluster        Int?
-  neighbors      Json     @default("[]")
-  embeddingRunId String
-  updatedAt      DateTime @default(now()) @updatedAt
-}
-
 // ============ MODULE: ACTIVITY UNIVERSE EMBEDDING (v2.7 Phase 38) ============
 // One row per extracted activity event (unified corpus: AccActivityAccds +
 // AccActivity backfill/admin). Positions from the offline full-fit PaCMAP
@@ -943,7 +928,7 @@ model AccInstanceEmbedding {
 // Code 0 = Unknown/none for authorId/roleId/companyId/folderId (ACT-02).
 
 model AccActivityEmbedding {
-  id             String   @id // "a:"+accdsActivityId | "d:"+AccActivity.id (two ID spaces)
+  id             String   @id // "accds:"+accdsActivityId | AccActivity.id (two ID spaces)
   x              Float    @db.Real
   y              Float    @db.Real
   verbId         Int      @db.SmallInt

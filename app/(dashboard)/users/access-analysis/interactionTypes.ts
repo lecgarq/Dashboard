@@ -112,11 +112,7 @@ export interface NodeFeatureSnapshot {
   activityTotal?: number;
   /** [Phase B] Sparse per-canonical-action counts for this instance (taxonomy action ids). */
   actionCounts?: Record<string, number>;
-  /**
-   * Embedding-map cluster id (0-based KMeans label from AccInstanceEmbedding),
-   * stamped flag-off when the embedding loads. Drives the "Cluster" color mode
-   * (color == spatial group — the TF-Embedding-Projector look). null = unknown.
-   */
+  /** Legacy instance-map KMeans cluster id; null on the activity universe. */
   cluster?: number | null;
   /** Project-level status: "active" | "inactive" (from AccProject.status / GraphProjectRow.project_status). */
   projectStatus?: string;
