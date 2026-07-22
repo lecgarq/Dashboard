@@ -5,9 +5,9 @@ milestone_name: "Activity Universe"
 current_phase: 41
 current_phase_name: "Time Scrubber, Hard Gate & Closeout"
 status: executing
-current_plan: "41-02"
-stopped_at: "41-03 complete (c28cb962); executing plan 41-02 fixture-backed Playwright contract — next: /lecg-phase 41"
-last_updated: "2026-07-21T18:44:06-06:00"
+current_plan: "41-04"
+stopped_at: "41-02 complete (2eefe742); executing plan 41-04 full hard gates, deploy, and phase verification — next: /lecg-phase 41"
+last_updated: "2026-07-21T19:01:06-06:00"
 ---
 
 # Project State
@@ -142,8 +142,7 @@ history (last present at commit `27297514`).
 
 ## Next Action
 
-**Continue `/lecg-phase 41` with plan 41-02**: install the deterministic activity
-fixture and re-baseline Playwright against `__ACTIVITY_UNIVERSE_TEST__`, including
-timeline playback, selector composition, lasso, finite positions, and real-canvas
-proof. Plans 41-01 and 41-03 are complete; the retired instance-embedding table has
-been dropped successfully.
+**Continue `/lecg-phase 41` with plan 41-04**: run the full test/repo-map gates,
+measure the full artifact's median-of-five fetch+decode and navigation-to-ready,
+bind the headed D3D11 ≥50 fps Tier-0 sample, auto-deploy, probe the authenticated
+populated route, and write phase verification. Plans 41-01/02/03 are complete.
