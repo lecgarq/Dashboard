@@ -6,8 +6,8 @@ current_phase: 41
 current_phase_name: "Time Scrubber, Hard Gate & Closeout"
 status: ready_to_plan
 current_plan: null
-stopped_at: "Phase 41 context captured with temporal UX, e2e re-baseline, hard-gate, and closeout decisions locked — next: /lecg-phase 41"
-last_updated: "2026-07-21T17:54:33-06:00"
+stopped_at: "Phase 41 planned as 41-01 temporal UX, 41-02 activity e2e, 41-03 instance cleanup, 41-04 hard gate/deploy — next: /lecg-phase 41"
+last_updated: "2026-07-21T18:21:24-06:00"
 ---
 
 # Project State
