@@ -72,6 +72,7 @@ import {
 } from "./activityGraphData";
 import { ProjectPicker } from "@/app/(dashboard)/access-analysis/components/ProjectPicker";
 import type { ProjectOption } from "@/lib/acc/projectFilter";
+import { useOrgDirectoryPeople } from "@/app/(dashboard)/users/useMergedAccUsers";
 import {
   ActivityDimensionsPanel,
   GROUP_BY_NONE,
@@ -79,15 +80,18 @@ import {
 } from "./ActivityDimensionsPanel";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
+import { ActivityUniverse3D } from "./ActivityUniverse3D";
+import { buildActivityDepth } from "./activityDepth";
 import { ActivityTooltip } from "./ActivityTooltip";
 import { ActivityDetailRail } from "./ActivityDetailRail";
+import { ActivitySelectionPanel } from "./ActivitySelectionPanel";
+import { buildSelectionBreakdown } from "./activitySelectionBreakdown";
 
 const LOD_DEBOUNCE_MS = 250;
 /** Morph durations (ms): coalesced drag steps, final settle, group-by switch. */
 const MORPH_DRAG_MS = 120;
 const MORPH_COMMIT_MS = 250;
 const MORPH_GROUP_SWITCH_MS = 600;
-const MAX_VISIBLE_LEGEND_ROWS = 24;
 /** Magnetic hover: snap to the nearest rendered node within this screen radius. */
 const MAGNET_RADIUS_PX = 32;
 /** Temporal set swaps fade through instead of hard-cutting (reduced motion snaps). */
@@ -183,6 +187,16 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     [authorLabels, deferredAuthorQuery],
   );
 
+  // Google-directory photos for the user-search suggestion avatars, keyed by
+  // lowercase email. Deduped/cached via React Query — no extra network when the
+  // directory is already resident from another surface.
+  const orgPeople = useOrgDirectoryPeople();
+  const authorPhotoByEmail = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of orgPeople) if (p.photoUrl) map.set(p.email.toLowerCase(), p.photoUrl);
+    return map;
+  }, [orgPeople]);
+
   // Project GUID → display name for tooltips + project dim labels (957 rows).
   const projectNamesQuery = trpc.activityUniverse.projectNames.useQuery(undefined, {
     staleTime: Infinity,
@@ -220,6 +234,37 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     projectDict.forEach((guid, i) => map.set(guid, perSlot[i]));
     return map;
   }, [projectDict, projectIdCol]);
+
+  // ── Role filter (author role, narrowing the resident set like projects) ──
+  const roleIdCol = data.columns.roleId as Uint16Array;
+  const roleDict = useMemo(
+    () => (Array.isArray(dicts.role) ? dicts.role.map(String) : []),
+    [dicts],
+  );
+  const [selectedRoles, setSelectedRoles] = useState<Set<string>>(
+    () => new Set(Array.isArray(dicts.role) ? dicts.role.map(String) : []),
+  );
+  // Same slot-mask builder as projects — the dict is the slot→label mapping.
+  const roleMask = useMemo(
+    () => buildProjectSelectionMask(roleDict, selectedRoles),
+    [roleDict, selectedRoles],
+  );
+  const roleCounts = useMemo(() => {
+    const perSlot = new Uint32Array(Math.max(1, roleDict.length));
+    for (let i = 0; i < roleIdCol.length; i++) {
+      const slot = roleIdCol[i];
+      if (slot < perSlot.length) perSlot[slot] += 1;
+    }
+    const map = new Map<string, number>();
+    roleDict.forEach((label, i) => map.set(label, perSlot[i]));
+    return map;
+  }, [roleDict, roleIdCol]);
+
+  // ── Experimental 2D/3D view toggle ───────────────────────────────────────
+  // 3D is a static space-time cube OVERLAY (x/y = embedding, z = month) fed by
+  // the same sampled buffers as the 2D canvas; the 2D graph stays mounted
+  // underneath so flipping back is instant and no state is lost.
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
 
   // ── DIM-07 state ──────────────────────────────────────────────────────────
   const [groupBy, setGroupBy] = useState<string>(GROUP_BY_NONE);
@@ -292,8 +337,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       authorMask: authorMatch.mask,
       projectId: projectIdCol,
       projectMask,
+      roleId: roleIdCol,
+      roleMask,
     }),
-    [authorId, authorMatch.mask, monthId, projectIdCol, projectMask, deferredMonth],
+    [authorId, authorMatch.mask, monthId, projectIdCol, projectMask, roleIdCol, roleMask, deferredMonth],
   );
   const activeCount = activeFullIdx?.length ?? data.count;
 
@@ -343,6 +390,25 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     () => createActivityPhysicsStub(toStride3(sampledPositions)),
     [sampledPositions],
   );
+  // 3D depth (time axis) for the sampled set — only built while the 3D view is up.
+  const sampledDepth = useMemo(
+    () =>
+      viewMode === "3d"
+        ? buildActivityDepth(
+            gatherIds(monthId, sampleIdx),
+            monthCount,
+            // Span the cube roughly like the embedding footprint.
+            (() => {
+              let maxAbs = 1;
+              for (let i = 0; i < sampledPositions.length; i++)
+                maxAbs = Math.max(maxAbs, Math.abs(sampledPositions[i]));
+              return maxAbs * 1.2;
+            })(),
+          )
+        : null,
+    [viewMode, monthId, sampleIdx, monthCount, sampledPositions],
+  );
+
   const sampledPositionStats = useMemo(() => {
     let finite = sampledPositions.length > 0;
     let maxAbs = 0;
@@ -638,6 +704,19 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     if (strengthRef.current > 0) commitMorph(MORPH_GROUP_SWITCH_MS);
   }, [groupLayout, commitMorph]);
 
+  // 3D overlay up → the hidden 2D canvas should not burn GPU on ambient drift,
+  // and any frozen hover chrome is dropped. Back to 2D resumes ambient (sample
+  // set only — region detail has its own lifecycle).
+  useEffect(() => {
+    if (viewMode === "3d") {
+      motionRef.current?.stopAmbient();
+      setHover(null);
+    } else if (renderedToFullRef.current === sampleIdx && sampleIdx.length > 0) {
+      motionRef.current?.startAmbient();
+    }
+    setActivityTestState({ ambientActive: motionRef.current?.isAmbientRunning() ?? false });
+  }, [viewMode, sampleIdx]);
+
   // Strength back at 0 → the LOD seam may resume (re-run once so region mode
   // can re-engage where the viewport already qualifies).
   useEffect(() => {
@@ -689,31 +768,42 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     return () => window.removeEventListener("keydown", onKey);
   }, [detailIndex, clearSelection]);
 
-  // Magnetic hover: rAF-throttled nearest-node snap over the CURRENT rendered
-  // set. The pointer doesn't need to land on a dot — the closest node within
-  // MAGNET_RADIUS_PX gets the ring + tooltip, so hover feels magnetic.
-  // Suspended while a morph owns positions (strength > 0) or the lasso is up.
+  // Magnetic hover: a continuous rAF loop (while the pointer is inside) that
+  // snaps to the nearest rendered node within MAGNET_RADIUS_PX and re-projects
+  // it EVERY frame, so the ring + tooltip ride ambient drift and morphs instead
+  // of freezing at the coord where the pointer last moved. Position truth is
+  // the motion layer's working buffer — base at rest, drifted mid-ambient, and
+  // the morph target while strength > 0 — so the magnet stays live across
+  // slider changes (the old strength>0 suspension predates that buffer).
   useEffect(() => {
     const div = containerRef.current;
     if (!div || !handleReady) return;
     let raf = 0;
     let pending: [number, number] | null = null;
+    let lastEmit: [number, number] | null = null;
 
     const clearMagnet = (): void => {
       if (magnetRef.current !== null) {
         magnetRef.current = null;
         handleRef.current?.setHoveredIndex?.(null);
       }
+      lastEmit = null;
       setHover(null);
     };
 
     const runMagnet = (): void => {
-      raf = 0;
       const handle = handleRef.current;
       const point = pending;
       if (!handle || !point) return;
-      if (strengthRef.current > 0 || lassoActive) return;
-      const positions2 = currentPositionsRef.current;
+      if (lassoActive) return;
+      // The working buffer only matches the CURRENT rendered set at sample
+      // LOD (region flips keep it sample-length) — the length guard falls
+      // back to the static positions of whatever set is actually up.
+      const live = motionRef.current?.getLivePositions() ?? null;
+      const positions2 =
+        live && live.length === currentPositionsRef.current.length
+          ? live
+          : currentPositionsRef.current;
       const n = positions2.length / 2;
       if (n === 0) {
         clearMagnet();
@@ -749,19 +839,36 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         handle.setHoveredIndex?.(best);
       }
       // Tooltip anchors to the NODE (not the pointer) — the snap is visible.
-      setHover({
-        fullIndex: full,
-        screenXY: handle.spaceToScreen([positions2[best * 2], positions2[best * 2 + 1]]),
-      });
+      // Sub-half-pixel frames are skipped so a still field doesn't re-render.
+      const screenXY = handle.spaceToScreen([positions2[best * 2], positions2[best * 2 + 1]]);
+      if (
+        lastEmit &&
+        magnetRef.current?.fullIndex === full &&
+        Math.abs(screenXY[0] - lastEmit[0]) < 0.5 &&
+        Math.abs(screenXY[1] - lastEmit[1]) < 0.5
+      ) {
+        return;
+      }
+      lastEmit = screenXY;
+      setHover({ fullIndex: full, screenXY });
+    };
+
+    const tick = (): void => {
+      raf = pending !== null ? requestAnimationFrame(tick) : 0;
+      runMagnet();
     };
 
     const onMove = (event: PointerEvent): void => {
       const rect = div.getBoundingClientRect();
       pending = [event.clientX - rect.left, event.clientY - rect.top];
-      if (!raf) raf = requestAnimationFrame(runMagnet);
+      if (!raf) raf = requestAnimationFrame(tick);
     };
     const onLeave = (): void => {
       pending = null;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
       clearMagnet();
     };
     div.addEventListener("pointermove", onMove);
@@ -892,6 +999,23 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     setLassoActive(false);
   }, []);
 
+  // Lasso selection → live per-attribute breakdown (author role, author, verb,
+  // module, object type, company, project, month) straight off the resident
+  // columns — zero fetches. renderedToFullRef is valid for the current
+  // selection: a set swap clears it (switchTo), so rendered→full never goes stale.
+  const selectionBreakdown = useMemo(() => {
+    if (selectedRendered.length === 0) return [];
+    const map = renderedToFullRef.current;
+    const full = new Uint32Array(selectedRendered.length);
+    for (let i = 0; i < selectedRendered.length; i++) full[i] = map[selectedRendered[i]];
+    return buildSelectionBreakdown(
+      full,
+      data.columns as unknown as Record<string, ArrayLike<number> | undefined>,
+      dicts,
+      projectNames,
+    );
+  }, [selectedRendered, data.columns, dicts, projectNames]);
+
   const fmt = (n: number): string => n.toLocaleString("en-US");
 
   return (
@@ -908,6 +1032,8 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             nodeColors={sampledColors}
             nodeSizes={sampledSizes}
             links={sampledLinks}
+            curvedLinks
+            linkGradient
             backgroundColor={bg}
             onHandleReady={(h) => {
               handleRef.current = h;
@@ -921,7 +1047,25 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             }}
           />
         </div>
-        <LassoOverlay active={lassoActive} hitTest={lassoHitTest} onComplete={onLassoComplete} />
+        <LassoOverlay
+          active={viewMode === "2d" && lassoActive}
+          hitTest={lassoHitTest}
+          onComplete={onLassoComplete}
+        />
+
+        {/* Experimental 3D overlay — same sampled buffers, z = time. The 2D
+            canvas stays mounted (hidden) underneath for an instant flip back. */}
+        {viewMode === "3d" && sampledDepth ? (
+          <div className="absolute inset-0 z-10">
+            <ActivityUniverse3D
+              positions2={sampledPositions}
+              depth={sampledDepth}
+              colors4={sampledColors}
+              sizes={sampledSizes}
+              backgroundColor={bg}
+            />
+          </div>
+        ) : null}
 
         {/* Magnetic preselect halo — replays a subtle ping on each snap-to-node. */}
         <style>{HOVER_RING_CSS}</style>
@@ -948,7 +1092,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         </div>
 
         {/* Top-N category labels ride the morph (rest→footprint lerp on live strength). */}
-        {groupLayout && groupDim ? (
+        {viewMode === "2d" && groupLayout && groupDim ? (
           <MapClusterLabels
             graphRef={labelsGraphRef}
             mode="2d"
@@ -979,8 +1123,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           </div>
         </div>
 
-        {/* Lasso toggle + honest selected count (visible = selectable at L2). */}
-        <div className="absolute bottom-16 left-4 z-10 flex items-center gap-2">
+        {/* Lasso toggle + honest selected count (visible = selectable at L2).
+            2D-only: the lasso hit-tests the 2D canvas projection. */}
+        <div
+          className="absolute bottom-16 left-4 z-10 flex items-center gap-2"
+          style={viewMode === "3d" ? { display: "none" } : undefined}
+        >
           <button
             type="button"
             onClick={() => {
@@ -1013,16 +1161,45 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           )}
         </div>
 
+        {/* Experimental 2D/3D view toggle — 3D lifts the embedding into a
+            space-time cube (z = month). */}
+        <div
+          data-testid="activity-view-toggle"
+          className="absolute right-4 top-3 z-20 flex overflow-hidden rounded-md border bg-card/90 text-xs shadow-sm backdrop-blur-sm"
+        >
+          {(["2d", "3d"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              data-testid={`activity-view-${mode}`}
+              aria-pressed={viewMode === mode}
+              onClick={() => setViewMode(mode)}
+              title={
+                mode === "3d"
+                  ? "Experimental: embedding as a space-time cube (depth = month)"
+                  : "Flat activity embedding"
+              }
+              className={`px-2.5 py-1 transition-colors ${
+                viewMode === mode
+                  ? "bg-primary/10 font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              {mode.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
         {/* Active color-by legend — honest counts over the selected period. */}
         <div
           data-testid="activity-color-legend"
-          className="absolute right-4 top-3 z-10 rounded-md border bg-card/80 px-3 py-2 backdrop-blur-sm"
+          className="absolute right-4 top-14 z-10 rounded-md border bg-card/80 px-3 py-2 backdrop-blur-sm"
         >
           <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {colorDim.label}
           </div>
-          <ul className="max-h-72 space-y-0.5 overflow-y-auto pr-1">
-            {activeLegend.slice(0, MAX_VISIBLE_LEGEND_ROWS).map((e) => (
+          <ul className="max-h-[60vh] space-y-0.5 overflow-y-auto pr-1">
+            {activeLegend.map((e) => (
               <li key={e.label} className="flex items-center gap-2 text-[11px] text-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -1034,9 +1211,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               </li>
             ))}
           </ul>
-          {activeLegend.length > MAX_VISIBLE_LEGEND_ROWS ? (
+          {activeLegend.length > 24 ? (
             <p className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
-              {MAX_VISIBLE_LEGEND_ROWS} of {fmt(activeLegend.length)} shown · all categories colored individually
+              {fmt(activeLegend.length)} categories · scroll for all
             </p>
           ) : null}
         </div>
@@ -1129,6 +1306,15 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             onClose={() => setDetailIndex(null)}
           />
         )}
+
+        {selectionBreakdown.length > 0 && (
+          <ActivitySelectionPanel
+            selectedCount={selectedRendered.length}
+            renderedCount={lod.renderedCount}
+            breakdown={selectionBreakdown}
+            onClear={clearSelection}
+          />
+        )}
       </div>
 
       <ActivityDimensionsPanel
@@ -1143,6 +1329,11 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         authorQuery={authorQuery}
         onAuthorQueryChange={setAuthorQuery}
         authorSuggestions={authorLabels}
+        authorPhotoByEmail={authorPhotoByEmail}
+        roleOptions={roleDict}
+        roleCounts={roleCounts}
+        selectedRoles={selectedRoles}
+        onRolesChange={setSelectedRoles}
         matchedAuthorCount={authorMatch.matchedAuthorCount}
         searchPending={authorQuery !== deferredAuthorQuery}
         groupCoverageText={groupCoverageText}
