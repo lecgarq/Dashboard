@@ -16,6 +16,7 @@ import {
   encodeColumnarPayload,
   type ColumnArray,
 } from "../lib/acc/columnarPayload";
+import { quantizePositions3 } from "../lib/acc/positions3Quant";
 import {
   ID_ANCHOR_STRIDE,
   activityUniversePaths,
@@ -56,6 +57,9 @@ interface EmbeddingRow {
   id: string;
   x: number;
   y: number;
+  x3: number | null;
+  y3: number | null;
+  z3: number | null;
   verbId: number;
   objectTypeId: number;
   moduleId: number;
@@ -80,7 +84,26 @@ async function main(): Promise<void> {
     const n = Number(count);
     if (n === 0) throw new Error("AccActivityEmbedding is empty — run compute_activity_embeddings.py first");
 
+    // Optional 3D sidecar (compute_activity_embeddings.py --components 3).
+    // Emitted only on a FULL id match — a partial sidecar would silently render
+    // a wrong universe, so it is disclosed and dropped instead.
+    const [{ exists3d }] = await db.$queryRawUnsafe<Array<{ exists3d: boolean }>>(
+      `SELECT to_regclass('"AccActivityEmbedding3D"') IS NOT NULL AS exists3d`,
+    );
+    let n3 = 0;
+    if (exists3d) {
+      const [{ c }] = await db.$queryRawUnsafe<Array<{ c: bigint }>>(
+        'SELECT COUNT(*)::bigint AS c FROM "AccActivityEmbedding3D"',
+      );
+      n3 = Number(c);
+    }
+    const with3d = n3 === n;
+    if (exists3d && !with3d) {
+      console.warn(`AccActivityEmbedding3D has ${n3} rows != ${n} — positions3 SKIPPED`);
+    }
+
     const positions = new Float32Array(n * 2);
+    const positions3f = with3d ? new Float32Array(n * 3) : null;
     const verbId = new Uint16Array(n);
     const objectTypeId = new Uint16Array(n);
     const moduleId = new Uint16Array(n);
@@ -100,7 +123,12 @@ async function main(): Promise<void> {
     const idAnchors: string[] = [];
     for (;;) {
       const rows = await db.$queryRawUnsafe<EmbeddingRow[]>(
-        `SELECT * FROM "AccActivityEmbedding" WHERE id > $1 ORDER BY id LIMIT ${CHUNK}`,
+        with3d
+          ? `SELECT e.*, e3.x AS x3, e3.y AS y3, e3.z AS z3
+             FROM "AccActivityEmbedding" e
+             LEFT JOIN "AccActivityEmbedding3D" e3 ON e3.id = e.id
+             WHERE e.id > $1 ORDER BY e.id LIMIT ${CHUNK}`
+          : `SELECT * FROM "AccActivityEmbedding" WHERE id > $1 ORDER BY id LIMIT ${CHUNK}`,
         lastId,
       );
       if (rows.length === 0) break;
@@ -108,6 +136,11 @@ async function main(): Promise<void> {
         if (i % ID_ANCHOR_STRIDE === 0) idAnchors.push(r.id);
         positions[i * 2] = r.x;
         positions[i * 2 + 1] = r.y;
+        if (positions3f) {
+          positions3f[i * 3] = r.x3 ?? 0;
+          positions3f[i * 3 + 1] = r.y3 ?? 0;
+          positions3f[i * 3 + 2] = r.z3 ?? 0;
+        }
         verbId[i] = r.verbId;
         objectTypeId[i] = r.objectTypeId;
         moduleId[i] = r.moduleId;
@@ -125,6 +158,8 @@ async function main(): Promise<void> {
     }
     if (i !== n) throw new Error(`streamed ${i} != count ${n}`);
 
+    // u16-quantize the 3D column (codec has no f32x3 discount; ~29 MB vs 59 MB).
+    let positions3HalfExtent = 0;
     const columns: Record<string, ColumnArray> = {
       positions,
       verbId,
@@ -137,12 +172,22 @@ async function main(): Promise<void> {
       authorId,
       folderId,
     };
+    if (positions3f) {
+      for (let j = 0; j < positions3f.length; j++) {
+        const a = Math.abs(positions3f[j]);
+        if (a > positions3HalfExtent) positions3HalfExtent = a;
+      }
+      columns.positions3 = quantizePositions3(positions3f, positions3HalfExtent);
+      console.log(`positions3: joined ${n} 3D rows, halfExtent ${positions3HalfExtent.toFixed(2)}`);
+    }
+
     const buf = encodeColumnarPayload(n, columns);
 
     const embDir = join(process.cwd(), ".embedding");
     const dicts = JSON.parse(
       readFileSync(join(embDir, "activity-universe-dicts.json"), "utf8"),
     ) as Record<string, unknown>;
+    if (positions3f) dicts.positions3HalfExtent = positions3HalfExtent;
     const coverage = JSON.parse(
       readFileSync(join(embDir, "activity-author-coverage.json"), "utf8"),
     ) as ActivityUniverseCoverage;

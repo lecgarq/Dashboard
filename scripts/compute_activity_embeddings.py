@@ -207,6 +207,12 @@ def main() -> None:
     # 24 GB cap owner-approved 2026-07-21 after the 12 GB estimate-derived cap
     # tripped on a SUCCESSFUL 58.7-min fit (peak 15.45 GB on a 63.4 GB machine).
     ap.add_argument("--cap-rss-gb", type=float, default=24.0)
+    # 3D sidecar mode: same corpus, features, and seed; PaCMAP n_components=3.
+    # Writes AccActivityEmbedding3D (id,x,y,z,runId) and its own gate file —
+    # NEVER touches the canonical 2D table or the dicts artifact.
+    ap.add_argument("--components", type=int, choices=(2, 3), default=2)
+    ap.add_argument("--single-fit", action="store_true",
+                    help="skip the fit#2 determinism proof (disclosed in the log)")
     args = ap.parse_args()
     smoke = args.limit is not None
 
@@ -356,7 +362,8 @@ def main() -> None:
 
     def fit() -> tuple[np.ndarray, float]:
         t = time.perf_counter()
-        emb = pacmap.PaCMAP(n_components=2, random_state=RANDOM_STATE).fit_transform(x)
+        emb = pacmap.PaCMAP(n_components=args.components,
+                            random_state=RANDOM_STATE).fit_transform(x)
         return np.asarray(emb, dtype=np.float64), time.perf_counter() - t
 
     emb1, fit1_s = fit()
@@ -372,12 +379,16 @@ def main() -> None:
             f"FALLBACK CLAUSE: peak RSS {rss} MB exceeds cap {args.cap_rss_gb} GB "
             "— NOT writing; pivot per 38-CONTEXT decision 1")
 
-    emb2, fit2_s = fit()
-    identical = bool(np.array_equal(emb1, emb2))
-    print(f"fit#2: {fit2_s / 60:.1f} min — determinism: "
-          f"{'identical' if identical else 'MISMATCH'}")
-    if not identical:
-        raise SystemExit("determinism MISMATCH — NOT writing")
+    if args.single_fit:
+        fit2_s = 0.0
+        print("fit#2 SKIPPED (--single-fit): determinism NOT re-proven this run")
+    else:
+        emb2, fit2_s = fit()
+        identical = bool(np.array_equal(emb1, emb2))
+        print(f"fit#2: {fit2_s / 60:.1f} min — determinism: "
+              f"{'identical' if identical else 'MISMATCH'}")
+        if not identical:
+            raise SystemExit("determinism MISMATCH — NOT writing")
 
     coords = normalize_coords(emb1)
     if not np.all(np.isfinite(coords)):
@@ -389,7 +400,9 @@ def main() -> None:
     sample = rng.choice(n, min(TRUST_SAMPLE, n), replace=False)
     trust = float(trustworthiness(x[sample], coords[sample],
                                   n_neighbors=TRUST_K, metric="cosine"))
-    gate_path = os.path.join(emb_dir, "activity-embedding-gate.json")
+    gate_name = ("activity-embedding-gate.json" if args.components == 2
+                 else "activity-embedding-gate-3d.json")
+    gate_path = os.path.join(emb_dir, gate_name)
     if os.path.exists(gate_path) and not smoke:
         with open(gate_path, "r", encoding="utf-8") as f:
             baseline = json.load(f)["trustworthiness"]
@@ -408,11 +421,45 @@ def main() -> None:
         return
 
     # ---- persist dictionaries + gate baseline (post-gate, pre-COPY) -------
-    with open(os.path.join(emb_dir, "activity-universe-dicts.json"), "w", encoding="utf-8") as f:
-        json.dump(labels, f)
+    # 3D mode: dicts stay owned by the canonical 2D run — never overwritten here.
+    if args.components == 2:
+        with open(os.path.join(emb_dir, "activity-universe-dicts.json"), "w", encoding="utf-8") as f:
+            json.dump(labels, f)
     with open(gate_path, "w", encoding="utf-8") as f:
         json.dump({"trustworthiness": trust, "k": TRUST_K, "sample": int(len(sample)),
                    "runId": run_id, "measuredAt": datetime.now(timezone.utc).isoformat()}, f)
+
+    if args.components == 3:
+        # Sidecar table keyed by the same event ids; raw SQL on purpose (no
+        # prisma db push — it drops expression indexes on activity tables).
+        t_w = time.time()
+        with conn.transaction():
+            with conn.cursor() as cur:
+                cur.execute(
+                    'CREATE TABLE IF NOT EXISTS "AccActivityEmbedding3D" ('
+                    'id text PRIMARY KEY, x double precision NOT NULL, '
+                    'y double precision NOT NULL, z double precision NOT NULL, '
+                    '"embeddingRunId" text NOT NULL)')
+                cur.execute('TRUNCATE "AccActivityEmbedding3D"')
+                with cur.copy('COPY "AccActivityEmbedding3D" (id,x,y,z,"embeddingRunId") '
+                              'FROM STDIN') as copy:
+                    for i in range(n):
+                        copy.write_row((ids[i], float(coords[i, 0]), float(coords[i, 1]),
+                                        float(coords[i, 2]), run_id))
+        conn.commit()
+        conn.close()
+        conn2 = psycopg.connect(_db_url())
+        with conn2.cursor() as cur:
+            cur.execute('SELECT COUNT(*) FROM "AccActivityEmbedding3D"')
+            written = cur.fetchone()[0]
+        conn2.close()
+        print(f"COPY wrote {written} 3D rows (fresh-connection count) in "
+              f"{time.time() - t_w:.1f}s (run {run_id})")
+        if written != n:
+            raise SystemExit(f"DURABILITY FAIL: fresh-connection count {written} != {n}")
+        print(f"DONE 3D: {n} rows, fit {fit1_s / 60:.1f}+{fit2_s / 60:.1f} min, "
+              f"peak RSS {peak_rss_mb()} MB, total {(time.time() - t0) / 60:.1f} min")
+        return
 
     # ---- TRUNCATE + COPY in one transaction ------------------------------
     t_w = time.time()

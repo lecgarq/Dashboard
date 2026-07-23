@@ -82,6 +82,7 @@ import { installActivityTestBridge, setActivityTestState } from "./activityTestB
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
 import { ActivityUniverse3D } from "./ActivityUniverse3D";
 import { buildActivityDepth } from "./activityDepth";
+import { dequantizePosition3 } from "@/lib/acc/positions3Quant";
 import { ActivityTooltip } from "./ActivityTooltip";
 import { ActivityDetailRail } from "./ActivityDetailRail";
 import { ActivitySelectionPanel } from "./ActivitySelectionPanel";
@@ -390,23 +391,45 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     () => createActivityPhysicsStub(toStride3(sampledPositions)),
     [sampledPositions],
   );
-  // 3D depth (time axis) for the sampled set — only built while the 3D view is up.
-  const sampledDepth = useMemo(
+  // 3D positions for the sampled set — only built while the 3D view is up.
+  // True 3D PaCMAP embedding when the payload carries positions3 (u16-quantized,
+  // --components 3 run); disclosed month-depth cube otherwise.
+  const positions3q = data.columns.positions3 as Uint16Array | undefined;
+  const positions3HalfExtent =
+    typeof dicts.positions3HalfExtent === "number" ? dicts.positions3HalfExtent : 0;
+  const has3dEmbedding = Boolean(positions3q && positions3HalfExtent > 0);
+  const sampled3 = useMemo(() => {
+    if (viewMode !== "3d") return null;
+    const n = sampleIdx.length;
+    const out = new Float32Array(n * 3);
+    if (positions3q && positions3HalfExtent > 0) {
+      for (let i = 0; i < n; i++) {
+        const src = sampleIdx[i] * 3;
+        out[i * 3] = dequantizePosition3(positions3q[src], positions3HalfExtent);
+        out[i * 3 + 1] = dequantizePosition3(positions3q[src + 1], positions3HalfExtent);
+        out[i * 3 + 2] = dequantizePosition3(positions3q[src + 2], positions3HalfExtent);
+      }
+      return out;
+    }
+    let maxAbs = 1;
+    for (let i = 0; i < sampledPositions.length; i++)
+      maxAbs = Math.max(maxAbs, Math.abs(sampledPositions[i]));
+    const depth = buildActivityDepth(gatherIds(monthId, sampleIdx), monthCount, maxAbs * 1.2);
+    for (let i = 0; i < n; i++) {
+      out[i * 3] = sampledPositions[i * 2];
+      out[i * 3 + 1] = sampledPositions[i * 2 + 1];
+      out[i * 3 + 2] = depth[i];
+    }
+    return out;
+  }, [viewMode, positions3q, positions3HalfExtent, monthId, sampleIdx, monthCount, sampledPositions]);
+
+  // Group-by categories for the 3D clump morph (aligned to the sample).
+  const sampledGroupCatIds = useMemo(
     () =>
-      viewMode === "3d"
-        ? buildActivityDepth(
-            gatherIds(monthId, sampleIdx),
-            monthCount,
-            // Span the cube roughly like the embedding footprint.
-            (() => {
-              let maxAbs = 1;
-              for (let i = 0; i < sampledPositions.length; i++)
-                maxAbs = Math.max(maxAbs, Math.abs(sampledPositions[i]));
-              return maxAbs * 1.2;
-            })(),
-          )
+      viewMode === "3d" && groupDim
+        ? gatherIds(data.columns[groupDim.column] as Uint16Array, sampleIdx)
         : null,
-    [viewMode, monthId, sampleIdx, monthCount, sampledPositions],
+    [viewMode, groupDim, data.columns, sampleIdx],
   );
 
   const sampledPositionStats = useMemo(() => {
@@ -1053,17 +1076,26 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           onComplete={onLassoComplete}
         />
 
-        {/* Experimental 3D overlay — same sampled buffers, z = time. The 2D
-            canvas stays mounted (hidden) underneath for an instant flip back. */}
-        {viewMode === "3d" && sampledDepth ? (
+        {/* 3D overlay — true 3D embedding (or disclosed month-depth fallback),
+            same sampled buffers + links, GPU morph for group-by/strength. The
+            2D canvas stays mounted (hidden) underneath for an instant flip back. */}
+        {viewMode === "3d" && sampled3 ? (
           <div className="absolute inset-0 z-10">
             <ActivityUniverse3D
-              positions2={sampledPositions}
-              depth={sampledDepth}
+              positions3={sampled3}
               colors4={sampledColors}
               sizes={sampledSizes}
+              links={sampledLinks}
+              groupCatIds={sampledGroupCatIds}
+              strength={strength}
               backgroundColor={bg}
+              reducedMotion={reducedMotion}
             />
+            {!has3dEmbedding ? (
+              <div className="pointer-events-none absolute bottom-16 right-4 rounded-md border bg-card/80 px-2 py-1 font-mono text-[10px] text-muted-foreground backdrop-blur-sm">
+                3D embedding not built — showing depth = month fallback
+              </div>
+            ) : null}
           </div>
         ) : null}
 
