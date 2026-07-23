@@ -94,6 +94,13 @@ const LOD_DEBOUNCE_MS = 250;
 const MORPH_DRAG_MS = 120;
 const MORPH_COMMIT_MS = 250;
 const MORPH_GROUP_SWITCH_MS = 600;
+/**
+ * Full-corpus morphs: each commit mixes ~10M floats and uploads ~39MB, so
+ * rAF-coalescing alone still chugs. Above this point count, slider-drag
+ * commits fire on a trailing throttle instead of every frame.
+ */
+const MORPH_BIG_SET_POINTS = 1_000_000;
+const MORPH_BIG_SET_THROTTLE_MS = 250;
 /** Magnetic hover: snap to the nearest rendered node within this screen radius. */
 const MAGNET_RADIUS_PX = 32;
 /** Temporal set swaps fade through instead of hard-cutting (reduced motion snaps). */
@@ -685,6 +692,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     (durationMs: number): void => {
       const motion = motionRef.current;
       if (!motion) return;
+      // 3D owns its morph on the GPU (uMix + target attribute) — do not burn
+      // ~39MB uploads on the hidden 2D canvas; the view-flip effect resyncs.
+      if (viewModeRef.current === "3d") return;
       // Morphs are defined over the sample; restore it first if zoom-detail is up.
       if (renderedToFullRef.current !== sampleIdx) restoreSampleRef.current();
       const layout = groupLayoutRef.current;
@@ -709,15 +719,22 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       setStrength(v);
       strengthRef.current = v;
       setActivityTestState({ strength: v });
-      // rAF-coalesced: many slider steps per frame → one target recompute.
+      // Coalesced: many slider steps → one target recompute. Small sets fire
+      // next frame; big sets fire on a trailing throttle (reads the LATEST
+      // strengthRef when it lands, so the final value always applies).
       if (rafPendingRef.current) return;
       rafPendingRef.current = true;
-      requestAnimationFrame(() => {
+      const fire = (): void => {
         rafPendingRef.current = false;
         commitMorph(strengthRef.current === 0 ? MORPH_COMMIT_MS : MORPH_DRAG_MS);
-      });
+      };
+      if (sampleIdx.length > MORPH_BIG_SET_POINTS) {
+        setTimeout(fire, MORPH_BIG_SET_THROTTLE_MS);
+      } else {
+        requestAnimationFrame(fire);
+      }
     },
-    [commitMorph],
+    [commitMorph, sampleIdx.length],
   );
 
   const onGroupByChange = useCallback((id: string): void => {
@@ -748,6 +765,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       renderedToFullRef.current = sampleIdx;
     } else if (renderedToFullRef.current === sampleIdx && sampleIdx.length > 0) {
       motionRef.current?.startAmbient();
+      // Morph commits were suspended while 3D was up — resync the 2D canvas
+      // to the CURRENT group/strength state once on return.
+      commitMorph(MORPH_COMMIT_MS);
     }
     // Selection mapping differs between the 2D region set and the 3D sample —
     // clear it (and exit lasso) on every view switch so nothing goes stale.
@@ -759,7 +779,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       selectedCount: 0,
       ambientActive: motionRef.current?.isAmbientRunning() ?? false,
     });
-  }, [viewMode, sampleIdx]);
+  }, [viewMode, sampleIdx, commitMorph]);
 
   // Strength back at 0 → the LOD seam may resume (re-run once so region mode
   // can re-engage where the viewport already qualifies).

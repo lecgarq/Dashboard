@@ -93,6 +93,14 @@ export interface ActivityMotion {
 
 /** Owner decision 1: ~100k of the rendered subset drift; the rest stay still. */
 export const AMBIENT_SUBSET_CAP = 100_000;
+/**
+ * Ambient hard bound (full-corpus rendering, 2026-07-23): each cadence tick
+ * uploads the FULL working buffer, and 37-BASELINE proved full-set uploads die
+ * ≥250k (at 4.9M that is a 39MB main-thread-blocking upload every 250ms).
+ * Above this rendered count ambient stays off — 100k drifting among millions
+ * is imperceptible anyway.
+ */
+export const AMBIENT_MAX_N = 250_000;
 /** 37-BASELINE choreography constants (73 fps @106k proven). */
 const DRIFT_AMP = 2.4;
 /**
@@ -111,6 +119,8 @@ export interface CreateActivityMotionOpts {
   base2: Float32Array;
   reducedMotion: boolean;
   subsetCap?: number;
+  /** Test seam for the ambient hard bound (defaults to AMBIENT_MAX_N). */
+  ambientMaxN?: number;
   /** Test seams — default to window rAF / performance.now. */
   raf?: (cb: (nowMs: number) => void) => number;
   cancelRaf?: (id: number) => void;
@@ -188,7 +198,9 @@ export function createActivityMotion(opts: CreateActivityMotionOpts): ActivityMo
     },
 
     startAmbient(): void {
-      if (disposed || running || opts.reducedMotion) return; // reduced-motion: fully static
+      // reduced-motion: fully static; over the hard bound: uploads would jank
+      if (disposed || running || opts.reducedMotion) return;
+      if (n > (opts.ambientMaxN ?? AMBIENT_MAX_N)) return;
       running = true;
       startedAt = null;
       fps.resetSampling(now());

@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  AMBIENT_MAX_N,
   createActivityMotion,
   createActivityPhysicsStub,
   toStride3,
@@ -170,6 +171,32 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     m.stopAmbient();
     m.dispose();
     expect(h.handle.pushes.length).toBeGreaterThan(0);
+  });
+
+  it("ambient stays OFF above the hard bound (full-set uploads jank past 250k)", () => {
+    expect(AMBIENT_MAX_N).toBe(250_000);
+    const h = harness();
+    const m = createActivityMotion({
+      handle: h.handle,
+      base2: base10(), // n = 10
+      reducedMotion: false,
+      subsetCap: 3,
+      ambientMaxN: 9, // seam: bound below n
+      raf: (cb) => {
+        h.raf.queue.push(cb);
+        return 1;
+      },
+      cancelRaf: () => {},
+      now: () => h.clock.now,
+    });
+    m.startAmbient();
+    expect(m.isAmbientRunning()).toBe(false);
+    h.step(0);
+    h.step(300);
+    expect(h.handle.morphs).toHaveLength(0);
+    // Explicit morphs (slider/group commits) still work above the bound.
+    m.morphTo(new Float32Array(20).fill(9), 200);
+    expect(h.handle.morphs).toHaveLength(1);
   });
 
   it("prefers-reduced-motion → fully static: no ambient, morphs snap (duration 0)", () => {

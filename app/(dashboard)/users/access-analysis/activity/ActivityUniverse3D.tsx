@@ -298,6 +298,15 @@ export function ActivityUniverse3D({
       if (a > maxAbs) maxAbs = a;
     }
 
+    // Full-corpus fill-rate relief: past 1M points drop the supersampling to
+    // 1.5x — ~44% fewer fragments, visually indistinguishable in a dense cloud.
+    const ratio = Math.min(window.devicePixelRatio || 1, n > 1_000_000 ? 1.5 : 2);
+    if (ctx.renderer.getPixelRatio() !== ratio) {
+      const el = ctx.renderer.domElement.parentElement;
+      ctx.renderer.setPixelRatio(ratio);
+      if (el) ctx.renderer.setSize(el.clientWidth, el.clientHeight);
+    }
+
     // Selection attribute persists across rebuilds only when the count matches;
     // a genuine set swap resets it (stale rendered indices would mislead).
     if (selectedAttrRef.current.length !== n) selectedAttrRef.current = new Float32Array(n);
