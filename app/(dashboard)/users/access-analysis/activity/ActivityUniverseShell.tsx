@@ -168,6 +168,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const handleRef = useRef<GraphCanvas2DHandle | null>(null);
   /** 3D imperative handle (projection lasso + controls freeze), null in 2D. */
   const handle3Ref = useRef<ActivityUniverse3DHandle | null>(null);
+  /**
+   * The 3D overlay div. SIBLING of containerRef (stacked above it, z-10), so
+   * pointer events over the 3D canvas never bubble through containerRef — the
+   * 3D magnet/click listeners must attach HERE, not on the 2D container.
+   */
+  const overlay3Ref = useRef<HTMLDivElement | null>(null);
   /** MapClusterLabels adapter — the retired GraphCanvas union's "2d" arm. */
   const labelsGraphRef = useRef<GraphCanvasHandle | null>(null);
   const { resolvedTheme } = useTheme();
@@ -952,8 +958,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   // the continuous rAF loop re-projects every frame so the ring + tooltip ride
   // the auto-orbit and the group morph. A sub-6px-travel click on the canvas
   // opens the snapped node's detail rail (OrbitControls owns real drags).
+  // Listeners live on the OVERLAY (see overlay3Ref) — containerRef never sees
+  // these events while the 3D view covers it.
   useEffect(() => {
-    const div = containerRef.current;
+    const div = overlay3Ref.current;
     if (!div || viewMode !== "3d") return;
     let raf = 0;
     let pending: [number, number] | null = null;
@@ -1238,7 +1246,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             same sampled buffers + links, GPU morph for group-by/strength. The
             2D canvas stays mounted (hidden) underneath for an instant flip back. */}
         {viewMode === "3d" && sampled3 ? (
-          <div className="absolute inset-0 z-10">
+          <div ref={overlay3Ref} className="absolute inset-0 z-10">
             <ActivityUniverse3D
               positions3={sampled3}
               colors4={sampledColors}
