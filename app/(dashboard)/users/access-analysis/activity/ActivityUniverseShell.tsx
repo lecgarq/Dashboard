@@ -268,6 +268,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   // the same sampled buffers as the 2D canvas; the 2D graph stays mounted
   // underneath so flipping back is instant and no state is lost.
   const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  // Ref mirror for long-lived listeners (the LOD seam) that must not re-attach
+  // on every view flip.
+  const viewModeRef = useRef(viewMode);
+  viewModeRef.current = viewMode;
 
   // ── DIM-07 state ──────────────────────────────────────────────────────────
   const [groupBy, setGroupBy] = useState<string>(GROUP_BY_NONE);
@@ -816,7 +820,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   // slider changes (the old strength>0 suspension predates that buffer).
   useEffect(() => {
     const div = containerRef.current;
-    if (!div || !handleReady) return;
+    if (!div || !handleReady || viewMode !== "2d") return;
     let raf = 0;
     let pending: [number, number] | null = null;
     let lastEmit: [number, number] | null = null;
@@ -917,7 +921,101 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       div.removeEventListener("pointerleave", onLeave);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [handleReady, lassoActive]);
+  }, [handleReady, lassoActive, viewMode]);
+
+  // 3D magnetic hover: same 32px snap, but through the live camera projection —
+  // the continuous rAF loop re-projects every frame so the ring + tooltip ride
+  // the auto-orbit and the group morph. A sub-6px-travel click on the canvas
+  // opens the snapped node's detail rail (OrbitControls owns real drags).
+  useEffect(() => {
+    const div = containerRef.current;
+    if (!div || viewMode !== "3d") return;
+    let raf = 0;
+    let pending: [number, number] | null = null;
+    let lastEmit: [number, number] | null = null;
+    let downXY: [number, number] | null = null;
+
+    const clearMagnet = (): void => {
+      magnetRef.current = null;
+      lastEmit = null;
+      setHover(null);
+    };
+
+    const runMagnet = (): void => {
+      const handle = handle3Ref.current;
+      const point = pending;
+      if (!handle || !point) return;
+      if (lassoActive) return;
+      const hit = handle.findNearestPoint(
+        point[0],
+        point[1],
+        div.clientWidth,
+        div.clientHeight,
+        MAGNET_RADIUS_PX,
+      );
+      if (!hit) {
+        clearMagnet();
+        return;
+      }
+      const full = renderedToFullRef.current[hit.index];
+      if (full === undefined) {
+        clearMagnet();
+        return;
+      }
+      magnetRef.current = { renderedIndex: hit.index, fullIndex: full };
+      if (
+        lastEmit &&
+        Math.abs(hit.screenXY[0] - lastEmit[0]) < 0.5 &&
+        Math.abs(hit.screenXY[1] - lastEmit[1]) < 0.5
+      ) {
+        return;
+      }
+      lastEmit = hit.screenXY;
+      setHover({ fullIndex: full, screenXY: hit.screenXY });
+    };
+
+    const tick = (): void => {
+      raf = pending !== null ? requestAnimationFrame(tick) : 0;
+      runMagnet();
+    };
+
+    const onMove = (event: PointerEvent): void => {
+      const rect = div.getBoundingClientRect();
+      pending = [event.clientX - rect.left, event.clientY - rect.top];
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const onLeave = (): void => {
+      pending = null;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      clearMagnet();
+    };
+    const onDown = (event: PointerEvent): void => {
+      downXY = [event.clientX, event.clientY];
+    };
+    const onClick = (event: MouseEvent): void => {
+      // Canvas-only: UI buttons inside the container bubble their clicks here.
+      if ((event.target as HTMLElement).tagName !== "CANVAS") return;
+      if (lassoActive || !downXY) return;
+      const travel = Math.hypot(event.clientX - downXY[0], event.clientY - downXY[1]);
+      if (travel > 6) return; // an orbit drag, not a click
+      setDetailIndex(magnetRef.current ? magnetRef.current.fullIndex : null);
+    };
+    div.addEventListener("pointermove", onMove);
+    div.addEventListener("pointerleave", onLeave);
+    div.addEventListener("pointerdown", onDown);
+    div.addEventListener("click", onClick);
+    return () => {
+      div.removeEventListener("pointermove", onMove);
+      div.removeEventListener("pointerleave", onLeave);
+      div.removeEventListener("pointerdown", onDown);
+      div.removeEventListener("click", onClick);
+      if (raf) cancelAnimationFrame(raf);
+      clearMagnet();
+    };
+  }, [viewMode, lassoActive]);
 
   // LOD state machine: after pan/zoom settles, flip between the uniform sample
   // (region over cap) and exact viewport detail (region fits the cap). A set
@@ -975,6 +1073,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       const handle = handleRef.current;
       const el = containerRef.current;
       if (!handle || !el || disposed) return;
+      // 3D overlay up → the seam is for the hidden 2D canvas only. Running it
+      // here scans 4.9M positions per zoom settle (visible jank) and clobbers
+      // renderedToFullRef, which 3D pins to sampleIdx for hover/lasso mapping.
+      if (viewModeRef.current !== "2d") return;
       // A fast zoom can leave cosmos's drawing buffer degraded (cloud clipped to
       // a rectangle); re-sync it once the wheel/pointer interaction settles.
       handle.resize?.();

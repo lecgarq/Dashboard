@@ -19,9 +19,15 @@ describe("buildClumpTargets", () => {
     expect(Array.from(t)).toEqual(Array.from(base));
   });
 
-  it("returns the base buffer untouched when catIds are null or misaligned", () => {
+  it("returns a COPY of base when catIds are null or misaligned (never aliases)", () => {
+    // Aliasing regression: the 3D view mutates the target attribute in place;
+    // sharing the base array corrupted positions on the first group-by switch.
     const base = new Float32Array([1, 2, 3]);
-    expect(buildClumpTargets(base, null)).toBe(base);
-    expect(buildClumpTargets(base, new Uint16Array([0, 0]))).toBe(base);
+    const nullTargets = buildClumpTargets(base, null);
+    expect(Array.from(nullTargets)).toEqual([1, 2, 3]);
+    expect(nullTargets).not.toBe(base);
+    const misaligned = buildClumpTargets(base, new Uint16Array([0, 0]));
+    expect(Array.from(misaligned)).toEqual([1, 2, 3]);
+    expect(misaligned).not.toBe(base);
   });
 });

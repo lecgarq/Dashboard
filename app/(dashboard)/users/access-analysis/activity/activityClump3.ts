@@ -10,12 +10,17 @@
 /** How far a point travels toward its category centroid at full strength. */
 export const CLUMP_PULL = 0.78;
 
-/** No categories (or misaligned input) → targets = base (mix becomes a no-op). */
+/**
+ * No categories (or misaligned input) → targets = COPY of base (mix becomes a
+ * no-op). Must be a copy: the 3D view wraps base and targets in separate GPU
+ * attributes and later overwrites the target attribute in place — an aliased
+ * return would corrupt the base positions on the first group-by switch.
+ */
 export function buildClumpTargets(
   base3: Float32Array,
   catIds: Uint16Array | null,
 ): Float32Array {
-  if (!catIds || catIds.length * 3 !== base3.length) return base3;
+  if (!catIds || catIds.length * 3 !== base3.length) return base3.slice();
   let maxCat = 0;
   for (let i = 0; i < catIds.length; i++) if (catIds[i] > maxCat) maxCat = catIds[i];
   const sums = new Float64Array((maxCat + 1) * 3);

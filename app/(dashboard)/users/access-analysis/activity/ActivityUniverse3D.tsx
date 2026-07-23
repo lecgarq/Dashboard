@@ -38,7 +38,7 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   // Selected points swell slightly; a live selection shrinks the rest.
   float sizeMul = mix(1.0, aSelected > 0.5 ? 1.6 : 0.85, uHasSelection);
-  gl_PointSize = clamp(aSize * sizeMul * uSizeScale / -mv.z, 1.5, 44.0);
+  gl_PointSize = clamp(aSize * sizeMul * uSizeScale / -mv.z, 1.25, 26.0);
   gl_Position = projectionMatrix * mv;
 }`;
 
@@ -101,6 +101,18 @@ export interface ActivityUniverse3DHandle {
    * excluded.
    */
   findPointsInPolygon: (path: [number, number][], width: number, height: number) => number[];
+  /**
+   * Nearest rendered point within radiusPx of the given screen coord, through
+   * the live camera at the CURRENT morph mix (the 3D magnetic-hover seam).
+   * Returns the rendered index plus its projected screen position, or null.
+   */
+  findNearestPoint: (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radiusPx: number,
+  ) => { index: number; screenXY: [number, number] } | null;
   /** Freeze/thaw OrbitControls so a lasso drag selects instead of rotating. */
   setControlsEnabled: (enabled: boolean) => void;
   /** Highlight the selected rendered indices (dims the rest); [] clears. */
@@ -300,7 +312,7 @@ export function ActivityUniverse3D({
       vertexShader: POINT_VERT,
       fragmentShader: POINT_FRAG,
       uniforms: {
-        uSizeScale: { value: maxAbs * 1.5 },
+        uSizeScale: { value: maxAbs * 0.9 },
         uMix: { value: three.current?.uMix ?? 0 },
         uHasSelection: { value: hasSelection },
       },
@@ -424,6 +436,7 @@ export function ActivityUniverse3D({
   useEffect(() => {
     if (!onHandleReady) return;
     const proj = new THREE.Vector3();
+    const vpMatrix = new THREE.Matrix4();
     const handle: ActivityUniverse3DHandle = {
       findPointsInPolygon: (path, width, height) => {
         const ctx = three.current;
@@ -449,6 +462,48 @@ export function ActivityUniverse3D({
           if (pointInPolygon(sx, sy, path)) out.push(i);
         }
         return out;
+      },
+      findNearestPoint: (x, y, width, height, radiusPx) => {
+        const ctx = three.current;
+        const geom = ctx?.pointGeom;
+        if (!ctx || !geom) return null;
+        const pos = geom.getAttribute("position").array as Float32Array;
+        const tgt = geom.getAttribute("aTarget").array as Float32Array;
+        const mix = ctx.uMix;
+        // Runs every rAF tick while the pointer is inside — one combined
+        // view-projection matrix and inline math keep 200k points in ~a ms.
+        ctx.camera.updateMatrixWorld();
+        vpMatrix
+          .copy(ctx.camera.projectionMatrix)
+          .multiply(ctx.camera.matrixWorldInverse);
+        const e = vpMatrix.elements;
+        const n = pos.length / 3;
+        let best = -1;
+        let bestSq = radiusPx * radiusPx;
+        let bx = 0;
+        let by = 0;
+        for (let i = 0; i < n; i++) {
+          const b = i * 3;
+          const px = pos[b] + (tgt[b] - pos[b]) * mix;
+          const py = pos[b + 1] + (tgt[b + 1] - pos[b + 1]) * mix;
+          const pz = pos[b + 2] + (tgt[b + 2] - pos[b + 2]) * mix;
+          const w = e[3] * px + e[7] * py + e[11] * pz + e[15];
+          if (w <= 0) continue; // behind the camera
+          const cz = (e[2] * px + e[6] * py + e[10] * pz + e[14]) / w;
+          if (cz > 1 || cz < -1) continue; // outside the near/far frustum
+          const cx = (e[0] * px + e[4] * py + e[8] * pz + e[12]) / w;
+          const cy = (e[1] * px + e[5] * py + e[9] * pz + e[13]) / w;
+          const sx = (cx * 0.5 + 0.5) * width;
+          const sy = (-cy * 0.5 + 0.5) * height;
+          const d = (sx - x) * (sx - x) + (sy - y) * (sy - y);
+          if (d < bestSq) {
+            bestSq = d;
+            best = i;
+            bx = sx;
+            by = sy;
+          }
+        }
+        return best < 0 ? null : { index: best, screenXY: [bx, by] };
       },
       setControlsEnabled: (enabled) => {
         const ctx = three.current;
