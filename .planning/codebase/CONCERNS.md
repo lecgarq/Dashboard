@@ -5,10 +5,14 @@
 debt resolved or bounded by Phase 41 evidence, standing operational ceilings retained.
 **Refreshed:** 2026-07-22 (pm) — post-close perf-fix session (commits 22633278 + c998db1e);
 new cosmos.gl patch/fitView/dual-GPU/link-visibility/cadence traps appended at the end.
+**Refreshed:** 2026-07-23 — activity-universe full-corpus / 2D-3D session (12 commits
+`1c346714`..`7d1420b9` + uncommitted WIP): duplicate-dict-label, headless-WebGL-gate,
+two-flag fixture, and embedding-timestamp traps appended as the final section; §8.2/§8.3
+and §B/§E figures corrected in place.
 **Refreshed:** 2026-07-02 — targeted post-v2.1/v2.2 status update (repo-map basis unchanged, 2026-06-19)
 **Refreshed:** 2026-07-16 — post-v2.4 close (d3768490) status sweep; repo-map re-run (`node scripts/repo-map/check.cjs` PASS: 2 dependency-cruiser warnings, 236 ast-grep findings, 0 blocking). See the "2026-07-16 Refresh" section at the end.
 **Repo-map date:** 2026-07-14 (ast-grep-report.json `generatedAt`)
-**Branch:** feat/access-analysis-redesign (⚠️ ~223 uncommitted WIP entries as of 2026-07-22 — see 2026-07-16 Refresh §D; the access-analysis redesign WIP is still in flight and un-committed)
+**Branch:** feat/access-analysis-redesign (⚠️ still WIP-heavy as of 2026-07-23 — see 2026-07-16 Refresh §D and the 2026-07-23 section §7; the access-analysis redesign WIP plus the current activity-universe work are un-committed)
 
 > **Reading note (2026-07-02):** v2.1 Concerns Hardening (Phases 09–14) and
 > v2.2 Structural Refactors (Phases 15–19) were built directly against this
@@ -318,6 +322,7 @@ new cosmos.gl patch/fitView/dual-GPU/link-visibility/cadence traps appended at t
 - **Impact:** Slow test suite iteration; any cosmos.gl upgrade risks breaking large swaths of tests that test library internals rather than Dashboard logic.
 - **Guardrail:** Profile test runtime with `--reporter=verbose`. Refactor to test only the pure physics math (force computation, position deltas) with no canvas/GPU mocking. Move canvas-dependent tests to the existing Playwright e2e suite.
 - **Status (2026-07-16): still open.** Current sizes: `physicsLayer.test.ts` 1,346 lines, `GraphCanvas3D.test.ts` 1,218 lines, `GraphCanvas.test.ts` 928 lines — still the largest test files under `app/`.
+- **Status (2026-07-23): half resolved by deletion, half unchanged.** `GraphCanvas3D.test.ts` and `GraphCanvas.test.ts` no longer exist (removed with the retired instance graph in v2.7 ACT-03 / Phase 41). `app/(dashboard)/users/access-analysis/physicsLayer.test.ts` is still 1,346 lines and is now the largest test file under `app/` — and it exercises `physicsLayer.ts`, which is part of the kept-but-unmounted instance machinery (no live route mounts it). Deleting the pair together is the lazy fix if the instance physics path is never revived; do not refactor the test in place first.
 
 ### 8.3 `acc-dc-graph.spec.ts` e2e test is 62 KB
 
@@ -326,6 +331,7 @@ new cosmos.gl patch/fitView/dual-GPU/link-visibility/cadence traps appended at t
 - **Impact:** High-maintenance; any refactor of the graph surface requires touching a 62 KB test file. Test failures are hard to isolate.
 - **Guardrail:** Split into topical spec files by interaction surface: `acc-graph-clusters.spec.ts`, `acc-graph-filters.spec.ts`, `acc-graph-3d.spec.ts`. Keep each under 500 lines.
 - **Status (2026-07-16): still open, and drifted.** File is 63,741 bytes; the 2026-07-14 dependency-update run recorded 14 pre-existing failures in this suite (node count 16,942→22,279 drift + physics-shell sidebar testids gone). The suite needs a re-baseline pass before it can gate anything.
+- **Status (2026-07-23): ✅ RESOLVED by the E2E-03 re-baseline.** `tests/e2e/acc-dc-graph.spec.ts` is now **170 lines** — the 62 KB instance-era suite was replaced with activity-universe assertions driven through `window.__ACTIVITY_UNIVERSE_TEST__`. The splitting guardrail above is moot; the live risk moved to the fixture-flag trap (2026-07-23 §3).
 
 ---
 
@@ -579,6 +585,12 @@ The fixed reference implementation lives in `app/(dashboard)/users/spatial-graph
 - **236 ast-grep findings** (report generated 2026-07-14): `large-use-effect` 146 (baseline 143 — +3 drift), `no-console-log` 88 (baseline 121 — improved), `unsafe-todo` 2 (baseline 5 — likely the two `dataLayer.ts` TODOs, see §4.1), `direct-prisma-in-ui` 0 (the only blocking rule; baseline 1, cleared by BND-01).
 - The 5 documented-deferred `lib → app` edges (BND-03 group 2) are unchanged: `lib/acc/activityAggregate.ts`, `lib/acc/activityClassification.ts` (×2 targets), `lib/acc/dcUserAssembly.ts`, `lib/server/acc-route-hydration.ts` — all importing route-owned modules under `app/(dashboard)/users/access-analysis/` or `app/(dashboard)/users/`. Still blocked on spatial-graph scope; the redesign in flight (§D) may be the window to move `accTaxonomy.ts` / `accNormalize.ts` / `internalDomains.ts` to `lib/acc/`.
 
+**Update (2026-07-23, re-verified against the current tree — supersedes the two bullets above):**
+
+- **dependency-cruiser: 1 warning**, not 2 — `scripts/build-activity-author-attributes.ts → app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts` (`no-scripts-to-app`). `scripts/build-instance-features.ts` is gone (deleted with the instance pipeline), which retired its two edges; the Phase-38 author-attributes builder re-created the same coupling against the same route-owned module. **The pattern, not the file, is the durable trap:** every new activity/embedding build script that needs node/feature helpers reaches into `app/(dashboard)/users/access-analysis/`. Moving `graphNodesFromUsers.ts` (and `accTaxonomy.ts` / `accNormalize.ts` / `internalDomains.ts`) into `lib/acc/` with barrels at the old paths is the one-time fix.
+- **ast-grep (report regenerated 2026-07-23): 220 findings** — `large-use-effect` **153** (up from 146; the activity shell's many `useEffect` blocks are the growth), `no-console-log` **65** (down from 88), `unsafe-todo` **2** (unchanged, still the `dataLayer.ts` pair per §4.1), `direct-prisma-in-ui` **0** (still clean — the only blocking rule).
+- **`lib`/`server` → `app` edges: 7 total** (grepped `from "@/app/`): 4 into the spatial-graph route (`activityAggregate.ts`, `activityClassification.ts` ×2, `dcUserAssembly.ts`) and 3 into the ECharts charts page (`lib/server/folderActivityView.ts` ×2 → `folderActivityCounts.ts`/`folderActionTypes.ts`, `lib/server/provisionedModulesView.ts` → `modules.ts`). The `acc-route-hydration → useUsersDirectoryData` edge from the old list is **gone** (Ph33 moved `BULK_USERS_LEAN_INPUT` to `lib/acc/cachePolicy.ts`).
+
 ### C. Two distinct "access-analysis" surfaces — do not conflate
 
 **TRAP (recurring):** `app/(dashboard)/access-analysis/` is the ECharts **charts page** (donuts, terrain, coordination panels). `app/(dashboard)/users/access-analysis/` is the **spatial-graph shell** (cosmos.gl graph, DuckDB, catalog sliders) served at `/users/spatial-graph` (route split in 4cb09b97). They share nothing but the name. Any concern, plan, or grep that says "access-analysis" must state which surface it means. The current redesign branch (§D) touches BOTH surfaces.
@@ -604,6 +616,21 @@ Post-v2.2 splits, no file exceeds 1,700 lines, but a second generation of large 
 | `app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx` | 774 | also the Ph28.1 chunk-size culprit |
 
 None currently blocks work; `dcIngest.ts` and `acc-hot-cache.ts` are the two where a bug has the widest blast radius (ingest correctness, all cached analytics). Flag, don't split speculatively.
+
+**Update (2026-07-23 — measured over `git ls-files` + working tree; the table above is stale):**
+
+| File | Lines | Note |
+|---|---|---|
+| `app/(dashboard)/users/access-analysis/activity/ActivityUniverseShell.tsx` | **1,754** (1,558 at HEAD) | now the **largest source file in the repo**; see 2026-07-23 §6 |
+| `lib/acc/dcIngest.ts` | 1,672 | unchanged; widest ingest blast radius |
+| `components/dashboard/MailPanel.tsx` | 1,353 | |
+| `app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx` | 1,153 | was 792 (2026-07-16) → 1,042 (07-22) → 1,153; still growing |
+| `app/(dashboard)/users/dashboard/DashboardSidePanel.tsx` | 1,150 | |
+| `lib/acc/quick-sync-extraction.ts` | 1,021 | |
+| `lib/server/acc-hot-cache.ts` | 972 | unchanged; all cached analytics |
+| `app/(dashboard)/users/access-analysis/activity/ActivityUniverse3D.tsx` | 615 | new in v2.7+; three.js/OrbitControls overlay |
+
+`AccessAnalysisShell.tsx` dropped off the list (the instance shell was retired). Still: flag, don't split speculatively — but see 2026-07-23 §6 for why the activity shell is the one genuinely at risk.
 
 ### F. ACC / DC / accds data-coupling ceilings (unchanged, restated as standing constraints)
 
@@ -872,3 +899,233 @@ against the working tree 2026-07-22 pm. Surface: `app/(dashboard)/users/access-a
 - **VERIFY (new):** none — all session claims resolved against the tree. The
   ~90 ms-per-upload and 60–140 ms-stall figures are session-measured (recorded
   in the patch comments/memory), not re-measurable from static source.
+
+---
+
+## 2026-07-23 Activity Universe — full corpus, 2D/3D, weeks & filters
+
+Commits `1c346714`..`7d1420b9` (12) plus uncommitted working-tree changes. Surface:
+`app/(dashboard)/users/access-analysis/activity/` — the **activity-universe shell**,
+NOT the ECharts charts page at `app/(dashboard)/access-analysis/` (§C trap still
+applies, and both trees are dirty right now). Every figure below re-verified against
+the current tree; items marked **uncommitted WIP** have no commit hash by design.
+
+### 1. 🔑 The `role` dict contains "Unknown" TWICE — dict labels are NOT unique
+
+- **Evidence:** `.embedding/activity-universe-meta.json` → `dicts.role` has **91**
+  entries with `"Unknown"` appearing **2×** (slot-0 sentinel + a real ACC role of
+  that name). Every other dict is duplicate-free: `verb` 116, `objectType` 14,
+  `module` 7, `project` 957, `author` 2,328, `company` 347 — all unique.
+- **Why it bites:** filter selection state is **label-keyed** (`Set<string>`), while
+  the mask builder walks **slots**. `buildProjectSelectionMask`
+  (`activity/activityGraphData.ts`, used for project *and* role *and* verb *and*
+  month) returns `null` — the all-selected fast path — only when every slot's label
+  is in the set. With a duplicated label, the picker renders one option for two
+  slots, so `selected.size` can never reach `options.length`; the user cannot get
+  back to "all selected", the mask stays non-null, and `filterActivityIndices`
+  runs a **full 4,904,886-row two-pass scan on every mount and every filter tick**
+  instead of short-circuiting to `null`.
+- **Second failure mode:** a label-keyed count map built with `map.set(label, …)`
+  **overwrites** instead of summing, so one slot's event count is reported for both
+  same-label slots.
+- **Fixed in the working tree (uncommitted WIP)** by two small helpers in
+  `activity/ActivityUniverseShell.tsx`: `distinctLabels()` (`Array.from(new Set(dict))`,
+  feeding the picker options) and `countBySlot()` (per-slot `Uint32Array` tally,
+  then `map.set(label, (map.get(label) ?? 0) + perSlot[i])`). The **mask still walks
+  the full dict**, so every slot sharing a selected label is kept — do not "simplify"
+  the mask to iterate distinct labels.
+- **Durable rule:** the dict *shape* is permanent (it comes from
+  `mergeRoleNames`-derived ACC role names, which legitimately include a role literally
+  named "Unknown"). **Any new dict-backed filter must dedupe its options and sum its
+  counts per label.** Do not assume a fresh dict is unique — check.
+
+### 2. 🔑 Headless WebGL is NOT a valid gate for pointer-driven graph behaviour
+
+Extends the Ph37 SwiftShader fps trap: it is not only fps that headless invalidates.
+
+- **Mechanism (verified in source):** the 32 px magnet
+  (`MAGNET_RADIUS_PX = 32`, `ActivityUniverseShell.tsx`) converts screen radius to
+  space radius with a **two-probe `handle.screenToSpace` call** at the pointer
+  (`screenToSpace([sx,sy])` vs `screenToSpace([sx+32,sy])`), then rejects anything
+  outside `radiusSq`. Under headless Chromium the software rasterizer leaves cosmos's
+  camera transform degenerate, both probes return effectively the same point,
+  `radiusSq ≈ 0`, and **nothing ever snaps** — session probe: 35 points swept, zero
+  hits. `pointermove` events still arrive and the handler still runs, so it presents
+  as a product bug rather than a harness artifact.
+- **Compounding:** headless also reports `prefers-reduced-motion: reduce`, and the
+  hover ring is rendered only when `!reducedMotion` (`data-testid="activity-hover-ring"`),
+  so the element a hover assertion looks for is suppressed for a second, unrelated
+  reason.
+- **Rule:** any spec asserting hover/snap/click-through-magnet must run **headed**
+  (`headless: false`, `--use-angle=d3d11`) exactly like
+  `tests/e2e/activity-universe-hard-gate.spec.ts` and `scale-spike.spec.ts` already do,
+  and should assert the reduced-motion state it expects rather than inheriting it.
+  A headless "0 hits" result is **not evidence of a bug**.
+- **Real bug this masked (`7d1420b9`, committed):** the 3D overlay `<div>` is a
+  **sibling** of `containerRef` stacked above it (`absolute inset-0 z-10`), so pointer
+  events over the 3D canvas bubble to the common parent and never reach `containerRef`
+  — where the 3D magnet/click listeners were attached. Ring, tooltip, and
+  click-to-open were dead in 3D. Listeners now attach to `overlay3Ref`. **Whenever a
+  new overlay is stacked over the canvas, re-check which element owns the listeners.**
+
+### 3. 🔑 The activity payload fixture needs TWO flags, and the default e2e config sets only one
+
+- `app/api/activity-universe/payload/route.ts`:
+  `NEXT_PUBLIC_ACC_GRAPH_TEST === "1" && ACC_ACTIVITY_TEST_FIXTURE === "1"`.
+  Either flag alone → the route silently serves the **real 196.2 MB artifact**
+  (`.embedding/activity-universe.bin`, 4,904,886 rows) and every fixture assertion
+  fails as `Expected 180, Received 4904886` (`ACTIVITY_TEST_FIXTURE_COUNT = 180` in
+  `lib/server/activityUniverseTestFixture.ts`).
+- **The trap is live in-repo:** `playwright.config.ts`'s `webServer.env` sets
+  `NEXT_PUBLIC_ACC_GRAPH_TEST: "1"` but **not** `ACC_ACTIVITY_TEST_FIXTURE`. The flags
+  are also read at different times — `NEXT_PUBLIC_*` is inlined at **build** time for
+  the client, `ACC_ACTIVITY_TEST_FIXTURE` at **request** time on the server — so an
+  isolated prod build (`NEXT_DIST_DIR=.next-e2e`) must carry the first at build and the
+  second at `next start`. `scripts/measure-spatial-graph-baseline.cjs` deliberately
+  does the inverse (`Remove-Item Env:ACC_ACTIVITY_TEST_FIXTURE`) so its perf numbers
+  come from the real corpus — do not "fix" that.
+- The failure message names a count, not a flag; recognizing it costs a whole rebuild
+  cycle if you don't know this.
+
+### 4. 🔑 `AccActivityEmbedding` has NO timestamp — finer-than-month time joins back to source
+
+- **Schema (`prisma/schema.prisma` ~930):** `AccActivityEmbedding` stores
+  `id, x, y, verbId, objectTypeId, moduleId, monthId, roleId, companyId, projectId,
+  authorId, folderId, embeddingRunId, updatedAt`. `monthId` ("months since corpus
+  floor") is the **only** time signal the Python pipeline keeps; `updatedAt` is a
+  write-time column, not the event time.
+- **Consequence:** the week scrubber could not be computed from the embedding table.
+  `scripts/build-activity-universe-payload.ts` (uncommitted WIP) joins the source rows
+  back by primary key across **both id spaces**:
+  ```
+  LEFT JOIN "AccActivity"      a  ON a.id = e.id
+  LEFT JOIN "AccActivityAccds" ac ON ac."accdsActivityId" = substr(e.id, 7)
+  ...  COALESCE(a."createdAt", ac."createdAt") AS ts
+  ```
+  `substr(e.id, 7)` strips the literal `"accds:"` prefix — the id convention is
+  `"accds:"+accdsActivityId | AccActivity.id` (documented on the model since the Ph39
+  fix). Both sides index-seek; ~2 s per 200k chunk.
+- **Scale of the two spaces:** artifact total **4,904,886**; `AccActivityAccds` census
+  **4,862,301** (measured 2026-07-20, `.planning/REQUIREMENTS.md`) ⇒ the `AccActivity`
+  (DC backfill + admin) remainder is **42,585**. VERIFY: the 42,585 is arithmetic from
+  those two figures, not a direct `COUNT(*)`.
+- **Derived columns are build-time, so the artifact must be rebuilt:** `weekId` is
+  filled inline during the stream (`weekFloor 2024-11-25`, **87 buckets**,
+  `weekUnknownCount 0` — every row resolved a source timestamp). Any change to the
+  source tables, the embedding table, or the week math requires re-running the builder
+  (~70 s) — the same rebuild rule the Ph39 `eventDetail` idAnchors note already
+  carries, now with a second reason.
+- **Do not add a timestamp column to the embedding table casually:** it is written by
+  `compute_activity_embeddings.py` via COPY, and that writer carries the psycopg3
+  savepoint-rollback trap (Ph38).
+
+### 5. Full-corpus rendering — the thresholds that are now permanently crossed
+
+`SAMPLE_CAP = 5_000_000` in `activity/lodSample.ts` (owner decision 2026-07-23:
+"render EVERYTHING") sits **above** the 4.9M corpus, so the "uniform sample" is
+stride-1 = every event. That silently flips several bounded-mode behaviours into
+their large-set branch permanently. All still true, re-verified:
+
+- **Ambient motion is OFF at full corpus.** `AMBIENT_MAX_N = 250_000`
+  (`activity/activityMotion.ts`); `startAmbient()` returns early above it, because each
+  cadence tick uploads the FULL working buffer (~39 MB at 4.9M every 250 ms). The
+  Ph41 "67.2 fps with ambient active" evidence was measured at 490,489 rendered — it
+  does **not** describe the shipped full-corpus path. `AMBIENT_SUBSET_CAP = 100_000`
+  and the 250/450 ms tier cadence (§2026-07-22 item 5) still govern the bounded case.
+- **Morph commits throttle above 1M points.** `MORPH_BIG_SET_POINTS = 1_000_000`,
+  `MORPH_BIG_SET_THROTTLE_MS = 250` (`ActivityUniverseShell.tsx`): slider drags fire on
+  a trailing `setTimeout` that reads the **latest** `strengthRef` when it lands, instead
+  of the small-set `requestAnimationFrame` path. Under 1M points behaviour differs — a
+  test written at fixture scale (180 rows) never exercises the shipped branch.
+- **3D drops supersampling above 1M points.** `ActivityUniverse3D.tsx`:
+  `pixelRatio = min(devicePixelRatio, n > 1_000_000 ? 1.5 : 2)` — ~44% fewer fragments,
+  fill-rate relief. Changing it changes measured fps, not just sharpness.
+- **The magnet's scan is strided at full density.** `step = max(1, round(n / LOD_CAP))`
+  with `LOD_CAP = 200_000` ⇒ ~stride 25 at 4.9M, so the 2D snap may pick a
+  near-nearest neighbour (documented, visually identical in a dense cloud). Zoomed-in
+  region sets are under the cap, so step = 1 there. Do not "fix" this into an exhaustive
+  scan without measuring.
+- **The region-LOD viewport scan is now genuinely O(4.9M) per interaction-end**
+  (`viewportIndices`, debounced). The Ph39 note that closed this ("no index needed")
+  was evidenced at the smaller rendered set — treat it as re-opened if interaction-end
+  latency regresses.
+
+### 6. Activity-universe traps carried forward — still live, re-verified 2026-07-23
+
+- **`buildClumpTargets` must return a COPY.** `activity/activityClump3.ts`: the
+  no-categories / misaligned-input branch returns `base3.slice()`, not `base3`. The 3D
+  view wraps base and target in **separate GPU attributes** and later overwrites the
+  target attribute in place; an aliased return corrupts the base positions on the first
+  group-by switch. The comment is in the source — keep it there.
+- **The 2D LOD wheel seam must gate off while the 3D overlay is up.** `applyLod()`
+  returns early on `viewModeRef.current !== "2d"`. Without the gate it scans 4.9M
+  positions per zoom settle (visible jank on a hidden canvas) **and clobbers
+  `renderedToFullRef`**, which the 3D view pins to `sampleIdx` for hover/lasso index
+  mapping — selections would resolve to the wrong events.
+- **`commitMorph` is suspended in 3D** (`viewModeRef.current === "3d"` → return): 3D
+  owns its morph on the GPU via the `uMix` uniform + `aTarget` attribute; the 2D canvas
+  would burn ~39 MB uploads while hidden. The view-flip effect re-syncs 2D on return
+  (`commitMorph(MORPH_COMMIT_MS)`) and re-pins `renderedToFullRef`. Removing either
+  half leaves 2D silently out of sync with the slider.
+- **cosmos `fitView*` remains unusable on the activity path** (corrupted `scaleX` from
+  a racing first rescale) — the empirical screen-space fit in `GraphCanvas2D.tsx`
+  stands. See 2026-07-22 item 2; unchanged.
+- **Dual-GPU adapter lottery still applies** — verify fps ×3 launches. See 2026-07-22
+  item 3; unchanged.
+
+### 7. Standing structural concerns — moved, not resolved
+
+- **`ActivityUniverseShell.tsx` is 1,754 lines in the working tree (1,558 at HEAD) —
+  the largest source file in the repository**, past `lib/acc/dcIngest.ts` (1,672). It
+  owns payload decode, six filter states, week/month scrubbing, project picker, 2D↔3D
+  view switching, magnet hover, lasso, morph commit, LOD seam, and the detail rail, and
+  it is the main contributor to the `large-use-effect` count rising 146→153. Its
+  interlocking refs (`renderedToFullRef` / `viewModeRef` / `strengthRef` /
+  `restoreSampleRef`) are exactly the state that §6's traps are about — a naive split
+  along component lines would scatter them. **Flag, don't split speculatively**; if it
+  must be split, extract *pure* modules (the `activity/*.ts` files already model this
+  well: 30 sibling modules, all small and separately tested) rather than slicing the
+  effect graph.
+- **Route-owned shared logic under `app/(dashboard)/users/access-analysis/` is
+  unchanged in character** — see §B's 2026-07-23 update: 7 `lib`/`server` → `app` edges
+  and 1 `scripts` → `app` warning, all reaching into the same route folder. The instance
+  graph's retirement removed some importers and Phase 38's builder immediately added a
+  new one. The one-time fix (move `graphNodesFromUsers.ts`, `accTaxonomy.ts`,
+  `accNormalize.ts`, `internalDomains.ts` to `lib/acc/` with barrels) is still unmade.
+- **ACC/DC/accds coupling ceilings (§F) are unchanged** — accds ~12-month floor, DC
+  ~18-month retention wall, 403 coverage gap, `AccActivity.service` ignored,
+  `AccDcRole` empty by design. The activity universe inherits all of them: it is built
+  from the accds-primary + DC-backfill union, so its 4.9M events carry exactly the same
+  coverage caveats and the same `957`-project dict (the `project` dict length matches
+  the accds crawl universe, **not** the ~1,153 ACC project census — a universe view
+  showing "957 projects" is disclosing a source ceiling, not counting ACC).
+
+### Dashboard Self-Check (2026-07-23 refresh)
+
+- **Context:** `git log 956408d1..HEAD --stat` (12 commits) + `git status --short`;
+  `app/api/activity-universe/payload/route.ts`; `lib/server/activityUniverseTestFixture.ts`;
+  `app/(dashboard)/users/access-analysis/activity/` (`ActivityUniverseShell.tsx`,
+  `ActivityUniverse3D.tsx`, `activityGraphData.ts`, `activityMotion.ts`,
+  `activityClump3.ts`, `lodSample.ts`); `scripts/build-activity-universe-payload.ts`;
+  `prisma/schema.prisma` (`AccActivityEmbedding`); `playwright.config.ts` +
+  `tests/e2e/*.spec.ts` launch options; `.embedding/activity-universe-meta.json` and
+  `-dicts.json`; `.tools/repo-map/dependency-cruiser.json` + `ast-grep-report.json`
+  (regenerated 2026-07-23); `wc -l` over `git ls-files`.
+- **Evidence:** dict duplication computed directly from the meta JSON (role 91 entries,
+  `"Unknown"` ×2; all other dicts unique). Fixture count, flag conjunction, ambient/morph/
+  pixel-ratio thresholds, `substr(e.id, 7)` join, and week fields (`floor 2024-11-25`,
+  87 buckets, 0 undated) read from source/artifact. Line counts measured, not recalled.
+- **Constraints:** docs-only; no code, theme, or WebGL-scope claims changed. The 3D
+  overlay is pre-existing approved v2.7 scope, not new WebGL on a data surface.
+- **Gates:** no build/tsc gates applicable to a docs refresh; repo-map artifacts were
+  already regenerated by this mapping session (dependency-cruiser 1 warning, ast-grep
+  `direct-prisma-in-ui` 0).
+- **VERIFY (new):**
+  - `AccActivity`-space row count **42,585** is arithmetic (4,904,886 artifact total −
+    4,862,301 accds census), not a direct `COUNT(*)`.
+  - The headless magnet/reduced-motion behaviour is session-measured (35 probes, 0 hits,
+    headed launch fixes it); the *mechanism* is verified in source, the *headless
+    numbers* are not re-derivable statically.
+  - Carried forward and still open: accds crawled-project count (236/957 memory-sourced;
+    the payload `project` dict is 957), current DC covered-project count before any UI
+    display, ACCDS cookie TTL, Account Admin provisioning status.

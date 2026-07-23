@@ -1,7 +1,7 @@
 # Coding Conventions
 
 **Analysis Date:** 2026-06-23 (original full scan)
-**Refreshed:** 2026-07-22 — post v2.7 close + activity perf fix (`perf` commit type, patch-package convention, measured-constant pin rule, WIP note refresh). Previous refreshes 2026-07-20, 2026-07-16, 2026-07-02.
+**Refreshed:** 2026-07-23 — post 2D/3D activity-universe arc (surface-scoped commit scopes, `ponytail:` corner-marker comments, three.js 3D arm on the activity universe, WIP note refresh). Previous refreshes 2026-07-22, 2026-07-20, 2026-07-16, 2026-07-02.
 
 ## TypeScript & Next.js App Router Idioms
 
@@ -172,7 +172,8 @@ export function ActivityTimelineChart({ summary }) {
 
 - Use `PremiumSurface` or `surface-card` to frame repeated items, panels, dialogs, or genuinely grouped controls.
 - Do not stack card-inside-card (`PremiumSurface` inside `PremiumSurface` with identical backgrounds).
-- Data surfaces stay flat. Only `/users` header and `/forma-proposal` background use R3F/3D accents.
+- Data surfaces stay flat. R3F (`@react-three/fiber`) accents are limited to two decorative components: `app/(dashboard)/users/HeaderParticleAccent.tsx` and `app/(dashboard)/forma-proposal/components/FormaParticleAccent.tsx`.
+- **3D exception (owner-scoped, verified 2026-07-23):** the activity universe carries a genuine 3D *view*, not an accent — `app/(dashboard)/users/access-analysis/activity/ActivityUniverse3D.tsx` renders raw `three` (`THREE.Points` + `ShaderMaterial`, `THREE.LineSegments`, `OrbitControls`), not R3F, behind an explicit 2D/3D toggle (`activity-view-2d` / `activity-view-3d` testids). It is opt-in per view, the 2D cosmos canvas stays the default, and ambient drift on the hidden 2D canvas is suspended while 3D is mounted. This does not reopen WebGL on the ECharts `/access-analysis` surface — that ban stands.
 
 ## Error, Empty, and Under-Covered Data Handling
 
@@ -238,6 +239,8 @@ await db.accProjectRole.groupBy({
 
 **Format:** Block comment at top of module for module-level context. Inline `//` for local decisions.
 
+**`ponytail:` corner markers (5 occurrences, verified 2026-07-23):** a deliberate simplification with a known ceiling is marked `// ponytail: <ceiling>, <upgrade path>` so the tradeoff is discoverable instead of rediscovered. Live examples: `app/api/activity-universe/payload/route.ts` (whole-file bytes per request, ~149.7 MB; stream if concurrent readers matter), `activity/ActivityUniverseShell.tsx` (strided magnet scan may snap to a near-nearest neighbour at full density), `activity/lodSample.ts`, `activity/ActivityUniverse3D.tsx`, `users/access-analysis/dimensionCoverage.ts`. Use it for a real corner cut (global lock, O(n²) scan, naive heuristic) — not as a general TODO channel.
+
 **JSDoc:** Not enforced across the codebase. Use for exported utility functions in `lib/` that need parameter/return docs.
 
 ## Import Organization
@@ -252,9 +255,10 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 
 ## Git & Commit Conventions
 
-**Conventional commits** — `type(scope): subject`, verified against `git log` 2026-07-22:
+**Conventional commits** — `type(scope): subject`, re-verified against `git log` 2026-07-23:
 - Types in active use: `feat`, `fix`, `refactor`, `docs`, `test`, `perf` (v2.5 added standalone test commits; v2.7 added `perf`, e.g. `perf(activity): bound ambient uploads`).
 - Scope is either the phase number (`feat(33): ...`, `docs(27-02): ...`, `feat(30-03): ...`), the surface (`feat(spatial-graph): ...`, `feat(users): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.5 milestone`).
+- **Since the v2.7 close, every commit uses a surface scope, not a phase number** — the post-milestone stream is `feat|fix|perf(activity)`, `feat(access-analysis)`, `test(e2e)`. Phase-number scopes return only when a milestone roadmap is open.
 - Subject is imperative, lowercase, no trailing period. Plan/requirement IDs appear in the subject when relevant (`(26-02)`, `(PERF-03)`).
 
 **Surgical staging is mandatory.** Stage explicit paths only, then inspect `git diff --cached --name-only` before committing. Bulk staging (`git add -A`, `git add .`, `git add -u`, `git commit -a`) is **denied at the tool level** by the PreToolUse hook `.claude/hooks/guard-bash.cjs` — the working tree is permanently WIP-heavy and bulk staging sweeps unrelated edits/deletions into commits.
@@ -270,8 +274,8 @@ Blank line between groups. No barrel `index.ts` re-exports observed in route-lev
 ---
 
 **Dashboard self-check:**
-- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `patches/`, `package.json`, `git log`, direct file reads (refresh 2026-07-22).
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `patches/`, `package.json`, `git log`, direct file reads (refresh 2026-07-23).
 - Evidence: all patterns verified from actual source files listed above.
 - Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root, explicit-path staging enforced by hook.
-- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (re-verified 2026-07-22): root docs `CHANGELOG.md`/`GSD-STYLE.md`/`PROJECT_RULES.md` are deleted in the working tree, and the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Route-level file examples in this doc reflect the committed tree.
+- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (re-verified 2026-07-23): root docs `CHANGELOG.md`/`GSD-STYLE.md`/`PROJECT_RULES.md` are deleted in the working tree, and the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Also uncommitted: the week-scrubber work (new `lib/acc/activityWeeks.ts` + test, modified `scripts/build-activity-universe-payload.ts`, and the renamed activity test-bridge temporal fields — see `TESTING.md`), plus untracked `lib/acc/issueBackfillAudit.ts`, `lib/acc/issueListQuery.ts`, `lib/acc/modelCoordinationGrant.ts`, `lib/server/uploadthing.ts`, `scripts/lib/`, `scripts/changeset/`. Route-level file examples in this doc reflect the committed tree.
 - VERIFY: none — all claims grounded in verified source.
