@@ -36,7 +36,10 @@ export default defineConfig({
   webServer: {
     command: `node node_modules/next/dist/bin/next dev --webpack --port ${PORT}`,
     url: `${BASE_URL}/login`,
-    reuseExistingServer: false,
+    // Webpack DEV on :3100 currently 500s (known trap) — set E2E_REUSE_SERVER=1
+    // and E2E_BASE_URL to target an isolated PROD build (`next build --webpack`
+    // with NEXT_DIST_DIR=.next-e2e, then `next start`).
+    reuseExistingServer: Boolean(process.env.E2E_REUSE_SERVER),
     timeout: 300_000,
     stdout: "pipe",
     stderr: "pipe",
