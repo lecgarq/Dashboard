@@ -27,11 +27,13 @@ export interface ActivityTestState {
   strength: number;
   morphCount: number;
   ambientActive: boolean;
-  temporalMode: "all" | "month";
-  selectedMonth: number | null;
+  temporalMode: "all" | "bucket";
+  /** Scrubber granularity: weeks when the payload carries weekId, else months. */
+  timeGranularity: "week" | "month";
+  selectedBucket: number | null;
   searchQuery: string;
   matchedAuthorCount: number;
-  monthCount: number;
+  bucketCount: number;
   activeCount: number;
   playing: boolean;
   reducedMotion: boolean;
@@ -62,10 +64,11 @@ const state: ActivityTestState = {
   morphCount: 0,
   ambientActive: false,
   temporalMode: "all",
-  selectedMonth: null,
+  timeGranularity: "month",
+  selectedBucket: null,
   searchQuery: "",
   matchedAuthorCount: 0,
-  monthCount: 0,
+  bucketCount: 0,
   activeCount: 0,
   playing: false,
   reducedMotion: false,

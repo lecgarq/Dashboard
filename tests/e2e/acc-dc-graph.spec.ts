@@ -43,7 +43,7 @@ test.describe("activity universe contract", () => {
       expect(state.renderedCount, route).toBe(FIXTURE_COUNT);
       expect(state.positionsFinite, route).toBe(true);
       expect(state.positionMaxAbs, route).toBeGreaterThan(0);
-      expect(state.monthCount, route).toBe(MONTH_COUNT);
+      expect(state.bucketCount, route).toBe(MONTH_COUNT);
       expect(state.linkCount, route).toBeGreaterThan(0);
       await expect(page.locator("canvas").first(), route).toBeVisible();
       await expect(page.getByTestId("activity-dimensions-panel"), route).toBeVisible();
@@ -77,7 +77,7 @@ test.describe("activity universe contract", () => {
     await gotoActivity(page);
     const initial = await activityState(page);
     expect(initial.temporalMode).toBe("all");
-    expect(initial.selectedMonth).toBeNull();
+    expect(initial.selectedBucket).toBeNull();
     expect(initial.activeCount).toBe(FIXTURE_COUNT);
 
     await page.getByTestId("activity-group-by-select").selectOption("module");
@@ -97,7 +97,7 @@ test.describe("activity universe contract", () => {
     await page.waitForFunction(
       ({ month, count }) => {
         const s = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
-        return s?.temporalMode === "month" && s.selectedMonth === month && s.activeCount === count;
+        return s?.temporalMode === "bucket" && s.selectedBucket === month && s.activeCount === count;
       },
       { month: 1, count: MONTH_SIZE },
     );
@@ -119,19 +119,19 @@ test.describe("activity universe contract", () => {
       (count) => window.__ACTIVITY_UNIVERSE_TEST__?.getState().activeCount === count,
       FIXTURE_COUNT,
     );
-    expect((await activityState(page)).selectedMonth).toBeNull();
+    expect((await activityState(page)).selectedBucket).toBeNull();
 
     await page.getByTestId("activity-time-play").click();
     await page.waitForFunction(
       () => {
         const s = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
-        return s?.playing === true && s.selectedMonth === 0;
+        return s?.playing === true && s.selectedBucket === 0;
       },
     );
     await page.waitForFunction(
       () => {
         const s = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
-        return s?.playing === false && s.selectedMonth === 2;
+        return s?.playing === false && s.selectedBucket === 2;
       },
       undefined,
       { timeout: 6_000 },
@@ -162,7 +162,7 @@ test.describe("activity universe reduced motion", () => {
     await page.waitForFunction(
       () => {
         const s = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
-        return s?.selectedMonth === 1 && s.activeCount === 60;
+        return s?.selectedBucket === 1 && s.activeCount === 60;
       },
     );
     expect((await activityState(page)).playing).toBe(false);

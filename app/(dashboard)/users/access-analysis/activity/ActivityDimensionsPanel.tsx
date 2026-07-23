@@ -201,6 +201,22 @@ function AuthorSearch({
   );
 }
 
+/**
+ * One categorical narrowing filter (author role, activity type, month). Labels
+ * ARE the identity — `buildProjectSelectionMask` maps them back to id slots, so
+ * `options` must stay index-aligned with the dimension's dict.
+ */
+export interface ActivityFilterGroup {
+  id: string;
+  title: string;
+  options: readonly string[];
+  counts: ReadonlyMap<string, number>;
+  selected: ReadonlySet<string>;
+  onChange: (next: Set<string>) => void;
+  /** Keep dict order instead of sorting by event count (months read as a series). */
+  preserveOrder?: boolean;
+}
+
 export interface ActivityDimensionOption {
   id: string;
   label: string;
@@ -225,11 +241,8 @@ export interface ActivityDimensionsPanelProps {
   searchPending: boolean;
   /** Lowercase email → Google-directory photo URL for the suggestion avatars. */
   authorPhotoByEmail?: ReadonlyMap<string, string>;
-  /** Author-role dict labels (slot 0 = the "Unknown" sentinel), filterable. */
-  roleOptions: readonly string[];
-  roleCounts: ReadonlyMap<string, number>;
-  selectedRoles: ReadonlySet<string>;
-  onRolesChange: (next: Set<string>) => void;
+  /** Categorical narrowing filters (author role, activity type, month). */
+  filters: readonly ActivityFilterGroup[];
   /** "covered/total" for the active group-by dim (null when none / no sentinel gap). */
   groupCoverageText: string | null;
   groupByLabel: string | null;
@@ -243,54 +256,57 @@ export interface ActivityDimensionsPanelProps {
 const fmt = (n: number): string => n.toLocaleString("en-US");
 
 /**
- * Author-role multi-select — narrows the rendered universe the same way the
- * project picker does. Sorted by event count; all-selected = no filter.
+ * Categorical multi-select — narrows the rendered universe the same way the
+ * project picker does. Sorted by event count (or dict order when the dimension
+ * is a series, e.g. months); all-selected = no filter.
  */
-function RoleFilter({
-  roleOptions,
-  roleCounts,
-  selectedRoles,
-  onRolesChange,
-}: Pick<
-  ActivityDimensionsPanelProps,
-  "roleOptions" | "roleCounts" | "selectedRoles" | "onRolesChange"
->): React.JSX.Element | null {
+function DimFilter({
+  id,
+  title,
+  options,
+  counts,
+  selected,
+  onChange,
+  preserveOrder,
+}: ActivityFilterGroup): React.JSX.Element | null {
   const sorted = useMemo(
     () =>
-      [...roleOptions].sort(
-        (a, b) => (roleCounts.get(b) ?? 0) - (roleCounts.get(a) ?? 0) || a.localeCompare(b),
-      ),
-    [roleOptions, roleCounts],
+      preserveOrder
+        ? [...options]
+        : [...options].sort(
+            (a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0) || a.localeCompare(b),
+          ),
+    [options, counts, preserveOrder],
   );
-  if (roleOptions.length === 0) return null;
+  if (options.length === 0) return null;
 
-  const allSelected = selectedRoles.size === roleOptions.length;
+  const allSelected = selected.size === options.length;
   const toggle = (label: string): void => {
-    const next = new Set(selectedRoles);
+    const next = new Set(selected);
     if (next.has(label)) next.delete(label);
     else next.add(label);
-    onRolesChange(next);
+    onChange(next);
   };
 
   return (
-    <div className="flex flex-col gap-2" data-testid="activity-role-filter">
+    <div className="flex flex-col gap-2" data-testid={`activity-${id}-filter`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">Filter by role</span>
+        <span className="text-sm font-medium">{title}</span>
         <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-          {allSelected ? "All" : `${fmt(selectedRoles.size)}/${fmt(roleOptions.length)}`}
+          {allSelected ? "All" : `${fmt(selected.size)}/${fmt(options.length)}`}
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          onClick={() => onRolesChange(new Set(roleOptions))}
+          onClick={() => onChange(new Set(options))}
           className="rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-foreground transition hover:border-primary/50 hover:bg-primary/10"
         >
           All
         </button>
         <button
           type="button"
-          onClick={() => onRolesChange(new Set())}
+          onClick={() => onChange(new Set())}
           className="rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
         >
           None
@@ -298,11 +314,11 @@ function RoleFilter({
       </div>
       <ul className="as-scroll max-h-52 list-none space-y-0.5 overflow-y-auto rounded-lg border border-border bg-background/60 p-1">
         {sorted.map((label) => {
-          const on = selectedRoles.has(label);
+          const on = selected.has(label);
           return (
             <li key={label}>
               <label
-                title={`${label} · ${fmt(roleCounts.get(label) ?? 0)} events`}
+                title={`${label} · ${fmt(counts.get(label) ?? 0)} events`}
                 className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-[11px] transition-colors ${
                   on ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent"
                 }`}
@@ -322,7 +338,7 @@ function RoleFilter({
                 </span>
                 <span className="min-w-0 flex-1 truncate">{label}</span>
                 <span className="shrink-0 font-mono tabular-nums text-[10px] text-muted-foreground">
-                  {fmt(roleCounts.get(label) ?? 0)}
+                  {fmt(counts.get(label) ?? 0)}
                 </span>
               </label>
             </li>
@@ -348,10 +364,7 @@ export function ActivityDimensionsPanel({
   matchedAuthorCount,
   searchPending,
   authorPhotoByEmail,
-  roleOptions,
-  roleCounts,
-  selectedRoles,
-  onRolesChange,
+  filters,
   groupCoverageText,
   groupByLabel,
   colorCoverageText,
@@ -379,12 +392,9 @@ export function ActivityDimensionsPanel({
           authorPhotoByEmail={authorPhotoByEmail}
         />
 
-        <RoleFilter
-          roleOptions={roleOptions}
-          roleCounts={roleCounts}
-          selectedRoles={selectedRoles}
-          onRolesChange={onRolesChange}
-        />
+        {filters.map((f) => (
+          <DimFilter key={f.id} {...f} />
+        ))}
 
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium">Group into</span>

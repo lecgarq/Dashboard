@@ -18,6 +18,12 @@ import {
 } from "../lib/acc/columnarPayload";
 import { quantizePositions3 } from "../lib/acc/positions3Quant";
 import {
+  WEEK_UNKNOWN,
+  weekFloorFromMonthFloor,
+  weekFloorMs,
+  weekIdFor,
+} from "../lib/acc/activityWeeks";
+import {
   ID_ANCHOR_STRIDE,
   activityUniversePaths,
   assembleActivityUniverseMeta,
@@ -70,7 +76,20 @@ interface EmbeddingRow {
   authorId: number;
   folderId: number;
   embeddingRunId: string;
+  /** Source event timestamp joined back from AccActivity / AccActivityAccds. */
+  ts: Date | null;
 }
+
+/**
+ * Embedding ids live in two spaces ("accds:"+accdsActivityId | AccActivity.id),
+ * and neither table's timestamp survives into AccActivityEmbedding — monthId is
+ * all the Python pipeline keeps. Week granularity therefore joins the source
+ * rows back by primary key (both sides index-seek; ~2s per 200k chunk).
+ */
+const TS_JOIN = `
+  LEFT JOIN "AccActivity" a ON a.id = e.id
+  LEFT JOIN "AccActivityAccds" ac ON ac."accdsActivityId" = substr(e.id, 7)`;
+const TS_SELECT = `COALESCE(a."createdAt", ac."createdAt") AS ts`;
 
 const CHUNK = 200_000;
 
@@ -102,12 +121,25 @@ async function main(): Promise<void> {
       console.warn(`AccActivityEmbedding3D has ${n3} rows != ${n} — positions3 SKIPPED`);
     }
 
+    // Dicts are read BEFORE the stream now: the week floor derives from the
+    // corpus monthFloor, and weekId is filled inline as rows arrive.
+    const embDir = join(process.cwd(), ".embedding");
+    const dicts = JSON.parse(
+      readFileSync(join(embDir, "activity-universe-dicts.json"), "utf8"),
+    ) as Record<string, unknown>;
+    const weekFloor = weekFloorFromMonthFloor(String(dicts.monthFloor ?? ""));
+    const weekBase = weekFloorMs(weekFloor);
+    if (!Number.isFinite(weekBase)) {
+      throw new Error(`monthFloor "${String(dicts.monthFloor)}" yielded no week floor`);
+    }
+
     const positions = new Float32Array(n * 2);
     const positions3f = with3d ? new Float32Array(n * 3) : null;
     const verbId = new Uint16Array(n);
     const objectTypeId = new Uint16Array(n);
     const moduleId = new Uint16Array(n);
     const monthId = new Uint16Array(n);
+    const weekId = new Uint16Array(n);
     const roleId = new Uint16Array(n);
     const companyId = new Uint16Array(n);
     const projectId = new Uint32Array(n);
@@ -121,14 +153,18 @@ async function main(): Promise<void> {
     // eventDetail procedure can resolve a payload row index to its id with an
     // anchor seek + ≤10k OFFSET — anchors are build-consistent by construction.
     const idAnchors: string[] = [];
+    let maxWeek = 0;
+    let unknownWeek = 0;
     for (;;) {
       const rows = await db.$queryRawUnsafe<EmbeddingRow[]>(
         with3d
-          ? `SELECT e.*, e3.x AS x3, e3.y AS y3, e3.z AS z3
+          ? `SELECT e.*, e3.x AS x3, e3.y AS y3, e3.z AS z3, ${TS_SELECT}
              FROM "AccActivityEmbedding" e
-             LEFT JOIN "AccActivityEmbedding3D" e3 ON e3.id = e.id
+             LEFT JOIN "AccActivityEmbedding3D" e3 ON e3.id = e.id${TS_JOIN}
              WHERE e.id > $1 ORDER BY e.id LIMIT ${CHUNK}`
-          : `SELECT * FROM "AccActivityEmbedding" WHERE id > $1 ORDER BY id LIMIT ${CHUNK}`,
+          : `SELECT e.*, ${TS_SELECT}
+             FROM "AccActivityEmbedding" e${TS_JOIN}
+             WHERE e.id > $1 ORDER BY e.id LIMIT ${CHUNK}`,
         lastId,
       );
       if (rows.length === 0) break;
@@ -145,6 +181,14 @@ async function main(): Promise<void> {
         objectTypeId[i] = r.objectTypeId;
         moduleId[i] = r.moduleId;
         monthId[i] = r.monthId;
+        if (r.ts === null) {
+          weekId[i] = WEEK_UNKNOWN;
+          unknownWeek += 1;
+        } else {
+          const w = weekIdFor(weekBase, r.ts);
+          weekId[i] = w;
+          if (w > maxWeek) maxWeek = w;
+        }
         roleId[i] = r.roleId;
         companyId[i] = r.companyId;
         projectId[i] = r.projectId;
@@ -166,6 +210,7 @@ async function main(): Promise<void> {
       objectTypeId,
       moduleId,
       monthId,
+      weekId,
       roleId,
       companyId,
       projectId,
@@ -183,11 +228,13 @@ async function main(): Promise<void> {
 
     const buf = encodeColumnarPayload(n, columns);
 
-    const embDir = join(process.cwd(), ".embedding");
-    const dicts = JSON.parse(
-      readFileSync(join(embDir, "activity-universe-dicts.json"), "utf8"),
-    ) as Record<string, unknown>;
     if (positions3f) dicts.positions3HalfExtent = positions3HalfExtent;
+    dicts.weekFloor = weekFloor;
+    dicts.weekCount = maxWeek + 1;
+    dicts.weekUnknownCount = unknownWeek;
+    console.log(
+      `weeks: floor ${weekFloor}, ${maxWeek + 1} buckets, ${unknownWeek} rows with no source timestamp`,
+    );
     const coverage = JSON.parse(
       readFileSync(join(embDir, "activity-author-coverage.json"), "utf8"),
     ) as ActivityUniverseCoverage;

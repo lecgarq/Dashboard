@@ -43,36 +43,55 @@ export function buildProjectSelectionMask(
   return all ? null : mask;
 }
 
-/** Compose exact-month, author, project, and role filters in one pass; null means no filters. */
+/**
+ * Compose the scrubber's exact-bucket pick with the author, project, role,
+ * verb, and month filters in one pass; null means no filters at all.
+ *
+ * `timeId`/`selectedTime` are the SCRUBBER's granularity — weekId when the
+ * payload carries the week column, monthId otherwise — while `monthId`/
+ * `monthMask` are the independent month multi-select. Both can be active.
+ */
 export function filterActivityIndices(args: {
   authorId: Uint32Array;
-  monthId: Uint16Array;
-  selectedMonth: number | null;
+  timeId: Uint16Array;
+  selectedTime: number | null;
   authorMask: Uint8Array | null;
   projectId?: Uint16Array | Uint32Array;
   projectMask?: Uint8Array | null;
   roleId?: Uint16Array;
   roleMask?: Uint8Array | null;
+  verbId?: Uint16Array;
+  verbMask?: Uint8Array | null;
+  monthId?: Uint16Array;
+  monthMask?: Uint8Array | null;
 }): Uint32Array | null {
-  const { authorId, monthId, selectedMonth, authorMask } = args;
+  const { authorId, timeId, selectedTime, authorMask } = args;
   const projectMask = args.projectMask ?? null;
   const projectId = projectMask !== null ? args.projectId : undefined;
   const roleMask = args.roleMask ?? null;
   const roleId = roleMask !== null ? args.roleId : undefined;
+  const verbMask = args.verbMask ?? null;
+  const verbId = verbMask !== null ? args.verbId : undefined;
+  const monthMask = args.monthMask ?? null;
+  const monthId = monthMask !== null ? args.monthId : undefined;
   if (
-    selectedMonth === null &&
+    selectedTime === null &&
     authorMask === null &&
     (projectMask === null || !projectId) &&
-    (roleMask === null || !roleId)
+    (roleMask === null || !roleId) &&
+    (verbMask === null || !verbId) &&
+    (monthMask === null || !monthId)
   ) {
     return null;
   }
 
   const keep = (i: number): boolean => {
-    if (selectedMonth !== null && monthId[i] !== selectedMonth) return false;
+    if (selectedTime !== null && timeId[i] !== selectedTime) return false;
     if (authorMask !== null && authorMask[authorId[i]] !== 1) return false;
     if (projectId && projectMask !== null && projectMask[projectId[i]] !== 1) return false;
     if (roleId && roleMask !== null && roleMask[roleId[i]] !== 1) return false;
+    if (verbId && verbMask !== null && verbMask[verbId[i]] !== 1) return false;
+    if (monthId && monthMask !== null && monthMask[monthId[i]] !== 1) return false;
     return true;
   };
 

@@ -57,7 +57,7 @@ test("activity lasso selects a visible strict subset and time change clears it",
   await page.waitForFunction(
     () => {
       const s = window.__ACTIVITY_UNIVERSE_TEST__?.getState();
-      return s?.selectedMonth === 1 && s.selectedCount === 0;
+      return s?.selectedBucket === 1 && s.selectedCount === 0;
     },
   );
   await expect(page.getByText(/of rendered .* selected/)).toHaveCount(0);

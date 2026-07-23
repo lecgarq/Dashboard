@@ -78,7 +78,9 @@ import {
   ActivityDimensionsPanel,
   GROUP_BY_NONE,
   type ActivityDimensionOption,
+  type ActivityFilterGroup,
 } from "./ActivityDimensionsPanel";
+import { weekLabel, weekMonthLabel } from "@/lib/acc/activityWeeks";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
 import { ActivityUniverse3D, type ActivityUniverse3DHandle } from "./ActivityUniverse3D";
@@ -105,6 +107,8 @@ const MORPH_BIG_SET_THROTTLE_MS = 250;
 const MAGNET_RADIUS_PX = 32;
 /** Temporal set swaps fade through instead of hard-cutting (reduced motion snaps). */
 const TEMPORAL_FADE_MS = 650;
+/** Camera flight to a picked node (2D zoom tween / 3D orbit flight). */
+const FOCUS_MS = 700;
 
 /**
  * Magnetic preselect halo — an animated DOM ring anchored to the snapped node.
@@ -153,6 +157,35 @@ function gatherIds(column: Uint16Array, indices: Uint32Array): Uint16Array {
   return out;
 }
 
+/**
+ * Per-dict-slot event counts over a resident id column, keyed by display label.
+ * Labels are NOT unique across slots — the role dict carries "Unknown" twice
+ * (the slot-0 sentinel plus a real role of that name) — so same-label slots SUM
+ * instead of overwriting, which would report one slot's count for both.
+ */
+function countBySlot(
+  column: ArrayLike<number>,
+  dict: readonly string[],
+): Map<string, number> {
+  const perSlot = new Uint32Array(Math.max(1, dict.length));
+  for (let i = 0; i < column.length; i++) {
+    const slot = column[i];
+    if (slot < perSlot.length) perSlot[slot] += 1;
+  }
+  const map = new Map<string, number>();
+  dict.forEach((label, i) => map.set(label, (map.get(label) ?? 0) + perSlot[i]));
+  return map;
+}
+
+/**
+ * Filter options are the DISTINCT labels: the selection Set is label-keyed, so
+ * a duplicated dict label would render twice and make `selected.size` never
+ * reach `options.length` — permanently defeating the all-selected fast path
+ * that keeps the 4.9M-row filter on its null branch. The MASK still walks the
+ * full dict, so every slot sharing a selected label is kept.
+ */
+const distinctLabels = (dict: readonly string[]): string[] => Array.from(new Set(dict));
+
 function webGlRenderer(container: HTMLDivElement | null): string {
   const canvas = container?.querySelector("canvas");
   const gl = canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
@@ -186,12 +219,46 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const monthCount = (dicts.monthCount as number) ?? 1;
   const monthFloor = (dicts.monthFloor as string) ?? "";
   const coverage = data.meta.coverage;
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  // The slider/label/play controls read `selectedMonth` immediately; the heavy
+
+  // ── Scrubber granularity: weeks when the payload carries the weekId column
+  // (builder joins the source event timestamps), months on older artifacts.
+  const weekIdCol = data.columns.weekId as Uint16Array | undefined;
+  const weekFloor = typeof dicts.weekFloor === "string" ? dicts.weekFloor : "";
+  const weekCount = typeof dicts.weekCount === "number" ? dicts.weekCount : 0;
+  const weekUnknownCount =
+    typeof dicts.weekUnknownCount === "number" ? dicts.weekUnknownCount : 0;
+  const byWeek = Boolean(weekIdCol && weekFloor && weekCount > 0);
+  const timeId = byWeek ? (weekIdCol as Uint16Array) : monthId;
+  const timeCount = byWeek ? weekCount : monthCount;
+  const timeUnit = byWeek ? "week" : "month";
+  const bucketLabel = useCallback(
+    (i: number): string => (byWeek ? weekLabel(weekFloor, i) : monthLabel(monthFloor, i)),
+    [byWeek, weekFloor, monthFloor],
+  );
+
+  // Month anchors for the week track: the first week that opens each new month.
+  const monthTicks = useMemo(() => {
+    if (!byWeek) return [] as Array<{ week: number; label: string }>;
+    const out: Array<{ week: number; label: string }> = [];
+    let prev = "";
+    for (let w = 0; w < timeCount; w++) {
+      const m = weekMonthLabel(weekFloor, w);
+      if (m === prev) continue;
+      prev = m;
+      const [mon, year] = m.split(" ");
+      // Year only where it changes (and on the first tick) — 20 labels have to
+      // fit one track without colliding.
+      out.push({ week: w, label: mon === "Jan" || out.length === 0 ? `${mon} ’${year.slice(2)}` : mon });
+    }
+    return out;
+  }, [byWeek, weekFloor, timeCount]);
+
+  const [selectedBucket, setSelectedBucket] = useState<number | null>(null);
+  // The slider/label/play controls read `selectedBucket` immediately; the heavy
   // filter→sample→point-set-swap chain reads the DEFERRED value so a fast scrub
   // renders one settle-time swap (and one fade) instead of a full universe
   // rebuild per integer tick.
-  const deferredMonth = useDeferredValue(selectedMonth);
+  const deferredBucket = useDeferredValue(selectedBucket);
   const [playing, setPlaying] = useState(false);
   const [authorQuery, setAuthorQuery] = useState("");
   const deferredAuthorQuery = useDeferredValue(authorQuery);
@@ -241,41 +308,54 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       .map((guid, i) => ({ id: guid, name: labels[i] ?? guid }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [projectDim, projectDict, dicts, projectNames]);
-  const projectCounts = useMemo(() => {
-    const perSlot = new Uint32Array(Math.max(1, projectDict.length));
-    for (let i = 0; i < projectIdCol.length; i++) {
-      const slot = projectIdCol[i];
-      if (slot < perSlot.length) perSlot[slot] += 1;
-    }
-    const map = new Map<string, number>();
-    projectDict.forEach((guid, i) => map.set(guid, perSlot[i]));
-    return map;
-  }, [projectDict, projectIdCol]);
+  const projectCounts = useMemo(
+    () => countBySlot(projectIdCol, projectDict),
+    [projectDict, projectIdCol],
+  );
 
-  // ── Role filter (author role, narrowing the resident set like projects) ──
+  // ── Categorical narrowing filters (role, activity type, month) ────────────
+  // All three ride the same slot-mask machinery as projects: the dict IS the
+  // slot→label mapping, an all-selected set yields a null mask (fast path).
   const roleIdCol = data.columns.roleId as Uint16Array;
+  const verbIdCol = data.columns.verbId as Uint16Array;
   const roleDict = useMemo(
     () => (Array.isArray(dicts.role) ? dicts.role.map(String) : []),
     [dicts],
   );
-  const [selectedRoles, setSelectedRoles] = useState<Set<string>>(
-    () => new Set(Array.isArray(dicts.role) ? dicts.role.map(String) : []),
+  const verbDict = useMemo(
+    () => (Array.isArray(dicts.verb) ? dicts.verb.map(String) : []),
+    [dicts],
   );
-  // Same slot-mask builder as projects — the dict is the slot→label mapping.
+  // Month labels are generated (no dict array) but are unique and index-aligned
+  // to monthId, so they key the same label-based mask builder.
+  const monthDict = useMemo(
+    () => Array.from({ length: monthCount }, (_, i) => monthLabel(monthFloor, i)),
+    [monthCount, monthFloor],
+  );
+
+  const roleLabels = useMemo(() => distinctLabels(roleDict), [roleDict]);
+  const verbLabels = useMemo(() => distinctLabels(verbDict), [verbDict]);
+
+  const [selectedRoles, setSelectedRoles] = useState<Set<string>>(() => new Set(roleDict));
+  const [selectedVerbs, setSelectedVerbs] = useState<Set<string>>(() => new Set(verbDict));
+  const [selectedMonths, setSelectedMonths] = useState<Set<string>>(() => new Set(monthDict));
+
   const roleMask = useMemo(
     () => buildProjectSelectionMask(roleDict, selectedRoles),
     [roleDict, selectedRoles],
   );
-  const roleCounts = useMemo(() => {
-    const perSlot = new Uint32Array(Math.max(1, roleDict.length));
-    for (let i = 0; i < roleIdCol.length; i++) {
-      const slot = roleIdCol[i];
-      if (slot < perSlot.length) perSlot[slot] += 1;
-    }
-    const map = new Map<string, number>();
-    roleDict.forEach((label, i) => map.set(label, perSlot[i]));
-    return map;
-  }, [roleDict, roleIdCol]);
+  const verbMask = useMemo(
+    () => buildProjectSelectionMask(verbDict, selectedVerbs),
+    [verbDict, selectedVerbs],
+  );
+  const monthMask = useMemo(
+    () => buildProjectSelectionMask(monthDict, selectedMonths),
+    [monthDict, selectedMonths],
+  );
+
+  const roleCounts = useMemo(() => countBySlot(roleIdCol, roleDict), [roleDict, roleIdCol]);
+  const verbCounts = useMemo(() => countBySlot(verbIdCol, verbDict), [verbDict, verbIdCol]);
+  const monthCounts = useMemo(() => countBySlot(monthId, monthDict), [monthDict, monthId]);
 
   // ── Experimental 2D/3D view toggle ───────────────────────────────────────
   // 3D is a static space-time cube OVERLAY (x/y = embedding, z = month) fed by
@@ -304,24 +384,26 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       setPlaying(false);
       return;
     }
-    setSelectedMonth((current) =>
-      current === null || current >= monthCount - 1 ? 0 : current,
+    setSelectedBucket((current) =>
+      current === null || current >= timeCount - 1 ? 0 : current,
     );
     setPlaying(true);
-  }, [monthCount, playing, reducedMotion]);
+  }, [timeCount, playing, reducedMotion]);
 
   useEffect(() => {
-    if (!playing || selectedMonth === null) return;
-    if (selectedMonth >= monthCount - 1) {
+    if (!playing || selectedBucket === null) return;
+    if (selectedBucket >= timeCount - 1) {
       setPlaying(false);
       return;
     }
+    // ~4x more buckets at week granularity → a faster step keeps a full
+    // playthrough watchable instead of a 90-second crawl.
     const timer = setTimeout(
-      () => setSelectedMonth((current) => (current === null ? 0 : current + 1)),
-      1_000,
+      () => setSelectedBucket((current) => (current === null ? 0 : current + 1)),
+      byWeek ? 450 : 1_000,
     );
     return () => clearTimeout(timer);
-  }, [monthCount, playing, selectedMonth]);
+  }, [byWeek, timeCount, playing, selectedBucket]);
 
   useEffect(() => {
     const pauseWhenHidden = (): void => {
@@ -348,20 +430,37 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const groupDim = groupBy === GROUP_BY_NONE ? undefined : activityDimensionById(groupBy);
   const colorDim = activityDimensionById(colorBy) ?? ACTIVITY_DIMENSIONS[1];
 
-  // Exact-month selection keeps the payload resident and changes only the
-  // current full-index set. All stays explicit (null), never a fake month id.
+  // Exact-bucket selection keeps the payload resident and changes only the
+  // current full-index set. All stays explicit (null), never a fake bucket id.
   const activeFullIdx = useMemo(
     () => filterActivityIndices({
       authorId,
-      monthId,
-      selectedMonth: deferredMonth,
+      timeId,
+      selectedTime: deferredBucket,
       authorMask: authorMatch.mask,
       projectId: projectIdCol,
       projectMask,
       roleId: roleIdCol,
       roleMask,
+      verbId: verbIdCol,
+      verbMask,
+      monthId,
+      monthMask,
     }),
-    [authorId, authorMatch.mask, monthId, projectIdCol, projectMask, roleIdCol, roleMask, deferredMonth],
+    [
+      authorId,
+      authorMatch.mask,
+      timeId,
+      deferredBucket,
+      projectIdCol,
+      projectMask,
+      roleIdCol,
+      roleMask,
+      verbIdCol,
+      verbMask,
+      monthId,
+      monthMask,
+    ],
   );
   const activeCount = activeFullIdx?.length ?? data.count;
 
@@ -535,6 +634,33 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     setActivityTestState({ selectedCount: 0 });
   }, []);
 
+  /**
+   * Picking a node centers the camera on it and dims the rest — 2D via cosmos's
+   * zoomToPointByIndex + the highlightedPointIndices greyout, 3D via the orbit
+   * flight + the shader's uHasSelection dim. The isolation rides the canvas
+   * selection ONLY (never `selectedRendered`), so the lasso breakdown panel
+   * doesn't pop up alongside the detail rail for a one-node pick.
+   */
+  const openDetail = useCallback(
+    (renderedIndex: number, fullIndex: number): void => {
+      setDetailIndex(fullIndex);
+      const ms = reducedMotion ? 0 : FOCUS_MS;
+      if (viewModeRef.current === "3d") {
+        handle3Ref.current?.setSelectedIndices([renderedIndex]);
+        handle3Ref.current?.focusPoint(renderedIndex, ms);
+      } else {
+        handleRef.current?.setSelectedIndices?.([renderedIndex]);
+        handleRef.current?.focusPoint?.(renderedIndex, ms);
+      }
+    },
+    [reducedMotion],
+  );
+
+  const closeDetail = useCallback((): void => {
+    setDetailIndex(null);
+    clearSelection();
+  }, [clearSelection]);
+
   const hoverLabels: ActivityHoverLabels | null = useMemo(
     () =>
       hover
@@ -572,11 +698,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       linkCount: sampledLinks.length / 2,
       lodMode: "sample",
       sampleStride: sampleStride(activeCount),
-      temporalMode: selectedMonth === null ? "all" : "month",
-      selectedMonth,
+      temporalMode: selectedBucket === null ? "all" : "bucket",
+      timeGranularity: timeUnit,
+      selectedBucket,
       searchQuery: deferredAuthorQuery,
       matchedAuthorCount: authorMatch.matchedAuthorCount,
-      monthCount,
+      bucketCount: timeCount,
       activeCount,
       playing,
       reducedMotion,
@@ -586,13 +713,14 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   }, [
     activeCount,
     data.count,
-    monthCount,
+    timeCount,
+    timeUnit,
     playing,
     reducedMotion,
     sampleIdx.length,
     sampledPositionStats,
     sampledLinks.length,
-    selectedMonth,
+    selectedBucket,
     deferredAuthorQuery,
     authorMatch.matchedAuthorCount,
   ]);
@@ -809,15 +937,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         // Magnetic click: an off-point click still opens the snapped node.
         if (renderedIndex === undefined) {
           const magnet = magnetRef.current;
-          if (magnet) {
-            setDetailIndex(magnet.fullIndex);
-            return;
-          }
-          setDetailIndex(null);
+          if (magnet) openDetail(magnet.renderedIndex, magnet.fullIndex);
+          else closeDetail();
           return;
         }
         const full = renderedToFullRef.current[renderedIndex];
-        if (full !== undefined) setDetailIndex(full);
+        if (full !== undefined) openDetail(renderedIndex, full);
       },
       // Hover is owned by the magnetic pointermove seam below — the native
       // pixel-perfect events would fight it (instant hover-end flicker).
@@ -831,12 +956,12 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== "Escape") return;
-      if (detailIndex !== null) setDetailIndex(null);
+      if (detailIndex !== null) closeDetail();
       else clearSelection();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [detailIndex, clearSelection]);
+  }, [detailIndex, clearSelection, closeDetail]);
 
   // Magnetic hover: a continuous rAF loop (while the pointer is inside) that
   // snaps to the nearest rendered node within MAGNET_RADIUS_PX and re-projects
@@ -1034,7 +1159,9 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       if (lassoActive || !downXY) return;
       const travel = Math.hypot(event.clientX - downXY[0], event.clientY - downXY[1]);
       if (travel > 6) return; // an orbit drag, not a click
-      setDetailIndex(magnetRef.current ? magnetRef.current.fullIndex : null);
+      const magnet = magnetRef.current;
+      if (magnet) openDetail(magnet.renderedIndex, magnet.fullIndex);
+      else closeDetail();
     };
     div.addEventListener("pointermove", onMove);
     div.addEventListener("pointerleave", onLeave);
@@ -1048,7 +1175,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       if (raf) cancelAnimationFrame(raf);
       clearMagnet();
     };
-  }, [viewMode, lassoActive]);
+  }, [viewMode, lassoActive, openDetail, closeDetail]);
 
   // LOD state machine: after pan/zoom settles, flip between the uniform sample
   // (region over cap) and exact viewport detail (region fits the cap). A set
@@ -1204,6 +1331,48 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       projectNames,
     );
   }, [selectedRendered, data.columns, dicts, projectNames]);
+
+  const filterGroups: ActivityFilterGroup[] = useMemo(
+    () => [
+      {
+        id: "role",
+        title: "Filter by role",
+        options: roleLabels,
+        counts: roleCounts,
+        selected: selectedRoles,
+        onChange: setSelectedRoles,
+      },
+      {
+        id: "verb",
+        title: "Filter by activity type",
+        options: verbLabels,
+        counts: verbCounts,
+        selected: selectedVerbs,
+        onChange: setSelectedVerbs,
+      },
+      {
+        id: "month",
+        title: "Filter by month",
+        options: monthDict,
+        counts: monthCounts,
+        selected: selectedMonths,
+        // Chronological, not count-ranked — a month list is a series.
+        preserveOrder: true,
+        onChange: setSelectedMonths,
+      },
+    ],
+    [
+      roleLabels,
+      roleCounts,
+      selectedRoles,
+      verbLabels,
+      verbCounts,
+      selectedVerbs,
+      monthDict,
+      monthCounts,
+      selectedMonths,
+    ],
+  );
 
   const fmt = (n: number): string => n.toLocaleString("en-US");
 
@@ -1443,13 +1612,13 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           <button
             type="button"
             data-testid="activity-time-all"
-            aria-pressed={selectedMonth === null}
+            aria-pressed={selectedBucket === null}
             onClick={() => {
               setPlaying(false);
-              setSelectedMonth(null);
+              setSelectedBucket(null);
             }}
             className={`rounded-md border px-2 py-1 text-xs transition-colors ${
-              selectedMonth === null
+              selectedBucket === null
                 ? "border-primary bg-primary/10 text-foreground"
                 : "bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
             }`}
@@ -1468,30 +1637,60 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           </button>
           <span
             data-testid="activity-time-label"
-            className="w-20 shrink-0 text-xs font-medium text-foreground"
+            className="w-28 shrink-0 text-xs font-medium tabular-nums text-foreground"
           >
-            {selectedMonth === null ? "All months" : monthLabel(monthFloor, selectedMonth)}
+            {selectedBucket === null
+              ? `All ${timeUnit}s`
+              : `${byWeek ? "Week of " : ""}${bucketLabel(selectedBucket)}`}
           </span>
-          <input
-            type="range"
-            data-testid="activity-time-range"
-            aria-label="Activity month"
-            aria-valuetext={monthLabel(monthFloor, selectedMonth ?? 0)}
-            min={0}
-            max={Math.max(0, monthCount - 1)}
-            step={1}
-            value={selectedMonth ?? 0}
-            onChange={(event) => {
-              setPlaying(false);
-              setSelectedMonth(Number(event.target.value));
-            }}
-            className="min-w-24 flex-1 accent-primary"
-          />
+          <div className="flex min-w-24 flex-1 flex-col gap-0.5">
+            <input
+              type="range"
+              data-testid="activity-time-range"
+              aria-label={`Activity ${timeUnit}`}
+              aria-valuetext={bucketLabel(selectedBucket ?? 0)}
+              min={0}
+              max={Math.max(0, timeCount - 1)}
+              step={1}
+              value={selectedBucket ?? 0}
+              onChange={(event) => {
+                setPlaying(false);
+                setSelectedBucket(Number(event.target.value));
+              }}
+              className="w-full accent-primary"
+            />
+            {/* Month ticks under the week track — 87 weeks read as noise without
+                an anchor, so every bucket that opens a new month gets a label. */}
+            {byWeek ? (
+              <div
+                aria-hidden
+                className="relative h-3 select-none font-mono text-[9px] leading-3 text-muted-foreground"
+              >
+                {monthTicks.map((t, i) => (
+                  <span
+                    key={t.week}
+                    // The first tick anchors left instead of centering, so it
+                    // isn't half-clipped off the track.
+                    className={`absolute whitespace-nowrap ${i === 0 ? "" : "-translate-x-1/2"}`}
+                    style={{ left: `${(t.week / Math.max(1, timeCount - 1)) * 100}%` }}
+                  >
+                    {t.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <span
             data-testid="activity-time-count"
             className="shrink-0 font-mono text-[11px] text-muted-foreground"
           >
             {fmt(activeCount)} / {fmt(data.count)} events
+            {byWeek && weekUnknownCount > 0 ? (
+              <span title="Rows whose source event timestamp could not be resolved — excluded from every week bucket.">
+                {" "}
+                · {fmt(weekUnknownCount)} undated
+              </span>
+            ) : null}
           </span>
         </div>
 
@@ -1513,7 +1712,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             index={detailIndex}
             labels={detailLabels}
             unknownAuthorRate={coverage.unknownAuthorRate}
-            onClose={() => setDetailIndex(null)}
+            onClose={closeDetail}
           />
         )}
 
@@ -1540,10 +1739,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         onAuthorQueryChange={setAuthorQuery}
         authorSuggestions={authorLabels}
         authorPhotoByEmail={authorPhotoByEmail}
-        roleOptions={roleDict}
-        roleCounts={roleCounts}
-        selectedRoles={selectedRoles}
-        onRolesChange={setSelectedRoles}
+        filters={filterGroups}
         matchedAuthorCount={authorMatch.matchedAuthorCount}
         searchPending={authorQuery !== deferredAuthorQuery}
         groupCoverageText={groupCoverageText}

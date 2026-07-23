@@ -9,7 +9,7 @@
  * pure data flow; the canvas is not involved).
  */
 import { beforeAll, afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { ActivityDimensionsPanel, GROUP_BY_NONE } from "./ActivityDimensionsPanel";
 import { ACTIVITY_DIMENSIONS } from "./activityDimensions";
 import { buildGroupLayout } from "./activityGroupLayout";
@@ -30,7 +30,10 @@ const groupByOptions = ACTIVITY_DIMENSIONS.filter((d) => d.groupBy).map((d) => (
 }));
 const colorByOptions = ACTIVITY_DIMENSIONS.map((d) => ({ id: d.id, label: d.label }));
 
+const roleOptions = ["Unknown", "Arquitecto", "BIM Manager"];
+
 function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]> = {}) {
+  const onRolesChange = vi.fn();
   const props = {
     groupByOptions,
     colorByOptions,
@@ -45,14 +48,32 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
     authorSuggestions: ["Unknown author", "ana@hermosillo.com", "luis@hermosillo.com"],
     matchedAuthorCount: 0,
     searchPending: false,
-    roleOptions: ["Unknown", "Arquitecto", "BIM Manager"],
-    roleCounts: new Map([
-      ["Unknown", 10],
-      ["Arquitecto", 200],
-      ["BIM Manager", 90],
-    ]),
-    selectedRoles: new Set(["Unknown", "Arquitecto", "BIM Manager"]),
-    onRolesChange: vi.fn(),
+    onRolesChange,
+    filters: [
+      {
+        id: "role",
+        title: "Filter by role",
+        options: roleOptions,
+        counts: new Map([
+          ["Unknown", 10],
+          ["Arquitecto", 200],
+          ["BIM Manager", 90],
+        ]),
+        selected: new Set(roleOptions),
+        onChange: onRolesChange,
+      },
+      {
+        id: "verb",
+        title: "Filter by activity type",
+        options: ["created", "viewed"],
+        counts: new Map([
+          ["created", 5],
+          ["viewed", 7],
+        ]),
+        selected: new Set(["created", "viewed"]),
+        onChange: vi.fn(),
+      },
+    ],
     groupCoverageText: null as string | null,
     groupByLabel: null as string | null,
     colorCoverageText: "4,904,886/4,904,886",
@@ -131,10 +152,11 @@ describe("ActivityDimensionsPanel", () => {
     fireEvent.click(screen.getByText("Arquitecto"));
     expect(props.onRolesChange).toHaveBeenCalledWith(new Set(["Unknown", "BIM Manager"]));
 
-    fireEvent.click(screen.getByRole("button", { name: "None" }));
+    // Scoped: every filter group renders its own All/None pair.
+    fireEvent.click(within(filter).getByRole("button", { name: "None" }));
     expect(props.onRolesChange).toHaveBeenCalledWith(new Set());
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(within(filter).getByRole("button", { name: "All" }));
     expect(props.onRolesChange).toHaveBeenCalledWith(
       new Set(["Unknown", "Arquitecto", "BIM Manager"]),
     );

@@ -117,6 +117,12 @@ export interface ActivityUniverse3DHandle {
   setControlsEnabled: (enabled: boolean) => void;
   /** Highlight the selected rendered indices (dims the rest); [] clears. */
   setSelectedIndices: (indices: number[]) => void;
+  /**
+   * Fly the orbit target to one rendered point (at its CURRENT morph position)
+   * and dolly in along the existing view direction. Auto-orbit pauses for the
+   * flight and resumes on the normal idle timer.
+   */
+  focusPoint: (index: number, durationMs: number) => void;
 }
 
 /** Even-odd ray-cast point-in-polygon on screen coords. */
@@ -147,8 +153,22 @@ interface ThreeCtx {
   uMixGoal: number;
   resumeAt: number;
   fitted: boolean;
+  /** Cloud half-extent — sets point scale and the focus dolly distance. */
+  scale: number;
+  /** Active focus flight (null when idle). */
+  flight: {
+    t0: number;
+    dur: number;
+    fromTarget: THREE.Vector3;
+    toTarget: THREE.Vector3;
+    fromCam: THREE.Vector3;
+    toCam: THREE.Vector3;
+  } | null;
   ro?: ResizeObserver;
 }
+
+/** Cubic ease-out — matches the 2D focus tween's feel. */
+const easeOut = (t: number): number => 1 - (1 - t) ** 3;
 
 export function ActivityUniverse3D({
   positions3,
@@ -205,6 +225,8 @@ export function ActivityUniverse3D({
       uMixGoal: 0,
       resumeAt: 0,
       fitted: false,
+      scale: 1,
+      flight: null,
     };
     three.current = ctx;
 
@@ -222,6 +244,21 @@ export function ActivityUniverse3D({
         controls.autoRotate = true;
         ctx.resumeAt = 0;
       }
+      // Focus flight owns the camera while it runs — applied BEFORE
+      // controls.update() so damping settles onto the flown-to pose.
+      let flying = false;
+      if (ctx.flight) {
+        const f = ctx.flight;
+        const k = f.dur <= 0 ? 1 : Math.min(1, (performance.now() - f.t0) / f.dur);
+        const e = easeOut(k);
+        controls.target.lerpVectors(f.fromTarget, f.toTarget, e);
+        camera.position.lerpVectors(f.fromCam, f.toCam, e);
+        flying = true;
+        if (k >= 1) {
+          ctx.flight = null;
+          ctx.resumeAt = performance.now() + AUTOROTATE_RESUME_MS;
+        }
+      }
       const moved = controls.update();
       const delta = ctx.uMixGoal - ctx.uMix;
       let mixing = false;
@@ -231,7 +268,7 @@ export function ActivityUniverse3D({
         if (ctx.lineMat) ctx.lineMat.uniforms.uMix.value = ctx.uMix;
         mixing = true;
       }
-      if (!moved && !mixing && !ctx.dirty) return;
+      if (!moved && !mixing && !flying && !ctx.dirty) return;
       ctx.dirty = false;
       renderer.render(scene, camera);
     };
@@ -371,6 +408,7 @@ export function ActivityUniverse3D({
 
     // Fit the camera once — later set swaps keep the user's viewpoint (same
     // embedding space); only the size scale re-tunes.
+    ctx.scale = maxAbs;
     if (!ctx.fitted) {
       ctx.camera.position.set(0, 0, maxAbs * 2.4);
       ctx.camera.near = maxAbs / 1000;
@@ -536,9 +574,40 @@ export function ActivityUniverse3D({
         if (ctx.pointMat) ctx.pointMat.uniforms.uHasSelection.value = indices.length > 0 ? 1 : 0;
         ctx.dirty = true;
       },
+      focusPoint: (index, durationMs) => {
+        const ctx = three.current;
+        const geom = ctx?.pointGeom;
+        if (!ctx || !geom) return;
+        const pos = geom.getAttribute("position").array as Float32Array;
+        const tgt = geom.getAttribute("aTarget").array as Float32Array;
+        const b = index * 3;
+        if (b < 0 || b + 2 >= pos.length) return;
+        const mix = ctx.uMix;
+        const to = new THREE.Vector3(
+          pos[b] + (tgt[b] - pos[b]) * mix,
+          pos[b + 1] + (tgt[b + 1] - pos[b + 1]) * mix,
+          pos[b + 2] + (tgt[b + 2] - pos[b + 2]) * mix,
+        );
+        // Keep the current view direction; close to ~12% of the cloud extent so
+        // the node's neighbourhood fills the frame without clipping through it.
+        const dir = new THREE.Vector3()
+          .subVectors(ctx.camera.position, ctx.controls.target)
+          .normalize();
+        if (dir.lengthSq() === 0) dir.set(0, 0, 1);
+        ctx.controls.autoRotate = false;
+        ctx.flight = {
+          t0: performance.now(),
+          dur: reducedMotion ? 0 : durationMs,
+          fromTarget: ctx.controls.target.clone(),
+          toTarget: to,
+          fromCam: ctx.camera.position.clone(),
+          toCam: to.clone().addScaledVector(dir, Math.max(ctx.scale * 0.12, 1e-3)),
+        };
+        ctx.dirty = true;
+      },
     };
     onHandleReady(handle);
-  }, [onHandleReady]);
+  }, [onHandleReady, reducedMotion]);
 
   return (
     <div ref={containerRef} data-testid="activity-universe-3d" className="absolute inset-0" />
