@@ -43,6 +43,7 @@ import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
 import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
 import type { IssueFunnelData, IssueFunnelStatusRow, IssueFunnelTypeRow } from "@/lib/server/issueFunnelView";
+import type { AdminsPerProjectData } from "@/lib/server/adminsPerProjectView";
 import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
@@ -108,6 +109,7 @@ export function AccessAnalysisCharts({
   loadCompanyFolderBreakdown,
   loadIssueFunnel,
   loadWorkflowTools,
+  loadAdminsPerProject,
   ingestFreshness,
   provisionedModuleRows,
 }: {
@@ -150,6 +152,8 @@ export function AccessAnalysisCharts({
   loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
   /** Reviews/RFIs/Submittals donuts: lazy per-tab fetch (Projects tab), fired at most once. Presence gates the panel. */
   loadWorkflowTools?: () => Promise<ModuleActivityRow[] | null>;
+  /** Admins-per-project chart (owner ask 2026-07-23): lazy per-tab fetch (Projects tab), fired at most once. Presence gates the panel. */
+  loadAdminsPerProject?: () => Promise<AdminsPerProjectData | null>;
   /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
   ingestFreshness?: IngestFreshness | null;
   /** UAT-21.1-01: eager Overview-tab prop (mainCharts.tsx's Promise.all fan-out, 9->10 — Overview is
@@ -313,6 +317,10 @@ export function AccessAnalysisCharts({
   const [workflowToolRows, setWorkflowToolRows] = useState<ModuleActivityRow[] | null>(null);
   const [workflowToolsLoading, setWorkflowToolsLoading] = useState(false);
   const workflowToolsFetchedRef = useRef(false);
+  // Admins-per-project: same ref-flag lazy fetch-once pattern, Projects tab.
+  const [adminsData, setAdminsData] = useState<AdminsPerProjectData | null>(null);
+  const [adminsLoading, setAdminsLoading] = useState(false);
+  const adminsFetchedRef = useRef(false);
 
   useEffect(() => {
     if ((tab === "roles" || tab === "users") && loadActivityRecency && !activityRecencyFetchedRef.current) {
@@ -358,7 +366,14 @@ export function AccessAnalysisCharts({
         .then((rows) => setWorkflowToolRows(rows))
         .finally(() => setWorkflowToolsLoading(false));
     }
-  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel, loadWorkflowTools]);
+    if (tab === "projects" && loadAdminsPerProject && !adminsFetchedRef.current) {
+      adminsFetchedRef.current = true;
+      setAdminsLoading(true);
+      void loadAdminsPerProject()
+        .then((data) => setAdminsData(data))
+        .finally(() => setAdminsLoading(false));
+    }
+  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel, loadWorkflowTools, loadAdminsPerProject]);
 
   // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
   // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
@@ -366,6 +381,19 @@ export function AccessAnalysisCharts({
   const filteredActivityRecencyRows = useMemo(
     () => filterRowsBySelection(activityRecencyRows ?? [], selected),
     [activityRecencyRows, selected],
+  );
+  // Admins-per-project honors the picker; account-wide coverage figures stay
+  // as-is (they frame source trust, not the filtered view).
+  const filteredAdminsData = useMemo(
+    () =>
+      adminsData
+        ? {
+            ...adminsData,
+            rows: filterRowsBySelection(adminsData.rows, selected),
+            zeroAdminProjects: filterRowsBySelection(adminsData.zeroAdminProjects, selected),
+          }
+        : null,
+    [adminsData, selected],
   );
   const filteredPermissionLevelRows = useMemo(
     () => filterRowsBySelection(permissionLevelRows ?? [], selected),
@@ -600,6 +628,9 @@ export function AccessAnalysisCharts({
             filteredIssueTypeRows={filteredIssueTypeRows}
             workflowToolSummaries={workflowToolSummaries}
             workflowToolsLoading={workflowToolsLoading}
+            adminsData={filteredAdminsData}
+            adminsEnabled={Boolean(loadAdminsPerProject)}
+            adminsLoading={adminsLoading}
           />
         </TabsContent>
 

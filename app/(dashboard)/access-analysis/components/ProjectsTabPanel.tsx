@@ -9,6 +9,8 @@ import { IssueTimelineChart } from "./IssueTimelineChart";
 import { IssueStatusChart } from "./IssueStatusChart";
 import { IssueTypeChart } from "./IssueTypeChart";
 import { WorkflowToolDonut } from "./WorkflowToolDonut";
+import { AdminsPerProjectChart } from "./AdminsPerProjectChart";
+import type { AdminsPerProjectData } from "@/lib/server/adminsPerProjectView";
 import { WORKFLOW_TOOLS, type WorkflowTool, type WorkflowToolSummary } from "../workflowToolCounts";
 import type {
   CoordinationByProjectData,
@@ -44,6 +46,9 @@ export function ProjectsTabPanel({
   filteredIssueTypeRows,
   workflowToolSummaries,
   workflowToolsLoading,
+  adminsData,
+  adminsEnabled,
+  adminsLoading,
 }: {
   coordinationData?: CoordinationByProjectData;
   filteredIssueCoverageProjects: IssueCoverageProjectRow[];
@@ -63,6 +68,10 @@ export function ProjectsTabPanel({
    *  until resolved (or forever, on a no-session result) → section stays hidden. */
   workflowToolSummaries?: Record<WorkflowTool, WorkflowToolSummary>;
   workflowToolsLoading?: boolean;
+  /** Admins-per-project chart — lazy loadAdminsPerProject fetch, picker-filtered upstream. */
+  adminsData?: AdminsPerProjectData | null;
+  adminsEnabled?: boolean;
+  adminsLoading?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -175,6 +184,24 @@ export function ProjectsTabPanel({
                   </div>
                 ))}
               </div>
+            )}
+          </PremiumSurface>
+        </Reveal>
+      )}
+
+      {/* Admins per project (owner ask 2026-07-23) — visible while loading;
+          hidden only when the lazy loader is absent or returned no session. */}
+      {adminsEnabled && (adminsLoading || adminsData) && (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Admins per project"
+              subtitle="Who holds project-admin power, per project? ACC member sync and the Data Connector feed, deduped by email — with the projects neither source can see disclosed below."
+            />
+            {adminsLoading || !adminsData ? (
+              <DonutPanelSkeleton />
+            ) : (
+              <AdminsPerProjectChart data={adminsData} />
             )}
           </PremiumSurface>
         </Reveal>

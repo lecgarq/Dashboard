@@ -31,6 +31,7 @@ import { loadPermissionUsersAction } from "./permissionUserActions";
 import { loadFolderScopedActivityAction, loadCompanyFolderBreakdownAction } from "./folderActivityByCompanyActions";
 import { loadIssueFunnelAction } from "./issueFunnelActions";
 import { loadWorkflowToolsAction } from "./workflowToolsActions";
+import { loadAdminsPerProjectAction } from "./adminsPerProjectActions";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
@@ -127,6 +128,7 @@ export async function MainCharts() {
       loadCompanyFolderBreakdown={loadCompanyFolderBreakdownAction}
       loadIssueFunnel={loadIssueFunnelAction}
       loadWorkflowTools={loadWorkflowToolsAction}
+      loadAdminsPerProject={loadAdminsPerProjectAction}
       ingestFreshness={ingestFreshness}
       provisionedModuleRows={provisionedModuleRows}
     />
