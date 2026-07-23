@@ -25,25 +25,35 @@ const POINT_VERT = `
 attribute vec3 aTarget;
 attribute float aSize;
 attribute vec4 aColor;
+attribute float aSelected;
 varying vec4 vColor;
+varying float vSelected;
 uniform float uSizeScale;
 uniform float uMix;
+uniform float uHasSelection;
 void main() {
   vColor = aColor;
+  vSelected = aSelected;
   vec3 p = mix(position, aTarget, uMix);
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  gl_PointSize = clamp(aSize * uSizeScale / -mv.z, 1.5, 40.0);
+  // Selected points swell slightly; a live selection shrinks the rest.
+  float sizeMul = mix(1.0, aSelected > 0.5 ? 1.6 : 0.85, uHasSelection);
+  gl_PointSize = clamp(aSize * sizeMul * uSizeScale / -mv.z, 1.5, 44.0);
   gl_Position = projectionMatrix * mv;
 }`;
 
 const POINT_FRAG = `
 varying vec4 vColor;
+varying float vSelected;
+uniform float uHasSelection;
 void main() {
   vec2 d = gl_PointCoord - vec2(0.5);
   float r = dot(d, d);
   if (r > 0.25) discard;
   float a = smoothstep(0.25, 0.16, r) * vColor.a;
-  gl_FragColor = vec4(vColor.rgb, a);
+  // Dim everything that is not in the selection once a selection exists.
+  float dim = mix(1.0, vSelected > 0.5 ? 1.0 : 0.12, uHasSelection);
+  gl_FragColor = vec4(vColor.rgb, a * dim);
 }`;
 
 const LINK_VERT = `
@@ -79,6 +89,33 @@ export interface ActivityUniverse3DProps {
   strength: number;
   backgroundColor: string;
   reducedMotion: boolean;
+  /** Imperative handle for the 3D lasso (project → screen hit-test + controls freeze). */
+  onHandleReady?: (handle: ActivityUniverse3DHandle) => void;
+}
+
+export interface ActivityUniverse3DHandle {
+  /**
+   * Project every rendered point through the live camera (using the CURRENT
+   * morph mix) into the overlay's screen space and return the rendered indices
+   * whose projection falls inside the lasso polygon. Behind-camera points are
+   * excluded.
+   */
+  findPointsInPolygon: (path: [number, number][], width: number, height: number) => number[];
+  /** Freeze/thaw OrbitControls so a lasso drag selects instead of rotating. */
+  setControlsEnabled: (enabled: boolean) => void;
+  /** Highlight the selected rendered indices (dims the rest); [] clears. */
+  setSelectedIndices: (indices: number[]) => void;
+}
+
+/** Even-odd ray-cast point-in-polygon on screen coords. */
+function pointInPolygon(x: number, y: number, poly: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
 }
 
 interface ThreeCtx {
@@ -110,6 +147,7 @@ export function ActivityUniverse3D({
   strength,
   backgroundColor,
   reducedMotion,
+  onHandleReady,
 }: ActivityUniverse3DProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const three = useRef<ThreeCtx | null>(null);
@@ -117,6 +155,8 @@ export function ActivityUniverse3D({
     () => buildClumpTargets(positions3, groupCatIds),
     [positions3, groupCatIds],
   );
+  // Live selection attribute (per rendered point), reused across rebuilds.
+  const selectedAttrRef = useRef<Float32Array>(new Float32Array(0));
 
   // One-time scene setup. The loop renders only while something is animating:
   // camera damping/auto-orbit, an unsettled uMix ease, or an explicit dirty.
@@ -246,15 +286,24 @@ export function ActivityUniverse3D({
       if (a > maxAbs) maxAbs = a;
     }
 
+    // Selection attribute persists across rebuilds only when the count matches;
+    // a genuine set swap resets it (stale rendered indices would mislead).
+    if (selectedAttrRef.current.length !== n) selectedAttrRef.current = new Float32Array(n);
     const pointGeom = new THREE.BufferGeometry();
     pointGeom.setAttribute("position", new THREE.BufferAttribute(positions3, 3));
     pointGeom.setAttribute("aTarget", new THREE.BufferAttribute(targets, 3));
     pointGeom.setAttribute("aColor", new THREE.BufferAttribute(colors4, 4));
     pointGeom.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    pointGeom.setAttribute("aSelected", new THREE.BufferAttribute(selectedAttrRef.current, 1));
+    const hasSelection = selectedAttrRef.current.some((v) => v > 0.5) ? 1 : 0;
     const pointMat = new THREE.ShaderMaterial({
       vertexShader: POINT_VERT,
       fragmentShader: POINT_FRAG,
-      uniforms: { uSizeScale: { value: maxAbs * 1.5 }, uMix: { value: three.current?.uMix ?? 0 } },
+      uniforms: {
+        uSizeScale: { value: maxAbs * 1.5 },
+        uMix: { value: three.current?.uMix ?? 0 },
+        uHasSelection: { value: hasSelection },
+      },
       transparent: true,
       depthWrite: false,
     });
@@ -369,6 +418,59 @@ export function ActivityUniverse3D({
     ctx.uMixGoal = Math.max(0, Math.min(1, strength / 100));
     ctx.dirty = true;
   }, [strength]);
+
+  // Publish the imperative handle once (reads live geometry/camera at call time,
+  // so it stays correct across rebuilds, morphs, and orbits).
+  useEffect(() => {
+    if (!onHandleReady) return;
+    const proj = new THREE.Vector3();
+    const handle: ActivityUniverse3DHandle = {
+      findPointsInPolygon: (path, width, height) => {
+        const ctx = three.current;
+        const geom = ctx?.pointGeom;
+        if (!ctx || !geom || path.length < 3) return [];
+        const pos = geom.getAttribute("position").array as Float32Array;
+        const tgt = geom.getAttribute("aTarget").array as Float32Array;
+        const mix = ctx.uMix;
+        ctx.camera.updateMatrixWorld();
+        const out: number[] = [];
+        const n = pos.length / 3;
+        for (let i = 0; i < n; i++) {
+          const b = i * 3;
+          proj.set(
+            pos[b] + (tgt[b] - pos[b]) * mix,
+            pos[b + 1] + (tgt[b + 1] - pos[b + 1]) * mix,
+            pos[b + 2] + (tgt[b + 2] - pos[b + 2]) * mix,
+          );
+          proj.project(ctx.camera);
+          if (proj.z > 1 || proj.z < -1) continue; // outside the near/far frustum
+          const sx = (proj.x * 0.5 + 0.5) * width;
+          const sy = (-proj.y * 0.5 + 0.5) * height;
+          if (pointInPolygon(sx, sy, path)) out.push(i);
+        }
+        return out;
+      },
+      setControlsEnabled: (enabled) => {
+        const ctx = three.current;
+        if (!ctx) return;
+        ctx.controls.enabled = enabled;
+        if (!enabled) ctx.controls.autoRotate = false; // never spin mid-lasso
+        ctx.dirty = true;
+      },
+      setSelectedIndices: (indices) => {
+        const ctx = three.current;
+        const attr = ctx?.pointGeom?.getAttribute("aSelected") as THREE.BufferAttribute | undefined;
+        if (!ctx || !attr) return;
+        const arr = attr.array as Float32Array;
+        arr.fill(0);
+        for (const i of indices) if (i >= 0 && i < arr.length) arr[i] = 1;
+        attr.needsUpdate = true;
+        if (ctx.pointMat) ctx.pointMat.uniforms.uHasSelection.value = indices.length > 0 ? 1 : 0;
+        ctx.dirty = true;
+      },
+    };
+    onHandleReady(handle);
+  }, [onHandleReady]);
 
   return (
     <div ref={containerRef} data-testid="activity-universe-3d" className="absolute inset-0" />

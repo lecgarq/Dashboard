@@ -80,7 +80,7 @@ import {
 } from "./ActivityDimensionsPanel";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
-import { ActivityUniverse3D } from "./ActivityUniverse3D";
+import { ActivityUniverse3D, type ActivityUniverse3DHandle } from "./ActivityUniverse3D";
 import { buildActivityDepth } from "./activityDepth";
 import { dequantizePosition3 } from "@/lib/acc/positions3Quant";
 import { ActivityTooltip } from "./ActivityTooltip";
@@ -158,6 +158,8 @@ function webGlRenderer(container: HTMLDivElement | null): string {
 function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<GraphCanvas2DHandle | null>(null);
+  /** 3D imperative handle (projection lasso + controls freeze), null in 2D. */
+  const handle3Ref = useRef<ActivityUniverse3DHandle | null>(null);
   /** MapClusterLabels adapter — the retired GraphCanvas union's "2d" arm. */
   const labelsGraphRef = useRef<GraphCanvasHandle | null>(null);
   const { resolvedTheme } = useTheme();
@@ -511,6 +513,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   const clearSelection = useCallback((): void => {
     setSelectedRendered([]);
     handleRef.current?.setSelectedIndices?.([]);
+    handle3Ref.current?.setSelectedIndices([]);
     setActivityTestState({ selectedCount: 0 });
   }, []);
 
@@ -734,10 +737,23 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     if (viewMode === "3d") {
       motionRef.current?.stopAmbient();
       setHover(null);
+      // The 3D view always renders the sample in sampleIdx order, so the
+      // rendered→full map IS sampleIdx — pin it so the lasso breakdown resolves
+      // correctly even if a 2D region flip had left it pointing elsewhere.
+      renderedToFullRef.current = sampleIdx;
     } else if (renderedToFullRef.current === sampleIdx && sampleIdx.length > 0) {
       motionRef.current?.startAmbient();
     }
-    setActivityTestState({ ambientActive: motionRef.current?.isAmbientRunning() ?? false });
+    // Selection mapping differs between the 2D region set and the 3D sample —
+    // clear it (and exit lasso) on every view switch so nothing goes stale.
+    setSelectedRendered([]);
+    handleRef.current?.setSelectedIndices?.([]);
+    handle3Ref.current?.setSelectedIndices([]);
+    setLassoActive(false);
+    setActivityTestState({
+      selectedCount: 0,
+      ambientActive: motionRef.current?.isAmbientRunning() ?? false,
+    });
   }, [viewMode, sampleIdx]);
 
   // Strength back at 0 → the LOD seam may resume (re-run once so region mode
@@ -1022,6 +1038,21 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
     setLassoActive(false);
   }, []);
 
+  // 3D lasso: the projector hit-test needs the overlay's own CSS size (world→
+  // screen against the same viewport), so it takes width/height. Selection maps
+  // through sampleIdx (pinned into renderedToFullRef on 3D entry).
+  const lassoHitTest3 = useCallback(
+    (path: [number, number][], width: number, height: number): number[] =>
+      handle3Ref.current?.findPointsInPolygon(path, width, height) ?? [],
+    [],
+  );
+  const onLassoComplete3 = useCallback((matched: number[]): void => {
+    setSelectedRendered(matched);
+    handle3Ref.current?.setSelectedIndices(matched);
+    setActivityTestState({ selectedCount: matched.length });
+    setLassoActive(false);
+  }, []);
+
   // Lasso selection → live per-attribute breakdown (author role, author, verb,
   // module, object type, company, project, month) straight off the resident
   // columns — zero fetches. renderedToFullRef is valid for the current
@@ -1090,6 +1121,18 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               strength={strength}
               backgroundColor={bg}
               reducedMotion={reducedMotion}
+              onHandleReady={(h) => {
+                handle3Ref.current = h;
+              }}
+            />
+            {/* 3D lasso: projects the cloud to screen; the drag freezes
+                OrbitControls (onDragStart/End) so it selects, not rotates. */}
+            <LassoOverlay
+              active={lassoActive}
+              hitTest={lassoHitTest3}
+              onComplete={onLassoComplete3}
+              onDragStart={() => handle3Ref.current?.setControlsEnabled(false)}
+              onDragEnd={() => handle3Ref.current?.setControlsEnabled(true)}
             />
             {!has3dEmbedding ? (
               <div className="pointer-events-none absolute bottom-16 right-4 rounded-md border bg-card/80 px-2 py-1 font-mono text-[10px] text-muted-foreground backdrop-blur-sm">
@@ -1156,10 +1199,10 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
         </div>
 
         {/* Lasso toggle + honest selected count (visible = selectable at L2).
-            2D-only: the lasso hit-tests the 2D canvas projection. */}
+            Works in both views: 2D hit-tests the canvas, 3D projects the
+            cloud to screen. z-20 so it sits above the 3D overlay. */}
         <div
-          className="absolute bottom-16 left-4 z-10 flex items-center gap-2"
-          style={viewMode === "3d" ? { display: "none" } : undefined}
+          className="absolute bottom-16 left-4 z-20 flex items-center gap-2"
         >
           <button
             type="button"
