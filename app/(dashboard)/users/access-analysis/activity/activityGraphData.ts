@@ -43,7 +43,7 @@ export function buildProjectSelectionMask(
   return all ? null : mask;
 }
 
-/** Compose exact-month, author, and project filters in one pass; null means no filters. */
+/** Compose exact-month, author, project, and role filters in one pass; null means no filters. */
 export function filterActivityIndices(args: {
   authorId: Uint32Array;
   monthId: Uint16Array;
@@ -51,11 +51,20 @@ export function filterActivityIndices(args: {
   authorMask: Uint8Array | null;
   projectId?: Uint16Array | Uint32Array;
   projectMask?: Uint8Array | null;
+  roleId?: Uint16Array;
+  roleMask?: Uint8Array | null;
 }): Uint32Array | null {
   const { authorId, monthId, selectedMonth, authorMask } = args;
   const projectMask = args.projectMask ?? null;
   const projectId = projectMask !== null ? args.projectId : undefined;
-  if (selectedMonth === null && authorMask === null && (projectMask === null || !projectId)) {
+  const roleMask = args.roleMask ?? null;
+  const roleId = roleMask !== null ? args.roleId : undefined;
+  if (
+    selectedMonth === null &&
+    authorMask === null &&
+    (projectMask === null || !projectId) &&
+    (roleMask === null || !roleId)
+  ) {
     return null;
   }
 
@@ -63,6 +72,7 @@ export function filterActivityIndices(args: {
     if (selectedMonth !== null && monthId[i] !== selectedMonth) return false;
     if (authorMask !== null && authorMask[authorId[i]] !== 1) return false;
     if (projectId && projectMask !== null && projectMask[projectId[i]] !== 1) return false;
+    if (roleId && roleMask !== null && roleMask[roleId[i]] !== 1) return false;
     return true;
   };
 

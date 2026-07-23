@@ -45,6 +45,14 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
     authorSuggestions: ["Unknown author", "ana@hermosillo.com", "luis@hermosillo.com"],
     matchedAuthorCount: 0,
     searchPending: false,
+    roleOptions: ["Unknown", "Arquitecto", "BIM Manager"],
+    roleCounts: new Map([
+      ["Unknown", 10],
+      ["Arquitecto", 200],
+      ["BIM Manager", 90],
+    ]),
+    selectedRoles: new Set(["Unknown", "Arquitecto", "BIM Manager"]),
+    onRolesChange: vi.fn(),
     groupCoverageText: null as string | null,
     groupByLabel: null as string | null,
     colorCoverageText: "4,904,886/4,904,886",
@@ -113,6 +121,25 @@ describe("ActivityDimensionsPanel", () => {
     expect(role?.text).toContain("unavailable");
   });
 
+  it("toggles a role off through the role filter and supports All/None", () => {
+    const props = renderPanel();
+    const filter = screen.getByTestId("activity-role-filter");
+    // Sorted by event count desc: Arquitecto (200), BIM Manager (90), Unknown (10).
+    const rows = Array.from(filter.querySelectorAll('input[type="checkbox"]'));
+    expect(rows).toHaveLength(3);
+
+    fireEvent.click(screen.getByText("Arquitecto"));
+    expect(props.onRolesChange).toHaveBeenCalledWith(new Set(["Unknown", "BIM Manager"]));
+
+    fireEvent.click(screen.getByRole("button", { name: "None" }));
+    expect(props.onRolesChange).toHaveBeenCalledWith(new Set());
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(props.onRolesChange).toHaveBeenCalledWith(
+      new Set(["Unknown", "Arquitecto", "BIM Manager"]),
+    );
+  });
+
   it("suggests matched users on focus and commits an exact email on click", () => {
     const props = renderPanel({ authorQuery: "luis", matchedAuthorCount: 1 });
     const search = screen.getByLabelText("Search users") as HTMLInputElement;
@@ -123,7 +150,10 @@ describe("ActivityDimensionsPanel", () => {
     const suggestions = screen.getByTestId("activity-author-suggestions");
     const options = Array.from(suggestions.querySelectorAll('[role="option"]'));
     // The needle "luis" filters out the non-matching "ana@" and sentinel row.
-    expect(options.map((o) => o.textContent)).toEqual(["luis@hermosillo.com"]);
+    // Each option now leads with a ProfileAvatar (initials in jsdom), so match
+    // the email substring rather than exact textContent.
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toContain("luis@hermosillo.com");
 
     fireEvent.click(options[0]);
     expect(props.onAuthorQueryChange).toHaveBeenCalledWith("luis@hermosillo.com");

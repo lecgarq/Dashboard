@@ -198,6 +198,26 @@ describe("activityMotion contract pins (PERF-07 / evolved PERF-02)", () => {
     expect(m.isAmbientRunning()).toBe(false);
   });
 
+  it("getLivePositions reflects ambient drift so magnet snapping targets moving nodes", () => {
+    const h = harness();
+    const base = base10();
+    const m = motionWith(h, base, { subsetCap: 3 }); // n=10 → subset 0,4,8
+    m.startAmbient();
+    h.step(0);
+    h.step(16);
+    const live = m.getLivePositions();
+    expect(live.length).toBe(base.length);
+    // At least one subset node has drifted off its static base coord — the case
+    // the shell magnet must hit; base-only positions would miss it.
+    let drifted = 0;
+    for (const i of [0, 4, 8]) {
+      if (live[i * 2] !== base[i * 2] || live[i * 2 + 1] !== base[i * 2 + 1]) drifted += 1;
+    }
+    expect(drifted).toBeGreaterThan(0);
+    // Non-subset nodes still equal base (their true static position).
+    expect(live[2]).toBe(base[2]);
+  });
+
   it("setBase length-guards against cross-set reuse", () => {
     const h = harness();
     const m = motionWith(h, base10());

@@ -175,6 +175,18 @@ export interface GraphCanvas2DProps {
   links?: Float32Array;
   /** Per-link RGBA (0–1) buffer, length = links.length/2*4. */
   linkColors?: Float32Array;
+  /**
+   * Render links as curved arcs instead of straight segments (construct-time
+   * cosmos config — cannot change after init). Default false: the spatial-graph
+   * surfaces keep their straight links.
+   */
+  curvedLinks?: boolean;
+  /**
+   * Gradient each link from its source point's color to its target point's
+   * color (cosmos derives both from setPointColors, so recolors and point-set
+   * swaps restyle links automatically). Construct-time. Default false.
+   */
+  linkGradient?: boolean;
   /** Theme-driven canvas background color (e.g. '#09090B' for dark zinc). */
   backgroundColor: string;
   /** When true, run cosmos.gl's GPU force simulation (cluster-anchor layout) instead of frozen mode. */
@@ -281,6 +293,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // exposes resize() so the caller can heal after a zoom settles.
     let resizeObserver: ResizeObserver | null = null;
     let healRaf = 0;
+    let removeMiddlePanGuards: (() => void) | null = null;
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
@@ -304,8 +317,12 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             )
           : {}),
         renderLinks: true,
-        linkWidth: 0.7,
-        curvedLinks: false,
+        linkWidth: props.curvedLinks ? 1 : 0.7,
+        curvedLinks: props.curvedLinks === true,
+        // Slightly flatter arc than cosmos's 0.5 default — reads as a gentle
+        // Gephi-style bow, not a balloon loop, at same-author link lengths.
+        curvedLinkControlPointDistance: 0.25,
+        linkColorInterpolateFromEndpoints: props.linkGradient === true,
         linkOpacity: 0.42,
         // Default [50,150]px fades any link longer than 150px to ~7% alpha —
         // at the far-zoom sample almost every same-author link is longer, so
@@ -371,6 +388,49 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
       // Store in stable ref for reactive effects
       graphRef.current = g;
+
+      // Middle-mouse (wheel-click) drag panning — BIM-tool muscle memory
+      // (Revit/Navisworks pan on the middle button). cosmos's d3-zoom ships
+      // d3's default filter, `(!ctrlKey || wheel) && !event.button`, which only
+      // lets button 0 pan. We widen it to accept button 1 too; wheel-zoom and
+      // left-drag pan are unchanged. Reaches the private zoom behavior through a
+      // cast and no-ops if the internal shape ever drifts (left-drag still pans).
+      try {
+        const zoomBehavior = (
+          g as unknown as {
+            zoomInstance?: { behavior?: { filter: (fn: (event: MouseEvent) => boolean) => unknown } };
+          }
+        ).zoomInstance?.behavior;
+        zoomBehavior?.filter((event: MouseEvent) => {
+          if (event.type === "wheel") return !event.ctrlKey;
+          // Left (0) OR middle (1); right-button is left to cosmos's repulsion.
+          return !event.ctrlKey && (event.button === 0 || event.button === 1);
+        });
+      } catch {
+        // Internal API drift — leave the default left-drag pan in place.
+      }
+
+      // The browser fires its middle-click autoscroll on the native `mousedown`
+      // default; d3-zoom starts the pan but never preventDefaults it, so without
+      // this the page shows the autoscroll "pan the whole page" cursor. CAPTURE
+      // phase is mandatory: d3-zoom's mousedowned() calls stopImmediatePropagation
+      // on the canvas, so a bubble listener on this parent div never runs. Capture
+      // runs parent-first, before cosmos's handlers; preventDefault sticks and we
+      // don't stop propagation, so cosmos still drives the graph pan.
+      const onMiddleDown = (event: MouseEvent): void => {
+        if (event.button === 1) event.preventDefault();
+      };
+      const onMiddleAux = (event: MouseEvent): void => {
+        if (event.button === 1) event.preventDefault();
+      };
+      // NOTE: no pointerdown guard — preventDefault on pointerdown suppresses
+      // the compatibility mousedown, which would kill the d3-zoom pan itself.
+      div.addEventListener("mousedown", onMiddleDown, true);
+      div.addEventListener("auxclick", onMiddleAux, true);
+      removeMiddlePanGuards = () => {
+        div.removeEventListener("mousedown", onMiddleDown, true);
+        div.removeEventListener("auxclick", onMiddleAux, true);
+      };
 
       // Luma's canvas ResizeObserver can miss the first non-zero size when this
       // absolute slot settles during hydration. Sync the drawing buffer once at
@@ -999,6 +1059,11 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           g!.setConfigPartial({
             outlinedPointIndices: indices.length > 0 ? indices : undefined,
             focusedPointIndex: indices.length === 1 ? indices[0] : undefined,
+            // Dim the rest: cosmos greys every point NOT in highlightedPointIndices
+            // (pointGreyoutOpacity 0.15), so a lasso selection now fades non-members
+            // — the "dim others" affordance the retired user-graph lasso gave.
+            // Empty selection → undefined clears the greyout.
+            highlightedPointIndices: indices.length > 0 ? indices : undefined,
           });
           g!.render();
         },
@@ -1015,8 +1080,15 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             focusedPointIndex: activeFocus,
             // Highlighting the hovered node greys the rest (pointGreyoutOpacity) —
             // this is the dim-others affordance cosmos's native hover used to give,
-            // lost when the magnetic pass NOOPed onPointMouseOver. undefined clears it.
-            highlightedPointIndices: index !== null ? [index] : undefined,
+            // lost when the magnetic pass NOOPed onPointMouseOver. On hover-end,
+            // fall back to any active lasso selection so leaving a hover restores
+            // the selection dim instead of wiping it; undefined only when neither.
+            highlightedPointIndices:
+              index !== null
+                ? [index]
+                : selectedIndicesRef.current.length > 0
+                  ? selectedIndicesRef.current
+                  : undefined,
           });
           g!.render();
         },
@@ -1027,6 +1099,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     return () => {
       cancelled = true;
       resizeObserver?.disconnect();
+      removeMiddlePanGuards?.();
       if (healRaf) cancelAnimationFrame(healRaf);
       g?.destroy?.();
       graphRef.current = null;

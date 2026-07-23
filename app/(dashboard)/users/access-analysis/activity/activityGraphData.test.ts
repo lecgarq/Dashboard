@@ -23,6 +23,38 @@ describe("activityGraphData", () => {
     expect(filterActivityIndices({ authorId, monthId, selectedMonth: null, authorMask: null })).toBeNull();
   });
 
+  it("filters by author role and stays on the fast null path when all roles are selected", () => {
+    const roleDict = ["Unknown", "Arquitecto", "BIM Manager"];
+    const roleId = Uint16Array.from([0, 1, 2, 1, 2, 1]);
+
+    // All roles selected → no mask → no filter.
+    expect(buildProjectSelectionMask(roleDict, new Set(roleDict))).toBeNull();
+    expect(
+      filterActivityIndices({ authorId, monthId, selectedMonth: null, authorMask: null, roleId, roleMask: null }),
+    ).toBeNull();
+
+    const mask = buildProjectSelectionMask(roleDict, new Set(["BIM Manager"]));
+    expect(Array.from(mask!)).toEqual([0, 0, 1]);
+    expect(Array.from(filterActivityIndices({
+      authorId,
+      monthId,
+      selectedMonth: null,
+      authorMask: null,
+      roleId,
+      roleMask: mask,
+    })!)).toEqual([2, 4]);
+
+    // Composes with the month filter in the same pass.
+    expect(Array.from(filterActivityIndices({
+      authorId,
+      monthId,
+      selectedMonth: 1,
+      authorMask: null,
+      roleId,
+      roleMask: mask,
+    })!)).toEqual([4]);
+  });
+
   it("filters by selected projects and stays on the fast null path when all are selected", () => {
     const projectDict = ["(none)", "guid-a", "guid-b"];
     const projectId = Uint16Array.from([0, 1, 2, 1, 2, 1]);

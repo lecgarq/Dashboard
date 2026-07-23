@@ -80,6 +80,13 @@ export interface ActivityMotion {
   startAmbient(): void;
   stopAmbient(): void;
   isAmbientRunning(): boolean;
+  /**
+   * The live stride-2 positions of the rendered set — the drifting `working`
+   * buffer. Ambient-subset nodes hold their current drifted coords; the rest
+   * equal the base. Read by the shell's magnetic-hover pass so snapping targets
+   * where a node IS (mid-drift), not where its static base sits.
+   */
+  getLivePositions(): Float32Array;
   getStats(): { tier: 0 | 1 | 2; lastWindowFps: number | null };
   dispose(): void;
 }
@@ -203,6 +210,10 @@ export function createActivityMotion(opts: CreateActivityMotionOpts): ActivityMo
 
     isAmbientRunning(): boolean {
       return running;
+    },
+
+    getLivePositions(): Float32Array {
+      return working;
     },
 
     getStats() {

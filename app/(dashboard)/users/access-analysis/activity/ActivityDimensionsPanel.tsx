@@ -16,8 +16,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DimensionSlider } from "../DimensionSlider";
+import { ProfileAvatar } from "@/app/(dashboard)/users/ProfileAvatar";
 
 export const GROUP_BY_NONE = "none";
+
+/** Pull the email out of an author label ("Name <a@x.com>" or bare "a@x.com"). */
+function emailFromLabel(label: string): string {
+  const angle = label.match(/<([^>]+)>/);
+  if (angle) return angle[1].trim();
+  const bare = label.match(/[\w.+-]+@[\w.-]+\.\w+/);
+  return bare ? bare[0] : label;
+}
 
 const AUTHOR_SEARCH_CSS = `
 @keyframes asDropIn { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
@@ -50,9 +59,15 @@ function AuthorSearch({
   authorSuggestions,
   matchedAuthorCount,
   searchPending,
+  authorPhotoByEmail,
 }: Pick<
   ActivityDimensionsPanelProps,
-  "authorQuery" | "onAuthorQueryChange" | "authorSuggestions" | "matchedAuthorCount" | "searchPending"
+  | "authorQuery"
+  | "onAuthorQueryChange"
+  | "authorSuggestions"
+  | "matchedAuthorCount"
+  | "searchPending"
+  | "authorPhotoByEmail"
 >): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,29 +153,33 @@ function AuthorSearch({
               </div>
             ) : (
               <ul className="as-scroll max-h-64 list-none overflow-auto py-1.5">
-                {matches.map((email) => {
-                  const active = email === authorQuery;
+                {matches.map((label) => {
+                  const active = label === authorQuery;
+                  const email = emailFromLabel(label);
                   return (
-                    <li key={email} className="px-1.5">
+                    <li key={label} className="px-1.5">
                       <button
                         type="button"
                         role="option"
                         aria-selected={active}
                         onClick={() => {
-                          onAuthorQueryChange(email);
+                          onAuthorQueryChange(label);
                           setOpen(false);
                         }}
-                        title={email}
+                        title={label}
                         className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
                           active
                             ? "bg-primary/10 text-foreground"
                             : "text-muted-foreground hover:bg-accent hover:text-foreground"
                         }`}
                       >
-                        <span className="text-muted-foreground/70" aria-hidden>
-                          <IconSearch />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate">{email}</span>
+                        <ProfileAvatar
+                          name={label}
+                          email={email}
+                          photoUrl={authorPhotoByEmail?.get(email.toLowerCase()) ?? null}
+                          size="sm"
+                        />
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
                       </button>
                     </li>
                   );
@@ -204,6 +223,13 @@ export interface ActivityDimensionsPanelProps {
   authorSuggestions: readonly string[];
   matchedAuthorCount: number;
   searchPending: boolean;
+  /** Lowercase email → Google-directory photo URL for the suggestion avatars. */
+  authorPhotoByEmail?: ReadonlyMap<string, string>;
+  /** Author-role dict labels (slot 0 = the "Unknown" sentinel), filterable. */
+  roleOptions: readonly string[];
+  roleCounts: ReadonlyMap<string, number>;
+  selectedRoles: ReadonlySet<string>;
+  onRolesChange: (next: Set<string>) => void;
   /** "covered/total" for the active group-by dim (null when none / no sentinel gap). */
   groupCoverageText: string | null;
   groupByLabel: string | null;
@@ -215,6 +241,97 @@ export interface ActivityDimensionsPanelProps {
 }
 
 const fmt = (n: number): string => n.toLocaleString("en-US");
+
+/**
+ * Author-role multi-select — narrows the rendered universe the same way the
+ * project picker does. Sorted by event count; all-selected = no filter.
+ */
+function RoleFilter({
+  roleOptions,
+  roleCounts,
+  selectedRoles,
+  onRolesChange,
+}: Pick<
+  ActivityDimensionsPanelProps,
+  "roleOptions" | "roleCounts" | "selectedRoles" | "onRolesChange"
+>): React.JSX.Element | null {
+  const sorted = useMemo(
+    () =>
+      [...roleOptions].sort(
+        (a, b) => (roleCounts.get(b) ?? 0) - (roleCounts.get(a) ?? 0) || a.localeCompare(b),
+      ),
+    [roleOptions, roleCounts],
+  );
+  if (roleOptions.length === 0) return null;
+
+  const allSelected = selectedRoles.size === roleOptions.length;
+  const toggle = (label: string): void => {
+    const next = new Set(selectedRoles);
+    if (next.has(label)) next.delete(label);
+    else next.add(label);
+    onRolesChange(next);
+  };
+
+  return (
+    <div className="flex flex-col gap-2" data-testid="activity-role-filter">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">Filter by role</span>
+        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+          {allSelected ? "All" : `${fmt(selectedRoles.size)}/${fmt(roleOptions.length)}`}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onRolesChange(new Set(roleOptions))}
+          className="rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-foreground transition hover:border-primary/50 hover:bg-primary/10"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          onClick={() => onRolesChange(new Set())}
+          className="rounded-lg border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+        >
+          None
+        </button>
+      </div>
+      <ul className="as-scroll max-h-52 list-none space-y-0.5 overflow-y-auto rounded-lg border border-border bg-background/60 p-1">
+        {sorted.map((label) => {
+          const on = selectedRoles.has(label);
+          return (
+            <li key={label}>
+              <label
+                title={`${label} · ${fmt(roleCounts.get(label) ?? 0)} events`}
+                className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-[11px] transition-colors ${
+                  on ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                <input type="checkbox" checked={on} onChange={() => toggle(label)} className="sr-only" />
+                <span
+                  aria-hidden
+                  className={`grid h-3.5 w-3.5 shrink-0 place-items-center rounded border transition-all ${
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-muted text-transparent"
+                  }`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="h-2.5 w-2.5" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12.5 10 17.5 19 6.5" />
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+                <span className="shrink-0 font-mono tabular-nums text-[10px] text-muted-foreground">
+                  {fmt(roleCounts.get(label) ?? 0)}
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 export function ActivityDimensionsPanel({
   groupByOptions,
@@ -230,6 +347,11 @@ export function ActivityDimensionsPanel({
   authorSuggestions,
   matchedAuthorCount,
   searchPending,
+  authorPhotoByEmail,
+  roleOptions,
+  roleCounts,
+  selectedRoles,
+  onRolesChange,
   groupCoverageText,
   groupByLabel,
   colorCoverageText,
@@ -254,6 +376,14 @@ export function ActivityDimensionsPanel({
           authorSuggestions={authorSuggestions}
           matchedAuthorCount={matchedAuthorCount}
           searchPending={searchPending}
+          authorPhotoByEmail={authorPhotoByEmail}
+        />
+
+        <RoleFilter
+          roleOptions={roleOptions}
+          roleCounts={roleCounts}
+          selectedRoles={selectedRoles}
+          onRolesChange={onRolesChange}
         />
 
         <label className="flex flex-col gap-2">
