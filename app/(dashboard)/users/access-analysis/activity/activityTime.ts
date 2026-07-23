@@ -1,4 +1,4 @@
-import { LOD_CAP } from "./lodSample";
+import { SAMPLE_CAP } from "./lodSample";
 
 /** Full-corpus row indices for one exact month, in stable payload order. */
 export function indicesForMonth(monthIds: Uint16Array, month: number): Uint32Array {
@@ -14,7 +14,7 @@ export function indicesForMonth(monthIds: Uint16Array, month: number): Uint32Arr
 /** Deterministic uniform L2 sample of an existing full-index set. */
 export function sampleFullIndices(
   fullIndices: Uint32Array,
-  cap: number = LOD_CAP,
+  cap: number = SAMPLE_CAP,
 ): Uint32Array {
   if (fullIndices.length <= cap) return fullIndices;
   const stride = Math.max(1, Math.ceil(fullIndices.length / cap));

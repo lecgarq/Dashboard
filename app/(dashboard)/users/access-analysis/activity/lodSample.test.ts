@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  LOD_CAP,
+  SAMPLE_CAP,
   gather,
   lodLabel,
   sampleStride,
@@ -8,19 +8,27 @@ import {
   viewportIndices,
 } from "./lodSample";
 
-describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
-  it("samples the real corpus size under the cap with a deterministic stride", () => {
+describe("lodSample (ACT-01 rung L2; sample cap raised to full corpus 2026-07-23)", () => {
+  it("renders the full real corpus at stride 1 under SAMPLE_CAP", () => {
     const total = 4_904_886;
-    const stride = sampleStride(total);
-    expect(stride).toBe(25); // ceil(4,904,886 / 200,000)
+    expect(total).toBeLessThanOrEqual(SAMPLE_CAP);
+    expect(sampleStride(total)).toBe(1);
     const idx = uniformSampleIndices(total);
-    expect(idx.length).toBe(Math.ceil(total / stride)); // 196,196
-    expect(idx.length).toBeLessThanOrEqual(LOD_CAP);
+    expect(idx.length).toBe(total);
     expect(idx[0]).toBe(0);
+    expect(idx[idx.length - 1]).toBe(total - 1);
+  });
+
+  it("degrades to deterministic uniform sampling past an explicit cap", () => {
+    const total = 4_904_886;
+    const stride = sampleStride(total, 200_000);
+    expect(stride).toBe(25); // ceil(4,904,886 / 200,000)
+    const idx = uniformSampleIndices(total, 200_000);
+    expect(idx.length).toBe(Math.ceil(total / stride)); // 196,196
     expect(idx[1]).toBe(25);
     expect(idx[idx.length - 1]).toBe((idx.length - 1) * 25);
     // Deterministic: same inputs, identical output.
-    expect(uniformSampleIndices(total)).toEqual(idx);
+    expect(uniformSampleIndices(total, 200_000)).toEqual(idx);
   });
 
   it("renders everything when total fits the cap (stride 1)", () => {
@@ -60,10 +68,11 @@ describe("lodSample (ACT-01 rung L2, owner decision 4)", () => {
     expect(Array.from(gather(sizes, idx, 1))).toEqual([7, 9]);
   });
 
-  it("labels are honest for both modes", () => {
+  it("labels are honest for both modes, including the everything-rendered case", () => {
     expect(lodLabel("sample", 196_196, 4_904_886)).toBe(
       "rendering ~196,196 of 4,904,886 — zoom for detail",
     );
+    expect(lodLabel("sample", 4_904_886, 4_904_886)).toBe("all 4,904,886 events rendered");
     expect(lodLabel("region", 12_345, 4_904_886)).toBe("full detail — 12,345 events in view");
   });
 });

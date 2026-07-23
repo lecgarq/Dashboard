@@ -9,12 +9,21 @@
  * so hover/click/lasso resolve honestly against the full corpus.
  */
 
+/** Region-detail cap: exact viewport membership engages under this count. */
 export const LOD_CAP = 200_000;
+
+/**
+ * Far-zoom sample cap (owner decision 2026-07-23: render EVERYTHING). Sits
+ * above the 4.9M-event corpus, so the "sample" is stride-1 = every event.
+ * ponytail: if the corpus outgrows this, the stride math degrades gracefully
+ * back to uniform sampling — no other code change needed.
+ */
+export const SAMPLE_CAP = 5_000_000;
 
 export type LodMode = "sample" | "region";
 
 /** Deterministic uniform sample: every `stride`-th row index. */
-export function uniformSampleIndices(total: number, cap: number = LOD_CAP): Uint32Array {
+export function uniformSampleIndices(total: number, cap: number = SAMPLE_CAP): Uint32Array {
   if (total <= 0) return new Uint32Array(0);
   const stride = Math.max(1, Math.ceil(total / cap));
   const n = Math.ceil(total / stride);
@@ -23,7 +32,7 @@ export function uniformSampleIndices(total: number, cap: number = LOD_CAP): Uint
   return out;
 }
 
-export function sampleStride(total: number, cap: number = LOD_CAP): number {
+export function sampleStride(total: number, cap: number = SAMPLE_CAP): number {
   return Math.max(1, Math.ceil(total / cap));
 }
 
@@ -86,6 +95,7 @@ const fmt = (n: number): string => n.toLocaleString("en-US");
 /** Muted honest LOD caption for the current mode. */
 export function lodLabel(mode: LodMode, renderedCount: number, totalCount: number): string {
   if (mode === "sample") {
+    if (renderedCount >= totalCount) return `all ${fmt(totalCount)} events rendered`;
     return `rendering ~${fmt(renderedCount)} of ${fmt(totalCount)} — zoom for detail`;
   }
   return `full detail — ${fmt(renderedCount)} events in view`;

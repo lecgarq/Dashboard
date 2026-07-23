@@ -478,11 +478,15 @@ export function ActivityUniverse3D({
           .multiply(ctx.camera.matrixWorldInverse);
         const e = vpMatrix.elements;
         const n = pos.length / 3;
+        // ponytail: per-frame search budget ~200k — at full 4.9M density the
+        // strided scan snaps to a near-nearest neighbour, indistinguishable in
+        // a cloud that dense. Lasso (findPointsInPolygon) stays exact.
+        const step = Math.max(1, Math.round(n / 200_000));
         let best = -1;
         let bestSq = radiusPx * radiusPx;
         let bx = 0;
         let by = 0;
-        for (let i = 0; i < n; i++) {
+        for (let i = 0; i < n; i += step) {
           const b = i * 3;
           const px = pos[b] + (tgt[b] - pos[b]) * mix;
           const py = pos[b + 1] + (tgt[b + 1] - pos[b + 1]) * mix;

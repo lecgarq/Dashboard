@@ -39,6 +39,7 @@ import {
 } from "./useActivityUniversePayload";
 import { buildActivitySizes } from "./activitySizes";
 import {
+  LOD_CAP,
   gather,
   lodLabel,
   sampleStride,
@@ -857,9 +858,13 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
       const a = handle.screenToSpace([sx, sy]);
       const b = handle.screenToSpace([sx + MAGNET_RADIUS_PX, sy]);
       const radiusSq = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2;
+      // ponytail: per-frame search budget ~LOD_CAP — at full 4.9M density the
+      // strided scan may snap to a near-nearest neighbour (visually identical
+      // in a dense cloud); zoomed-in region sets are small, so step = 1 there.
+      const step = Math.max(1, Math.round(n / LOD_CAP));
       let best = -1;
       let bestSq = radiusSq;
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < n; i += step) {
         const dx = positions2[i * 2] - a[0];
         const dy = positions2[i * 2 + 1] - a[1];
         const d = dx * dx + dy * dy;
