@@ -10,6 +10,7 @@
  */
 
 import type { ColumnArray } from "@/lib/acc/columnarPayload";
+import { MONTH_ABBR } from "@/lib/acc/activityWeeks";
 
 export interface ActivityHoverLabels {
   verb: string;
@@ -26,14 +27,12 @@ export interface ActivityHoverLabels {
   company: string;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 /** monthId (months since floor "YYYY-MM") → "MMM YYYY". */
 export function monthLabel(monthFloor: string, monthId: number): string {
   const [y, m] = monthFloor.split("-").map(Number);
   if (!Number.isFinite(y) || !Number.isFinite(m)) return monthFloor;
   const total = (y * 12 + (m - 1)) + monthId;
-  return `${MONTHS[total % 12]} ${Math.floor(total / 12)}`;
+  return `${MONTH_ABBR[total % 12]} ${Math.floor(total / 12)}`;
 }
 
 const dictAt = (dict: unknown, i: number): string =>

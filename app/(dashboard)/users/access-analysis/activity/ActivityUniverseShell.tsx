@@ -80,7 +80,7 @@ import {
   type ActivityDimensionOption,
   type ActivityFilterGroup,
 } from "./ActivityDimensionsPanel";
-import { weekLabel, weekMonthLabel } from "@/lib/acc/activityWeeks";
+import { MONTH_ABBR, weekDate, weekLabel } from "@/lib/acc/activityWeeks";
 import { installActivityTestBridge, setActivityTestState } from "./activityTestBridge";
 import { monthLabel, resolveActivityHoverLabels, type ActivityHoverLabels } from "./activityEventLabels";
 import { ActivityUniverse3D, type ActivityUniverse3DHandle } from "./ActivityUniverse3D";
@@ -237,18 +237,19 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
   );
 
   // Month anchors for the week track: the first week that opens each new month.
+  // Year shown only where it changes (and on the first tick) — ~20 labels have
+  // to share one track without colliding.
   const monthTicks = useMemo(() => {
     if (!byWeek) return [] as Array<{ week: number; label: string }>;
     const out: Array<{ week: number; label: string }> = [];
-    let prev = "";
+    let prevMonth = -1;
     for (let w = 0; w < timeCount; w++) {
-      const m = weekMonthLabel(weekFloor, w);
-      if (m === prev) continue;
-      prev = m;
-      const [mon, year] = m.split(" ");
-      // Year only where it changes (and on the first tick) — 20 labels have to
-      // fit one track without colliding.
-      out.push({ week: w, label: mon === "Jan" || out.length === 0 ? `${mon} ’${year.slice(2)}` : mon });
+      const d = weekDate(weekFloor, w);
+      if (!d || d.getUTCMonth() === prevMonth) continue;
+      prevMonth = d.getUTCMonth();
+      const mon = MONTH_ABBR[prevMonth];
+      const newYear = prevMonth === 0 || out.length === 0;
+      out.push({ week: w, label: newYear ? `${mon} ’${String(d.getUTCFullYear()).slice(2)}` : mon });
     }
     return out;
   }, [byWeek, weekFloor, timeCount]);

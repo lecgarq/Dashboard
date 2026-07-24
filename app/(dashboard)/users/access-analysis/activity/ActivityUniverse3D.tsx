@@ -597,7 +597,7 @@ export function ActivityUniverse3D({
         ctx.controls.autoRotate = false;
         ctx.flight = {
           t0: performance.now(),
-          dur: reducedMotion ? 0 : durationMs,
+          dur: durationMs, // caller already zeroes this under reduced motion
           fromTarget: ctx.controls.target.clone(),
           toTarget: to,
           fromCam: ctx.camera.position.clone(),

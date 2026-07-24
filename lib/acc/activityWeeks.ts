@@ -9,7 +9,7 @@
  */
 
 const DAY_MS = 86_400_000;
-export const WEEK_MS = 7 * DAY_MS;
+const WEEK_MS = 7 * DAY_MS;
 
 /**
  * Sentinel weekId for a row whose source event timestamp could not be resolved
@@ -18,7 +18,8 @@ export const WEEK_MS = 7 * DAY_MS;
  */
 export const WEEK_UNKNOWN = 65_535;
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** Shared by every "MMM"-style label in the activity surface — one copy only. */
+export const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
 /**
  * "YYYY-MM" corpus month floor → the UTC Monday on/before that month's first
@@ -40,23 +41,18 @@ export function weekFloorMs(weekFloor: string): number {
 }
 
 /** Whole weeks between the floor and `ts`. Clamped at 0 (pre-floor rows). */
-export function weekIdFor(weekFloorMillis: number, ts: Date | number): number {
-  const t = typeof ts === "number" ? ts : ts.getTime();
-  return Math.max(0, Math.floor((t - weekFloorMillis) / WEEK_MS));
+export function weekIdFor(weekFloorMillis: number, ts: Date): number {
+  return Math.max(0, Math.floor((ts.getTime() - weekFloorMillis) / WEEK_MS));
+}
+
+/** UTC Monday starting `weekId`; null on an unparseable floor (never Invalid Date). */
+export function weekDate(weekFloor: string, weekId: number): Date | null {
+  const base = weekFloorMs(weekFloor);
+  return Number.isFinite(base) ? new Date(base + weekId * WEEK_MS) : null;
 }
 
 /** weekId → "Dec 2, 2024" (the Monday that starts the week). */
 export function weekLabel(weekFloor: string, weekId: number): string {
-  const base = weekFloorMs(weekFloor);
-  if (!Number.isFinite(base)) return weekFloor;
-  const d = new Date(base + weekId * WEEK_MS);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
-}
-
-/** weekId → "MMM YYYY" of the week's Monday — the scrubber's month tick text. */
-export function weekMonthLabel(weekFloor: string, weekId: number): string {
-  const base = weekFloorMs(weekFloor);
-  if (!Number.isFinite(base)) return weekFloor;
-  const d = new Date(base + weekId * WEEK_MS);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const d = weekDate(weekFloor, weekId);
+  return d ? `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}` : weekFloor;
 }
