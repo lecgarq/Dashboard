@@ -12,4 +12,12 @@ describe("dashboard navigation", () => {
       ]),
     );
   });
+
+  it("no longer exposes the retired Sync Center, Clash Detection, Sim Automation, or Settings destinations", () => {
+    const hrefs = MODULE_NAV_ITEMS.map((item) => item.href);
+    expect(hrefs).not.toContain("/sync-center");
+    expect(hrefs).not.toContain("/clash-detection");
+    expect(hrefs).not.toContain("/sim-automation");
+    expect(hrefs).not.toContain("/settings/users");
+  });
 });

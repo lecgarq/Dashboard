@@ -10,7 +10,7 @@ import { useDashboardAuth } from "@/components/providers/dashboard-auth-provider
 import { startOAuthConnect } from "@/lib/google/oauth-connect";
 import { useParticleZone } from "@/lib/client/particle-zones";
 import { cn } from "@/lib/core/utils";
-import { MODULE_NAV_ITEMS, STAFF_NAV_ITEM, isNavItemActive } from "./navigation";
+import { MODULE_NAV_ITEMS, isNavItemActive } from "./navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/core/trpc";
 import { SyncFreshnessPill } from "./SyncFreshnessPill";
@@ -233,7 +233,7 @@ export function Sidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const { user, isAdmin, hasModuleAccess } = useDashboardAuth();
+  const { user, hasModuleAccess } = useDashboardAuth();
   const DashboardIcon = MODULE_NAV_ITEMS[0].icon;
   const sidebarRef = useRef<HTMLElement>(null);
   useParticleZone(sidebarRef, "sidebar");
@@ -273,8 +273,7 @@ export function Sidebar() {
     // Only prefetch route JS chunks (lightweight, no data fetching)
     // Data warming happens on hover via prefetchModule
     visibleNavItems.forEach((item) => router.prefetch(item.href));
-    if (isAdmin) router.prefetch(STAFF_NAV_ITEM.href);
-  }, [isAdmin, router, visibleNavItems]);
+  }, [router, visibleNavItems]);
 
   return (
     <>
@@ -436,42 +435,6 @@ export function Sidebar() {
             );
           })()}
 
-          {isAdmin && (
-            <>
-              <div className="mt-4 mb-2 px-3">
-                {!collapsed && (
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.28em]">
-                    Staff
-                  </span>
-                )}
-              </div>
-              <Link
-                href={STAFF_NAV_ITEM.href}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-smooth",
-                  pathname === STAFF_NAV_ITEM.href
-                    ? "bg-gradient-to-r from-primary to-chart-1 text-white shadow-[0_18px_40px_-24px_rgba(20,33,61,0.8)]"
-                    : "text-muted-foreground hover:bg-accent hover:text-primary",
-                  collapsed && "justify-center px-2"
-                )}
-                title={collapsed ? STAFF_NAV_ITEM.label : undefined}
-              >
-                {pathname === STAFF_NAV_ITEM.href && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
-                )}
-                <STAFF_NAV_ITEM.icon
-                  size={18}
-                  className={cn(
-                    "shrink-0 transition-smooth",
-                    pathname === STAFF_NAV_ITEM.href
-                      ? "text-white"
-                      : "text-muted-foreground group-hover:text-sidebar-foreground"
-                  )}
-                />
-                {!collapsed && <span className="truncate font-medium">{STAFF_NAV_ITEM.label}</span>}
-              </Link>
-            </>
-          )}
         </nav>
 
         <div className="border-t border-sidebar-border px-3 py-3">
