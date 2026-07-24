@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
-import { Activity, CalendarClock, CheckCircle2, Sparkles, Users2 } from "lucide-react";
+import { CalendarClock, Sparkles, Users2 } from "lucide-react";
 
 
 import { Header } from "@/components/layout/Header";
@@ -26,20 +26,6 @@ export default function HomeClient() {
   });
 
   const stats = [
-    {
-      label: "Families complete",
-      value: `${dashboard?.families.rate ?? 0}%`,
-      detail: `${dashboard?.families.done ?? 0} of ${dashboard?.families.total ?? 0} delivered`,
-      icon: CheckCircle2,
-      tone: "from-sky-500/14 to-sky-500/6 text-sky-700 dark:text-sky-300",
-    },
-    {
-      label: "Clash QA",
-      value: `${dashboard?.clash.rate ?? 0}%`,
-      detail: `${dashboard?.clash.done ?? 0} of ${dashboard?.clash.total ?? 0} resolved`,
-      icon: Activity,
-      tone: "from-amber-500/14 to-amber-500/6 text-amber-700 dark:text-amber-300",
-    },
     {
       label: "Team load",
       value: `${dashboard?.capacity ?? 0}%`,

@@ -31,10 +31,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   await Promise.allSettled([
-    helpers.families.getAll.prefetch(),
-    helpers.clash.getWikiSections.prefetch(),
-    helpers.sim.getWikiSections.prefetch(),
-    helpers.exam.getExams.prefetch(),
     helpers.kpi.getHomeDashboard.prefetch(),
     helpers.trello.getBoards.prefetch(),
   ]);

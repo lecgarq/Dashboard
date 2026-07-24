@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./shadcn-tailwind.css";
-@import "../components/clash/wiki-editor/table-node/styles/table-overrides.css";
 
 @theme inline {
   --color-background: var(--background);

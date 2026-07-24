@@ -11,12 +11,8 @@ const configuredAuthOrigins = new Set(getConfiguredAuthOrigins());
 const PUBLIC_PATHS = ["/login", "/register", "/unauthorized", "/forgot-password", "/reset-password", "/api/health", "/duckdb-wasm/"];
 
 const MODULE_ROUTES: Record<string, string> = {
-  "/families": "families",
-  "/clash-detection": "clash",
-  "/exam": "exam",
   "/trello": "trello",
   "/lod-checker": "lod",
-  "/sim-automation": "sim",
 };
 
 function isLocalOrPrivateHostname(hostname: string) {
