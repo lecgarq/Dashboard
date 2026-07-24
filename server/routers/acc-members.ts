@@ -21,6 +21,12 @@ import { windowToDateRange } from "@/lib/acc/timelineBucketing";
 import { analyzeGovernanceCompliance, type ComplianceSummary } from "@/lib/acc/governanceCompliance";
 import { analyzeDeepFindings, combineComplianceFindings } from "@/lib/acc/deepFindings";
 import { getCachedAccMembersEnrichedUsers } from "@/lib/server/acc-hot-cache";
+import {
+  countLegacyStaleMembersByUnifiedActivity,
+  countUnifiedActivityRows,
+  findUnifiedActivityDate,
+  listUnifiedActiveEmails,
+} from "@/lib/server/unifiedActivitySource";
 
 // In-memory 15-minute cache for the combined compliance report. The deep findings
 // run ~10 heavy queries over ~1M permission rows, so we compute at most once per
@@ -373,33 +379,22 @@ async function getDcKpiSourceStats(
   }
   if (emailSet.size === 0) return null;
 
-  const [adminRows, activeEmailRows] = await Promise.all([
+  const [adminRows, activeEmails] = await Promise.all([
     db.accDcProjectUserProduct.groupBy({
       by: ["userId"],
       where: { accessLevel: "project_admin" },
       _count: { userId: true },
     }),
-    db.accActivity.groupBy({
-      by: ["userEmail"],
-      where: {
-        userEmail: { in: [...emailSet] },
-        createdAt: { gte: range.start, lte: range.end },
-      },
-      _count: { _all: true },
-    }),
+    listUnifiedActiveEmails(db, { emails: [...emailSet], range }),
   ]);
 
-  const activeEmails = new Set<string>();
-  for (const row of activeEmailRows as Array<{ userEmail: string | null }>) {
-    const email = row.userEmail?.toLowerCase();
-    if (email) activeEmails.add(email);
-  }
+  const activeEmailSet = new Set(activeEmails.map((email) => email.toLowerCase()));
 
   return {
     members: emailSet.size,
     membersAtStart: window === "all" ? 0 : emailSet.size,
     activeAdmins: (adminRows as Array<{ userId: string }>).filter((row) => activeUserIds.has(row.userId)).length,
-    staleMembers: Math.max(0, emailSet.size - activeEmails.size),
+    staleMembers: Math.max(0, emailSet.size - activeEmailSet.size),
   };
 }
 
@@ -417,12 +412,7 @@ async function getLegacyKpiSourceStats(
   )) as { count: number }[];
   const activeAdmins = adminRows[0]?.count ?? 0;
 
-  const staleRows = (await db.$queryRawUnsafe(
-    `SELECT COUNT(*)::int AS count FROM "AccMemberCache" mc WHERE NOT EXISTS (SELECT 1 FROM "AccActivity" a WHERE LOWER(a."userEmail") = LOWER(mc.email) AND a."createdAt" >= $1 AND a."createdAt" <= $2)`,
-    range.start,
-    range.end,
-  )) as { count: number }[];
-  const staleMembers = staleRows[0]?.count ?? 0;
+  const staleMembers = await countLegacyStaleMembersByUnifiedActivity(db, range);
 
   return { members, membersAtStart, activeAdmins, staleMembers };
 }
@@ -442,10 +432,11 @@ export const accMembersRouter = router({
    * Module Access section.
    *
    * Returns one row per (active) project the user is a member of, carrying the
-   * raw `products` JSON straight from `AccProjectMember`. The client side
-   * uses `parseProductsJson()` (lib/acc/productsTierMap.ts) to convert each
-   * row into `ProductTier[]` — keeping the parse/validation logic in one place
-   * and matching the LIST-04 lock (no raw JSON rendering, unknown modules surfaced).
+   * raw `products` JSON straight from `AccProjectMember`; the caller is expected
+   * to parse it rather than render it (LIST-04 lock: no raw JSON rendering,
+   * unknown modules surfaced). VERIFY: currently no UI consumer — the side-panel
+   * Module Access section and its `parseProductsJson()` parser
+   * (lib/acc/productsTierMap.ts) were both removed, so only tests call this.
    *
    * Filter to `project.status === "active"` per the soft-delete contract (PROJ-02);
    * deleted projects must not pollute Module Access. NEVER promote this onto
@@ -526,28 +517,25 @@ export const accMembersRouter = router({
         end: range.start,
       };
 
-      const accessChanges = await ctx.db.accActivity.count({
-        where: { createdAt: { gte: range.start, lte: range.end } },
+      const accessChanges = await countUnifiedActivityRows(ctx.db, {
+        createdAt: { gte: range.start, lte: range.end },
       });
-      const priorAccessChanges = await ctx.db.accActivity.count({
-        where: { createdAt: { gte: priorRange.start, lte: priorRange.end } },
+      const priorAccessChanges = await countUnifiedActivityRows(ctx.db, {
+        createdAt: { gte: priorRange.start, lte: priorRange.end },
       });
 
       const kpiSource =
         (await getDcKpiSourceStats(ctx.db, range, input.window)) ??
         (await getLegacyKpiSourceStats(ctx.db, range));
 
-      const earliest = await ctx.db.accActivity.findFirst({
-        orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
-      });
+      const earliest = await findUnifiedActivityDate(ctx.db, { order: "asc" });
 
       return {
         members: { value: kpiSource.members, delta: kpiSource.members - kpiSource.membersAtStart },
         accessChanges: { value: accessChanges, delta: accessChanges - priorAccessChanges },
         activeAdmins: { value: kpiSource.activeAdmins, delta: 0 },
         staleMembers: { value: kpiSource.staleMembers, delta: 0 },
-        dataEarliestEvent: earliest?.createdAt.toISOString() ?? null,
+        dataEarliestEvent: earliest?.toISOString() ?? null,
       };
     }),
 
