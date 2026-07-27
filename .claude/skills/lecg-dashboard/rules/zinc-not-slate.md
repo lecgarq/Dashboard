@@ -18,7 +18,8 @@ exclusively.
 ## Why
 
 Slate has a blue undertone that conflicts with the established dark theme. The
-PROJECT.md and DARK_MODE.md conventions record zinc as the canonical choice.
+shipped tokens in `app/globals.css` (`.dark { --background: #09090B }`) and
+`DESIGN.md` §2 are the authority; nothing else records the palette.
 
 ## Verification
 

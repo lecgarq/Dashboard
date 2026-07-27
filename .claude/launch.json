@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "next-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:next"],
+      "port": 3000
+    },
+    {
+      "name": "dev-stack",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "prisma-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "db:studio"],
+      "port": 5555
+    },
+    {
+      "name": "yjs-server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "yjs:server"],
+      "port": 4444
+    },
+    {
+      "name": "lod-engine",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "lod:engine"],
+      "port": 8091
+    }
+  ]
+}

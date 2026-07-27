@@ -91,7 +91,7 @@ UAT fetch-once gate verifies this.
 ## Page Scroll Ownership
 
 Page roots must own scroll: `h-full overflow-y-auto`. Do not nest scrolling
-containers. This is recorded in PROJECT.md and DARK_MODE.md conventions.
+containers. This is recorded in `DESIGN.md` §5.
 
 ---
 
