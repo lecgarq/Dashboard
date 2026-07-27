@@ -93,6 +93,36 @@ describe("mergeEChartsTheme", () => {
     mergeEChartsTheme(option, true);
     expect(JSON.stringify(option)).toBe(original);
   });
+
+  it("enables the aria description component (decal stays off)", () => {
+    const result = mergeEChartsTheme({}, true);
+    expect(result.aria).toMatchObject({ enabled: true });
+    expect((result.aria as { decal?: unknown })?.decal).toBeUndefined();
+  });
+
+  it("clamps series motion to the 200ms budget and swaps banned easings (no input mutation)", () => {
+    const option = {
+      animationDuration: 700,
+      series: [
+        {
+          type: "pie" as const,
+          animationEasing: "elasticOut" as const,
+          animationDuration: 800,
+          animationDurationUpdate: 550,
+          data: [{ value: 5 }],
+        },
+      ],
+    } satisfies EChartsOption;
+    const before = JSON.stringify(option);
+    const result = mergeEChartsTheme(option, true);
+    const series = result.series as Record<string, unknown>[];
+    expect(result.animationDuration).toBe(200);
+    expect(series[0].animationDuration).toBe(200);
+    expect(series[0].animationDurationUpdate).toBe(200);
+    expect(series[0].animationEasing).toBe("cubicOut");
+    // Caller's option object untouched — clamping copies, never mutates.
+    expect(JSON.stringify(option)).toBe(before);
+  });
 });
 
 // ------------------------------------------------------------------

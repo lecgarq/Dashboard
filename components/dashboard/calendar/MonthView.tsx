@@ -189,7 +189,7 @@ function DayPopover({
               <button
                 onClick={() => { onCreateGCalEvent(day); onClose(); }}
                 title="New calendar event"
-                className="p-1 rounded-lg hover:bg-purple-500/20 text-purple-400/60 hover:text-purple-300 transition-colors"
+                className="p-1 rounded-lg hover:bg-chart-5/20 text-chart-5/60 hover:text-chart-5 transition-colors"
               >
                 <CalendarIcon className="w-3.5 h-3.5" />
               </button>
@@ -223,12 +223,12 @@ function DayPopover({
                   "w-full flex items-center gap-2 px-3 py-2 rounded-xl border transition-colors text-left",
                   isPast
                     ? "bg-muted/20 border-border/30 hover:bg-muted/40 opacity-70"
-                    : "bg-purple-500/[0.06] border-purple-500/15 hover:bg-purple-500/15"
+                    : "bg-chart-5/[0.06] border-chart-5/15 hover:bg-chart-5/15"
                 )}
               >
                 <span className={cn(
                   "w-1.5 h-1.5 rounded-full shrink-0",
-                  isPast ? "bg-muted-foreground/50" : "bg-purple-400"
+                  isPast ? "bg-muted-foreground/50" : "bg-chart-5"
                 )} />
                 <div className="flex-1 min-w-0">
                   <span className={cn(
@@ -239,7 +239,7 @@ function DayPopover({
                   </span>
                   <span className={cn(
                     "block text-[10px] mt-0.5",
-                    isPast ? "text-muted-foreground/40" : "text-purple-400/60"
+                    isPast ? "text-muted-foreground/40" : "text-chart-5/60"
                   )}>
                     {ev.allDay ? "All day" : format(new Date(ev.start), "h:mm a")}
                     {ev.end && !ev.allDay && ` – ${format(new Date(ev.end), "h:mm a")}`}
@@ -502,7 +502,7 @@ export function MonthView({
                 )}
               </div>
 
-              {/* Compact pills — gcal (purple) + tasks (blue/green), max 3 total, no scroll */}
+              {/* Compact pills — gcal (wine) + tasks (blue/green), max 3 total, no scroll */}
               <div className="flex-1 flex flex-col gap-[2px] px-1.5 pb-1.5 min-h-0">
                 {(() => {
                   const dayGcal = getGcalForDay(day);
@@ -520,12 +520,12 @@ export function MonthView({
                           "flex items-center gap-1 px-1.5 py-[2px] rounded-md text-[9px] font-medium leading-tight truncate w-full text-left transition-colors",
                           isPast
                             ? "bg-muted/30 text-muted-foreground/50 hover:bg-muted/50"
-                            : "bg-purple-500/[0.08] text-purple-300/80 hover:bg-purple-500/20"
+                            : "bg-chart-5/[0.08] text-chart-5/80 hover:bg-chart-5/20"
                         )}
                       >
                         <span className={cn(
                           "w-1.5 h-1.5 rounded-full shrink-0",
-                          isPast ? "bg-muted-foreground/40" : "bg-purple-400"
+                          isPast ? "bg-muted-foreground/40" : "bg-chart-5"
                         )} />
                         <span className={cn("truncate", isPast && "line-through opacity-70")}>{ev.title}</span>
                       </button>

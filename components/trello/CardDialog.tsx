@@ -719,7 +719,7 @@ export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDia
                   />
                   <Button
                     size="sm"
-                    className="self-end h-8 w-8 p-0 gradient-accent text-white"
+                    className="self-end h-8 w-8 p-0 bg-primary text-primary-foreground hover:opacity-90"
                     disabled={!commentText.trim() || addComment.isPending}
                     onClick={() => addComment.mutate({ cardId: card.id, text: commentText })}
                   >
@@ -885,7 +885,7 @@ export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDia
             {/* Action buttons */}
             <div className="space-y-1.5 pt-2 border-t border-border/40">
               {isEditor && (
-                <Button className="w-full h-8 text-xs gradient-accent text-white hover:opacity-90" onClick={handleSave} disabled={!isDirty || updateCard.isPending}>
+                <Button className="w-full h-8 text-xs bg-primary text-primary-foreground hover:opacity-90" onClick={handleSave} disabled={!isDirty || updateCard.isPending}>
                   {updateCard.isPending ? "Saving…" : "Save changes"}
                 </Button>
               )}
