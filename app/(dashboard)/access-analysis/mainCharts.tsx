@@ -59,18 +59,15 @@ export async function MainCharts() {
   // Stays well under the ~12-entry fan-out warning threshold
   // (PITFALLS.md Pitfall 4) while keeping the load flat and parallel — no
   // waterfall.
-  const [
-    view,
-    moduleRows,
-    activityActorRows,
-    coordinationData,
-    coverage,
-    terrainProjects,
-    timeline,
-    dcCoverage,
-    ingestFreshness,
-    provisionedModuleRows,
-  ] = await Promise.all([
+  // SETTLED, not all-or-nothing. A plain Promise.all rejects the whole fan-out
+  // on a single loader failure, which throws past <Suspense> to the route error
+  // boundary and replaces KPIs, picker and all six tabs with a generic panel
+  // printing the raw error message — on a projector, in front of stakeholders.
+  // Every consumer prop below is optional and every panel already gates on
+  // presence, so a failed source can degrade to one empty panel instead.
+  // `failedSources` carries the names up so that emptiness is LABELLED as a
+  // fetch failure (SourcesFailedBanner) and never reads as "no data".
+  const settled = await Promise.allSettled([
     loadInstanceView(),
     loadModuleActivity(),
     loadActivityByActor(),
@@ -82,6 +79,26 @@ export async function MainCharts() {
     loadIngestFreshness(),
     loadProvisionedModules(),
   ]);
+
+  const failedSources: string[] = [];
+  /** Unwrap one settled loader, recording its product-facing name on failure. */
+  function take<T>(result: PromiseSettledResult<T>, label: string): T | undefined {
+    if (result.status === "fulfilled") return result.value;
+    failedSources.push(label);
+    console.error(`[access-analysis] loader failed: ${label}`, result.reason);
+    return undefined;
+  }
+
+  const view = take(settled[0], "memberships") ?? [];
+  const moduleRows = take(settled[1], "module activity") ?? [];
+  const activityActorRows = take(settled[2], "activity by actor");
+  const coordinationData = take(settled[3], "coordination");
+  const coverage = take(settled[4], "project coverage");
+  const terrainProjects = take(settled[5], "folder terrain projects");
+  const timeline = take(settled[6], "activity timeline");
+  const dcCoverage = take(settled[7], "Data Connector coverage");
+  const ingestFreshness = take(settled[8], "ingest freshness");
+  const provisionedModuleRows = take(settled[9], "provisioned modules");
 
   // Slim per-membership rows for client-side filtering.
   const rows: ProjectRoleRow[] = view.map((v) => ({
@@ -105,9 +122,9 @@ export async function MainCharts() {
     <AccessAnalysisCharts
       roleRows={rows}
       moduleRows={moduleRows}
-      timelineRows={timeline.rows}
-      dataFloor={timeline.dataFloor}
-      floorByProject={timeline.floorByProject}
+      timelineRows={timeline?.rows}
+      dataFloor={timeline?.dataFloor}
+      floorByProject={timeline?.floorByProject}
       activityActorRows={activityActorRows}
       membershipRows={membershipRows}
       coordinationData={coordinationData}
@@ -131,6 +148,7 @@ export async function MainCharts() {
       loadAdminsPerProject={loadAdminsPerProjectAction}
       ingestFreshness={ingestFreshness}
       provisionedModuleRows={provisionedModuleRows}
+      failedSources={failedSources}
     />
   );
 }

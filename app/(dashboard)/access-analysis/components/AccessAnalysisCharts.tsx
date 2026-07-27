@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { StatStrip, type Stat } from "@/components/ui/stat-tile";
+import { SourcesFailedBanner } from "./LoadFailedNotice";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProjectPicker } from "./ProjectPicker";
 import { OverviewTabPanel } from "./OverviewTabPanel";
@@ -52,6 +53,38 @@ const AuthorProfileDrawer = dynamic(
   () => import("./AuthorProfileDrawer").then((m) => m.AuthorProfileDrawer),
   { ssr: false },
 );
+
+/**
+ * One lazy per-tab loader: fires at most once on first activation (ref flag —
+ * a no-session `null` result must not refetch on tab revisit), tracks loading,
+ * and distinguishes a REJECTED promise (`failed`, retryable) from an honest
+ * empty/null resolve. `retry` clears the failure and re-fires the same load.
+ */
+function useLazyAction<T>(active: boolean, load: (() => Promise<T | null>) | undefined) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const startedRef = useRef(false);
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  const run = useCallback(() => {
+    const fn = loadRef.current;
+    if (!fn) return;
+    setFailed(false);
+    setLoading(true);
+    fn()
+      .then((d) => setData(d))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => {
+    if (active && loadRef.current && !startedRef.current) {
+      startedRef.current = true;
+      run();
+    }
+  }, [active, run]);
+  return { data, loading, failed, retry: run };
+}
 
 /**
  * The whole Access Analysis surface behind ONE project picker. The selected set
@@ -112,6 +145,7 @@ export function AccessAnalysisCharts({
   loadAdminsPerProject,
   ingestFreshness,
   provisionedModuleRows,
+  failedSources,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
@@ -159,6 +193,10 @@ export function AccessAnalysisCharts({
   /** UAT-21.1-01: eager Overview-tab prop (mainCharts.tsx's Promise.all fan-out, 9->10 — Overview is
    *  never lazy-gated). Presence gates the Provisioned-modules panel. */
   provisionedModuleRows?: ProvisionedModuleRow[];
+  /** Product-facing names of eager server loaders that REJECTED (mainCharts.tsx settles
+   *  per-loader). Their panels render empty; this labels that emptiness as a fetch
+   *  failure so it never reads as "no data". */
+  failedSources?: string[];
 }) {
   // Union of every source that can name a project — including
   // `provisionedModuleRows` (AccProjectMember covers all 1,153 live projects;
@@ -291,89 +329,29 @@ export function AccessAnalysisCharts({
   // (Pitfall 5 still respected — plain useState, no useRouter/useSearchParams).
   const [tab, setTab] = useState("overview");
 
-  // Lazy-fetched ENG-01/PERM-01/UAT-6 slices. `null` = not-yet-resolved OR a
-  // no-session loader result (both cases: the panel below renders its own
-  // honest empty state — never a fake chart). Ref flags (not the `rows ===
-  // null` check the data itself would give) gate each fetch to fire AT MOST
-  // ONCE per page load, so a no-session `null` result never re-triggers on
-  // every tab revisit.
-  const [activityRecencyRows, setActivityRecencyRows] = useState<ActivityRecencyRow[] | null>(null);
-  const [activityRecencyLoading, setActivityRecencyLoading] = useState(false);
-  const activityRecencyFetchedRef = useRef(false);
-  const [permissionLevelRows, setPermissionLevelRows] = useState<PermissionLevelRow[] | null>(null);
-  const [permissionLevelLoading, setPermissionLevelLoading] = useState(false);
-  const permissionLevelFetchedRef = useRef(false);
-  const [permissionUserCounts, setPermissionUserCounts] = useState<PermissionUserCounts | null>(null);
-  const [permissionUsersLoading, setPermissionUsersLoading] = useState(false);
-  const permissionUsersFetchedRef = useRef(false);
-  const [folderScopedActivityRows, setFolderScopedActivityRows] = useState<FolderActivityActorRow[] | null>(null);
-  const [folderScopedActivityLoading, setFolderScopedActivityLoading] = useState(false);
-  const folderScopedActivityFetchedRef = useRef(false);
-  // Phase 21 ISSUE-02/03: same ref-flag lazy fetch-once pattern, keyed to the Projects tab.
-  const [issueFunnelData, setIssueFunnelData] = useState<IssueFunnelData | null>(null);
-  const [issueFunnelLoading, setIssueFunnelLoading] = useState(false);
-  const issueFunnelFetchedRef = useRef(false);
-  // Reviews/RFIs/Submittals donuts: same ref-flag lazy fetch-once pattern, Projects tab.
-  const [workflowToolRows, setWorkflowToolRows] = useState<ModuleActivityRow[] | null>(null);
-  const [workflowToolsLoading, setWorkflowToolsLoading] = useState(false);
-  const workflowToolsFetchedRef = useRef(false);
-  // Admins-per-project: same ref-flag lazy fetch-once pattern, Projects tab.
-  const [adminsData, setAdminsData] = useState<AdminsPerProjectData | null>(null);
-  const [adminsLoading, setAdminsLoading] = useState(false);
-  const adminsFetchedRef = useRef(false);
-
-  useEffect(() => {
-    if ((tab === "roles" || tab === "users") && loadActivityRecency && !activityRecencyFetchedRef.current) {
-      activityRecencyFetchedRef.current = true;
-      setActivityRecencyLoading(true);
-      void loadActivityRecency()
-        .then((rows) => setActivityRecencyRows(rows))
-        .finally(() => setActivityRecencyLoading(false));
-    }
-    if (tab === "roles" && loadPermissionLevel && !permissionLevelFetchedRef.current) {
-      permissionLevelFetchedRef.current = true;
-      setPermissionLevelLoading(true);
-      void loadPermissionLevel()
-        .then((rows) => setPermissionLevelRows(rows))
-        .finally(() => setPermissionLevelLoading(false));
-    }
-    if (tab === "users" && loadPermissionUsers && !permissionUsersFetchedRef.current) {
-      permissionUsersFetchedRef.current = true;
-      setPermissionUsersLoading(true);
-      void loadPermissionUsers()
-        .then((counts) => setPermissionUserCounts(counts))
-        .finally(() => setPermissionUsersLoading(false));
-    }
-    if (tab === "companies" && loadFolderScopedActivity && !folderScopedActivityFetchedRef.current) {
-      folderScopedActivityFetchedRef.current = true;
-      setFolderScopedActivityLoading(true);
-      void loadFolderScopedActivity()
-        .then((rows) => setFolderScopedActivityRows(rows))
-        .finally(() => setFolderScopedActivityLoading(false));
-    }
-    if (tab === "projects" && loadIssueFunnel && !issueFunnelFetchedRef.current) {
-      // Ref set BEFORE the await so a no-session `null` result never refetches.
-      issueFunnelFetchedRef.current = true;
-      setIssueFunnelLoading(true);
-      void loadIssueFunnel()
-        .then((data) => setIssueFunnelData(data))
-        .finally(() => setIssueFunnelLoading(false));
-    }
-    if (tab === "projects" && loadWorkflowTools && !workflowToolsFetchedRef.current) {
-      workflowToolsFetchedRef.current = true;
-      setWorkflowToolsLoading(true);
-      void loadWorkflowTools()
-        .then((rows) => setWorkflowToolRows(rows))
-        .finally(() => setWorkflowToolsLoading(false));
-    }
-    if (tab === "projects" && loadAdminsPerProject && !adminsFetchedRef.current) {
-      adminsFetchedRef.current = true;
-      setAdminsLoading(true);
-      void loadAdminsPerProject()
-        .then((data) => setAdminsData(data))
-        .finally(() => setAdminsLoading(false));
-    }
-  }, [tab, loadActivityRecency, loadPermissionLevel, loadFolderScopedActivity, loadIssueFunnel, loadWorkflowTools, loadAdminsPerProject]);
+  // Lazy-fetched ENG-01/PERM-01/UAT-6 slices via useLazyAction. `data: null` =
+  // not-yet-resolved OR a no-session loader result (both cases: the panel below
+  // renders its own honest empty state — never a fake chart). A ref flag (not
+  // the `data === null` check the data itself would give) gates each fetch to
+  // fire AT MOST ONCE per page load, so a no-session `null` result never
+  // re-triggers on every tab revisit. A REJECTED load sets `failed` instead —
+  // the panels render a distinct "couldn't load — retry" state, never the
+  // honest-empty lie — and `retry` re-fires the fetch on demand.
+  const activityRecency = useLazyAction(tab === "roles" || tab === "users", loadActivityRecency);
+  const permissionLevel = useLazyAction(tab === "roles", loadPermissionLevel);
+  const permissionUsers = useLazyAction(tab === "users", loadPermissionUsers);
+  const folderScopedActivity = useLazyAction(tab === "companies", loadFolderScopedActivity);
+  // Phase 21 ISSUE-02/03 + workflow tools + admins: same fetch-once pattern, Projects tab.
+  const issueFunnel = useLazyAction(tab === "projects", loadIssueFunnel);
+  const workflowTools = useLazyAction(tab === "projects", loadWorkflowTools);
+  const admins = useLazyAction(tab === "projects", loadAdminsPerProject);
+  const activityRecencyRows = activityRecency.data;
+  const permissionLevelRows = permissionLevel.data;
+  const permissionUserCounts = permissionUsers.data;
+  const folderScopedActivityRows = folderScopedActivity.data;
+  const issueFunnelData = issueFunnel.data;
+  const workflowToolRows = workflowTools.data;
+  const adminsData = admins.data;
 
   // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
   // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
@@ -460,15 +438,19 @@ export function AccessAnalysisCharts({
 
   const kpis: Stat[] = [
     { label: "Projects", value: selected.size, accent: "primary" },
-    { label: "Memberships", value: roleSummary.total, accent: "emerald" },
-    { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "violet" },
+    { label: "Memberships", value: roleSummary.total, accent: "seaweed" },
+    { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "wine" },
     { label: "Companies", value: companySummary.distinctCompanies, accent: "primary" },
-    { label: "Activities", value: moduleSummary.total, accent: "amber" },
-    { label: "Coordination issues", value: coordSummary.total, accent: "orange" },
+    { label: "Activities", value: moduleSummary.total, accent: "goldenrod" },
+    { label: "Coordination issues", value: coordSummary.total, accent: "naranja" },
   ];
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Above the KPIs on purpose: if a source failed, the reader must know BEFORE
+          they read a number derived from it. */}
+      {failedSources !== undefined && failedSources.length > 0 && <SourcesFailedBanner sources={failedSources} />}
+
       {/* VIS-05: StatStrip is NOT keyed by filter values — it mounts once and updates
           in-place so the entrance animation fires only on first load. */}
       <StatStrip stats={kpis} />
@@ -563,10 +545,14 @@ export function AccessAnalysisCharts({
             covCovered={covCovered}
             covTotal={covTotal}
             loadPermissionLevel={loadPermissionLevel}
-            permissionLevelLoading={permissionLevelLoading}
+            permissionLevelLoading={permissionLevel.loading}
+            permissionLevelFailed={permissionLevel.failed}
+            onRetryPermissionLevel={permissionLevel.retry}
             filteredPermissionLevelRows={filteredPermissionLevelRows}
             loadActivityRecency={loadActivityRecency}
-            activityRecencyLoading={activityRecencyLoading}
+            activityRecencyLoading={activityRecency.loading}
+            activityRecencyFailed={activityRecency.failed}
+            onRetryActivityRecency={activityRecency.retry}
             filteredActivityRecencyRows={filteredActivityRecencyRows}
             dataFloor={dataFloor}
             selected={selected}
@@ -580,13 +566,17 @@ export function AccessAnalysisCharts({
         <TabsContent value="users">
           <UsersTabPanel
             loadActivityRecency={loadActivityRecency}
-            activityRecencyLoading={activityRecencyLoading}
+            activityRecencyLoading={activityRecency.loading}
+            activityRecencyFailed={activityRecency.failed}
+            onRetryActivityRecency={activityRecency.retry}
             filteredActivityRecencyRows={filteredActivityRecencyRows}
             covCovered={covCovered}
             covTotal={covTotal}
             dataFloor={dataFloor}
             loadPermissionUsers={loadPermissionUsers}
-            permissionUsersLoading={permissionUsersLoading}
+            permissionUsersLoading={permissionUsers.loading}
+            permissionUsersFailed={permissionUsers.failed}
+            onRetryPermissionUsers={permissionUsers.retry}
             permissionUserCounts={permissionUserCounts}
           />
         </TabsContent>
@@ -604,7 +594,9 @@ export function AccessAnalysisCharts({
             covCovered={covCovered}
             covTotal={covTotal}
             loadFolderScopedActivity={loadFolderScopedActivity}
-            folderScopedActivityLoading={folderScopedActivityLoading}
+            folderScopedActivityLoading={folderScopedActivity.loading}
+            folderScopedActivityFailed={folderScopedActivity.failed}
+            onRetryFolderScopedActivity={folderScopedActivity.retry}
             filteredFolderScopedActivityRows={filteredFolderScopedActivityRows}
             membershipRows={membershipRows}
             selected={selected}
@@ -622,15 +614,21 @@ export function AccessAnalysisCharts({
             loadClashes={loadClashes}
             setProfileEmail={setProfileEmail}
             loadIssueFunnel={loadIssueFunnel}
-            issueFunnelLoading={issueFunnelLoading}
+            issueFunnelLoading={issueFunnel.loading}
+            issueFunnelFailed={issueFunnel.failed}
+            onRetryIssueFunnel={issueFunnel.retry}
             issueTimelineSummary={issueTimelineSummary}
             filteredIssueStatusRows={filteredIssueStatusRows}
             filteredIssueTypeRows={filteredIssueTypeRows}
             workflowToolSummaries={workflowToolSummaries}
-            workflowToolsLoading={workflowToolsLoading}
+            workflowToolsLoading={workflowTools.loading}
+            workflowToolsFailed={workflowTools.failed}
+            onRetryWorkflowTools={workflowTools.retry}
             adminsData={filteredAdminsData}
             adminsEnabled={Boolean(loadAdminsPerProject)}
-            adminsLoading={adminsLoading}
+            adminsLoading={admins.loading}
+            adminsFailed={admins.failed}
+            onRetryAdmins={admins.retry}
           />
         </TabsContent>
 
@@ -659,7 +657,7 @@ export function AccessAnalysisCharts({
           <div data-testid="people-sheet">
             <PeopleDrillList
               title={peopleSheet.title}
-              color="#5e96ce"
+              color="var(--chart-1)"
               people={peopleSheet.people}
               total={peopleSheet.people.reduce((s, p) => s + p.count, 0)}
               unitNoun="people"
