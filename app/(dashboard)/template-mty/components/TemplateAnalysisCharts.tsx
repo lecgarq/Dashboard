@@ -98,9 +98,9 @@ export function TemplateAnalysisCharts({
         <StatStrip
           stats={[
             { label: "Members", value: overview.memberCount, accent: "primary" },
-            { label: "Admins", value: overview.adminCount, accent: "emerald" },
-            { label: "Roles", value: overview.distinctRoles, accent: "violet" },
-            { label: "Companies", value: overview.companyCount, accent: "amber" },
+            { label: "Admins", value: overview.adminCount, accent: "seaweed" },
+            { label: "Roles", value: overview.distinctRoles, accent: "wine" },
+            { label: "Companies", value: overview.companyCount, accent: "goldenrod" },
           ]}
         />
       </div>
@@ -170,7 +170,7 @@ export function TemplateAnalysisCharts({
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles." />
+          <SectionHeader title="Role similarity" subtitle={`How alike the ${roleSimilarity.nodes.length} roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles.`} />
           <RoleSimilarityGraph
             graph={roleSimilarity}
             onNodeClick={(roleId) => setSelectedRoleId(roleId)}

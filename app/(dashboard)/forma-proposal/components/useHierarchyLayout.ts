@@ -22,10 +22,10 @@ export function curve(sx: number, sy: number, tx: number, ty: number): string {
   return `M${sx},${sy} C${sx},${my} ${tx},${my} ${tx},${ty}`;
 }
 
-export const sortFolders = (arr: readonly FormaFolder[]): FormaFolder[] =>
+const sortFolders = (arr: readonly FormaFolder[]): FormaFolder[] =>
   [...arr].sort((a, b) => (a.fullPath ?? a.name).localeCompare(b.fullPath ?? b.name));
 
-export function initialCollapsed(index: FolderIndex): Set<string> {
+function initialCollapsed(index: FolderIndex): Set<string> {
   const collapsed = new Set<string>();
   const queue: { f: FormaFolder; depth: number }[] = index.roots.map((f) => ({ f, depth: 1 }));
   while (queue.length) {

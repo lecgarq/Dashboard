@@ -1,5 +1,6 @@
 "use client";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import {
   Maximize2, Plus, Minus, Check, Layers, Undo2, ChevronDown, ChevronRight, UserRound,
 } from "lucide-react";
@@ -21,7 +22,10 @@ import {
   type VNode, type VLink,
 } from "./useHierarchyLayout";
 
-const ROOT_COLOR = "#4e8ccb";
+// Brand azul, one step per theme (OrgNode concatenates hex-alpha, so this must
+// stay a hex literal, not var(--primary)).
+const ROOT_COLOR_DARK = "#4e8ccb";
+const ROOT_COLOR_LIGHT = "#2e5f95";
 
 // ─── TierMenuItems (render-only, stays with the canvas) ───────────────────────
 
@@ -80,6 +84,8 @@ export function HierarchyCanvas({
 }: HierarchyCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
+  const { resolvedTheme } = useTheme();
+  const ROOT_COLOR = resolvedTheme !== "light" ? ROOT_COLOR_DARK : ROOT_COLOR_LIGHT;
 
   // fit: computed from bbox + containerRef (both live here in the canvas)
   const fit = useCallback(() => {

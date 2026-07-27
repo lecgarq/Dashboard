@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { chartPalette } from "@/lib/colors/chartPalette";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { PeopleDrillList } from "@/app/(dashboard)/access-analysis/components/PeopleDrillList";
 import type { DrillPerson } from "@/app/(dashboard)/access-analysis/roleCounts";
@@ -25,7 +26,7 @@ export function ModuleAccessChart({
   const dark = resolvedTheme !== "light";
   const cText = dark ? "#e4e4e7" : "#374151";
   const cAxis = dark ? "#3f3f46" : "#e5e7eb";
-  const cBar = "#5e96ce";
+  const cBar = chartPalette(dark)[0];
   const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
 
   const slices = summary.slices;
