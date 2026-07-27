@@ -62,6 +62,30 @@ describe("UsersTableHeader", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Case 1b: a null KPI renders an em-dash, never an animated 0
+  //
+  // Regression guard: `active30d` is derived from a SEPARATE activity query. It
+  // used to count 0 while that query was in flight, and the tile animated a
+  // confident "0" at 24px for a full second before re-animating to the truth —
+  // a wrong operational number presented with full visual confidence, on a
+  // projector. null now means "not measured yet" and must render as "—".
+  // -------------------------------------------------------------------------
+  it("renders an em-dash (not 0) for a KPI whose source has not loaded", async () => {
+    render(
+      <UsersTableHeader totalUsers={150} inAcc={120} notInAcc={30} internals={120} externals={25} active30d={null} admins={12} />,
+    );
+
+    // Let any animation that would have been armed run to completion.
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    // Assert on the VALUE node only — the label "Active 30d" contains a literal 0.
+    const value = screen.getByText("Active 30d").nextElementSibling;
+    expect(value?.textContent).toBe("—");
+  });
+
+  // -------------------------------------------------------------------------
   // Case 2: AnimatedNumber eventually reaches target after animation completes
   // -------------------------------------------------------------------------
   it("AnimatedNumber reaches the target value after animation completes", async () => {
