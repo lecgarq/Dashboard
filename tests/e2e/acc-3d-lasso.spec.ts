@@ -67,3 +67,26 @@ test("activity lasso selects a visible strict subset and time change clears it",
     contentType: "image/png",
   });
 });
+
+test("activity lasso waits for the visible author filter to reach the canvas", async ({
+  page,
+}) => {
+  await gotoActivity(page);
+  await page.getByRole("button", { name: "Open dimensions" }).click();
+
+  const dimensions = page.getByTestId("activity-dimensions-panel");
+  const authorSearch = dimensions.getByRole("searchbox", { name: "Search users" });
+  const lasso = page.getByRole("button", { name: "Lasso" });
+  const searching = dimensions.getByText("Searching…", { exact: true }).last();
+
+  await authorSearch.fill("yanin.corella@hermosillo.com");
+  await expect(searching).toBeVisible();
+  await expect(lasso).toBeDisabled();
+
+  await expect(searching).toBeHidden({ timeout: 120_000 });
+  await expect(dimensions.getByText("1 user matched", { exact: true })).toBeVisible();
+  await expect(lasso).toBeEnabled();
+
+  await lasso.click();
+  await expect(page.getByTestId("lasso-overlay")).toHaveAttribute("data-active", "true");
+});
