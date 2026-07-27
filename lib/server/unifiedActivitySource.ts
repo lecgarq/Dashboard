@@ -190,7 +190,7 @@ function whereSql(where: UnifiedWhere = {}): Prisma.Sql {
   return Prisma.sql`WHERE ${andSql(parts)}`;
 }
 
-export function normalizeAccdsActivityRow(row: AccdsActivitySourceRow): UnifiedActivityRow {
+function normalizeAccdsActivityRow(row: AccdsActivitySourceRow): UnifiedActivityRow {
   return {
     id: `accds:${row.accdsActivityId}`,
     autodeskId: row.autodeskId,

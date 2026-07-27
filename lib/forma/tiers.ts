@@ -74,7 +74,7 @@ export const TIER_ACTIONS: Record<FormaTier, readonly string[]> = {
 };
 
 /** Pre-alignment tier strings → nearest current level (migrates saved drafts). */
-export const LEGACY_TIER_MAP: Record<string, FormaTier> = {
+const LEGACY_TIER_MAP: Record<string, FormaTier> = {
   "View Only": "View Only",
   "View+Download": "View+Download",
   "Upload Only": "View+Download+Publish markups+Upload",

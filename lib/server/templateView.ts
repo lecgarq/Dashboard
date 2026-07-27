@@ -29,7 +29,7 @@ export interface TemplateMember {
   isAdmin: boolean;
 }
 
-export interface CategorySlice {
+interface CategorySlice {
   name: string;
   value: number;
 }

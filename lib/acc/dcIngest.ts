@@ -72,7 +72,7 @@ import { bisectOnForbidden, DcSubmitForbiddenError } from '@/lib/acc/dcBisect';
 // Public types
 // ---------------------------------------------------------------------------
 
-export type RunStatus =
+type RunStatus =
   | 'success'
   | 'partial'
   | 'quota-paused'
@@ -116,7 +116,7 @@ const SERVICE_GROUPS = ['activities', 'admin'];
 const STALE_LOCK_MIN = 60;
 
 // Activity-analysis window (in days) used to rank projects for priority backfill.
-export const PRIORITY_WINDOW_DAYS = 30;
+const PRIORITY_WINDOW_DAYS = 30;
 // ~20% of daily budget reserved for most-starved projects; keeps priority slots dominant while guaranteeing low-priority progress.
 const DEFAULT_FAIRNESS_FACTOR = 0.2;
 
@@ -154,7 +154,7 @@ export class QuotaExceededError extends Error {
  * phase. Maps to the 2026-05-18 "Bug B" hard-abort: the whole run finalizes
  * as status='failed'. Carries a human-readable message.
  */
-export class DcRunFatalError extends Error {
+class DcRunFatalError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'DcRunFatalError';
@@ -166,7 +166,7 @@ export class DcRunFatalError extends Error {
  * non-403/non-429 submit failure). Maps to TODAY's "console.error + continue"
  * behavior: skip this slice, keep going with the next.
  */
-export class DcSliceSkipError extends Error {
+class DcSliceSkipError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'DcSliceSkipError';

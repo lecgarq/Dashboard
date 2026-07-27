@@ -6,7 +6,7 @@ export interface ActivityCoverageProjectInput {
   status: string | null;
 }
 
-export interface ActivityCoverageCellInput {
+interface ActivityCoverageCellInput {
   projectId: string | null;
   projectName: string | null;
   service: string | null;

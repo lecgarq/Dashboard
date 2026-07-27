@@ -8,7 +8,7 @@ export interface SimNode {
   maxRank: number;
 }
 
-export interface SimEdge {
+interface SimEdge {
   source: string; // roleId
   target: string; // roleId
   weight: number; // cosine similarity 0..1

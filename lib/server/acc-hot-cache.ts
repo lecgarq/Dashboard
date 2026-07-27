@@ -166,6 +166,46 @@ export function invalidateAccHotCache() {
   stats.invalidations++;
 }
 
+// ---------------------------------------------------------------------------
+// Data-version token for client-side freshness polling (/users auto-refresh).
+//
+// Reuses the same count+max fingerprint specs that key this cache, so "the
+// token changed" ⇔ "some bulkUsers/summary/activity snapshot would recompute".
+// Memoised for 30s (single-flight) so N polling tabs share one DB probe; the
+// probe itself is the same cost already paid on every bulkUsers request.
+// Hashed so the client sees an opaque token, not table row counts.
+// ---------------------------------------------------------------------------
+const DATA_VERSION_MEMO_MS = 30_000;
+let dataVersionMemo: { at: number; promise: Promise<string | null> } | null = null;
+
+const USERS_DATA_VERSION_SPECS = [
+  ...DC_VERSION_SPECS,
+  ...PERMISSION_VERSION_SPECS,
+  ...ACTIVITY_VERSION_SPECS,
+  ...BULK_SUMMARY_VERSION_SPECS,
+  { model: "accProjectMember", maxField: "syncedAt" },
+];
+
+export async function getAccDataVersion(db: any): Promise<string | null> {
+  const now = Date.now();
+  if (dataVersionMemo && now - dataVersionMemo.at < DATA_VERSION_MEMO_MS) {
+    return dataVersionMemo.promise;
+  }
+  const promise = (async () => {
+    const version = await dbVersion(db, USERS_DATA_VERSION_SPECS);
+    if (!version) return null;
+    const { createHash } = await import("node:crypto");
+    return createHash("sha256").update(version).digest("hex").slice(0, 16);
+  })();
+  dataVersionMemo = { at: now, promise };
+  try {
+    return await promise;
+  } catch (error) {
+    if (dataVersionMemo?.promise === promise) dataVersionMemo = null;
+    throw error;
+  }
+}
+
 function getAccHotCacheStats() {
   deleteExpired();
   return {

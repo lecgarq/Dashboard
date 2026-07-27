@@ -12,7 +12,7 @@ export interface IssueCoverageProjectRow {
 }
 
 /** Latest run's issue-fetch coverage — raw per-project rows; bucket counting is client-side (ISSUE-01). */
-export interface IssueCoverage {
+interface IssueCoverage {
   runStatus: string; // running | done | failed
   runStartedAt: string | null;
   runFinishedAt: string | null;

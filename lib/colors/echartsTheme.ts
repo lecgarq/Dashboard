@@ -155,8 +155,45 @@ export function mergeEChartsTheme(option: EChartsOption, dark: boolean): ECharts
     };
   }
 
+  // -- aria: screen readers get a generated chart description --
+  // (aria.decal stays OFF — it would repaint every series with pattern fills.)
+  base.aria = { enabled: true, ...base.aria };
+
+  // -- motion clamp (DESIGN.md §7/§9: ≤200ms, ease-out, no bounces) --
+  // Charts kept shipping 550–800ms elasticOut entrances; clamping here fixes
+  // every chart at the one shared boundary instead of per-option edits.
+  clampMotion(base as unknown as Record<string, unknown>);
+  if (Array.isArray(base.series)) {
+    base.series = base.series.map((s) => {
+      const copy = { ...(s as Record<string, unknown>) };
+      clampMotion(copy);
+      return copy;
+    }) as EChartsOption["series"];
+  } else if (base.series) {
+    const copy = { ...(base.series as Record<string, unknown>) };
+    clampMotion(copy);
+    base.series = copy as EChartsOption["series"];
+  }
+
   // NOTE: series[].itemStyle and series[].data are intentionally NOT touched.
   // Data-series color palettes remain caller-owned.
 
   return base;
+}
+
+const MOTION_MS_CAP = 200;
+const BANNED_EASING = /elastic|bounce|back/i;
+
+/** Mutates a freshly-copied option/series object: caps numeric animation
+ *  durations at 200ms and swaps banned easings for cubicOut. Function-valued
+ *  durations (per-datum staggers) are left alone. */
+function clampMotion(obj: Record<string, unknown>): void {
+  for (const key of ["animationDuration", "animationDurationUpdate"]) {
+    const v = obj[key];
+    if (typeof v === "number" && v > MOTION_MS_CAP) obj[key] = MOTION_MS_CAP;
+  }
+  for (const key of ["animationEasing", "animationEasingUpdate"]) {
+    const v = obj[key];
+    if (typeof v === "string" && BANNED_EASING.test(v)) obj[key] = "cubicOut";
+  }
 }

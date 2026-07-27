@@ -3,7 +3,7 @@
  *
  * Light mode: Trello's exact brand hex values.
  * Dark mode: desaturated + lightness-adjusted so labels stay readable on zinc-950
- * (Luis confirmed legibility > strict brand fidelity for dark — see DARK_MODE.md §5).
+ * (Luis confirmed legibility > strict brand fidelity for dark).
  *
  * Read at runtime via `useTrelloLabelColor()` or `getTrelloLabelColor(name, isDark)`.
  */

@@ -4,6 +4,7 @@ import {
   resolveEffectiveTier,
   applyToSubtree,
   countExplicit,
+  subtreeSize,
   type FormaFolder,
 } from "./inheritance";
 
@@ -61,5 +62,14 @@ describe("inheritance", () => {
   it("countExplicit counts set folders", () => {
     expect(countExplicit({ a: "View Only", b: "No access" })).toBe(2);
     expect(countExplicit({})).toBe(0);
+  });
+
+  // subtreeSize drives the apply-to-subtree confirmation ("Set X on N folders?")
+  // — it must equal exactly what applyToSubtree would stamp.
+  it("subtreeSize counts the folder plus every descendant", () => {
+    const index = buildFolderIndex(FOLDERS);
+    expect(subtreeSize("a", index)).toBe(3); // a, a1, a2
+    expect(subtreeSize("root", index)).toBe(5);
+    expect(subtreeSize("b", index)).toBe(1); // leaf
   });
 });

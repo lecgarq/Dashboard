@@ -82,3 +82,18 @@ export function applyToSubtree(
 export function countExplicit(explicit: ExplicitMap): number {
   return Object.keys(explicit).length;
 }
+
+/** Folders a subtree apply would touch: the folder itself plus every descendant. */
+export function subtreeSize(folderId: string, index: FolderIndex): number {
+  let n = 0;
+  const stack = [folderId];
+  const guard = new Set<string>();
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (guard.has(id)) continue;
+    guard.add(id);
+    n += 1;
+    for (const child of index.childrenOf.get(id) ?? []) stack.push(child.id);
+  }
+  return n;
+}

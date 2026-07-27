@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeColumnarPayload, encodeColumnarPayload } from "./columnar";
+import { decodeColumnarPayload, encodeColumnarPayload } from "./columnarPayload";
 
 describe("columnar payload codec (Phase 37 SCALE-01 track b)", () => {
   it("roundtrips mixed-dtype columns with odd lengths byte-identically", () => {

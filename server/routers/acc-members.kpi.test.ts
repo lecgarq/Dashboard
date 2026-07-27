@@ -43,13 +43,11 @@ describe("accMembersRouter KPI", () => {
       accMemberCache: {
         count: vi.fn(async () => 99),
       },
-      accActivity: {
-        count: vi.fn()
-          .mockResolvedValueOnce(7)
-          .mockResolvedValueOnce(3),
-        groupBy: vi.fn(async () => [{ userEmail: "active@example.com", _count: { _all: 1 } }]),
-        findFirst: vi.fn(async () => ({ createdAt: new Date("2026-05-01T00:00:00.000Z") })),
-      },
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ count: 7 }])
+        .mockResolvedValueOnce([{ count: 3 }])
+        .mockResolvedValueOnce([{ userEmail: "active@example.com" }])
+        .mockResolvedValueOnce([{ createdAt: new Date("2026-05-01T00:00:00.000Z") }]),
       $queryRawUnsafe: vi.fn()
         .mockResolvedValueOnce([{ count: 0 }])
         .mockResolvedValueOnce([{ count: 98 }]),
@@ -69,5 +67,6 @@ describe("accMembersRouter KPI", () => {
       where: { accessLevel: "project_admin" },
       _count: { userId: true },
     });
+    expect(db.$queryRaw).toHaveBeenCalledTimes(4);
   });
 });

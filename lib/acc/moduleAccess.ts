@@ -1,7 +1,7 @@
 import { moduleLabelById } from "./moduleCatalog";
 import type { ModuleId } from "./accessInstanceTypes";
 
-export interface ModuleAccessSlice {
+interface ModuleAccessSlice {
   id: ModuleId;
   name: string;
   userCount: number;

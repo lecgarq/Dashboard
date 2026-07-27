@@ -622,10 +622,14 @@ export async function listRecentMessages(
       messages.map(async (msg) => {
         if (!msg.id) return;
         try {
+          // The inbox list only needs headers, snippet, labels, and the MIME part
+          // tree (for the attachment indicator). "metadata" returns all of that
+          // without the base64 message body, which is ~10-50x lighter and faster
+          // than "full" — the difference between a snappy and a sluggish inbox.
           const detail = await gmail.users.messages.get({
             userId: "me",
             id: msg.id,
-            format: "full",
+            format: "metadata",
           });
 
           const headers = detail.data.payload?.headers || [];

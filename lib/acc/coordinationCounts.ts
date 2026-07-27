@@ -12,7 +12,7 @@ export interface CoordinationRow {
   count: number; // coordination-classified issues in this (project, status)
 }
 
-export interface CoordinationProject {
+interface CoordinationProject {
   projectId: string;
   projectName: string;
   count: number; // all coordination issues in the project
@@ -30,7 +30,7 @@ export interface CoordinationSummary {
 const CLOSED_STATUSES = new Set(["closed", "completed", "resolved", "void"]);
 
 /** True when an ACC issue status represents a resolved/closed issue. */
-export function isClosedStatus(status: string): boolean {
+function isClosedStatus(status: string): boolean {
   return CLOSED_STATUSES.has(status.trim().toLowerCase());
 }
 

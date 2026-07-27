@@ -1,11 +1,11 @@
 import { TIER_LEGEND } from "./folderTerrainModel";
 
-export interface TierRoleBreakdown {
+interface TierRoleBreakdown {
   role: string;
   userCount: number;
 }
 
-export interface TierAccess {
+interface TierAccess {
   rank: number; // 1..6
   label: string; // from TIER_LEGEND
   userCount: number; // distinct members whose role grants this tier ≥ once

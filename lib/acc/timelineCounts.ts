@@ -13,7 +13,7 @@ export interface ActivityTimelineRow {
   count: number;
 }
 
-export interface TimelinePoint {
+interface TimelinePoint {
   month: string; // "YYYY-MM"
   label: string; // e.g. "Mar 2024"
   count: number;
