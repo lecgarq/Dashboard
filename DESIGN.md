@@ -50,7 +50,7 @@ CVD-validated with a 3:1 contrast floor against their surface
   --destructive: #C42021;
 }
 
-[data-theme="dark"] {
+.dark {
   /* Surfaces — zinc, never slate */
   --background: #09090B;
   --card: #18181B;
@@ -123,12 +123,16 @@ show at once, densify.
 Reuse the shipped primitives before inventing: `PremiumSurface` (glass panel),
 `DrillSheet`, `DataTable`, `EChart` wrapper, shadcn/Radix inputs.
 
+The shipped panel is `.panel-elevated` in `app/globals.css` (32 usages) — a
+22px-radius card with a three-layer shadow. Reuse it; do not hand-roll panel
+chrome.
+
 ```css
-.panel {
+.panel-elevated {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: 22px;
+  /* three-layer shadow + motion transitions — see app/globals.css */
 }
 .button-primary {
   background: var(--primary);
@@ -169,7 +173,8 @@ visually hidden. Numbers are the message; adjectives are not.
   `#18181B`, `#27272A`) only.
 - No marketing heroes, decorative gradients, or feature-card grids.
 - No card-inside-card nesting; one panel level per region.
-- No border radius above 12px on panels, 8px on controls.
+- Panels use `.panel-elevated` (22px). Controls stay at 8px. Do not invent a
+  third panel radius.
 - No motion longer than 200ms; no autoplaying or looping animation.
 - No hardcoded chart hex; colors resolve from theme tokens.
 - No WebGL/3D on data surfaces (R3F accents are confined to approved spots).
