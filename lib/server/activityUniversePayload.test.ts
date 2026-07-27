@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ID_ANCHOR_STRIDE,
+  activityUniverseEtag,
   anchorFor,
   assembleActivityUniverseMeta,
   readActivityUniverseMeta,
@@ -34,6 +35,28 @@ describe("activityUniversePayload", () => {
     expect(meta.version).toBe(1);
     expect(JSON.parse(JSON.stringify(meta))).toEqual(meta);
     expect(meta.coverage.unknownAuthorRate).toBeCloseTo(0.1);
+  });
+
+  it("changes the ETag when the payload is rebuilt from an UNCHANGED embedding run", () => {
+    // The real regression: derived columns (role/access/file format) are built by
+    // build-activity-universe-payload.ts without a refit, so embeddingRunId stays
+    // put while the bytes change. An embeddingRunId-only ETag 304s the browser
+    // onto the previous artifact and the new dims read as "· unavailable".
+    const before = activityUniverseEtag({
+      embeddingRunId: "20260721T210323Z-80e4cff2",
+      generatedAt: "2026-07-24T16:00:00.000Z",
+    });
+    const after = activityUniverseEtag({
+      embeddingRunId: "20260721T210323Z-80e4cff2",
+      generatedAt: "2026-07-24T22:30:00.000Z",
+    });
+    expect(after).not.toBe(before);
+    expect(before).toBe('"20260721T210323Z-80e4cff2:2026-07-24T16:00:00.000Z"');
+  });
+
+  it("keeps the ETag stable for an unchanged artifact (revalidation must still 304)", () => {
+    const meta = { embeddingRunId: "run-1", generatedAt: "2026-07-21T01:00:00Z" };
+    expect(activityUniverseEtag(meta)).toBe(activityUniverseEtag({ ...meta }));
   });
 
   it("returns null when the artifact pair is absent, meta when both exist", () => {

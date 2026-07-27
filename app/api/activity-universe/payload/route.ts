@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import {
+  activityUniverseEtag,
   activityUniversePaths,
   readActivityUniverseMeta,
 } from "@/lib/server/activityUniversePayload";
@@ -7,10 +8,12 @@ import { activityUniverseTestFixture } from "@/lib/server/activityUniverseTestFi
 
 // v2.7 Phase 38 (SCALE-02): serves the activity-universe binary columnar
 // payload materialized by scripts/build-activity-universe-payload.ts.
-// ETag = embeddingRunId — the artifact only changes on a manual pipeline
-// rerun (owner decision: no nightly refit), so revalidation is cheap and
-// correct. `?meta=1` returns the JSON meta (dicts + ACT-02 coverage) that
-// Phase 39 renders as the honest author-coverage label.
+// ETag = embeddingRunId + generatedAt (activityUniverseEtag) — a payload
+// rebuild on an unchanged embedding run is a real, frequent case now that
+// columns are derived at build time, and an embeddingRunId-only ETag served
+// 304s that stranded browsers on the previous artifact. `?meta=1` returns the
+// JSON meta (dicts + ACT-02 coverage) that Phase 39 renders as the honest
+// author-coverage label.
 // Auth posture matches the existing local data routes (health/sim-updates):
 // no session gate on this single-user local dashboard.
 export const dynamic = "force-dynamic";
@@ -28,7 +31,7 @@ export async function GET(request: Request): Promise<Response> {
       { status: 404 },
     );
   }
-  const etag = `"${meta.embeddingRunId}"`;
+  const etag = activityUniverseEtag(meta);
   if (request.headers.get("if-none-match") === etag) {
     return new Response(null, { status: 304, headers: { ETag: etag } });
   }

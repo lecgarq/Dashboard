@@ -60,6 +60,26 @@ export function assembleActivityUniverseMeta(args: {
 }
 
 /**
+ * Cache identity of the served artifact pair.
+ *
+ * Keyed on embeddingRunId AND generatedAt, because those change independently:
+ * `build-activity-universe-payload.ts` can rewrite the .bin from an UNCHANGED
+ * embedding run — that is exactly how the derived role/access/file-format
+ * columns are produced, no refit involved. An embeddingRunId-only ETag (the
+ * original) makes the server answer 304 to a browser holding the previous
+ * artifact, so new dict entries silently read as `cardinality 0` → the
+ * dimension renders "· unavailable" until a hard refresh. generatedAt is
+ * stamped by assembleActivityUniverseMeta on every build, and meta + .bin are
+ * written together in one script run, so it identifies the pair exactly.
+ */
+export function activityUniverseEtag(meta: {
+  embeddingRunId: string;
+  generatedAt: string;
+}): string {
+  return `"${meta.embeddingRunId}:${meta.generatedAt}"`;
+}
+
+/**
  * Anchor lookup for a row index: returns the anchor id and the remaining
  * offset within the anchor's stride window, or null when the index is out of
  * range for the recorded anchors.
