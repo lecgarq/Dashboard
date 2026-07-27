@@ -8,14 +8,32 @@
  * - Preserves the existing prop surface: option, height, onEvents, notMerge.
  * - Accepts optional className for layout control.
  *
- * SCOPE GUARD: this is the NEW canonical location (components/ui/EChart.tsx).
- * The old wrapper at app/(dashboard)/access-analysis/components/EChart.tsx
- * stays intact until Phase 5 migrates its consumers.
+ * This is the only EChart wrapper. Every chart must route through it so the
+ * theme merge is never bypassed.
  */
 import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { mergeEChartsTheme } from "@/lib/colors/echartsTheme";
+
+// prefers-reduced-motion, subscribed so a live OS toggle re-renders charts.
+// matchMedia is feature-checked: absent in jsdom test runs.
+function subscribeReducedMotion(cb: () => void) {
+  if (typeof window.matchMedia !== "function") return () => {};
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+function useReducedMotion(): boolean {
+  return useSyncExternalStore(
+    subscribeReducedMotion,
+    () => (typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false),
+    () => false,
+  );
+}
 
 interface EChartProps {
   option: EChartsOption;
@@ -37,12 +55,15 @@ export function EChart({
   className,
 }: EChartProps) {
   const { resolvedTheme } = useTheme();
+  const reducedMotion = useReducedMotion();
 
   // Default to dark before next-themes resolves (avoids dark→light flash for dark users;
   // Pitfall 4 from RESEARCH.md §7).
   const dark = resolvedTheme !== "light";
 
   const themed = mergeEChartsTheme(option, dark);
+  // DESIGN.md §7: honor prefers-reduced-motion — charts render instantly.
+  if (reducedMotion) themed.animation = false;
 
   return (
     <ReactECharts

@@ -16,10 +16,18 @@ export interface GraphNodes {
   features: NodeFeatureSnapshot[];
 }
 
+const PERMISSION_TIERS = [null, "view", "download", "upload", "edit", "control"] as const;
+
+function permissionTierFromStrength(strength: number | undefined): string | null {
+  return Number.isInteger(strength) && strength! >= 1 && strength! <= 5
+    ? PERMISSION_TIERS[strength!]
+    : null;
+}
+
 /**
  * Build the raw feature row for one (user, project) representative, mirroring the
- * COALESCE/CASE logic of buildFeatureSnapshot's SELECT exactly. The folder-perm
- * join is empty on the graph path, so perm_tier is always null (as in DuckDB).
+ * COALESCE/CASE logic of buildFeatureSnapshot's SELECT. The pure-JS graph path
+ * derives perm_tier from the same per-membership maximum strength already loaded.
  */
 function toRawFeatureRow(pr: GraphProjectRow, u: GraphUserRow | undefined): RawFeatureRow {
   const lastSignIn = u?.last_sign_in ?? null; // MAX(u.last_sign_in) — one value per user
@@ -32,7 +40,7 @@ function toRawFeatureRow(pr: GraphProjectRow, u: GraphUserRow | undefined): RawF
     email: pr.email ?? u?.email ?? null, // COALESCE(up.email, u.email)
     project_name: pr.project_name ?? pr.project_id,
     role_display: pr.role_id ?? "(no role)",
-    perm_tier: null,
+    perm_tier: permissionTierFromStrength(pr.perm_strength),
     activity_count: u?.active_count ?? 0,
     last_signin_days: lastSigninDays,
     firm_name: u?.firm_name ?? "",
@@ -51,6 +59,7 @@ function toRawFeatureRow(pr: GraphProjectRow, u: GraphUserRow | undefined): RawF
     activity_actions_json: pr.activity_actions_json,
     activity_total: pr.activity_total,
     last_activity: pr.last_activity,
+    project_status: pr.project_status,
   };
 }
 

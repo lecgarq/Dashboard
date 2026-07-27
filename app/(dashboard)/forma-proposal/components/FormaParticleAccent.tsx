@@ -37,8 +37,8 @@ const SPREAD_Z = 0.6;
 // Slower drift for a barely-there ambient feel
 const DRIFT_SPEED = 0.00008;
 
-// Brand indigo — identical to /users accent for product consistency
-const PARTICLE_COLOR = new THREE.Color(0x6366f1);
+// LECG azul — identical to /users accent for product consistency
+const PARTICLE_COLOR = new THREE.Color(0x4e8ccb);
 
 // ---------------------------------------------------------------------------
 // Module-level helpers (called once at component init time)

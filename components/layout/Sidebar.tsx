@@ -248,15 +248,6 @@ export function Sidebar() {
   const prefetchModule = useCallback(
     (module?: string | null) => {
       switch (module) {
-        case "families":
-          utils.families.getAll.prefetch();
-          break;
-        case "clash":
-          utils.clash.getWikiSections.prefetch();
-          break;
-        case "exam":
-          utils.exam.getExams.prefetch();
-          break;
         case "trello":
           utils.trello.getBoards.prefetch();
           break;

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 1000000
+  },
+  "output": {
+    "filePath": ".tools/repo-map/repomix-output.xml",
+    "style": "xml",
+    "compress": true,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "files": true,
+    "topFilesLength": 20,
+    "tokenCountTree": 1000,
+    "git": {
+      "sortByChanges": true,
+      "includeDiffs": false,
+      "includeLogs": false
+    }
+  },
+  "include": [
+    "app/**/*",
+    "components/**/*",
+    "lib/**/*",
+    "server/**/*",
+    "hooks/**/*",
+    "services/**/*",
+    "scripts/**/*",
+    "tests/**/*",
+    "prisma/**/*",
+    "types/**/*",
+    "electron/**/*",
+    "adapters/**/*",
+    "dashboard-app/**/*",
+    "docs/**/*",
+    "auth.config.ts",
+    "instrumentation.ts",
+    "knip.ts",
+    "next.config.ts",
+    "next.config.test.ts",
+    "package.json",
+    "playwright.config.ts",
+    "playwright.verify.config.ts",
+    "postcss.config.mjs",
+    "prisma.config.ts",
+    "proxy.ts",
+    "README.md",
+    "tsconfig.json",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      ".tools/**",
+      ".planning/**",
+      ".planning.backup/**",
+      ".codex/**",
+      ".agents/**",
+      ".claude/**",
+      ".gemini/**",
+      ".cursor/**",
+      ".next*/**",
+      ".tmp/**",
+      "logs/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "public/duckdb-wasm/**",
+      "scratch/**",
+      "scripts/scratch/**",
+      "services/lod-engine/Categories.json",
+      "services/lod-engine/img_pipeline/bin/**",
+      "test-results/**",
+      "tmp/**",
+      "docs/archive/**",
+      "docs/superpowers/**",
+      "**/*.db",
+      "**/*.gif",
+      "**/*.jpg",
+      "**/*.lock",
+      "**/*.log",
+      "**/*.mov",
+      "**/*.png",
+      "**/*.tsbuildinfo",
+      "**/*.xlsx",
+      "package-lock.json",
+      "scripts/_attic/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}

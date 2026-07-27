@@ -1,84 +1,331 @@
-# LECG Dashboard — Workshop-Grade UI/UX Overhaul
+# LECG Dashboard
 
 ## What This Is
 
-A premium UI/UX overhaul of four pages in the existing LECG BIM management dashboard — `/users`, `/access-analysis`, `/template-mty`, and `/forma-proposal`. The goal is to transform how the data *looks, feels, and responds* so it can be presented to all users in live workshops: fast, visually premium (depth, not flat), tactile, and explorable in real time — without overwhelming motion. The underlying data and stack stay the same; the presentation layer is reimagined.
+Internal LECG Dashboard for ACC / Forma / MTY / LOD visibility and live workshop
+demos. Next.js 16 (App Router) + React 19, tRPC + Prisma over local PostgreSQL,
+ECharts on a zinc dark theme. Workshop surface is four pages: `/users`,
+`/access-analysis`, `/template-mty`, `/forma-proposal`.
 
 ## Core Value
 
-When these pages are presented to all users in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live. If everything else fails, this must: the data has to *feel* alive and impressive on screen, not flat or cramped.
+Truthful, fast-to-read analytics over the **fully extracted ACC dataset** — every
+metric on the workshop pages must be derivable from the local Prisma DB and honest
+about its coverage.
+
+## Current State
+
+**Shipped:** v2.5 Living Graph — closed 2026-07-20 (5 phases 29–33; 16/16 requirements;
+final BUILD_ID `-zcfnulR0rESok3UDom50`). The bag-of-words t-SNE map (84.3% jittered clones)
+became a hybrid-vector PaCMAP projection (20.4% duplicates, trustworthiness 0.9388→0.9597,
+gate-conditional upsert); neighbor lists went to k=10 distinct matches + twin chip + per-match
+"why similar" chips; click/hover/ambient choreography shipped entirely on the frozen CPU/rAF
+path (PERF-02 green throughout); PERF-05/06 closed the v2.4 debt (zero refetch both routes,
+shell chunk −18.3%, time-to-graph −23.5%, new median 3,914 ms). LIFE-03's hard ≥50fps gate
+FAILED on the final 14.2k-link path (20.68 fps) and shipped via its written degradation clause
+— LINK-PERF profiling proved Canvas2D rasterization is the ceiling (~40 ms/frame raster vs
+1.4 ms JS); redraw throttle banked +94% (41.33 fps). Retrospective in `MILESTONES.md`;
+archived to `.planning/milestones/v2.5-*`.
+
+**Prior shipped:** v2.4 Spatial Graph Dimensions — closed 2026-07-16 (5 phases 24–28 + fractional
+28.1; 18/18 requirements; deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn`). An unlock, not a build:
+the two hardcoded 3-string apertures became a unified ~17-dim group/color/filter surface with
+honest coverage labels, the 208-dim catalog wall renders lazily/searchably in production, the
+dead force-anchor engine now drives organic dimension-driven layout, and the closeout
+root-caused the "+42% first-paint regression" to a pre-existing app-wide SSR-hydration bug
+(fixed on `spatial-graph/page.tsx`; `layout.tsx` + `users/page.tsx` fixes carried into v2.5
+as PERF-05). Retrospective in `MILESTONES.md`; archived to `.planning/milestones/v2.4-*`.
+
+**Prior shipped:** v2.3 New Graphs — closed 2026-07-14 (6 phases, 28 plans; Phases 20, 20.1,
+21, 21.1, 22, 23). Added 8 new truthful charts to `/access-analysis` from
+existing-but-unvisualized Prisma data (issue-fetch coverage, issue timeline/status/type,
+permission footprint by role, dormant users by sign-in recency, ingest freshness), plus
+two inserted UAT-follow-up phases (20.1's 6-tab IA redesign + panel-semantic pivots, 21.1's
+provisioned-modules chart + service-first activity attribution fix). All 8 v2.3
+requirements complete (ISSUE-01–05, PERM-01, ENG-01, PIPE-01); Phase 23 closed the
+milestone with a full graph-by-graph owner sign-off — the live 23-panel `/access-analysis`
+surface (across all 6 tabs) plus `/users` received a blanket verbatim owner **"approved"**
+on a freshly rebuilt `:3000` (zero findings raised); the full automated gate sweep
+(tsc/test/TEST-01-03/WebGL-scope-fence/spatial-graph-scope-fence/repo-map check) is proven
+green with re-runnable evidence in `23-VERIFICATION.md`. Milestone archived to
+`.planning/milestones/v2.3-ROADMAP.md`/`v2.3-REQUIREMENTS.md`, logged in
+`.planning/MILESTONES.md`.
+
+**Prior:** v2.2 Structural Refactors — functionally complete 2026-07-02 (5 phases,
+9 plans; Phases 15–19). Executed the deferred structural refactors safely behind v2.1's
+characterization tests, with **zero change to what the workshop pages show**: REF-02
+(shared `lib/server/folderPermQuery.ts` extraction, consumed by `/template-mty` +
+`/access-analysis`), REF-01 (split all three access-analysis monoliths —
+`folderTerrain.ts`, `FolderPermissionTerrain.tsx`, `HybridAnalyticsSurface.tsx` — into
+data-hook / transform / thin-view modules, each ≤ ~400 lines), and REF-03 (materialised
+`AccFolderPermissionSummary` projection + consumer switch off the live raw scan + hard-guard
+of the ~6M-row `includePermissionContexts` path + ingest-cron refresh). All 8 v2.2
+requirements complete; every phase goal-verified (Phase 19: gsd-verifier 10/10); owner
+visual parity on `/access-analysis` + `/template-mty` approved after a fresh `:3000` rebuild.
+Tagged `v2.2` (local, consistent with `v1.0`/`v2.0`/`v2.1`).
+
+**Close method:** tag + PROJECT/STATE evolution with requirements kept in place. Completed
+phase directories and duplicate milestone archives are intentionally omitted from the working
+tree; tags and git history are the authoritative detailed record. Deploy = rebuild on `:3000`
+(not a branch merge); v2.3's final phase (23) rebuilt `:3000` and captured the owner's
+graph-by-graph sign-off before closing.
+
+**Current focus:** v2.7 Activity Universe — opened 2026-07-20. See "Current Milestone" below.
+
+## Current Milestone: v2.7 Activity Universe
+
+**Goal:** Change the spatial graph's node grain from user×project instances (22,279 nodes)
+to **one node per extracted activity event** — the full raw corpus (4,862,301
+`AccActivityAccds` rows + DC backfill/admin, measured 2026-07-20) — with every node
+inheriting its author's properties (role, company, modules) plus its own event properties
+(verb, module, objectType, folder, month). Full replace of the user-instance graph with the
+dimension slider surface preserved, the TIME-01 temporal scrubber folded in, and the v2.6
+hard **≥50 fps Tier-0** bar applied at the shipped scale.
+
+**Why this is the milestone** (direct owner goal, 2026-07-20): "instead of nodes for every
+instance of user … nodes for all the instances of activities that I have extracted — every
+activity has an author and that author has properties that would conform the entirety of
+the spatial graph." The activity corpus is the richest extracted dataset (4.86M events,
+2,313 authors, 956 projects) and today it is only visible as aggregate charts — never as
+the graph's actual universe.
+
+**Scale reality (measured 2026-07-20):** raw grain = 4,862,301 nodes, ~220× the proven 22k.
+Renderer, embedding pipeline, payload, morph path, and e2e baselines are all sized for 22k.
+The milestone therefore opens with a feasibility spike (Phase 37) whose measured numbers
+pick the shipped rung on an owner-approved fallback ladder (L0 all-animated → L1 decimated
+ambient → L2 far-zoom LOD → L3 verb+month grain 106,196 — every activity still counted at
+every rung). v2.5's LIFE-03 written-clause discipline, applied up front this time.
+
+**Target features (12 requirements — SCALE-01/02, ACT-01–04, EMB-07, DIM-07, PERF-07,
+TIME-01, REND-04, E2E-03):**
+
+- Feasibility spike with recorded numbers + owner-approved ladder rung before any build
+- Activity-grain embedding pipeline (author + event features shape the layout), new Prisma
+  table, binary columnar payload with an evidence-based time-to-graph budget
+- Full universe swap: one node per activity event, author properties inherited, honest
+  unresolved-author coverage, user-instance path retired clean
+- Dimension sliders preserved activity-native; motion contract evolved deliberately
+  (PERF-02 rewrite, recorded); temporal scrubber (TIME-01)
+- Hard gate measured last: ≥50 fps Tier-0 at the shipped rung, e2e re-baselined
+
+**Owner scope decisions (2026-07-20):** ALL raw events chosen over the offered bounded
+grains (106k / 40k) with the fallback ladder as the safety mechanism; **full replace**, no
+mode toggle, but dimension sliders must survive; **hard ≥50fps Tier-0 bar** retained;
+TIME-01 folded in. ISSUE-GRAPH-01 (the previously stated v2.7 entry ticket) superseded by
+this goal — stays deferred.
+
+**Explicitly deferred to v2.8+:** issue dims on the graph + ISSUE-GRAPH-01 resolution
+spike, SVC-01, DIM-05 denominator verify, DC-01/02 (external Account Admin blocker),
+focus-camera restore (§3.8), dev e2e harness (§3.9), cluster-chip owner decision (§3.10).
+
+## Shipped Milestone: v2.6 Full-Rate Graph — ✅ SHIPPED 2026-07-20
+
+**Goal:** Similarity web off the Canvas2D rasterization ceiling (hard ≥50fps Tier-0 gate)
++ test/guard health sweep. **Achieved outright:** Cosmos-native GPU links won the measured
+bake-off (60.03 fps vs Canvas2D 39.79); final sample 60.016 fps / 10.014 s at 22,279 nodes
+/ 18,000 links, Tier 0 idle; e2e re-baselined 16 green / 0 failed, lasso budget fixed, unit
+suite fully green (2,629), guard-bash PowerShell gap closed, 983 stale embeddings pruned.
+Closeout removed a route bottleneck: compact graph hydration + on-demand rail loading →
+median time-to-graph 2,386.7 ms (39% under cutoff). Zero new deps or migrations.
+Retrospective in `MILESTONES.md`; archived to `.planning/milestones/v2.6-*`.
+
+## Shipped Milestone: v2.3 New Graphs — ✅ SHIPPED 2026-07-14
+
+**Goal:** Add new truthful charts to `/access-analysis` and `/template-mty` from
+existing-but-unvisualized Prisma data, following the established panel registration
+pattern — no new data sources, no new WebGL, honest coverage labels throughout.
+
+**Target features delivered** (REQ-level detail in `REQUIREMENTS.md`, archived to
+`.planning/milestones/v2.3-REQUIREMENTS.md`):
+
+- AccIssue funnel — issues over time / by status / by type (full issue set, not
+  just the coordination-classified subset)
+- Permission footprint by role — `AccFolderPermissionSummary` (materialized in
+  Ph18, never charted): folder-count / bytes reach per role
+- Ingest freshness / throughput panel — `AccDcIngestRun` (measure rows from
+  `AccActivity` directly; `rowsByModule` telemetry is a known zero)
+- Issue-fetch coverage donut — `AccIssueFetchRun` honest-coverage labeling
+- Dormant users by `lastSignIn` recency — `AccProjectMember.lastSignIn`
+
+**Deferred from the original 9-candidate seed pool** (still open, see "Future
+Requirements" carried into the v2.4 Seed Pool below): activity verb/object-type breakdown,
+folder storage treemap, permission tier × folder-depth heatmap, provisioned-vs-active
+module coverage.
+
+## Shipped Milestone: v2.2 Structural Refactors — ✅ SHIPPED 2026-07-02
+
+**Goal:** Restructure the access-analysis hot paths behind v2.1's golden-master tests —
+split the three monoliths, centralise the shared `AccFolderPermission` query, and retire
+the raw ~5M-row permission scan with a materialised summary — with **zero change to what
+the workshop pages show**.
+
+**Target features** (REQ-level detail in `REQUIREMENTS.md`):
+
+- **REF-02** — extract `lib/server/folderPermQuery.ts` owning the base
+  `AccFolderPermission` join; `/template-mty` (`templateFolderTerrain.ts`) and
+  `/access-analysis` (`folderPermissionTerrainView.ts`) import it. Pinned by TEST-03
+  (`templateFolderTerrain.sharedQuery.test.ts`).
+- **REF-01** — split `folderTerrain.ts` (1,096), `FolderPermissionTerrain.tsx` (1,044),
+  and `HybridAnalyticsSurface.tsx` (1,328) into data-hook / transform / thin-view. The
+  `HybridAnalyticsSurface` pin is thin (fallback-only) — widen its characterization net
+  before splitting. Pinned by TEST-02 (`folderPermissionTerrainView.test.ts`).
+- **REF-03** — materialise `AccFolderPermissionSummary` (Prisma model + migration +
+  backfill + refresh) and retire the `includePermissionContexts` raw-scan branch in
+  `lib/server/acc-hot-cache.ts`; reconcile the projection against the live aggregate
+  first. Guarded by TEST-01 (OOM regression).
+
+**Guardrail:** behavior-preserving. Every split/extraction keeps its characterization
+test byte-identical; REF-03 proves projection-vs-live parity before the raw path is
+retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 ## Requirements
 
 ### Validated
 
-<!-- Inferred from existing code (brownfield). These pages already exist and function. -->
+<!-- Shipped and confirmed. -->
 
-- ✓ `/users` directory — search/field-scoped filters, window-virtualized roster (grid/list), person detail modal, file-activity columns, activity audit panel — existing
-- ✓ `/access-analysis` — KPI strip, office-grouped project picker, role/company/activity/module donuts, activity timeline, folder-permission terrain, model-coordination panel, click-to-drill people lists — existing
-- ✓ `/template-mty` — members table, role distribution pies, folder-access-by-tier chart, ACC module-access chart, folder terrain, role-similarity graph — existing
-- ✓ `/forma-proposal` — role-permission draft editor (permissions + hierarchy modes), tier assignment, JSON/CSV export, local draft persistence — existing
-- ✓ Tech foundation — Next.js 16 App Router + React 19, tRPC + Prisma/PostgreSQL, ECharts, Tailwind/shadcn, light+dark theming — existing
-
-<!-- Shipped & validated in v2.0 (Workshop-Grade UI/UX Overhaul), owner-approved on the projector 2026-06-19 -->
-
-- ✓ **Speed** — skeletons + progressive/tiered load across all 4 pages; each tRPC endpoint fetched once; no perf regression — v2.0 (PERF-01..05)
-- ✓ **Visual depth** — premium 2.5D look (glass, soft shadows, gradients, layered cards); donuts no longer flat, both themes — v2.0 (VIS-01, VIS-02, ACC-01)
-- ✓ **3D hero accents** — selective real-3D confined to `/users` header + `/forma-proposal` background, off all data surfaces — v2.0 (VIS-06, FRM-02)
-- ✓ **Interactivity** — clickable rows/chart segments → shared slide-in panel; `/access-analysis` client-side cross-filtering with zero new queries — v2.0 (INT-01..05)
-- ✓ **De-bloat & layout** — 2,474-line `/users` monolith decomposed to a 314-line shell behind a golden-path test — v2.0 (USR-01)
-- ✓ **`/users` redesign** — premium virtualized `DataTable` (pinned name, frosted sticky header, sortable, density toggle, row-click/expand) — v2.0 (USR-02, FND-05)
-- ✓ **Cohesive look-and-feel** — one shared design language (tokens, `PremiumSurface`, themed `EChart`, motion facade, `DrillSheet`) across all 4 pages; light + dark first-class — v2.0 (FND-01..04, THM-01)
-- ✓ **Tasteful motion** — staggered reveal under a hard budget; drill motion ≤200ms, fires only on mount/drill — v2.0 (VIS-03, VIS-05)
-- ✓ **New per-page analytics** — gated to the existing Prisma DB; under-covered sources labeled in the UI — v2.0 (NA-01)
+- ✓ **All ACC data extracted and verified** — 2026-06-23 against the live local DB
+  (full census + evidence in `.planning/STATE.md`).
+- ✓ **Database & config hardening** (DB-01–DB-04) — v2.1
+- ✓ **Layering & boundary fixes** (BND-01–BND-04) — v2.1
+- ✓ **Data-truthfulness labels** (TRUTH-01–TRUTH-04) — v2.1
+- ✓ **Integration health & observability** (OBS-01–OBS-03) — v2.1
+- ✓ **Type-safety & lean-payload guards** (TYPE-01, TYPE-02) — v2.1
+- ✓ **Test coverage & characterization** (TEST-01, TEST-02, TEST-03) — v2.1
+- ✓ **Shared query extraction** (REF-02 / QUERY-01) — v2.2 (`lib/server/folderPermQuery.ts` owns the base `AccFolderPermission` join; TEST-03 byte-identical)
+- ✓ **Access-analysis monolith splits** (REF-01 / SPLIT-01–04) — v2.2 (all 3 monoliths → data-hook / transform / thin-view, each ≤ ~400 lines; TEST-02 byte-identical)
+- ✓ **AccFolderPermissionSummary projection + raw-scan retirement + refresh** (REF-03 / PROJ-01–03) — v2.2 (projection reconciled 0-mismatch; summary consumer switched; raw scan hard-guarded; ingest-cron refresh, ≤1-cycle staleness)
+- ✓ **New graphs for /access-analysis** (ISSUE-01–05, PERM-01, ENG-01, PIPE-01) — v2.3
+  (8/8 requirements; 23-panel surface owner-approved on `:3000` 2026-07-14)
+- ✓ **Spatial graph dimensions** (DIM-01–06, CAT-01–04, LAY-01–04, PERF-01–04) — v2.4
+  (18/18 requirements; unified ~17-dim aperture, 208-dim catalog wall in prod, force-anchor
+  organic layout revived, perf debt §3.1–3.3 closed + 28.1 SSR-hydration/lasso fixes;
+  deployed BUILD_ID `KeTX6mq25E1sa0vgA-Pnn` 2026-07-16)
+- ✓ **Living Graph** (EMB-01–06, SIM-01–03, LIFE-01–05, PERF-05–06) — v2.5
+  (16/16 requirements; hybrid-vector PaCMAP embedding, de-twinned explained neighbors,
+  click/hover/ambient choreography on the frozen path, PERF-05/06 hydration + chunk-split
+  closed; LIFE-03 shipped via its written degradation clause; deployed BUILD_ID
+  `-zcfnulR0rESok3UDom50` 2026-07-20)
+- ✓ **Full-Rate Graph** (REND-01–03, E2E-01–02, TEST-04, GUARD-01, PIPE-02) — v2.6
+  (8/8 requirements; Cosmos-native GPU links, 60.016 fps / 10.014 s at 22,279 nodes /
+  18,000 links Tier 0, e2e re-baselined green, unit suite fully green, guard PowerShell
+  gap closed, 983 stale embeddings pruned, median time-to-graph 2,386.7 ms; deployed
+  BUILD_ID `39p7DFRd3DbgM8WjWU2Pz` 2026-07-20)
 
 ### Active
 
-<!-- Next milestone — define with /gsd:new-milestone. -->
+<!-- v2.6 Full-Rate Graph shipped → moved to Validated (2026-07-20). The ACTIVE milestone is now v2.7 Activity Universe (direct owner goal). SVC-01, DC-01/02 remain deferred candidates. -->
 
-v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate seeds carried forward (see ROADMAP.md → v-next):
-
-- [ ] **FRM-V2-01** — Forma role-permission diff view (needs a new `template.getBaseline(roleId)` tRPC query)
-- [ ] **ACC-V2-01** — Project-grouped persistent accordion in the `/access-analysis` project picker
-- [ ] **NA-V2-01** — Additional new per-page analytics beyond the gated set
-- [ ] **`/users` data freshness** — auto-refresh without a manual browser reload (pre-existing app-wide caching trade-off)
+- [ ] **v2.7 Activity Universe** (ACTIVE — see "Current Milestone" above) — spatial graph
+  node grain becomes one node per extracted activity event (4.86M corpus, owner-chosen over
+  bounded grains, fallback ladder as safety), author properties inherited onto every node,
+  full replace with dimension sliders preserved, TIME-01 temporal scrubber, hard ≥50fps
+  Tier-0 gate at the shipped rung measured last.
+- [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
+  Model Coordination for ~966 clash-issue rows); needs design approval.
+- [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
+  APS Account Admin provisioning; wire per-project roles/modules once the DC CSV
+  `activity_in_module` / `total_activity` join lands.
+- [ ] **Per-folder terrain projection** (seed from v2.2 Phase 19) — the
+  `AccFolderPermissionSummary` projection is a per-`(projectId,roleId)` rollup, so the
+  terrain views (which need per-folder tier) correctly stayed on `folderPermQuery.ts`'s
+  raw `$queryRaw`. A separate per-folder materialised projection could retire that scan
+  too — a distinct model + backfill, only if terrain read cost becomes a concern.
 
 ### Out of Scope
 
-- `/users/spatial-graph` — separate future project; needs full dedicated attention
-- New data pipelines or external integrations — the existing Prisma DB is the source of truth
-- Changes to the underlying data model / Prisma schema (beyond read-only query additions)
-- End-user engagement/retention features — this is a *presentation/workshop showcase*, not an engagement product (only Luis runs the dev env; users watch the data, they don't drive the app)
+- ~~`/users/spatial-graph` rework~~ — **RE-SCOPED IN 2026-07-14 by explicit owner request.**
+  This boundary held from v2.1 through v2.3 exactly as written ("out of scope unless
+  explicitly re-scoped"); v2.4 is that re-scope. The surface is now IN scope. Note that
+  `/users/spatial-graph` and `/users/access-analysis` render the **same UI**
+  (`spatial-graph/page.tsx:6,17` → `AccessAnalysisShellClient`).
+- **Issue dimensions on the graph** (issue status / type / coordination) — deferred to v2.6.
+  `AccIssue.createdBy` is an ACC user GUID with no bridge to `AccDcUser` and an unmeasured
+  resolution rate; wiring it blind would produce a mostly-empty dimension.
+- **Temporal scrubber on the graph** (activity/issues by month) — deferred to v2.6. Time is
+  not a node attribute; it needs a new interaction concept, not a dimension slot.
+- **New Prisma table/migration or npm dependency in v2.5** — the embedding upgrade is
+  offline-pipeline-only; umap-learn (python, offline) is the sole dependency change.
+  `AccInstanceEmbedding.neighbors` is already Json — richer neighbor payloads are additive.
+- New WebGL on **data** surfaces — confined to approved `/users` header and
+  `/forma-proposal` background accents. **Unchanged by v2.4:** the spatial graph is not a
+  data surface and already runs cosmos.gl/WebGL; reviving its force engine adds no new
+  WebGL to `/access-analysis`, `/template-mty`, or `/forma-proposal`.
+- New analytics not derivable from the Prisma DB — under-covered sources are
+  labeled, not hidden. **v2.4 adds no new data source** — every dimension it exposes is
+  already computed today.
 
 ## Context
 
-- **Current state (shipped v2.0, 2026-06-19).** The Workshop-Grade UI/UX Overhaul shipped all 28 in-scope requirements across 7 phases (30 plans), owner-approved on the projector. The 4 target pages now share one design language; `/users` was decomposed (2,474 → 314-line shell) and rebuilt on a reusable `DataTable`. ~36k insertions over 3 days (incl. planning re-init). Deploy = local rebuild on :3000 (not merged to `deploy`). Tagged `v2.0` (the `v1.0` tag belongs to the May 2026 ACC Users Graph milestone). Full record: `.planning/MILESTONES.md` + `.planning/milestones/v2.0-*.md`.
-- **Brownfield, mature codebase.** Full codebase map lives in `.planning/codebase/` (ARCHITECTURE, STACK, STRUCTURE, CONVENTIONS, TESTING, CONCERNS, INTEGRATIONS), refreshed 2026-06-17.
-- **Audience model.** Luis is the sole developer and presenter; he runs these pages in live workshops for all users. Success = the audience *sees* the data and stays engaged during the session — not user self-service engagement metrics.
-- **Design references** (the *feel*, not the content): [landonorris.com](https://landonorris.com/), [igloo.inc](https://www.igloo.inc/), [orano.group innovation slider](https://www.orano.group/experience/innovation/en/slider) — dark, cinematic, depth-rich, motion-guided experiences. None are analytics tools; the brief is to translate that premium experience feeling onto interactive pies, donuts, and tables.
-- **Current page weights** (from the map): `/users` is a 2,474-line `UsersDirectoryClient` monolith with 6+ heavy tRPC queries (~7–15MB) and no real table; `/access-analysis` runs 7 parallel RSC loaders (~20MB) but is the cleanest layout; `/template-mty` is the lightest/most focused; `/forma-proposal` is a local-draft editor with a 315-line `HierarchyView` spike.
-- **Theming history** (memory): existing dark palette is **zinc, not slate** (`#09090B` bg, no blue cast); a dark-mode plan and `DARK_MODE.md` conventions already exist. Page roots must own scroll (`h-full overflow-y-auto`) and use semantic CSS-var tokens; ECharts must read `resolvedTheme` for canvas colors.
-- **Codebase-mapping toolchain** (added 2026-06-17): `scripts/repo-map/` generates an LLM-friendly repo digest + structural reports into `.tools/repo-map/` via `npm run repo-map[:ast | :deps | :repomix | :repomix-zones | :summary]` (backed by `repomix`, `dependency-cruiser`, `@ast-grep/cli`). Current artifacts: `architecture-summary.md`, `repomix-output.xml` + per-zone digests (`repomix/`), `dependency-cruiser.json` / `dependency-graph.mmd`, and ast-grep reports (`fetch-calls`, `prisma-access`, `react-use-effect`, `router-push`). `npm run repo-map:check` ratchets against `.tools/repo-map/baselines/` to flag regressions (new fetch calls / effects). **These are the standing structural input for per-phase research** — phase agents should refresh (`npm run repo-map`) then consult: the dependency graph before the `/users` decomposition (USR-01), the fetch/effect ast-grep reports for the redundant-fetch audit (PERF-03), and `ast-grep-prisma-access.json` for the new-analytics feasibility gate (NA-01).
+- **v2.1 shipped 2026-07-01**, tagged `v2.1` (local-only, consistent with `v1.0`/`v2.0`).
+  Prior history (v2.0 milestone + Phases 01–08, incl. the Phase 8 activity
+  re-extraction) is preserved in tags and git history.
+- **Planning retention is deliberate.** The working tree keeps current PROJECT, STATE,
+  REQUIREMENTS, ROADMAP, research/codebase context, and active-milestone phase artifacts.
+  Completed milestone phase directories and duplicate archives are read from tags or git
+  history when needed.
+- Data extraction used a free ACCDS member-accessible web-session crawl (no Data
+  Connector quota) plus a folder crawl; census in `.planning/STATE.md`.
+- **v2.2 shipped 2026-07-02**, tagged `v2.2` (local). The 2 pre-existing
+  `FolderPermissionTerrain.test.tsx` failures were root-caused and fixed during v2.2
+  Phase 16 (folder-label over-pruning + a `<polygon>`→`<path>` polygon-count miscount,
+  both tracing to `d2d990bf`); `npm test` is now green (2256 passed / 1 skipped, 302 files).
+  The branch `feat/access-analysis-redesign` still carries other pre-existing unrelated WIP
+  (uncommitted `app/...` / repo-map changes) and the `.planning/` migration deletions — left
+  untouched throughout v2.2; all v2.2 commits were made by explicit path.
+- **v2.3 shipped 2026-07-14** (New Graphs, 6 phases/28 plans, 8/8 requirements). Closed via
+  the same tag-consistent retention model: `.planning/milestones/v2.3-ROADMAP.md` +
+  `v2.3-REQUIREMENTS.md` archived, `.planning/MILESTONES.md` gained a v2.3 entry (v2.0/v1.0
+  history preserved), STATE/ROADMAP/PROJECT evolved in place. Two urgent phases were inserted
+  mid-milestone (20.1 IA redesign, 21.1 Overview-tab UAT follow-ups) — the 20.1/21.1 pattern
+  is why v2.3 grew from a planned 4 phases to 6; Phase 23 explicitly avoided repeating it (no
+  Phase 23.1). Milestone closed on a full deliberate `:3000` rebuild + graph-by-graph owner
+  sign-off pass — the first milestone in this branch's history to get one, rather than
+  per-phase spot checks.
 
 ## Constraints
 
-- **Tech stack**: Stay on Next.js 16 / React 19 / tRPC / Prisma / ECharts / Tailwind+shadcn — no framework change. — Avoids a rewrite; leverages the existing server-driven hybrid architecture.
-- **Performance**: The redesign must not regress load or interaction speed; ideally improve *perceived* speed (skeletons, progressive/staggered loading). — Speed is one of the five inseparable axes.
-- **Data source**: Any new analytics must be derivable from the existing Prisma schema/data. — DB is the single source of truth; keeps scope shippable, no new pipelines.
-- **Build**: `next build` typechecks the *entire* tree including test files (no `ignoreBuildErrors`); any tsc error blocks the `:3000` deploy build. — Run `npx tsc --noEmit` before rebuilding.
-- **Deploy**: Production runs via a local Windows Task Scheduler build on `:3000`; deploy = `npm run build` + restart of the current checkout, **not** a git deploy-branch merge. — A rebuild ships the whole working tree.
-- **Motion**: Transitions must be tasteful and never overwhelming. — Explicit owner constraint balancing "don't look flat" against "don't overwhelm."
+- **Tech stack**: Node >=22, Next.js 16 App Router, React 19, tRPC, Prisma, local
+  PostgreSQL — analytics source of truth is the Prisma DB.
+- **UI**: zinc dark theme (`#09090B`, no blue cast), semantic CSS-variable theming,
+  ECharts must resolve theme colors; motion budget <=200ms.
+- **Gates**: `npx tsc --noEmit` before any `next build`/rebuild; deploy = rebuild +
+  Task Scheduler restart on `:3000` (not a git branch merge).
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Premium 2.5D depth + *selective* 3D hero accents (not full WebGL on data pages) | Honors the "not flat" + "not overwhelming" + speed tension; the real-3D experience is reserved for the carved-out spatial-graph project | ✓ Good — shipped v2.0; real 3D stayed off data pages, GPU < 400MB held |
-| Light + dark both first-class and equally refined | Workshops may run on either; daily use varies; refs are dark but the app already ships both | ✓ Good — both themes validated incl. WCAG AA at projector brightness (THM-01) |
-| Mix treatment per page (`/users` redesign; others polish + depth + new views) | Matches each page's current state — `/users` is a monolith, the others are already clean | ✓ Good — `/users` fully rebuilt on DataTable; others polished without rewrite |
-| New analytics bounded strictly to the existing Prisma DB | DB is the source of truth; prevents the "new analytics" scope from ballooning into data engineering | ✓ Good — NA-01 feasibility gate held; under-covered sources labeled in UI |
-| `/users/spatial-graph` deferred to its own project | It needs full dedicated attention (real 3D); excluding it keeps this milestone focused | ✓ Good — boundary held; zero files under `users/access-analysis/` touched |
-| Adopt the `scripts/repo-map` toolchain as the standing input for per-phase research & a regression ratchet | Gives planning agents precise structural facts (dep graph for the `/users` split, ast-grep sweeps for the foundation/perf work, `prisma-access` for the NA feasibility gate); `repo-map:check` guards against re-introducing redundant fetches | ✓ Good — used as standing research input + fetch/effect regression ratchet |
+| Reset `.planning/` to a data-extraction-confirmed baseline | Owner wanted a clean history showing only "data extracted + verified" | ✓ Good — baseline held through all of v2.1 |
+| Keep upgraded `config.json` (runtime/claude, agent_skills, build/test commands) | Recent intentional GSD config upgrade | ✓ Good |
+| v2.1 milestone = close CONCERNS.md (not a feature release) | All 22 mapped concerns deserve a disposition; debt-closure protects the live workshop | ✓ Good — 20/20 requirements shipped + verified |
+| Exclude `/users/spatial-graph` concerns (§3, §8.2/8.3) from v2.1 | Honors the standing out-of-scope boundary; lowest risk to the interactive graph | ✓ Good — boundary held; no spatial-graph churn in the diff |
+| Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | ✓ Good — REF-01/REF-02 now safe behind TEST-02/TEST-03 |
+| Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | ✓ Good — no rework needed |
+| Close v2.1 via tag + evolve; keep requirements in place and detailed artifacts in git history | Avoid duplicate planning archives in the working tree while retaining recoverable evidence | ✓ Good — retention policy finalized during repository cleanup |
+| v2.2 = full structural-refactor scope (REF-01 all 3 monoliths + REF-02 + REF-03 DB projection) | The characterization tests shipped in v2.1 exist precisely to make these safe; owner chose the widest slice incl. the summary projection | ✓ Good — all 8 requirements shipped behavior-preserving; every phase goal-verified; workshop pages unchanged |
+| v2.2 keeps `REQUIREMENTS.md` in place (v2.1 + v2.2 record preserved in Validated + git history) | Keeps current requirements readable without duplicating completed phase directories | ✓ Good — same retention model repeated for v2.2 |
+| REF-03 terrain scoped OUT of the projection switch (Phase 19) | `AccFolderPermissionSummary` is a per-`(projectId,roleId)` rollup; terrain needs per-folder tier, which the rollup lacks — forcing it would lose granularity + break TEST-02. Only the summary aggregate matches the projection shape | ✓ Good — terrain stayed on `folderPermQuery.ts`, TEST-02 byte-identical; per-folder projection seeded for later |
+| Hard-guard (not delete) the `includePermissionContexts` raw scan | Preserves the WS2 edge-feed / per-folder-ACL capability behind an explicit `ACC_ALLOW_RAW_PERMISSION_SCAN=1` env escape hatch; throws by default so the ~6M-row OOM window can't silently re-open | ✓ Good — no prod caller enables it; TEST-01 strengthened |
+| Refresh via reusing the backfill script verbatim in the ingest cron | `execSync('node scripts/backfill-folder-perm-summary.cjs')` (non-fatal, server-side) makes the cron and standalone backfill the SAME code path — zero SQL duplication, no drift; bounded ≤1 ingest cycle | ✓ Good — reconciliation PASS post-refresh; staleness documented in INTEGRATIONS.md |
+| Rebuild `:3000` (owner-consented) to verify v2.2 parity, unlike v2.1 | The final phase was a server-side data-source swap → a rebuild is required to see it; owner explicitly approved stopping `:3000` (build 500s a live app per deploy-sequence) | ✓ Good — real owner visual sign-off on `/access-analysis` + `/template-mty` (unlike Phase 17's test-basis-only) |
+| Milestone-close gate = graph-by-graph owner sign-off across the FULL 4-page workshop, not just the new panels | Phase 23 (mandatory curation gate, no new requirements) exists precisely to catch a wrong number in a pre-v2.3 panel before the milestone ships | ✓ Good — blanket verbatim "approved" on all 23 `/access-analysis` panels + `/users`, zero findings; `IssueTypeChart` (the one panel with zero prior UAT) covered |
+| Keep v2.3 tight — no Phase 23.1 despite the 20.1/21.1 inserted-phase precedent | The 20.1/21.1 pattern already stretched v2.3 from 4 to 6 phases; the owner review's zero-finding outcome meant nothing needed a follow-up insertion | ✓ Good — milestone closed cleanly, no urgent-phase insertion needed |
+| **v2.4 re-scopes `/users/spatial-graph`** (standing Out-of-Scope boundary since v2.1) | Direct owner request 2026-07-14. The boundary was always written as "unless explicitly re-scoped" and seeded as a dedicated future milestone — this is that milestone, not scope creep | ✓ Good — 18/18 shipped with zero new data plumbing |
+| **v2.4 = unlock + revive, NOT build** | Source audit (2026-07-14) proved ~14 node dimensions are already computed every load and discarded, the 208-dim catalog + its slider sidebar are already written, and the force-anchor engine is already computed then thrown away at `AccessAnalysisShell.tsx:611`. The milestone's value is in the aperture, not new machinery | ✓ Good — no new source/table/loader/dep needed |
+| **Revive the force-anchor layout engine** (dimensions restructure the graph) rather than keeping the static embedding map | Owner chose it over the lower-risk "recolor/regroup only" option. A dimension that can't move the graph isn't really a graph dimension — and the anchors are already computed. Accepted risk: touches cosmos.gl reheat, the known-fragile area (CONCERNS.md §3.2) | ✓ Good — PERF-02 frozen-handle invariant held; the "+42% regression" scare turned out to be a pre-existing SSR bug, not the engine |
+| **Tier 3 (issue dims + temporal scrubber) explicitly deferred** | `AccIssue.createdBy` → `AccDcUser` has no id bridge and an unmeasured resolution rate; shipping it blind risks a mostly-empty dimension that lies. Time is not a node attribute | ✓ Good — still deferred (now v2.6 candidate) |
+| **Perf debt (CONCERNS.md §3.1–3.4) folded into v2.4, not deferred again** | Exposing 189 sliders makes the eager 176-action catalog init a real first-paint cost on a live-demo page, not a theoretical one. The debt becomes load-bearing precisely because of this milestone | ✓ Good — §3.1/3.2/3.3 closed; 28.1 found+fixed the real first-paint culprit |
+| **v2.5 = embedding truth + similarity intelligence + living UI** on the same surface | Direct owner request 2026-07-16. Source investigation proved the map is bag-of-words (magnitude discarded, 87% jittered clones) and the neighbor lists are twin-saturated — position/similarity don't honestly reflect the extracted data, violating core value on the flagship demo surface | ✓ Good — 16/16 shipped; duplicates 84.3%→20.4%, trustworthiness gate passed |
+| **UMAP over t-SNE for the recompute** (amended to PaCMAP at Phase-29 discussion) | Owner-chosen 2026-07-16, swapped to pacmap+faiss-cpu 2026-07-16; dep is offline-python-only, zero app runtime impact | ✓ Good — deterministic (seed proven twice), gate-conditional upsert held |
+| **Full ambient motion, behind a hard ≥50fps gate + degradation rule** | Owner-chosen 2026-07-16 over the recommended "subtle ambient". Risk accepted deliberately: per-frame updates on ~22k frozen nodes; the gate + auto-degrade rule (LIFE-03) is the safety net, and reduced-motion stays static | 🟡 Honest partial — gate FAILED on the final 14.2k-link path (20.68 fps); shipped via the written degradation clause; Canvas2D raster proven the ceiling → v2.6 |
+| **PERF-05/06 (SSR-hydration app-wide + shell-chunk split) folded into v2.5** | The 4s dead gap and multi-MB refetches sit on this exact route; "nodes feel alive" is unachievable behind them. Fix at the shared boundary (helper + test), measure last (Phase 33) | ✓ Good — zero refetch both routes, chunk −18.3%, time-to-graph −23.5% (median 3,914 ms); bonus RSC client-proxy root-cause fix (`cachePolicy.ts`) |
+| **v2.6 = renderer rethink (hard ≥50fps Tier-0 bar) + health sweep** | Owner-chosen 2026-07-20 from the seeded candidates (1+3). The renderer is the only path to the gate v2.5 couldn't pass; the health sweep restores gating power the renderer work itself needs. Tier-3 dims stay deferred (spike = v2.7 entry ticket) | — Pending |
+| **Health sweep sequenced FIRST (Phase 34), renderer after** | The renderer phases need a trustworthy e2e gate; re-baselining `acc-dc-graph.spec.ts` before touching the web means regressions surface as failures, not noise | ✓ Good — suite gated Phases 35–36; renderer regressions surfaced as failures |
+| **v2.7 = activity-event node grain, ALL 4.86M raw events** | Direct owner goal 2026-07-20; owner chose the literal raw grain over offered bounded grains (106k/40k) with full awareness of the ~220× scale risk | — Pending |
+| **Feasibility spike FIRST (Phase 37) with an owner-approved fallback ladder** | Hard ≥50fps bar + 220× scale jump cannot both be assumed; measured numbers pick the shipped rung (L0→L3, every activity counted at every rung) so a failed rung is a recorded decision, not a dead milestone — v2.5 LIFE-03 clause discipline applied up front | — Pending |
+| **Full replace of the user-instance graph, sliders preserved** | Owner explicit: no mode toggle, but "I need to have dimensions slider still"; PERF-02 motion contract must evolve deliberately (GPU-side morph) with rewritten pins, never silent weakening | — Pending |
+| **TIME-01 folded into v2.7** | Month becomes a native node attribute at activity grain — the original blocker ("time is not a node attribute") dissolves with this redesign | — Pending |
 
 ---
-*Last updated: 2026-06-19 after v2.0 milestone (Workshop-Grade UI/UX Overhaul) completion*
+*Last updated: 2026-07-20 — opened milestone **v2.7 Activity Universe** (see "Current Milestone" above): spatial graph node grain becomes one node per extracted activity event (4.86M corpus, owner-chosen, fallback ladder + feasibility spike first), author properties inherited, sliders preserved, TIME-01 folded in, hard ≥50fps Tier-0 gate at the shipped rung. Prior: closed v2.6 Full-Rate Graph (8/8 shipped, deployed `39p7DFRd3DbgM8WjWU2Pz`).*

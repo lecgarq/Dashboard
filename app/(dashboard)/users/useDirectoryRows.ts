@@ -17,6 +17,7 @@ import { useShallow } from "zustand/shallow";
 import type { OrgPerson } from "./directoryUtils";
 import { parseSearchTokens, matchesPerson } from "./directoryUtils";
 import { useUsersDirectoryStore } from "./useUsersDirectoryStore";
+import { classifyAffiliation } from "./access-analysis/internalDomains";
 export interface DirectoryRowsResult {
   filtered: OrgPerson[];
   displayRows: OrgPerson[];
@@ -39,21 +40,24 @@ export function useDirectoryRows({
     debouncedSearch, groupBy,
     filterDept, filterJobTitle, filterCostCenter, filterNoProjects,
     filterAccProject, filterAccRole, filterAccModule,
-    statusFilter, projectAdminFilter,
+    statusFilter, projectAdminFilter, affiliationFilter,
   } = useUsersDirectoryStore(useShallow((s) => ({
     debouncedSearch: s.debouncedSearch, groupBy: s.groupBy,
     filterDept: s.filterDept, filterJobTitle: s.filterJobTitle, filterCostCenter: s.filterCostCenter,
     filterNoProjects: s.filterNoProjects, filterAccProject: s.filterAccProject,
     filterAccRole: s.filterAccRole, filterAccModule: s.filterAccModule,
     statusFilter: s.statusFilter, projectAdminFilter: s.projectAdminFilter,
+    affiliationFilter: s.affiliationFilter,
   })));
 
   const hasActiveFilters = !!(filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
-    filterAccProject || filterAccRole || filterAccModule || statusFilter.length > 0 || projectAdminFilter);
+    filterAccProject || filterAccRole || filterAccModule || statusFilter.length > 0 || projectAdminFilter ||
+    affiliationFilter);
 
   const filtered = useMemo(() => {
     const { fieldFilters, freeText } = parseSearchTokens(debouncedSearch);
     return people.filter((p) => {
+      if (affiliationFilter && classifyAffiliation(p.email) !== affiliationFilter) return false;
       if (filterDept && p.department !== filterDept) return false;
       if (filterJobTitle && p.jobTitle !== filterJobTitle) return false;
       if (filterCostCenter && p.costCenter !== filterCostCenter) return false;
@@ -73,7 +77,7 @@ export function useDirectoryRows({
       if (projectAdminFilter) { const s = accSummaryMap.get(p.email); if (s?.projectAdmin !== true) return false; }
       return matchesPerson(p, freeText, fieldFilters);
     });
-  }, [people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, filterNoProjects, filterAccProject, filterAccRole, filterAccModule, statusFilter, projectAdminFilter, accSummaryMap]);
+  }, [people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, filterNoProjects, filterAccProject, filterAccRole, filterAccModule, statusFilter, projectAdminFilter, affiliationFilter, accSummaryMap]);
 
   const displayRows = useMemo<OrgPerson[]>(() => {
     if (!activitySortActive) return filtered;

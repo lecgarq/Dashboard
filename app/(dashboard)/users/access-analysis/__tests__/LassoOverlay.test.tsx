@@ -12,6 +12,14 @@ import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, fireEvent, screen, act } from "@testing-library/react";
 import { LassoOverlay } from "../LassoOverlay";
 
+// PERF-03 (Phase 28.1): the shell passes an INLINE onLassoComplete closure
+// (AccessAnalysisShell.tsx), so onComplete gets a fresh identity on every shell
+// render. Before the latest-ref fix, the pointer-listener effect depended on
+// onComplete and re-ran mid-drag; its cleanup reset drawingRef/pathRef, so
+// pointerup early-returned and the selection never committed — the deterministic
+// warm-cache lasso failure (acc-dc-graph.spec.ts:603). This suite pins that a
+// mid-drag re-render can no longer abort an in-progress drag.
+
 // jsdom doesn't implement <canvas>.getContext — stub it so LassoOverlay's
 // useEffect doesn't bail early on `if (!ctx) return`.
 beforeAll(() => {
@@ -130,6 +138,36 @@ describe("LassoOverlay — Phase 4-01 Task 3 (hitTest API)", () => {
     expect(onDragEnd).not.toHaveBeenCalled();
     cv.dispatchEvent(pointerEvt("pointerup", { offsetX: 5, offsetY: 5 }));
     expect(onDragEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("mid-drag re-render with a new onComplete identity still commits on pointerup (PERF-03)", async () => {
+    const onCompleteA = vi.fn();
+    const onCompleteB = vi.fn();
+    const hitTest = vi.fn((_p: [number, number][], _w: number, _h: number) => [1, 3, 7]);
+    const { rerender } = render(
+      <LassoOverlay active={true} hitTest={hitTest} onComplete={onCompleteA} />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const cv = screen.getByTestId("lasso-overlay") as HTMLCanvasElement;
+    cv.dispatchEvent(pointerEvt("pointerdown", { offsetX: 10, offsetY: 10 }));
+    cv.dispatchEvent(pointerEvt("pointermove", { offsetX: 30, offsetY: 15 }));
+    cv.dispatchEvent(pointerEvt("pointermove", { offsetX: 20, offsetY: 40 }));
+
+    // Shell re-render lands MID-DRAG: onLassoComplete is inline, so onComplete's
+    // identity changes. This must NOT tear down the in-progress drag.
+    rerender(<LassoOverlay active={true} hitTest={hitTest} onComplete={onCompleteB} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    cv.dispatchEvent(pointerEvt("pointermove", { offsetX: 10, offsetY: 30 }));
+    cv.dispatchEvent(pointerEvt("pointerup", { offsetX: 10, offsetY: 30 }));
+
+    // The drag commits to the LATEST callback; the stale one is never used.
+    expect(onCompleteB).toHaveBeenCalledWith([1, 3, 7]);
+    expect(onCompleteA).not.toHaveBeenCalled();
   });
 
   // unused-symbol guard — silences fireEvent unused-import lint when this block evolves.

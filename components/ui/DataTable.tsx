@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -51,7 +51,20 @@ export interface DataTableProps<T> {
   filteredEmptyMessage?: string;
   /** Optional className for the outer shell. */
   className?: string;
+  /**
+   * When set, rows are banded into groups by this label AFTER the active sort:
+   * groups are ordered alphabetically ("Not specified" last), rows keep their
+   * sort order within each group, and a header band (label + count) precedes
+   * each group in the virtualized list.
+   */
+  getGroupLabel?: (row: T) => string | null;
 }
+
+const UNGROUPED_LABEL = "Not specified";
+
+type DisplayItem<T> =
+  | { kind: "row"; row: Row<T> }
+  | { kind: "group"; label: string; count: number };
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -79,6 +92,7 @@ export function DataTable<T>({
   emptyMessage = "No data yet",
   filteredEmptyMessage = "No results — try adjusting your filters",
   className,
+  getGroupLabel,
 }: DataTableProps<T>): React.ReactElement {
   // ------------------------------------------------------------------
   // Density state — reads from localStorage on mount
@@ -145,6 +159,28 @@ export function DataTable<T>({
 
   const rows = table.getRowModel().rows;
 
+  // Grouped display list: header bands interleaved with the sorted rows. When
+  // no getGroupLabel is supplied this is a 1:1 wrap of `rows` (no bands).
+  const displayItems = useMemo<DisplayItem<T>[]>(() => {
+    if (!getGroupLabel) return rows.map((row) => ({ kind: "row" as const, row }));
+    const byLabel = new Map<string, Row<T>[]>();
+    for (const row of rows) {
+      const label = getGroupLabel(row.original) || UNGROUPED_LABEL;
+      const arr = byLabel.get(label);
+      if (arr) arr.push(row);
+      else byLabel.set(label, [row]);
+    }
+    const entries = [...byLabel.entries()].sort(([a], [b]) =>
+      a === UNGROUPED_LABEL ? 1 : b === UNGROUPED_LABEL ? -1 : a.localeCompare(b),
+    );
+    const items: DisplayItem<T>[] = [];
+    for (const [label, groupRows] of entries) {
+      items.push({ kind: "group", label, count: groupRows.length });
+      for (const row of groupRows) items.push({ kind: "row", row });
+    }
+    return items;
+  }, [rows, getGroupLabel]);
+
   // ------------------------------------------------------------------
   // Scroll refs + sync
   // ------------------------------------------------------------------
@@ -170,9 +206,9 @@ export function DataTable<T>({
   // Virtualizer
   // ------------------------------------------------------------------
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: displayItems.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT[density],
+    estimateSize: (i) => (displayItems[i]?.kind === "group" ? 36 : ROW_HEIGHT[density]),
     measureElement: (el) => el?.getBoundingClientRect().height ?? ROW_HEIGHT[density],
     overscan: 5,
   });
@@ -280,7 +316,22 @@ export function DataTable<T>({
                         isSorted && "text-foreground"
                       )}
                       onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                      role={canSort ? "columnheader" : undefined}
+                      onKeyDown={
+                        canSort
+                          ? (e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                header.column.getToggleSortingHandler()?.(e);
+                              }
+                            }
+                          : undefined
+                      }
+                      tabIndex={canSort ? 0 : undefined}
+                      aria-sort={
+                        canSort
+                          ? isSorted === "asc" ? "ascending" : isSorted === "desc" ? "descending" : "none"
+                          : undefined
+                      }
                     >
                       <span className="flex items-center gap-1">
                         {header.isPlaceholder
@@ -327,7 +378,32 @@ export function DataTable<T>({
                   }}
                 >
                   {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                    const row = rows[virtualItem.index];
+                    const item = displayItems[virtualItem.index];
+                    if (item.kind === "group") {
+                      return (
+                        <div
+                          key={virtualItem.key}
+                          data-index={virtualItem.index}
+                          data-testid="group-header"
+                          ref={(el) => rowVirtualizer.measureElement(el)}
+                          role="rowheader"
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${virtualItem.start}px)`,
+                          }}
+                          className="flex items-baseline gap-2 border-b border-border/60 bg-muted/40 px-3 py-2"
+                        >
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                            {item.label}
+                          </span>
+                          <span className="text-[11px] tabular-nums text-muted-foreground">{item.count}</span>
+                        </div>
+                      );
+                    }
+                    const row = item.row;
                     const isExpanded = row.getIsExpanded();
 
                     return (
@@ -358,9 +434,27 @@ export function DataTable<T>({
                           </colgroup>
                           <tbody>
                             <tr
-                              className="hover:bg-muted/30 transition-shadow hover:shadow-[var(--depth-float)] group"
+                              className="hover:bg-muted/30 focus-visible:bg-muted/40 transition-shadow hover:shadow-[var(--depth-float)] group"
                               onMouseEnter={() => onRowHover?.(row)}
                               onMouseLeave={() => onRowHoverEnd?.(row)}
+                              // Keyboard path to the row action: Tab to the row,
+                              // Enter opens (same as click); Space toggles the peek.
+                              tabIndex={onRowClick ? 0 : undefined}
+                              onFocus={() => onRowHover?.(row)}
+                              onKeyDown={
+                                onRowClick
+                                  ? (e) => {
+                                      if (e.target !== e.currentTarget) return;
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        onRowClick(row);
+                                      } else if (e.key === " " && renderExpanded) {
+                                        e.preventDefault();
+                                        row.getToggleExpandedHandler()();
+                                      }
+                                    }
+                                  : undefined
+                              }
                             >
                               {/* Expand chevron cell */}
                               <td

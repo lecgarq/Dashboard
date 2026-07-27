@@ -55,4 +55,28 @@ describe("ActivityTimelineChart", () => {
     expect(getByTestId("echart").getAttribute("data-points")).toBe("1");
     expect(getByTestId("timeline-headline").textContent).not.toContain("busiest month");
   });
+
+  // TRUTH-02: data floor caption
+  it("renders 'Data available from Mon YYYY' caption when dataFloor is provided", () => {
+    const { getByTestId } = render(
+      <ActivityTimelineChart summary={summary} dataFloor="2025-06" />,
+    );
+    const caption = getByTestId("timeline-data-floor");
+    expect(caption.textContent).toContain("Data available from");
+    expect(caption.textContent).toContain("Jun 2025");
+    // Must be month-year only — no day component.
+    expect(caption.textContent).not.toMatch(/\bJun \d{1,2},/);
+  });
+
+  it("omits the data floor caption when dataFloor is null or absent", () => {
+    const { queryByTestId: queryNull } = render(
+      <ActivityTimelineChart summary={summary} dataFloor={null} />,
+    );
+    expect(queryNull("timeline-data-floor")).toBeNull();
+
+    const { queryByTestId: queryAbsent } = render(
+      <ActivityTimelineChart summary={summary} />,
+    );
+    expect(queryAbsent("timeline-data-floor")).toBeNull();
+  });
 });

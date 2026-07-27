@@ -1,339 +1,458 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-23 — post 2D/3D activity-universe arc (view-toggle spec `55625c91`, `E2E_REUSE_SERVER` escape hatch, two-flag fixture trap, headed-WebGL trap, new unit suites, test-count refresh). Previous refreshes 2026-07-22, 2026-07-21, 2026-07-20, 2026-07-16, 2026-07-02.
 
 ## Test Framework
 
-**Runner:**
-- Vitest 4.1.6
-- Config: `vitest.config.ts`
-- Environment: Node (default) + jsdom for component tests (via `// @vitest-environment jsdom` directive)
+**Unit/Integration Runner:** Vitest `^4.1.6`
+- Config: `vitest.config.ts` (repo root)
+- Environment: `node` by default. Components requiring DOM APIs override per-file with `// @vitest-environment jsdom`.
+- Globals: enabled (`globals: true`) — `describe`, `it`, `expect`, `vi` available without import, but tests typically import them explicitly.
+- Setup file: `vitest.setup.ts`
 
-**Assertion Library:**
-- Vitest built-in expect (similar to Jest)
-- Additional matchers via @testing-library: `getByTestId`, `getByRole`, `fireEvent`, `within`, `render`
+**E2E Runner:** Playwright `^1.59.1`
+- Config: `playwright.config.ts` (repo root)
+- Test directory: `tests/e2e/`
+- UAT variant config: `playwright.verify.config.ts` (used by UAT workshop harness)
 
 **Run Commands:**
 ```bash
-npm test                # Run all unit tests (excludes e2e)
-npm run test:e2e        # Run Playwright e2e suite
-npm run test:e2e:ui     # Interactive Playwright UI
+npm test                         # Vitest unit suite (excludes tests/e2e/**)
+npm run test:e2e                 # Playwright e2e on :3100
+npm run test:e2e:ui              # Playwright UI mode
+npx tsc --noEmit                 # Full tree typecheck (MUST pass before any next build)
+npm run repo-map:check           # Architecture boundary check
 ```
 
-**E2E Framework:**
-- Playwright 1.59.1
-- Config: `playwright.config.ts`
-- Test directory: `tests/e2e/`
-- Port isolation: runs on `:3100` (separate from dev `:3000`)
-- Auth: global-setup mints NextAuth cookies, stored in `playwright/.auth/storageState.json`
+## Verification Gate Sequence
+
+**Before any `next build` / deploy:**
+1. `npx tsc --noEmit` — typechecks the WHOLE tree including test files. `next build` also typechecks tests; a failing test type error blocks the `:3000` build.
+2. `npm test` — Vitest unit suite.
+3. `npm run repo-map:check` — dependency boundary check (for architecture/import changes). Narrow check without regenerating the map: `node scripts/repo-map/check.cjs`.
+4. `npm run build` — produces `.next/`, used by Task Scheduler restart.
+
+**Never build while `:3000` is live** — this is now **enforced at the tool level**: the PreToolUse hook `.claude/hooks/guard-bash.cjs` probes port 3000 and denies `npm run build` / `next build` while it is up. Exemption: commands that set `NEXT_DIST_DIR` to a non-default dir (e.g. `.next-e2e`) build to an isolated dist and are allowed. Denials are intentional; do not retry — stop the `LECG Dashboard Local` scheduled task first (see `.claude/skills/lecg-dashboard/references/deploy-sequence.md`) or use `/lecg-ship`.
+
+**Deploy = rebuild + restart:**
+Task Scheduler on Luis's PC stops the process, runs `npm run build`, then restarts `next start` on `:3000`. Never use `next dev` for the live workshop server.
+
+**E2E isolation:** the default `playwright.config.ts` starts its own `next dev --webpack` on port `3100` (env `E2E_PORT`, default 3100) with `NEXT_DIST_DIR=.next-e2e` so it never touches the production `.next` directory. The prod server on `:3000` can stay running. The webServer env also sets `NEXT_PUBLIC_ACC_GRAPH_TEST=1` and `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1`.
+
+**⚠️ The dev-server `webServer` block is effectively dead — use the external-server escape hatch (`55625c91`).** Webpack dev on `:3100` currently 500s (the standing "no working dev server" trap), so `playwright.config.ts` gained `reuseExistingServer: Boolean(process.env.E2E_REUSE_SERVER)` and `baseURL = process.env.E2E_BASE_URL ?? http://localhost:${PORT}`. The documented harness is now an isolated **production** build, started out of band:
+
+```bash
+# 1. build to an isolated dist (allowed by guard-bash.cjs because NEXT_DIST_DIR is non-default)
+NEXT_DIST_DIR=.next-e2e npx next build --webpack
+# 2. start it on :3100 with BOTH fixture flags (see below) — out of band
+# 3. point Playwright at it instead of letting it spawn a dev server
+E2E_REUSE_SERVER=1 E2E_BASE_URL=http://localhost:3100 npx playwright test <spec>
+```
+Because the server is external, its env is **your** responsibility — the `webServer.env` block in the config does not apply. That is exactly how the two-flag trap below bites.
+
+**Prod-build e2e variant (`playwright.verify.config.ts`):** no `webServer` block — a production `next start` on `:3100` is started **out-of-band** (build with `NEXT_DIST_DIR=.next-e2e` or an isolated dist, then start it), and tests point at it via `E2E_BASE_URL`. Its own header comment notes this exists because some suites need code paths that differ under the dev server (e.g. `pg` externalization). Recent full verification runs (dep update 2026-07-14) used this isolated prod-build harness.
+
+## Vitest Setup (`vitest.setup.ts`)
+
+Critical global stubs registered for all unit tests:
+
+```ts
+// Fake DATABASE_URL (prevents real DB connections in unit tests)
+process.env.DATABASE_URL = "postgresql://user:pass@localhost:5432/db";
+process.env.NODE_ENV = "test";
+
+// Prevent 'server-only' module from throwing
+vi.mock('server-only', () => ({}));
+
+// Minimal NextResponse.json shim (next/server)
+vi.mock('next/server', () => ({ NextResponse: { json: (body, init) => new Response(JSON.stringify(body), ...) } }));
+
+// Stub next-auth so router tests don't need real auth wiring
+vi.mock('next-auth', () => ({ default: () => ({ handlers: {}, auth: vi.fn(), signIn: vi.fn(), signOut: vi.fn() }) }));
+vi.mock('next-auth/next', () => ({ default: vi.fn() }));
+
+// No-op IntersectionObserver for framer-motion whileInView
+class IntersectionObserverStub { observe() {} unobserve() {} disconnect() {} takeRecords() { return []; } }
+vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
+```
 
 ## Test File Organization
 
-**Location:**
-- Co-located pattern: `__tests__/` subdirectory adjacent to implementation
-- Example: `/access-analysis/__tests__/companyCounts.test.ts` next to `/access-analysis/companyCounts.ts`
-- E2E tests: `tests/e2e/*.spec.ts` at project root
-- Integration tests: same `__tests__/` pattern as units
-
-**Naming:**
-- Unit/integration: `[module].test.ts` or `[module].spec.ts`
-- E2E: `[feature].spec.ts`, kebab-case: `acc-3d-lasso.spec.ts`, `acc-cluster-blobs.spec.ts`
-- Descriptive names signal test content: `companyCounts.test.ts`, `AccessAnalysisCharts.test.tsx`
-
-**Structure:**
+**Pattern 1 — `__tests__/` folder (access-analysis, template-mty, lib/server):**
 ```
 app/(dashboard)/access-analysis/
-├── companyCounts.ts
-├── __tests__/
-│   ├── companyCounts.test.ts
-│   ├── AccessAnalysisCharts.test.tsx
-│   └── EChart.test.tsx
-└── components/
-    ├── AccessAnalysisCharts.tsx
-    └── ...
+  __tests__/
+    roleCounts.test.ts         # pure logic tests
+    RolesPieChart.test.tsx     # component tests (jsdom)
+    FilterBanner.test.tsx
+    EChart.test.tsx
+  components/
+    RolesPieChart.tsx
+    FilterBanner.tsx
+    EChart.tsx
+  roleCounts.ts
 ```
 
-## Test Structure
+**Pattern 2 — co-located (server/routers/, lib/server/):**
+```
+server/routers/
+  acc-activity.ts
+  acc-activity.coverage.test.ts   # co-located router test
+  acc-activity.timeline.test.ts
+lib/server/
+  accessInstanceView.ts
+  accessInstanceView.test.ts      # co-located
+```
 
-**Suite Organization:**
-```typescript
-// companyCounts.test.ts
+**E2E layout (full inventory, verified 2026-07-23):** the v2.7 Phase 41 rebaseline (`2eefe742`) deleted the stale full-inventory specs (`acc-cluster-blobs`, `acc-cluster-labels`, `acc-positioning`, `phase31-focus`, `phase32-ambient`), slimmed `acc-dc-graph.spec.ts` (~1,265 → 170 lines) and `acc-3d-lasso.spec.ts` (→ 69 lines) to the activity-universe surface, and added `activity-universe-hard-gate.spec.ts` plus `lib/server/activityUniverseTestFixture.ts(.test.ts)`. `catalog-preview-lazy.spec.ts` was retired separately (`8aa4c3e2`). `activity-universe-view-toggle.spec.ts` was added by `55625c91`.
+```
+tests/e2e/
+  acc-dc-graph.spec.ts             # activity fixture, time, dimensions, both route aliases
+  acc-3d-lasso.spec.ts             # activity lasso + time-change clearing
+  acc-person-graph.spec.ts
+  access-analysis-scroll.spec.ts
+  activity-payload.spec.ts         # real full-artifact median-of-five payload budget
+  activity-universe-hard-gate.spec.ts # headed D3D11 Tier-0 ≥50 fps gate
+  activity-universe-view-toggle.spec.ts # 2D/3D toggle mount + ambient suspend/resume
+  folder-activity-by-role.spec.ts
+  forma-proposal.spec.ts
+  scale-spike.spec.ts              # Phase 37 isolated renderer measurements
+  sidebar-resize.spec.ts
+  spatial-graph-baseline.spec.ts   # full-artifact navigation-ready baseline
+  uat-workshop.spec.ts             # 38-test Phase 7 UAT harness
+  uat-helpers.ts                   # shared helpers (parseTrpcBatch, toggleTheme, etc.)
+playwright/
+  global-setup.ts           # mints NextAuth session cookie
+  .auth/storageState.json   # written by global-setup, gitignored
+```
+
+**2D/3D view-toggle spec (`activity-universe-view-toggle.spec.ts`, 41 lines):** runs against the real (non-fixture) payload with a 360s per-test timeout and a 300s readiness `waitForFunction`. It clicks `activity-view-3d`, asserts `aria-pressed="true"`, asserts the `activity-universe-3d` overlay is visible with exactly **one** `canvas`, then polls the bridge for `ambientActive === false` (the hidden 2D canvas must stop burning GPU on ambient drift while 3D is up), and finally clicks `activity-view-2d` and asserts the overlay unmounts (`toHaveCount(0)`) and `ambientActive` returns to `true`. Pattern to copy: assert renderer teardown through the bridge counter, not through a screenshot.
+
+## Unit Test Structure
+
+**Pure logic tests (most common):**
+```ts
 import { describe, it, expect } from "vitest";
-import { summarizeCompanies, collapseCompanySlices } from "../companyCounts";
+import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 
-describe("summarizeCompanies", () => {
-  it("returns an empty summary for no rows", () => {
-    expect(summarizeCompanies([])).toEqual({ slices: [], ... });
+// Fixture factory — inline, minimal
+const mk = (roles: string[]) => ({ projectId: "p1", email: "a@x.com", roles, ... });
+
+describe("summarizeRoles", () => {
+  it("returns empty summary for no rows", () => {
+    expect(summarizeRoles([])).toEqual({ slices: [], distinctRoles: 0, total: 0, usersByRole: new Map() });
   });
 
-  it("buckets memberships by company and tallies counts", () => {
-    const s = summarizeCompanies([
-      { company: "Hermosillo" }, { company: "Hermosillo" },
-      { company: "Estructure" },
-    ]);
-    expect(s.total).toBe(3);
+  it("buckets single role, multi-role, and role-less memberships", () => {
+    const s = summarizeRoles([mk(["Member"]), mk(["Admin", "Member"]), mk([])]);
     expect(s.slices).toEqual([
-      { name: "Hermosillo", value: 2 },
-      { name: "Estructure", value: 1 },
+      { name: "Member", value: 1 },
+      { name: MULTIPLE_ROLES, value: 1 },
+      { name: UNKNOWN_ROLE, value: 1 },
     ]);
-  });
-});
-
-describe("collapseCompanySlices", () => {
-  it("pins Unknown company, keeps the top N, folds the rest", () => {
-    expect(collapseCompanySlices(slices, 2)).toEqual([...]);
   });
 });
 ```
 
-**Patterns:**
-- Flat describe blocks per function; no deep nesting
-- One concept per test case
-- Test names are sentences describing behavior (not implementation): "returns an empty summary for no rows" not "calls reduce on empty array"
-- Arrange-Act-Assert (AAA) pattern implicit, no explicit comments
-
-**React Component Tests:**
-```typescript
+**Component tests (jsdom, `@testing-library/react`):**
+```tsx
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { FilterBanner } from "../components/FilterBanner";
 
-vi.mock("echarts-for-react", () => ({
-  default: (props: { option: any }) => <div data-testid="echart" />
-}));
-
-describe("AccessAnalysisCharts", () => {
-  it("renders exactly one project search bar", () => {
-    const { getAllByTestId } = render(
-      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />
+describe("FilterBanner", () => {
+  it("renders nothing when no filters are active", () => {
+    const { container } = render(
+      <FilterBanner filters={{}} shown={1152} total={1152} onRemove={() => {}} onClear={() => {}} />,
     );
-    expect(getAllByTestId("project-search")).toHaveLength(1);
+    expect(container.firstChild).toBeNull();
   });
 
-  it("unticking ONE project re-buckets BOTH donuts at once", () => {
-    const { getByTestId, getByRole } = render(...);
-    fireEvent.focus(getByTestId("project-search"));
-    fireEvent.click(getByRole("checkbox", { name: /tower b/i }));
-    expect(getByTestId("role-legend").textContent).not.toContain("Designer");
+  it("removes a filter via × button", () => {
+    const onRemove = vi.fn();
+    render(<FilterBanner filters={{ role: "Architect" }} shown={340} total={1152} onRemove={onRemove} onClear={() => {}} labels={{ role: "Role" }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Role filter" }));
+    expect(onRemove).toHaveBeenCalledWith("role");
   });
 });
 ```
 
-**Directive:** `// @vitest-environment jsdom` required to enable DOM APIs in component tests
+**Do NOT use jest-dom matchers** (`toBeInTheDocument`, `toHaveTextContent`). Use `.hasAttribute()`, `.textContent`, `getByTestId`, `getByRole`, and standard Vitest `expect`. The setup does not import `@testing-library/jest-dom`.
 
-## Mocking
+## Mocking Patterns
 
-**Framework:** Vitest's `vi` module
-- `vi.mock(path, impl)` for module mocking
-- `vi.fn()` for spy/mock functions
-- `vi.stubGlobal(name, stub)` for global objects
-
-**Patterns:**
-- Mock heavy dependencies early: `echarts-for-react`, `next-auth`, `next/server`
-- Mock at module scope, before imports:
-  ```typescript
-  vi.mock("echarts-for-react", () => ({
-    default: (props: { option: any }) => <div data-testid="echart" data-names={...} />
-  }));
-  ```
-
-- Mock API responses with Response objects:
-  ```typescript
-  function page(rows: AccdsActivityRow[], total: number, hasNext: boolean): Response {
-    return new Response(
-      JSON.stringify({ results: rows, pagination: {...} }),
-      { status: 200, headers: { 'content-type': 'application/json' } }
-    );
-  }
-  ```
-
-- Mock async functions with `vi.fn().mockResolvedValueOnce(...).mockResolvedValueOnce(...)`:
-  ```typescript
-  const fetchImpl = vi.fn()
-    .mockResolvedValueOnce(page([row('a')], 1, false))
-    .mockResolvedValueOnce(page([row('c')], 3, false));
-  ```
-
-- Stub global objects (framer-motion, DOM APIs):
-  ```typescript
-  class IntersectionObserverStub {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-    takeRecords() { return []; }
-  }
-  vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
-  ```
-
-**Global Setup (vitest.setup.ts):**
-- Mock environment: `DATABASE_URL`, `NODE_ENV = "test"`
-- Mock server-only module to prevent "only on server" errors
-- Mock next-auth handlers and functions
-- Stub DOM APIs (IntersectionObserver, etc.)
-
-**What to Mock:**
-- External SDKs: echarts-for-react, authentication libraries
-- Heavy I/O: API calls, file reads (replace with Response objects or test data)
-- DOM-dependent libraries: IntersectionObserver, ResizeObserver
-
-**What NOT to Mock:**
-- Pure utility functions (`summarizeCompanies`, `collapseCompanySlices` — test the real logic)
-- Data transformation: test with real data structures to catch schema mismatches
-- Custom hooks: avoid mocking; test their effects on rendered output
-
-## Fixtures and Factories
-
-**Test Data:**
-```typescript
-// companyCounts.test.ts — inline fixture
-const slices = [
-  { name: "UNKNOWN_COMPANY", value: 100 },
-  { name: "A", value: 30 },
-  { name: "B", value: 20 },
-];
-
-// ActivityByRolePieChart.test.tsx — object factory
-const summary: RoleActivitySummary = {
-  slices: [
-    { name: "Alpha", value: 100 },
-    { name: "Bravo", value: 60 },
-  ],
-  usersByRole: new Map([
-    ["Alpha", [{ email: "ana@x.com", name: "Ana", count: 70 }]],
-  ]),
-};
-
-// accdsActivity.test.ts — helper factory
-function row(id: string): AccdsActivityRow {
-  return {
-    activity_id: id,
-    created_at: '2026-06-01T00:00:00.000Z',
-    project_id: 'p1',
-    activity_verb: 'view-entity',
-    created_by: 'U1'
-  };
+**tRPC router tests — inject a fake `db` object:**
+```ts
+function makeCaller(db: unknown) {
+  return accActivityRouter.createCaller({
+    db,
+    session: { user: { id: "tester", email: "tester@lecg.com", role: "ADMIN" } },
+    projectId: "project-default",
+  } as any);
 }
+
+const db = {
+  $queryRaw: vi.fn()
+    .mockResolvedValueOnce([{ count: 100 }])
+    .mockResolvedValueOnce([{ count: 95 }]),
+  accActivity: { findMany: vi.fn(async () => []) },
+};
+const result = await makeCaller(db).getCoverage();
+expect(db.$queryRaw).toHaveBeenCalledTimes(7);
 ```
 
-**Location:**
-- Inline fixtures in test files (not a separate `fixtures/` directory)
-- Helper factories at top of test file
-- Minimize setup code; use real data when possible
+**ECharts — mock `echarts-for-react` at the module level:**
+```tsx
+vi.mock("echarts-for-react", () => ({
+  default: (props: { option: unknown }) => (
+    <div data-testid="echart" data-has-option={!!props.option} />
+  ),
+}));
+```
+
+**next-auth — mocked globally** in `vitest.setup.ts` (no per-test mock needed).
+
+**server-only — mocked globally** in `vitest.setup.ts`.
+
+**Browser APIs unavailable in jsdom — stub per-test or in setup:**
+```ts
+// ResizeObserver (for virtual lists)
+class ResizeObserverStub { observe() {} unobserve() {} disconnect() {} }
+vi.stubGlobal("ResizeObserver", ResizeObserverStub);
+
+// HTMLElement.scrollIntoView (Radix Select)
+HTMLElement.prototype.scrollIntoView = () => {};
+
+// window.scrollTo
+vi.stubGlobal("scrollTo", () => {});
+```
+
+**`@tanstack/react-virtual` — mock for jsdom** (no real scroll geometry):
+```ts
+vi.mock("@tanstack/react-virtual", () => ({
+  useVirtualizer: (opts: { count: number }) => ({
+    getVirtualItems: () => Array.from({ length: Math.min(opts.count, 2) }, (_, i) => ({ index: i, key: i, size: 48, start: i * 48 })),
+    getTotalSize: () => opts.count * 48,
+    measureElement: () => {},
+  }),
+}));
+```
+
+## Playwright E2E Conventions
+
+**Auth:** `playwright/global-setup.ts` mints a real NextAuth v5 JWT via `@auth/core/jwt`'s `encode`, reads the admin user from the DB by `ADMIN_EMAIL`, and writes `playwright/.auth/storageState.json`. Every test loads this via `use.storageState`. Required env vars: `AUTH_SECRET`, `ADMIN_EMAIL`, `DATABASE_URL`.
+
+**Feature flags:**
+- `NEXT_PUBLIC_ACC_GRAPH_TEST=1` — enables the current
+  `window.__ACTIVITY_UNIVERSE_TEST__` bridge and build-time activity test seams.
+- `ACC_ACTIVITY_TEST_FIXTURE=1` — server-only second key that selects the
+  deterministic 180-event activity payload; never set for full-scale gates.
+- `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1` — enables the redesigned `/access-analysis` dashboard.
+- `NEXT_PUBLIC_ACC_PERSON_GRAPH=1` — opt-in bridge for the separate person
+  similarity graph; `acc-person-graph.spec.ts` skips without it.
+
+**🔑 TRAP — the fixture needs BOTH flags, and one flag looks like a regression.**
+`app/api/activity-universe/payload/route.ts` gates the deterministic fixture on
+**both** keys ANDed together:
+```ts
+const fixtureEnabled =
+  process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1" &&
+  process.env.ACC_ACTIVITY_TEST_FIXTURE === "1";
+```
+With only `NEXT_PUBLIC_ACC_GRAPH_TEST=1` the bridge installs and the page looks
+healthy, but `:3100` serves the **real 4.9M-event artifact**. Every
+`acc-dc-graph.spec.ts` count assertion then fails as
+`Expected: 180 / Received: 4904886` — which reads like a data regression and is
+actually a missing server-side flag. This bites hardest with the external-server
+harness above, where `webServer.env` no longer applies and you must export
+`ACC_ACTIVITY_TEST_FIXTURE=1` yourself before `next start`. Diagnose it by
+checking the flag, not the payload.
+
+**Test bridge pattern (`window.__ACTIVITY_UNIVERSE_TEST__`):**
+```ts
+// Wait for graph ready via bridge
+await page.waitForFunction(
+  () => window.__ACTIVITY_UNIVERSE_TEST__?.isReady() === true,
+  undefined,
+  { timeout: 120_000 },
+);
+
+// Read state from bridge
+const state = await page.evaluate(() => window.__ACTIVITY_UNIVERSE_TEST__!.getState());
+expect(state.positionsFinite).toBe(true);
+expect(state.renderedCount).toBeGreaterThan(0);
+expect(state.totalCount).toBe(180); // fixture harness only
+```
+
+The bridge lives in
+`app/(dashboard)/users/access-analysis/activity/activityTestBridge.ts`, installs
+only under `NEXT_PUBLIC_ACC_GRAPH_TEST=1`, and exposes exactly two methods
+(`isReady()`, `getState()` — `getState` returns a **copy**, so snapshot it once
+per assertion rather than holding a reference). Counters currently on
+`ActivityTestState`: `ready`, `residentCount`, `renderedCount`, `linkCount`,
+`lodMode`, `sampleStride`, `selectedCount`, `groupBy`, `colorBy`, `strength`,
+`morphCount`, `ambientActive`, `temporalMode`, `timeGranularity`,
+`selectedBucket`, `searchQuery`, `matchedAuthorCount`, `bucketCount`,
+`activeCount`, `playing`, `reducedMotion`, `positionsFinite`, `positionMaxAbs`,
+`ambientTier`, `lastWindowFps`, `renderer`.
+
+**Temporal field rename (UNCOMMITTED working-tree WIP, week-scrubber work):** the
+month-only temporal fields were generalized to buckets —
+`temporalMode: "all" | "month"` → `"all" | "bucket"`, `selectedMonth` →
+`selectedBucket`, `monthCount` → `bucketCount`, plus a new
+`timeGranularity: "week" | "month"` (weeks when the payload carries a `weekId`
+column, else months; see the untracked `lib/acc/activityWeeks.ts` and its test).
+`tests/e2e/acc-dc-graph.spec.ts` and `acc-3d-lasso.spec.ts` are modified in the
+working tree to match. Any spec written against the old names will fail with
+`undefined` reads, not a type error — the bridge is a runtime `window` object.
+
+**Screenshot / proof artifacts:**
+```ts
+async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  const body = await page.screenshot({ fullPage: false });
+  await testInfo.attach(name, { body, contentType: "image/png" });
+}
+```
+Attach a `proofShot` when a real interaction needs a review artifact. The
+production verification config keeps screenshots on and traces off.
+
+**Timeouts:**
+- Default config: `120_000ms`; production verification config: `360_000ms`.
+- `expect` timeout: `20_000ms`
+- Workers: 1 (no parallel tests — graph tests are memory-heavy)
+- Retries: 0
+- Viewport: `1600×1000`
+
+## Spatial Graph Test Conventions (`/users/spatial-graph`)
+
+NOTE: `/users/spatial-graph` is normally out of scope for new feature work, but its test conventions are documented here because the owner has explicitly scoped them in for reference.
+
+- URL under test: `GRAPH_URL = "/users/spatial-graph"`.
+- `gotoActivity(page)` navigates and waits for `__ACTIVITY_UNIVERSE_TEST__`
+  readiness plus finite, nonzero rendered positions.
+- The CI fixture is exactly 180 activity events across three 60-event months;
+  it requires both `NEXT_PUBLIC_ACC_GRAPH_TEST=1` and the server-only
+  `ACC_ACTIVITY_TEST_FIXTURE=1`.
+- The full-scale payload, navigation, and renderer specs must run against the
+  real isolated production artifact without the fixture flag. Renderer proof
+  is headed Chromium with `--use-angle=d3d11`; SwiftShader or Tier demotion is
+  a hard failure.
+- Temporal interaction uses the native range input and asserts exact active /
+  total event counts. Reduced-motion coverage pins disabled autoplay and
+  static manual stepping.
+
+**Ambient cadence pin (`app/(dashboard)/users/access-analysis/activity/activityMotion.test.ts`):**
+the tier-0 ambient cadence is a measured perf constant (`TIER_0_TARGET_MS = 250`,
+halved from 100ms→250ms upload rate in `c998db1e`) and the test pins it: it steps
+16ms frames to 560ms and asserts exactly 3 morph uploads (targets at 0/256/512ms)
+each with `durationMs === 270` (= `TIER_0_TARGET_MS` 250 + `TRANSITION_OVERLAP_MS`
+20 in `activityMotion.ts`). **Any change to the cadence or overlap constants must
+update these assertions in the same commit** — the pin exists so cadence changes
+are deliberate, not drive-by.
+
+**Hard-gate fps runs must be repeated ×3 on this box:** the dev machine is
+dual-GPU (Intel iGPU vs RTX 5070 Ti) and browser adapter selection is a lottery —
+single fps samples are bimodal (measured ~31fps iGPU floor vs 55–77fps discrete,
+`c998db1e`). The cosmos patch requests `powerPreference: "high-performance"` but
+that is a hint, not a guarantee. Convention: run
+`activity-universe-hard-gate.spec.ts` (headed, `--use-angle=d3d11`) three
+consecutive times and judge the set; one bad run is adapter noise, three is a
+regression.
+
+**🔑 TRAP — WebGL-dependent behaviour must be verified HEADED, not just fps gates.**
+This is broader than the fps rule above: under **headless** Chromium the software
+GL rasterizer leaves cosmos's camera transform degenerate, so
+`handle.screenToSpace()` returns two points that are effectively coincident. The
+magnetic-hover seam in `ActivityUniverseShell.tsx` derives its search radius from
+exactly that one-probe conversion:
+```ts
+const a = handle.screenToSpace([sx, sy]);
+const b = handle.screenToSpace([sx + MAGNET_RADIUS_PX, sy]);  // MAGNET_RADIUS_PX = 32
+const radiusSq = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2;     // ≈ 0 headless
+```
+With `radiusSq ≈ 0` nothing is ever inside the radius and the 32px snap **never
+fires**. Measured: a 35-point probe grid produced **zero** hits at `headed: false`
+and hits at every probe point headed, with `pointermove` events confirmed
+arriving and `prefers-reduced-motion` false in both runs — so the input path was
+not the cause. A headless "hover does nothing" result is not evidence of a bug.
+
+**Corollary — headless defaults `prefers-reduced-motion` to `reduce`.** The
+`activity-hover-ring` element is rendered `{!reducedMotion && hover ? … : null}`,
+so headless suppresses it *entirely* even when hover state is correct. Probe
+`data-testid="activity-tooltip"` (`activity/ActivityTooltip.tsx`) instead, or
+launch headed. Conversely, when you *want* reduced-motion coverage, headless is
+the cheap way to get it — but then assert the disabled-motion behaviour, not the
+ring.
+
+**Unit suites added by the 2D/3D arc (verified 2026-07-23):** each new pure module
+ships one co-located suite — the 3D work is testable *because* the math was kept
+out of the renderer.
+- `activity/activityClump3.test.ts` — `buildClumpTargets` centroid pull; the third
+  case exists for a real bug: the builder must return a **copy** of `base` when
+  `catIds` is null or misaligned, never an alias (aliasing corrupted the shared
+  `positions` buffer).
+- `activity/activityDepth.test.ts` — `buildActivityDepth` time-axis centering,
+  out-of-range month clamping, and the degenerate single-month flat plane.
+- `lib/acc/positions3Quant.test.ts` — u16 round-trip within one quantization
+  step, out-of-extent clamping, and the zero-`halfExtent` degenerate case.
+- `lib/server/adminsPerProjectView.test.ts` — `assembleAdminsPerProject` grouping
+  and sort order for the `/access-analysis` Projects-tab chart (`e8541e12`).
+- `lib/acc/activityWeeks.test.ts` (**untracked WIP**) — Monday-anchored week
+  floor, unparseable-floor fallback, week bucketing, pre-floor clamp to week 0,
+  and week/month labelling.
+
+## UAT Workshop Tests (`tests/e2e/uat-workshop.spec.ts`)
+
+- Run under `playwright.verify.config.ts` (no `webServer` block — a prod `next start` on `:3100` is started out-of-band).
+- Quick run: `E2E_BASE_URL=http://localhost:3100 npx playwright test uat-workshop --config playwright.verify.config.ts`
+- Viewport: `1600×1000` (same as the default config; the earlier `1280×800` claim is stale).
+- Static gate inside Playwright: test `tsc-0` runs `npx tsc --noEmit` via `execSync` as a test case.
+- Helpers in `tests/e2e/uat-helpers.ts`: `parseTrpcBatch`, `injectAxeAndRunContrast`, `toggleTheme`, `assertNoHorizontalOverflow`, `uatScreenshot`.
+
+## Characterization Test Suites (v2.1 Ph14 + v2.2)
+
+Central to the v2.2 refactor strategy: pin behavior byte-identically **before** splitting or rewiring, keep the pins green after. These suites are now standing regression guards:
+
+- **TEST-01** — `AccFolderPermissionSummary` projection / OOM-guard suite (12/12): pins the aggregate path that serves `includePermissionSummary` in `lib/server/acc-hot-cache.ts`; guards against re-introducing the raw 5M-row scan.
+- **TEST-02** — `lib/server/__tests__/folderPermissionTerrainView.test.ts`: byte-identical pin of the `/access-analysis` terrain view output across the Ph15 shared-query extraction and Ph16 terrain split.
+- **TEST-03** — `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`: byte-identical pin of the `/template-mty` terrain output over `lib/server/folderPermQuery.ts`.
+- **`HybridAnalyticsSurface.mainQuery.test.tsx`** — pins the `/users/access-analysis` surface's main query behavior across the Ph17 split.
+
+Convention: any future split of a large module (or query-owner change) must add equivalent characterization pins first — see `CONVENTIONS.md`.
+
+## What NOT to Mock
+
+- Real Prisma schema / DB calls in `lib/server/` view functions — these are tested by injecting a fake `db` object with `vi.fn()` methods, not by importing real `@prisma/client`.
+- `next/navigation` (router) if tests don't drive navigation — just don't call `useRouter`.
+- CSS / Tailwind classes — no visual regression tests; trust type safety and e2e screenshots.
 
 ## Coverage
 
-**Requirements:** Not enforced (no coverage config detected)
-
-**Coverage approach:**
-- Unit tests focus on logic paths and edge cases
-- Examples: empty input, boundary values, error conditions, single vs. multiple items
-- Component tests focus on user interactions and rendered output, not code paths
-
-## Test Types
-
-**Unit Tests:**
-- Scope: single function or small module
-- Approach: test with real dependencies where possible; mock only external I/O
-- Example: `companyCounts.test.ts` tests `summarizeCompanies` with real data structures
-- Coverage: happy path, empty input, edge cases (null, undefined, blank strings)
-
-**Integration Tests:**
-- Scope: multiple functions working together
-- Approach: real data flow without mocking internals
-- Example: `AccessAnalysisCharts.test.tsx` tests prop-driven state changes across child donuts
-- No separate "integration" directory; use the same `__tests__/` pattern with integration-scoped test names
-
-**E2E Tests:**
-- Framework: Playwright
-- Scope: full user workflow on running app
-- Approach: real server, real DB, real authentication
-- Example: `acc-3d-lasso.spec.ts` tests graph interaction (drag, wait for freeze, validate output)
-- Config: `playwright.config.ts` runs dev server on `:3100`, loads auth state from `storageState.json`
-
-**E2E Pattern - Wait for Readiness:**
-```typescript
-async function gotoGraph(page: Page): Promise<void> {
-  await page.goto(GRAPH_URL, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => !!window.__ACC_GRAPH_TEST__?.isReady(), undefined, {
-    timeout: 120_000,
-  });
-  await page.waitForFunction(() => {
-    const s = window.__ACC_GRAPH_TEST__?.getPositionsStats();
-    return s.count > 0 && !s.anyNaN && s.maxAbs > 1;
-  });
-}
-```
-
-**E2E Pattern - Custom Test Bridge:**
-- Global `window.__ACC_GRAPH_TEST__` object exposes internals (positions, frozen state, etc.)
-- Allows e2e tests to validate internal state without relying solely on visual checks
-- Set up per-route (e.g., with `NEXT_PUBLIC_ACC_GRAPH_TEST` flag)
-
-## Common Patterns
-
-**Async Testing:**
-```typescript
-it("retries on 429 then succeeds", async () => {
-  const fetchImpl = vi.fn()
-    .mockResolvedValueOnce(new Response('rate limited', { status: 429 }))
-    .mockResolvedValueOnce(page([row('a')], 1, false));
-  const res = await fetchActivityWindow({...});
-  expect(res.results).toEqual([...]);
-  expect(fetchImpl).toHaveBeenCalledTimes(2);
-});
-```
-
-- Async functions are tested with `await`
-- Mock chains verify behavior after retry
-- Assertion count kept low (test one concept per case)
-
-**Error Testing:**
-```typescript
-it("throws on 403", async () => {
-  const fetchImpl = vi.fn(async () => new Response('forbidden', { status: 403 }));
-  await expect(
-    fetchActivityWindow({
-      getToken, projectId: 'p1', startISO: 's', endISO: 'e', ...
-    })
-  ).rejects.toThrow(/403/);
-});
-```
-
-- Use `.rejects.toThrow(pattern)` for async errors
-- Regex patterns for error message matching (not strict equality)
-- Minimal setup; focus on the error condition
-
-**User Interaction (Component):**
-```typescript
-it("drills into the people behind a role", () => {
-  const { getByTestId } = render(<AccessAnalysisCharts {...} />);
-  fireEvent.click(within(getByTestId("activity-role-legend")).getByRole("button", { name: /Member/ }));
-  expect(getByTestId("activity-role-drilldown").textContent).toContain("Ana");
-});
-```
-
-- `fireEvent` for DOM events (click, focus)
-- `getByRole` for accessible elements (button, checkbox)
-- `within` to scope queries to a subtree
-
-**Conditional Test Skip:**
-```typescript
-test.beforeEach(() => {
-  test.skip(
-    process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1",
-    "Physics shell is the default; skip only when the projector is opted in"
-  );
-});
-
-test("3D lasso — smoke", async ({ page }) => {
-  test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
-  // ...
-});
-```
-
-- Feature-flag tests based on environment variables
-- Skip messages explain the condition
+No enforced coverage thresholds. The access-analysis surfaces have the densest unit coverage — every pure transform module has a co-located test, and the v2.2 splits added characterization pins per extracted module. File count: **344 tracked `*.test.ts(x)` files** (`git ls-files`, 2026-07-23; 109 live under `__tests__/` directories — up from 339 on 2026-07-22 via the activity 3D/depth, `positions3Quant`, and `adminsPerProjectView` suites). The working tree additionally carries 6 untracked new tests (`app/(dashboard)/users/statCardBoundaries.test.ts`, `lib/acc/activityWeeks.test.ts`, `lib/acc/issueBackfillAudit.test.ts`, `lib/acc/issueListQuery.test.ts`, `lib/acc/modelCoordinationGrant.test.ts`, `scripts/lib/tolerance-audit.test.ts`) and 3 working-tree deletions, all under `scripts/scratch/` (monitor-* tests). Historical run baselines: 2,256 passed / 302 files at v2.2 close (2026-07-02); ~2,535 at the 2026-07-14 dependency-update verification; 2,565 green at the c998db1e activity perf fix (2026-07-22); 2,564 passed / 1 skipped / 1 environment-sensitive failure at the 2026-07-22 refresh re-run.
 
 ---
 
-*Testing analysis: 2026-06-17*
+**Dashboard self-check:**
+- Context: `vitest.config.ts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright/global-setup.ts`, `app/api/activity-universe/payload/route.ts`, `activity/activityTestBridge.ts`, `activity/ActivityUniverseShell.tsx`, test files in `app/`, `lib/acc/`, `lib/server/`, `server/routers/`, `tests/e2e/`, `package.json` scripts.
+- Evidence: full E2E inventory and activity bridge patterns verified by direct
+  reads and `rg` on 2026-07-21; e2e inventory, cadence pin, and unit-gate
+  counts re-verified 2026-07-22 (suite re-run). 2026-07-23 refresh: e2e
+  inventory, `playwright.config.ts` escape hatch, two-flag fixture gate, bridge
+  field list/rename, magnet `screenToSpace` radius derivation, hover-ring
+  reduced-motion guard, and new unit suites all re-read from source; test-file
+  counts from `git ls-files` / `git status`. The headless-vs-headed magnet
+  measurement (35-point probe grid) is carried over from the `7d1420b9`
+  investigation, not re-run for this refresh.
+- Constraints: no jest-dom, no real DB in unit tests, e2e on :3100 with NEXT_DIST_DIR=.next-e2e (isolated PROD build + `E2E_REUSE_SERVER=1` / `E2E_BASE_URL`, because webpack dev on :3100 500s); activity fixture needs BOTH `NEXT_PUBLIC_ACC_GRAPH_TEST=1` and `ACC_ACTIVITY_TEST_FIXTURE=1`; WebGL behaviour verified headed.
+- Gates: `npx tsc --noEmit` before rebuild; focused tests before completion;
+  `node scripts/repo-map/check.cjs` for boundary changes; the LECG deploy
+  sequence for an explicitly requested local rebuild.
+- Latest full unit gate (2026-07-22; **not** re-run for the 2026-07-23 refresh — treat as the standing baseline, not fresh evidence): 339 files passed
+  / 1 skipped; 2,564 tests passed / 1 skipped (2,566 total) with 1 failure —
+  `app/(dashboard)/users/access-analysis/clusterForceLayout.test.ts` wall-clock
+  perf guard (`expect(ms).toBeLessThan(2500)` measured 2506ms under a loaded
+  box; environment-sensitive, green at the c998db1e gate where the suite was
+  2,565 green). Counts drift as phases add tests.
+- Note: branch `feat/access-analysis-redesign` carries uncommitted WIP (re-verified 2026-07-23): several `app/(dashboard)/users/` components are deleted in the working tree, but their replacements' tests are committed co-located files; the only deleted test files are the three `scripts/scratch/monitor-*` tests. Several access-analysis and users tests are modified (e.g. `app/(dashboard)/access-analysis/__tests__/roleCounts.test.ts`, `app/(dashboard)/users/__tests__/UsersDirectoryClient.integration.test.tsx`), and the week-scrubber rename left `tests/e2e/acc-dc-graph.spec.ts`, `tests/e2e/acc-3d-lasso.spec.ts`, `activity/activityTestBridge.ts`, and `lib/acc/columnarPayload.test.ts` modified but uncommitted. Counts above are from tracked files (`git ls-files`).

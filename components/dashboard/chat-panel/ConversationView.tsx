@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus, Send } from "lucide-react";
-import type { ChatAttachment } from "@/lib/google/chat";
+import type { ChatAttachment, ChatMessage } from "@/lib/google/chat";
 import { useDashboardAuth } from "@/components/providers/dashboard-auth-provider";
 import { trpc } from "@/lib/core/trpc";
 import { cn } from "@/lib/core/utils";
@@ -69,13 +69,46 @@ export function ConversationView({
 
   const utils = trpc.useUtils();
   const sendMessage = trpc.chat.sendMessage.useMutation({
-    onSuccess: () => {
+    // Optimistic send: drop the message into the conversation and clear the box
+    // immediately, then reconcile with the server. Sending feels instant.
+    onMutate: async ({ spaceName: targetSpace, text }) => {
+      await utils.chat.getMessages.cancel({ spaceName: targetSpace });
+      const previous = utils.chat.getMessages.getData({ spaceName: targetSpace });
+      const previousInput = input;
+
+      const optimistic: ChatMessage = {
+        name: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sender: {
+          name: "",
+          displayName: user?.name ?? user?.email ?? "Me",
+          avatarUrl: user?.image ?? null,
+          type: "HUMAN",
+        },
+        createTime: new Date().toISOString(),
+        text,
+        attachments: [],
+      };
+
+      utils.chat.getMessages.setData({ spaceName: targetSpace }, (current) => {
+        if (!current || current.status !== "ok") return current;
+        return { ...current, messages: [...(current.messages ?? []), optimistic] };
+      });
+
+      wasAtBottomRef.current = true;
       setInput("");
       setSendError(null);
-      utils.chat.getMessages.invalidate({ spaceName });
+      return { previous, previousInput, targetSpace };
     },
-    onError: (mutationError) => {
+    onError: (mutationError, _variables, context) => {
+      // Roll back the optimistic message and restore what the user typed.
+      if (context) {
+        utils.chat.getMessages.setData({ spaceName: context.targetSpace }, context.previous);
+        if (context.previousInput) setInput(context.previousInput);
+      }
       setSendError(mutationError.message);
+    },
+    onSettled: (_data, _error, variables) => {
+      void utils.chat.getMessages.invalidate({ spaceName: variables.spaceName });
     },
   });
 

@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useMemo, useState } from "react";
-import { ChevronRight, Folder, FolderOpen, Layers, Undo2 } from "lucide-react";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, FolderOpen, Layers, Undo2 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import {
   resolveEffectiveTier, type ExplicitMap, type FolderIndex, type FormaFolder,
@@ -17,6 +17,8 @@ interface RowCtx {
   explicit: ExplicitMap;
   collapsed: Set<string>;
   toggle: (id: string) => void;
+  /** Search scope: null = no search (show all, honor collapsed); a Set = matches + their ancestors, force-expanded. */
+  visible: Set<string> | null;
   onSet: (folderId: string, tier: FormaTier) => void;
   onClear: (folderId: string) => void;
   onApplySubtree: (folderId: string, tier: FormaTier) => void;
@@ -26,9 +28,10 @@ interface RowCtx {
 function FolderRow({ id, depth, ctx }: { id: string; depth: number; ctx: RowCtx }) {
   const folder = ctx.index.byId.get(id);
   if (!folder) return null;
+  if (ctx.visible && !ctx.visible.has(id)) return null;
   const children = sortFolders((ctx.index.childrenOf.get(id) ?? []) as FormaFolder[]);
   const hasChildren = children.length > 0;
-  const expanded = !ctx.collapsed.has(id);
+  const expanded = ctx.visible ? true : !ctx.collapsed.has(id);
   const eff = resolveEffectiveTier(id, ctx.explicit, ctx.index.byId);
 
   return (
@@ -104,6 +107,7 @@ export function FolderTreeAssign({
   onApplySubtree: (folderId: string, tier: FormaTier) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
   const toggle = useCallback((id: string) => {
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -113,11 +117,73 @@ export function FolderTreeAssign({
     });
   }, []);
   const roots = useMemo(() => sortFolders(index.roots), [index.roots]);
-  const ctx: RowCtx = { index, explicit, collapsed, toggle, onSet, onClear, onApplySubtree };
+
+  // Every folder with children — the collapse-all target set.
+  const parentIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const [pid, kids] of index.childrenOf) if (pid !== null && kids.length > 0) ids.push(pid);
+    return ids;
+  }, [index]);
+  const allCollapsed = parentIds.length > 0 && parentIds.every((id) => collapsed.has(id));
+
+  // Search: matched folders (name or full path) stay visible along with their
+  // ancestors, force-expanded so a deep hit is never hidden by collapse state.
+  const needle = query.trim().toLowerCase();
+  const { visible, matchCount } = useMemo(() => {
+    if (!needle) return { visible: null as Set<string> | null, matchCount: 0 };
+    const vis = new Set<string>();
+    let matches = 0;
+    for (const f of index.byId.values()) {
+      if (!f.name.toLowerCase().includes(needle) && !(f.fullPath ?? "").toLowerCase().includes(needle)) continue;
+      matches += 1;
+      let cur: string | null = f.id;
+      const guard = new Set<string>();
+      while (cur !== null && !guard.has(cur)) {
+        guard.add(cur);
+        vis.add(cur);
+        cur = index.byId.get(cur)?.parentId ?? null;
+      }
+    }
+    return { visible: vis, matchCount: matches };
+  }, [index, needle]);
+
+  const ctx: RowCtx = { index, explicit, collapsed, toggle, visible, onSet, onClear, onApplySubtree };
 
   return (
-    <div className="space-y-0.5">
-      {roots.map((r) => <FolderRow key={r.id} id={r.id} depth={0} ctx={ctx} />)}
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 px-1">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search folders…"
+          aria-label="Search folders"
+          className="w-full max-w-xs rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground transition placeholder:text-muted-foreground focus:border-primary/70 focus:outline-none focus:ring-2 focus:ring-primary/25"
+        />
+        {needle && (
+          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+            {matchCount} match{matchCount === 1 ? "" : "es"}
+          </span>
+        )}
+        <button
+          type="button"
+          disabled={!!needle}
+          onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(parentIds))}
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md border border-border/70 bg-card px-2 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-border hover:text-foreground disabled:opacity-40"
+        >
+          {allCollapsed ? (
+            <><ChevronsUpDown className="h-3 w-3" aria-hidden /> Expand all</>
+          ) : (
+            <><ChevronsDownUp className="h-3 w-3" aria-hidden /> Collapse all</>
+          )}
+        </button>
+      </div>
+      <div className="space-y-0.5">
+        {needle && matchCount === 0 ? (
+          <p className="px-2 py-4 text-xs text-muted-foreground">No folders match &quot;{query.trim()}&quot;.</p>
+        ) : (
+          roots.map((r) => <FolderRow key={r.id} id={r.id} depth={0} ctx={ctx} />)
+        )}
+      </div>
     </div>
   );
 }

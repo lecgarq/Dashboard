@@ -112,12 +112,10 @@ export interface NodeFeatureSnapshot {
   activityTotal?: number;
   /** [Phase B] Sparse per-canonical-action counts for this instance (taxonomy action ids). */
   actionCounts?: Record<string, number>;
-  /**
-   * Embedding-map cluster id (0-based KMeans label from AccInstanceEmbedding),
-   * stamped flag-off when the embedding loads. Drives the "Cluster" color mode
-   * (color == spatial group — the TF-Embedding-Projector look). null = unknown.
-   */
+  /** Legacy instance-map KMeans cluster id; null on the activity universe. */
   cluster?: number | null;
+  /** Project-level status: "active" | "inactive" (from AccProject.status / GraphProjectRow.project_status). */
+  projectStatus?: string;
 }
 
 /**
@@ -156,9 +154,17 @@ export interface PredicateInputs {
   isolatedNodeIndex: number | null;
   /**
    * Similarity neighbors of the isolated node (cosmos node indices). When set,
-   * these are lit alongside the clicked node + its same-user footprint so the
-   * embedding map's "closest matches" stand out. null/empty = no extra highlight.
+   * these are lit alongside the clicked node so the embedding map's distinct
+   * closest matches stand out. Same-user memberships and twins are deliberately
+   * excluded. null/empty = no extra highlight.
    * Only populated on the flag-OFF embedding map.
    */
   neighborIndices?: ReadonlySet<number> | null;
+  /**
+   * Aperture value resolvers (Phase 25 DIM-04): dimId → banded label fn, built
+   * once from the catalog (buildApertureValueResolvers). Lets the filter compare
+   * against the SAME valueKeyLabel tiers Group-by/Color-by show. Dims absent
+   * here fall back to the legacy 6-id switch in featureValueForDim.
+   */
+  valueResolvers?: Readonly<Record<string, (f: NodeFeatureSnapshot) => string>>;
 }

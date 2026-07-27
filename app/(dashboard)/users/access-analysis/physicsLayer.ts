@@ -126,6 +126,8 @@ export interface PhysicsLayer {
   getTargets(): TargetArrays;
   /** Read-only snapshot of the per-dimension dimWeights passed at construction. Empty object if none. */
   getDimWeights(): Record<string, Float32Array>;
+  /** Frozen-layout seam: append lazily-built catalog targets without starting a simulation. */
+  registerTargets?(targets: TargetArrays, dimWeights: Record<string, Float32Array>): void;
   /** Latest slider values seen by updateSliders (normalized 0..1). Returns a shallow copy. */
   getSliders(): Record<string, number>;
   /**

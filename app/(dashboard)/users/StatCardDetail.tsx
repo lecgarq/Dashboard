@@ -3,19 +3,15 @@
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import type { EChartsOption } from "echarts";
-import { EChart } from "../access-analysis/components/EChart";
-import type { ProjectData } from "./AccProfileSection";
-import { adminProjects, roleCounts, moduleCounts, type CountSlice } from "./statCardDetails";
-
-const PALETTE = [
-  "#6366f1", "#22d3ee", "#34d399", "#3b82f6", "#a78bfa", "#facc15",
-  "#fb7185", "#2dd4bf", "#fdba74", "#c084fc", "#86efac", "#93c5fd",
-];
-const colorFor = (i: number) => PALETTE[i % PALETTE.length];
+import { EChart } from "@/components/ui/EChart";
+import { chartColorAt } from "@/lib/colors/chartPalette";
+import { adminProjects, roleCounts, moduleCounts } from "./statCardDetails";
+import type { CountSlice, ProjectData, StatCardDetailKind } from "./statCardTypes";
 
 function Donut({ slices, label }: { slices: CountSlice[]; label: string }): React.JSX.Element {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
+  const colorFor = (i: number) => chartColorAt(i, dark);
   const cText = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#6b7280";
   const cSlice = dark ? "#18181b" : "#ffffff";
@@ -70,7 +66,7 @@ export function StatCardDetail({
   kind,
   projects,
 }: {
-  kind: "admin" | "roles" | "modules";
+  kind: StatCardDetailKind;
   projects: ProjectData[];
 }): React.JSX.Element {
   const admin = useMemo(() => (kind === "admin" ? adminProjects(projects) : []), [kind, projects]);

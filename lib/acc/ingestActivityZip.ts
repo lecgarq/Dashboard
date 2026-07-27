@@ -116,7 +116,7 @@ async function enrichEmails(
   const idToEmail = new Map<string, string>();
   for (const id of idsToLookup) {
     const email = zipUserEmailById?.get(id);
-    if (email) idToEmail.set(id, email);
+    if (email) idToEmail.set(id, email.toLowerCase());
   }
 
   const members = await prisma.accProjectMember.findMany({

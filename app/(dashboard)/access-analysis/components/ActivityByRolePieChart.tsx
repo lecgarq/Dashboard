@@ -8,17 +8,12 @@ import type { DormantEntity } from "../dormantActivity";
 import type { EChartsOption } from "echarts";
 import { UNKNOWN_ROLE, MULTIPLE_ROLES, collapseToTopSlices } from "../roleCounts";
 import type { RoleActivitySummary } from "../roleActivityCounts";
+import { chartPalette } from "@/lib/colors/chartPalette";
 
 // Same role palette + warning colors as RolesPieChart, so a role reads the same
 // hue in both donuts. Slices are data colors that work on light + dark cards.
-const PALETTE = [
-  "#6366f1", "#22d3ee", "#34d399", "#10b981", "#3b82f6", "#a78bfa",
-  "#2dd4bf", "#facc15", "#38bdf8", "#c084fc", "#4ade80", "#818cf8",
-  "#5eead4", "#fdba74", "#93c5fd", "#d8b4fe", "#86efac", "#67e8f9",
-  "#fde047", "#f0abfc", "#a5b4fc", "#bef264", "#7dd3fc", "#fca5a5",
-];
-const UNKNOWN_COLOR = "#f59e0b"; // amber — activity by someone with no role on that project
-const MULTIPLE_COLOR = "#fb7185"; // rose — activity by someone holding several roles
+const UNKNOWN_COLOR = "#efb628"; // goldenrod — activity by someone with no role on that project
+const MULTIPLE_COLOR = "#e0577b"; // wine-rose — activity by someone holding several roles
 const OTHERS_COLOR = "#71717a"; // zinc-500 — the folded tail
 
 const DEFAULT_TOP = 8;
@@ -82,17 +77,18 @@ export function ActivityByRolePieChart({
   // Stable color per role name, assigned over the full (uncollapsed) slice list.
   const colorByName = useMemo(() => {
     const m = new Map<string, string>();
+    const palette = chartPalette(dark);
     let hue = 0;
     for (const d of slices) {
       m.set(
         d.name,
         d.name === UNKNOWN_ROLE ? UNKNOWN_COLOR
           : d.name === MULTIPLE_ROLES ? MULTIPLE_COLOR
-            : PALETTE[hue++ % PALETTE.length],
+            : palette[hue++ % palette.length],
       );
     }
     return m;
-  }, [slices]);
+  }, [slices, dark]);
   const singleCount = useMemo(() => slices.filter((d) => !isWarning(d.name)).length, [slices]);
 
   const [topN, setTopN] = useState(DEFAULT_TOP);
@@ -101,7 +97,7 @@ export function ActivityByRolePieChart({
 
   if (slices.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />

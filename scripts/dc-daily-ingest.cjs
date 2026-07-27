@@ -59,12 +59,10 @@ function ts() {
 }
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log(`[dc-daily-ingest ${ts()}]`, ...args);
 }
 
 function logErr(...args) {
-  // eslint-disable-next-line no-console
   console.error(`[dc-daily-ingest ${ts()}]`, ...args);
 }
 
@@ -113,6 +111,24 @@ async function main() {
       logErr(`ERROR: ${result.errorMessage}`);
     }
     if (result.status === 'success') {
+      // PROJ-03 (REF-03 completion): refresh the AccFolderPermissionSummary
+      // projection FIRST — before the person-graph rebuild and (critically)
+      // before build-instance-features.ts, which reads the projection via
+      // includePermissionSummary (PROJ-02), so the same run's embedding sees
+      // fresh data. Reuses the idempotent server-side backfill script
+      // (TRUNCATE + INSERT...SELECT...GROUP BY) verbatim — the single owner
+      // of the aggregate SQL, no duplication, no Node-side row scan. Non-fatal
+      // (matches the person-graph / embedding blocks below): a refresh
+      // failure never aborts the ingest exit status. The TRUNCATE takes a
+      // brief ACCESS EXCLUSIVE lock (~seconds); concurrent projection readers
+      // wait then see the new rows — they never observe an empty table.
+      try {
+        log('Refreshing AccFolderPermissionSummary projection (server-side aggregate)...');
+        const { execSync } = require('node:child_process');
+        execSync('node scripts/backfill-folder-perm-summary.cjs', { stdio: 'inherit' });
+      } catch (e) {
+        log('AccFolderPermissionSummary refresh failed (non-fatal): ' + e.message);
+      }
       try {
         log('Rebuilding person-similarity graph snapshot...');
         const { execSync } = require('node:child_process');
@@ -120,13 +136,48 @@ async function main() {
       } catch (e) {
         log('person-graph rebuild failed (non-fatal): ' + e.message);
       }
+      // v2.7 Phase 39 (ACT-03): the nightly per-instance embedding build
+      // (build-instance-features.ts + compute_instance_embeddings.py) retired
+      // with the user×project instance graph.
+      // v2.7 Phase 38 (owner decision: manual refresh only): the activity-
+      // universe embedding is NOT rebuilt nightly (~34 min full fit). This
+      // block only LOGS how many unified activity events have no position yet
+      // so staleness is visible; a manual compute_activity_embeddings.py +
+      // build-activity-universe-payload.ts run clears it. Non-fatal always.
       try {
-        log('Building per-instance embedding (features → UMAP)...');
-        const { execSync } = require('node:child_process');
-        execSync('npx tsx scripts/build-instance-features.ts', { stdio: 'inherit' });
-        execSync('python scripts/compute_instance_embeddings.py', { stdio: 'inherit' });
+        const [{ built }] = await prisma.$queryRawUnsafe(
+          'SELECT COUNT(*)::int AS built FROM "AccActivityEmbedding"',
+        );
+        if (built === 0) {
+          log('[activity-universe] embedding not built yet — skipping staleness check');
+        } else {
+          // ponytail: two anti-join PK probes over ~4.9M ids (~seconds,
+          // nightly offline); switch to a watermark column if it ever hurts.
+          const [{ missing }] = await prisma.$queryRawUnsafe(`
+            SELECT (
+              (SELECT COUNT(*) FROM "AccActivityAccds" a
+                WHERE NOT EXISTS (SELECT 1 FROM "AccActivityEmbedding" e
+                                  WHERE e.id = 'accds:' || a."accdsActivityId"))
+              +
+              (SELECT COUNT(*) FROM "AccActivity" d
+                LEFT JOIN (
+                  SELECT "projectId", MIN("createdAt") AS s
+                  FROM "AccActivityAccds" GROUP BY "projectId"
+                ) ast ON ast."projectId" = d."projectId"
+                WHERE (d."projectId" IS NULL OR d."projectId" = ''
+                       OR ast.s IS NULL OR d."createdAt" < ast.s)
+                  AND NOT EXISTS (SELECT 1 FROM "AccActivityEmbedding" e
+                                  WHERE e.id = d.id))
+            )::int AS missing
+          `);
+          if (missing > 0) {
+            log(`[activity-universe] ${missing} new events without positions — manual pipeline run needed`);
+          } else {
+            log('[activity-universe] positions current (0 unpositioned events)');
+          }
+        }
       } catch (e) {
-        log('instance-embedding build failed (non-fatal): ' + e.message);
+        log('[activity-universe] staleness check failed (non-fatal): ' + e.message);
       }
     }
     process.exit(

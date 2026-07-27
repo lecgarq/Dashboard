@@ -1,148 +1,129 @@
 ---
-gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Workshop-Grade UI/UX Overhaul
-status: shipped
-current_phase: 7
-current_phase_name: Pre-Workshop UAT
-stopped_at: "Milestone v2.0 SHIPPED + archived (tag v2.0, local) — all 7 phases verified; Phase 7 owner-approved on the projector. Next: /gsd:new-milestone"
-last_updated: "2026-06-19T22:03:09.334Z"
-last_activity: 2026-06-19
-last_activity_desc: "07-02: owner projector sign-off recorded; Phase 7 verification passed 4/4; milestone v1.0 complete"
-progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 30
-  completed_plans: 33
-  percent: 100
+lecg_state_version: 2
+milestone: v2.7
+milestone_name: "Activity Universe"
+current_phase: 41
+current_phase_name: "Time Scrubber, Hard Gate & Closeout"
+status: ready_to_plan
+current_plan: null
+stopped_at: "milestone v2.7 closed — next: $lecg-new-milestone"
+last_updated: "2026-07-22T10:19:37-06:00"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19)
+See: `.planning/PROJECT.md` (updated 2026-07-21)
 
-**Core value:** When these 4 pages are presented in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live.
-**Current focus:** Milestone v2.0 SHIPPED + archived (tag `v2.0`). Planning next milestone — run `/gsd:new-milestone`.
+**Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
+**Current focus:** v2.7 Activity Universe closed; next milestone not yet defined.
 
 ## Current Position
 
-Phase: 7 of 7 (Pre-Workshop UAT) — COMPLETE
-Plan: 2 of 2 in phase (both plans executed; owner projector checkpoint resolved)
-Status: Milestone v2.0 SHIPPED + archived (tag `v2.0`, local) — Phase 7 verification passed 4/4; owner recorded "approved on the projector" 2026-06-19
-Last activity: 2026-06-19 — 07-02: owner projector sign-off (ALL-GREEN engineering report + every BLOCK cleared); Phase 7 verified
+- **Milestone:** **v2.7 Activity Universe — SHIPPED 2026-07-22.** All 12 requirements
+  shipped across Phases 37–41. Retrospective and evidence audit are in `MILESTONES.md`;
+  requirements and roadmap are archived under `.planning/milestones/v2.7-*`.
+- **Outcome:** owner-approved L2 keeps all 4,904,886 activity events resident/countable
+  while 490,489 render at far zoom; 94.41% author resolution, eight activity dimensions,
+  exact-month playback, 451 ms payload median, and 1,699.7 ms navigation-ready median.
+- **Final proof:** headed Intel D3D11 held 67.225 fps for 12.004 s with ambient active and
+  Tier 0→0. BUILD_ID `QJVfBFWLtaVk9USrIvqbD`; health/database probe and authenticated
+  4,904,886-event route probe passed.
+- **Prior milestones:** v2.6 (8/8, 2026-07-20, BUILD_ID `39p7DFRd3DbgM8WjWU2Pz`),
+  v2.5 (16/16, 2026-07-20, BUILD_ID `-zcfnulR0rESok3UDom50`), v2.4 (18/18, 2026-07-16),
+  v2.3 (2026-07-14), v2.2, v2.1, v2.0, v1.0 — all in `MILESTONES.md` / `milestones/`.
+  Codebase docs current (map refreshed post-v2.5, commit `680dde86`).
 
-Progress: [██████████] 100%
+## Status (data baseline — still current)
 
-## Performance Metrics
+- **State:** Data extraction COMPLETE and VERIFIED (historical census below). v2.7 added
+  derived activity embeddings and a binary artifact, not a new external data source.
 
-**Velocity:**
+## Data Extraction — Verified 2026-06-23
 
-- Total plans completed: 6
-- Phase 1 executed in 3 parallel waves (wall-clock ~16m end-to-end)
+Confirmed read-only against the live local PostgreSQL DB.
 
-**By Phase:**
+### Census (`scripts/count-acc-data.cjs` logic, no-SSL)
 
-| Phase | Plans | Notes |
-|-------|-------|-------|
-| 01    | 6/6   | 3 waves, parallel executors; 48 tests, tsc 0 |
+| Table / metric | Count |
+|----------------|-------|
+| AccProject (live API) | 1,153 |
+| AccDcProject (Data Connector) | 550 |
+| AccFolder | 415,908 |
+| AccFolder — sized (contents crawled) | 111,308 |
+| AccFolder — total files | 420,096 |
+| AccFolder — total size | 3.17 TB |
+| AccFolderPermission | 6,040,610 |
+| AccProjectMember (live) | 14,566 |
+| AccDcProjectUser | 22,835 |
+| AccActivity (Data Connector events) | 1,102,030 |
+| AccActivityAccds (web-session crawl) | 4,554,785 |
+| Distinct projects in AccActivityAccds | 956 |
+| Folder-crawl status | 975 ok / 178 inaccessible (= 1,153) |
+| Activity by source | project 1,101,159 / admin 871 |
+| AccDcIngestRun | 72 |
 
-**Recent Trend:**
+### Merge integrity (`scripts/verify-accds-merge.cjs`, partitioned mode)
 
-- Phase 1: 01-01..01-06 all complete; verification human_needed → approved
-- Trend: foundation primitives shipped
-
-*Updated after each plan completion*
-| Phase 02-users-decomposition P02 | 11 | 3 tasks | 6 files |
-| Phase 02 P03 | 372 | 3 tasks | 3 files |
-| Phase 02-users-decomposition P04 | 7 | 3 tasks | 4 files |
-| Phase 02-users-decomposition P05 | 420 | 3 tasks | 4 files |
-| Phase 03 P01 | 9min | 2 tasks | 3 files |
-| Phase 03-datatable-primitive P02 | 4min | 3 tasks | 2 files |
-| Phase 04-users-table-polish P02 | 2min | 2 tasks | 2 files |
-| Phase 04 P03 | 15min | 3 tasks | 6 files |
-| Phase 04-users-table-polish P04 | 9min | 3 tasks | 7 files |
-| Phase 05 P02 | 8min | 3 tasks | 8 files |
-| Phase 05-access-analysis-depth P03 | 2min | 2 tasks | 4 files |
-| Phase 05 P04 | 20min | 4 tasks | 7 files |
-| Phase 05 P05 | continuation | 3 tasks | 7 files |
-| Phase 06 P01 | 5min | 2 tasks | 4 files |
-| Phase 06 P04 | 4min | 2 tasks | 4 files |
-| Phase 06 P05 | 6min | 2 tasks | 4 files |
-| Phase 07-pre-workshop-uat P01 | 45min | 3 tasks | 4 files |
-
-## Accumulated Context
-
-### Decisions
-
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: Foundation-first build order is strict — every per-page phase imports Phase 1 (tokens, PremiumSurface, EChart, motion facade, Sheet).
-- [Roadmap]: `/users` decomposition (Phase 2) + DataTable (Phase 3) both precede the `/users` table redesign (Phase 4).
-- [Roadmap]: Phases 4, 5, 6 are parallel-safe after the foundation; Phase 7 (projector UAT) is the only valid acceptance test.
-- [Roadmap]: NA-01 (analytics feasibility gate) lives in Phase 5 where new analytics are introduced; THM-01 (light/dark + projector contrast) is verified on the densest data surface (Phase 5).
-- [Phase 01]: framer-motion bumped to 12.40.0 (VIS-06; React 19 reorder layout-animation fix).
-- [Phase 01]: EChart `axisLabel.color` uses `palette.axis` (split-line color), matching existing chart conventions.
-- [Phase 01]: `mergeEChartsTheme` always injects default xAxis/yAxis objects even when the caller omits them.
-- [Phase 01]: `w-[480px] sm:w-[480px]` on SheetContent overrides shadcn `sm:max-w-sm` for consistent ~480px drill-panel width.
-- [Phase 02-01]: zustand 5.0.14 installed as a dependency (not devDep) — store is shipped app code.
-- [Phase 02-01]: Baseline test count = 2015 (2012 pass + 1 skip + 2 pre-existing FolderPermissionTerrain failures from concurrent WIP). Every extraction plan must hold or exceed this.
-- [Phase 02-01]: vi.hoisted() required for bulkUsersQuerySpy to survive vi.mock hoisting; HTMLElement.prototype.scrollIntoView + window.scrollTo stubbed for Radix Select + jsdom compatibility.
-- [Phase 02-06]: DirectoryFilterBar reads from useUsersDirectoryStore directly — no prop drilling of 12+ option lists/setters into the extracted component.
-- [Phase 02-06]: useDirectoryRows custom hook extracts filtering/sorting/grouping/windowing memos so the shell stays under the 320-line ceiling.
-- [Phase 02-06 → Phase 4 DEFERRED]: /users auto-refresh / data freshness — pre-existing refetchOnWindowFocus:false + 5-10min staleTime in lib/core/providers.tsx; not a Phase 2 regression; deferred to Phase 4 (/users freshness/polish).
-- [Phase ?]: OrgPerson/LocalDirectoryUser re-exported from useMergedAccUsers via directoryUtils to avoid a second source of truth
-- [Phase ?]: PersonDetailModal stays a centered shadcn Dialog — Sheet migration deferred to Phase 4 (RESEARCH Open Q1)
-- [Phase ?]: setMounted scroll-init hack preserved verbatim in PersonRowList.tsx (RESEARCH Pitfall 3) - transitive import pattern via PersonRowList
-- [Phase ?]: BULK_USERS_LEAN_INPUT exported at module scope; imported by both hook and prefetch — structural PERF-03 fix by referential-identity sharing
-- [Phase ?]: ColumnDef<MockRow, string>[] (explicit value-type param) required with createColumnHelper — TanStack Table v8 strict generics
-- [Phase ?]: @ts-expect-error on RED-step component imports keeps tsc exit 0 while preserving runtime RED failure
-- [Phase ?]: Plan 02 must implement data-expand/data-cell/data-density/data-clear-filters attributes as test selector surface
-- [Phase ?]: AnimatePresence inside conditional: framer-motion exit async in jsdom; React must control DOM presence
-- [Phase ?]: Cross-wave @ts-expect-error removal: TS2307 suppression becomes TS2578 once DataTable.tsx exists; must remove in same commit
-- [Phase ?]: [Phase 04-02]: UserProfilePanel.tsx gains optional person?: OrgPerson prop; dialog variant renders person chrome (banner avatar, name, title, badge tags, contact rows) when supplied; rail ignores it; PersonAvatar imported from PersonDetailModal to avoid duplication
-- [Phase ?]: Timeline slice-narrowing via sliceFilteredProjectIds; moduleSummary stays picker-only; people sheet from in-memory summaries
-- [Phase ?]: Suspense boundary wraps full data tier; mainCharts.tsx non-page RSC extraction
-- [Phase ?]: TerrainReveal lazy-load via loadOverview on expand
-- [Phase ?]: KPI no-reanimate guard via useRef
-- [Phase ?]: Raise the token, not the threshold: light cSub/cAxis nudged to zinc-600 (#52525b, ~7.0:1) rather than loosening the 4.5 WCAG AA floor [Phase 05-05]
-- [Phase ?]: chart polish
-- [Phase ?]: FRM-01: HierarchyView deferred via dynamic(ssr:false) with HierarchyViewSkeleton fallback + idle prefetch
-- [Phase ?]: FRM-02: FormaParticleAccent frameloop=demand / opacity 0.18 behind editor at z-0; PremiumSurface on outer containers only; folder rows + tier chips stay flat
-- [Phase ?]: 06-05
-- [Phase ?]: 06-05
-- [Phase ?]: 06-05
-- [Phase ?]: Boundary diff gate checks Phase 7 commits only (HEAD~0..HEAD~2) not full branch vs origin/deploy
-- [Phase ?]: axe-core 4.10.0 CDN injection for WCAG AA contrast in Playwright — no new npm package, pinned to avoid supply drift
-- [Phase ?]: UAT gate wrapper exits 0 on BLOCKED (no server on :3100) — static-only mode valid intermediate state for CI/owner split between plans 07-01 and 07-02
-
-### Pending Todos
-
-- [Phase 4/7 UAT] Verify `prefers-reduced-motion` at runtime via DevTools Rendering → "Emulate prefers-reduced-motion: reduce" once a page wires the motion facade. Code-level enforcement (`useSafeVariants`) is proven by 15/15 unit tests; only the live browser media-query path is unverified. (Carried forward from 01-VERIFICATION.md human_needed item, approved 2026-06-17.)
-
-### Blockers/Concerns
-
-- [Constraint] `next build` typechecks the whole tree incl. test files — `npx tsc --noEmit` is the mandatory last step before any rebuild; prop-shape changes must update test fixtures in the same commit.
-- [Constraint] No new WebGL on data surfaces (GPU < 400MB); R3F accents confined to `/users` header and `/forma-proposal` background only.
-- [Constraint] New analytics strictly derivable from the existing Prisma DB; `AccActivity` covers only 428/1,152 projects — label under-covered sources in the UI.
-- [Boundary] `/users/spatial-graph` is strictly out of scope; verify `git diff --name-only` touches zero files under `users/access-analysis/`.
-- [Toolchain] Per-phase research uses `.tools/repo-map/` (`npm run repo-map` then consult dep graph / ast-grep reports; `repo-map:check` ratchets against re-introduced fetches/effects).
+All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unified total
+`4,597,370` == merged query `4,597,370`; backfill + account-admin rows kept; boundary
+spot-check reconciles.
 
 ## Deferred Items
 
-Items acknowledged and carried forward:
+Carried forward after the v2.7 close (2026-07-22). TIME-01 and the activity-universe
+renderer work are shipped and removed from this list.
 
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| Forma Proposal | FRM-V2-01 role-permission diff view (needs new `template.getBaseline(roleId)` query) | Deferred to v2 | 2026-06-17 |
-| Access Analysis | ACC-V2-01 project-grouped persistent accordion in picker | Deferred to v2 | 2026-06-17 |
-| Analytics | NA-V2-01 additional new analytics beyond the gated per-page set | Deferred to v2 | 2026-06-17 |
-| /users freshness | /users data requires manual browser refresh to show latest data — pre-existing refetchOnWindowFocus:false + staleTime in lib/core/providers.tsx; confirmed NOT a Phase 2 regression | Deferred to Phase 4 | 2026-06-18 |
+1. **Issue dims on the graph** — ISSUE-GRAPH-01 (needs `AccIssue.createdBy`→`AccDcUser`
+   resolution spike, unmeasured rate). Was the stated v2.7 entry ticket; **superseded by
+   the owner's activity-universe goal** → v2.8 candidate.
+2. **Data-truth items** — SVC-01 service-override attribution refinement; DIM-05
+   project-coverage denominator (verify whether 550/1,153 is correct before ever displaying
+   it; `VERIFY:` in `dimensionCoverage.ts`).
+3. **Activity embedding economics/tuning** — PaCMAP defaults shipped; a full fit costs
+   about 50 minutes and 15.7 GB RSS. Tune ratios/features or add incremental projection
+   only on owner UAT or materially more frequent rebuilds (CONCERNS Phase 38).
+4. **DC-01 / DC-02** — external Account Admin provisioning blocker, unchanged.
+5. **Standing:** COMPANY-GRAIN-01 (per-membership vs per-user company grain disagreement),
+   ORPHAN-01 (remaining SliderGroup/dimensionSearch/dimensionWeights orphans), TEST-SPLIT-01
+   (CONCERNS §8.2/8.3 giant test files — E2E-01 re-baselines assertions, does NOT split
+   files), MILESTONES v2.1/v2.2 backfill, v2.3 phase-dir prune (20–23 + 07 still on disk),
+   Phase-17 SPLIT-04 owner visual sign-off (test-basis-only, no live mount), per-folder
+   terrain projection seed.
+6. **Default e2e dev harness** — `playwright.config.ts` still stalls on `/login`; the
+   established production-build `playwright.verify.config.ts` harness remains the real gate
+   (`CONCERNS.md` §3.9).
+7. **Activity-universe operational ceilings** — payload route buffers 149.7 MB per
+   non-304 request; region LOD scans 4.9M rows at interaction end; event detail depends on
+   artifact/meta/table order. Current measured gates pass; harden only when concurrency,
+   corpus growth, or latency makes a ceiling real (CONCERNS Ph38/Ph39).
 
-## Session Continuity
+## Accumulated Context
 
-Last session: 2026-06-19 — milestone v2.0 archived (tag `v2.0`, local)
-Stopped at: Milestone v2.0 SHIPPED + archived (all 7 phases verified; owner approved on the projector). Next: /gsd:new-milestone
-Resume file: .planning/MILESTONES.md
+### Standing guardrails (carry into every phase)
+
+- Commit by explicit path only — branch carries heavy unrelated WIP; check
+  `git diff --cached --name-only` before every commit.
+- Never `npm run build` while `:3000` serves — deploy sequence stops the
+  `LECG Dashboard Local` task first (guard-bash hook DENIES violations; denials are
+  intentional).
+- Server-side SQL/`groupBy` for any large-table aggregate, never `findMany` + JS reduce
+  (TEST-01 OOM-guard class).
+- `prisma migrate dev` chokes on the pre-existing pgvector shadow-DB requirement — raw-SQL
+  + `migrate resolve` is the established fallback.
+- Layouts organic, never a fixed grid (standing owner constraint).
+- `prefers-reduced-motion` → static; interaction motion ≤200ms.
+- PERF-02 frozen-handle invariant + TEST-01/02/03 stay green throughout.
+
+### Decisions
+
+Milestone decisions live in `PROJECT.md` Key Decisions, `MILESTONES.md` retrospectives
+("Durable traps & decisions"), and the archived `milestones/vN.N-REQUIREMENTS.md` owner
+scope decisions. v2.5's phase CONTEXT files are pruned from disk; full text is in git
+history (last present at commit `27297514`).
+
+## Next Action
+
+**Run `$lecg-new-milestone`.** Seed it from Deferred Items and the live debt in
+`.planning/codebase/CONCERNS.md`; ISSUE-GRAPH-01 remains the leading v2.8 candidate.

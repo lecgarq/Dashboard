@@ -6,7 +6,7 @@ import {
   forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide,
   type Simulation, type SimulationNodeDatum, type SimulationLinkDatum,
 } from "d3-force";
-import { TIER_COLORS, TIER_LEGEND } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { tierSwatch, TIER_LEGEND } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { RoleSimilarityGraph as GraphData, SimNode } from "../roleSimilarity";
 
 interface PNode extends SimNode, SimulationNodeDatum {
@@ -19,7 +19,38 @@ interface PEdge extends SimulationLinkDatum<PNode> {
 const H = 500;
 const CLICK_THRESHOLD_PX = 6;
 const CLICK_DURATION_MS = 250;
+/** Edge weight above which two roles are treated as one tightly-linked cluster (blob). */
+const CLUSTER_WEIGHT = 0.6;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+/** Lighten a hex color by mixing it toward white by `amt` (0–1). */
+function lighten(hex: string, amt: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = Math.min(255, ((n >> 16) & 0xff) + Math.round((255 - ((n >> 16) & 0xff)) * amt));
+  const g = Math.min(255, ((n >> 8) & 0xff) + Math.round((255 - ((n >> 8) & 0xff)) * amt));
+  const b = Math.min(255, (n & 0xff) + Math.round((255 - (n & 0xff)) * amt));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+/** Monotone-chain convex hull; returns points in CCW order. */
+function convexHull(pts: Array<[number, number]>): Array<[number, number]> {
+  if (pts.length <= 2) return pts;
+  const sorted = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: Array<[number, number]> = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: Array<[number, number]> = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
 
 export function RoleSimilarityGraph({
   graph,
@@ -34,6 +65,8 @@ export function RoleSimilarityGraph({
   const sub = dark ? "#a1a1aa" : "#6b7280";
   const edgeColor = dark ? "rgba(161,161,170,0.55)" : "rgba(82,82,91,0.5)";
   const nodeStroke = dark ? "#09090b" : "#ffffff";
+  const labelHalo = dark ? "#09090b" : "#ffffff";
+  const shadowColor = dark ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.22)";
 
   const reducedMotion = useReducedMotion();
 
@@ -71,6 +104,47 @@ export function RoleSimilarityGraph({
     return { pnodes, pedges, neighbors };
   }, [graph, width, radius]);
 
+  const byId = useMemo(() => new Map(pnodes.map((n) => [n.roleId, n])), [pnodes]);
+
+  // Pair weight lookup — feeds the hover tooltip's "Most similar N%" rows.
+  const weightByPair = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const e of graph.edges) m.set(e.source < e.target ? `${e.source}|${e.target}` : `${e.target}|${e.source}`, e.weight);
+    return m;
+  }, [graph]);
+  const pairWeight = (a: string, b: string) => weightByPair.get(a < b ? `${a}|${b}` : `${b}|${a}`) ?? 0;
+
+  // Tightly-linked clusters (union-find over edges ≥ CLUSTER_WEIGHT) — drawn as
+  // soft hull blobs behind the graph so "effectively interchangeable" is visible.
+  const clusters = useMemo(() => {
+    const parent = new Map<string, string>();
+    const find = (x: string): string => {
+      let r = x;
+      while ((parent.get(r) ?? r) !== r) r = parent.get(r)!;
+      let c = x;
+      while ((parent.get(c) ?? c) !== c) { const next = parent.get(c)!; parent.set(c, r); c = next; }
+      return r;
+    };
+    for (const n of graph.nodes) parent.set(n.roleId, n.roleId);
+    for (const e of graph.edges) {
+      if (e.weight < CLUSTER_WEIGHT) continue;
+      const ra = find(e.source), rb = find(e.target);
+      if (ra !== rb) parent.set(ra, rb);
+    }
+    const groups = new Map<string, string[]>();
+    for (const n of graph.nodes) {
+      const r = find(n.roleId);
+      (groups.get(r) ?? groups.set(r, []).get(r)!).push(n.roleId);
+    }
+    return [...groups.values()].filter((g) => g.length >= 2);
+  }, [graph]);
+
+  const clusterOf = useMemo(() => {
+    const m = new Map<string, number>();
+    clusters.forEach((ids, i) => ids.forEach((id) => m.set(id, i)));
+    return m;
+  }, [clusters]);
+
   // One render counter drives both sim ticks and view (pan/zoom) updates.
   const [, setFrame] = useState(0);
   const frame = () => setFrame((f) => f + 1);
@@ -81,8 +155,16 @@ export function RoleSimilarityGraph({
       .force("link", forceLink<PNode, PEdge>(pedges).id((d) => d.roleId).distance((l) => 46 + (1 - l.weight) * 150).strength((l) => 0.12 + l.weight * 0.6))
       .force("charge", forceManyBody<PNode>().strength(-230))
       .force("center", forceCenter(width / 2, H / 2))
-      .force("collide", forceCollide<PNode>().radius((d) => d.r + 5))
-      .on("tick", frame)
+      .force("collide", forceCollide<PNode>().radius((d) => d.r + 13)) // +13 reserves room for the label line under each node
+      .on("tick", () => {
+        // Keep nodes inside the canvas so labels never need to detach from
+        // their node — extra bottom room because labels sit below the circle.
+        for (const n of pnodes) {
+          n.x = clamp(n.x ?? width / 2, n.r + 10, width - n.r - 10);
+          n.y = clamp(n.y ?? H / 2, n.r + 10, H - n.r - 20);
+        }
+        frame();
+      })
       .on("end", () => { sim.stop(); }); // settle-and-freeze: stop after alphaMin reached
 
     // Under reduced-motion: skip animation entirely — use seed positions as final layout
@@ -194,7 +276,7 @@ export function RoleSimilarityGraph({
 
   if (graph.nodes.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         No roles to compare for this template.
       </div>
     );
@@ -202,22 +284,59 @@ export function RoleSimilarityGraph({
 
   const hoverNeighbors = hover ? neighbors.get(hover) ?? new Set<string>() : null;
   const isLit = (id: string) => !hover || id === hover || (hoverNeighbors?.has(id) ?? false);
-  const hovered = hover ? pnodes.find((n) => n.roleId === hover) ?? null : null;
+  const hovered = hover ? byId.get(hover) ?? null : null;
   const v = viewRef.current;
 
-  // Label margin for in-bounds clamping
-  const LABEL_MARGIN_X = 40;
+  // Hover tooltip rows: neighbors sorted by similarity desc, with percentages.
+  const hoveredNeighborRows = hovered && hoverNeighbors
+    ? [...hoverNeighbors]
+        .map((id) => ({ id, name: byId.get(id)?.roleName ?? id, w: pairWeight(hovered.roleId, id) }))
+        .sort((a, b) => b.w - a.w)
+        .slice(0, 5)
+    : [];
+  const hoveredClusterSize = hovered ? clusters[clusterOf.get(hovered.roleId) ?? -1]?.length ?? 0 : 0;
+
+  /** Top-N most-similar roles for one node, shared by the hover tooltip's data
+   *  shape and the screen-reader text alternative below. */
+  const topSimilar = (roleId: string, n: number) =>
+    [...(neighbors.get(roleId) ?? new Set<string>())]
+      .map((id) => ({ name: byId.get(id)?.roleName ?? id, w: pairWeight(roleId, id) }))
+      .sort((a, b) => b.w - a.w)
+      .slice(0, n);
+
+  /** Accessible name for one node — everything the sighted reader gets from
+   *  size, colour, position and hover, said in words. */
+  const nodeLabel = (n: PNode) => {
+    const clusterSize = clusters[clusterOf.get(n.roleId) ?? -1]?.length ?? 0;
+    const similar = topSimilar(n.roleId, 3);
+    const parts = [
+      `${n.roleName}: ${n.folderCount} folders`,
+      `highest tier ${TIER_LEGEND.find((t) => t.rank === n.maxRank)?.label ?? `rank ${n.maxRank}`}`,
+    ];
+    if (similar.length > 0) {
+      parts.push(`most similar ${similar.map((s) => `${s.name} ${Math.round(s.w * 100)}%`).join(", ")}`);
+    }
+    if (clusterSize >= 2) parts.push(`in a cluster of ${clusterSize} near-interchangeable roles`);
+    return parts.join(". ");
+  };
 
   return (
     <div className="panel-elevated p-5">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="px-1 text-xs text-muted-foreground">
-          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it. Click a dot to see role details.
-        </p>
+      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-col gap-1.5">
+          <p className="px-1 text-xs text-muted-foreground">
+            Each dot is a role; curved lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Shaded blobs group near-interchangeable roles (≥{Math.round(CLUSTER_WEIGHT * 100)}% similar). Scroll to zoom, drag the background to pan, drag a dot to move it. Click a dot for role details.
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 px-1 text-[11px]" style={{ color: sub }}>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{graph.nodes.length} roles</span>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{graph.edges.length} similarity links</span>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 tabular-nums">{clusters.length} tight {clusters.length === 1 ? "cluster" : "clusters"}</span>
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-[11px]" style={{ color: sub }}>
           {TIER_LEGEND.map((t) => (
             <span key={t.rank} className="flex items-center gap-1" title={t.label}>
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: TIER_COLORS[t.rank] }} />
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: tierSwatch(t.rank, dark) }} />
               {t.label}
             </span>
           ))}
@@ -231,6 +350,8 @@ export function RoleSimilarityGraph({
           height={H}
           viewBox={`0 0 ${width} ${H}`}
           className="block touch-none select-none"
+          role="group"
+          aria-label={`Role similarity graph: ${graph.nodes.length} roles, ${graph.edges.length} similarity links, ${clusters.length} tight ${clusters.length === 1 ? "cluster" : "clusters"} of near-interchangeable roles. Each role is focusable; press Enter for its details.`}
           style={{ cursor: ix.current.mode === "pan" ? "grabbing" : "grab" }}
           onPointerDown={onSvgDown}
           onPointerMove={onMove}
@@ -238,27 +359,101 @@ export function RoleSimilarityGraph({
           onPointerLeave={onUp}
           onContextMenu={(e) => e.preventDefault()}
         >
+          <defs>
+            {/* One radial gradient per tier — gives every node a soft top-left sheen. */}
+            {TIER_LEGEND.map((t) => (
+              <radialGradient key={t.rank} id={`rsg-tier-${t.rank}`} cx="35%" cy="30%" r="80%">
+                <stop offset="0%" stopColor={lighten(tierSwatch(t.rank, dark), 0.4)} />
+                <stop offset="100%" stopColor={tierSwatch(t.rank, dark)} />
+              </radialGradient>
+            ))}
+            <filter id="rsg-shadow" x="-60%" y="-60%" width="220%" height="220%">
+              <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" floodColor={shadowColor} />
+            </filter>
+          </defs>
+
           <g transform={`translate(${v.x} ${v.y}) scale(${v.k})`}>
+            {/* Cluster blobs — padded convex hulls behind everything, tinted by the
+                cluster's highest tier. Recomputed per frame from live positions. */}
+            {clusters.map((ids, i) => {
+              const members = ids.map((id) => byId.get(id)).filter((n): n is PNode => !!n);
+              if (members.length < 2) return null;
+              const pts = members.map((n) => [n.x ?? width / 2, n.y ?? H / 2] as [number, number]);
+              const hull = convexHull(pts);
+              const d = `M${hull.map((p) => `${p[0]},${p[1]}`).join("L")}Z`;
+              const pad = Math.max(...members.map((n) => n.r)) + 16;
+              const color = tierSwatch(Math.max(...members.map((n) => n.maxRank)), dark);
+              const dim = hover !== null && !ids.includes(hover);
+              return (
+                <path
+                  key={`hull-${i}`}
+                  d={d}
+                  fill={color}
+                  stroke={color}
+                  strokeWidth={pad * 2}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  opacity={dim ? 0.03 : dark ? 0.08 : 0.07}
+                  pointerEvents="none"
+                />
+              );
+            })}
+
+            {/* Edges — quadratic arcs; hovered node's edges take its tier colour. */}
             {pedges.map((e, i) => {
               const s = e.source as PNode;
               const t = e.target as PNode;
               if (typeof s !== "object" || typeof t !== "object") return null;
-              const lit = !hover || (isLit(s.roleId) && isLit(t.roleId) && (s.roleId === hover || t.roleId === hover));
+              const sx = s.x ?? 0, sy = s.y ?? 0, tx = t.x ?? 0, ty = t.y ?? 0;
+              const dx = tx - sx, dy = ty - sy;
+              const len = Math.hypot(dx, dy) || 1;
+              const off = Math.min(26, len * 0.16);
+              const cx = (sx + tx) / 2 - (dy / len) * off;
+              const cy = (sy + ty) / 2 + (dx / len) * off;
+              const touchesHover = hover !== null && (s.roleId === hover || t.roleId === hover);
+              const lit = !hover || touchesHover;
+              const stroke = touchesHover && hovered ? tierSwatch(hovered.maxRank, dark) : edgeColor;
+              // Midpoint of the quadratic at t=0.5 — anchor for the similarity % label.
+              const qx = 0.25 * sx + 0.5 * cx + 0.25 * tx;
+              const qy = 0.25 * sy + 0.5 * cy + 0.25 * ty;
               return (
-                <line
-                  key={i}
-                  x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                  stroke={edgeColor}
-                  strokeWidth={(0.6 + e.weight * 2.4) / v.k}
-                  strokeOpacity={lit ? 0.55 * (0.4 + e.weight * 0.6) : 0.06}
-                />
+                <g key={i} pointerEvents="none">
+                  <path
+                    d={`M${sx},${sy} Q${cx},${cy} ${tx},${ty}`}
+                    fill="none"
+                    stroke={stroke}
+                    strokeWidth={(0.6 + e.weight * 2.6) / v.k}
+                    strokeOpacity={lit ? (touchesHover ? 0.85 : 0.55 * (0.4 + e.weight * 0.6)) : 0.05}
+                    strokeLinecap="round"
+                  />
+                  {touchesHover && (
+                    <text
+                      x={qx}
+                      y={qy - 4 / v.k}
+                      textAnchor="middle"
+                      fontSize={8.5 / v.k}
+                      fontWeight={600}
+                      fill={ink}
+                      stroke={labelHalo}
+                      strokeWidth={3 / v.k}
+                      style={{ paintOrder: "stroke" }}
+                    >
+                      {Math.round(e.weight * 100)}%
+                    </text>
+                  )}
+                </g>
               );
             })}
+
+            {/* Nodes — gradient fill, crisp rim, drop shadow; hover ring on the active node. */}
             {pnodes.map((n) => {
               const lit = isLit(n.roleId);
-              // In-bounds clamping for label position
-              const labelX = clamp(n.x ?? (width / 2), LABEL_MARGIN_X, width - LABEL_MARGIN_X);
-              const labelY = clamp((n.y ?? (H / 2)) + n.r + 9 / v.k, 12, H - 12);
+              const isHover = hover === n.roleId;
+              const tierColor = tierSwatch(n.maxRank, dark);
+              // Labels are glued to their node (bounds are enforced on the node
+              // positions in the sim tick, not by relocating labels).
+              const labelX = n.x ?? width / 2;
+              const labelY = (n.y ?? H / 2) + n.r + 10 / v.k;
               return (
                 <g
                   key={n.roleId}
@@ -267,24 +462,99 @@ export function RoleSimilarityGraph({
                   onPointerDown={onNodeDown(n)}
                   onMouseEnter={() => setHover(n.roleId)}
                   onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
+                  // Keyboard parity with the pointer path. This graph is the ONLY
+                  // caller of onNodeClick, so without these the role sheet — tier
+                  // breakdown plus member roster — is unreachable without a mouse.
+                  // Focus drives the same `hover` state as the pointer, so tabbing
+                  // lights the node and its neighbours exactly like hovering does.
+                  role="button"
+                  tabIndex={0}
+                  aria-label={nodeLabel(n)}
+                  onFocus={() => setHover(n.roleId)}
+                  onBlur={() => setHover((h) => (h === n.roleId ? null : h))}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    onNodeClick?.(n.roleId);
+                  }}
                 >
-                  <circle cx={n.x} cy={n.y} r={n.r} fill={TIER_COLORS[n.maxRank]} stroke={nodeStroke} strokeWidth={1.5 / v.k} opacity={lit ? 1 : 0.18} />
+                  {isHover && (
+                    <circle
+                      cx={n.x} cy={n.y} r={n.r + 5 / v.k}
+                      fill="none"
+                      stroke={tierColor}
+                      strokeWidth={1.5 / v.k}
+                      strokeOpacity={0.65}
+                    />
+                  )}
+                  <circle
+                    cx={n.x} cy={n.y} r={n.r}
+                    fill={`url(#rsg-tier-${n.maxRank})`}
+                    stroke={nodeStroke}
+                    strokeWidth={1.5 / v.k}
+                    opacity={lit ? 1 : 0.16}
+                    filter={lit ? "url(#rsg-shadow)" : undefined}
+                  />
                   <text
                     x={labelX}
                     y={labelY}
                     textAnchor="middle"
-                    fontSize={9 / v.k}
+                    fontSize={9.5 / v.k}
+                    fontWeight={isHover ? 600 : 400}
                     fill={ink}
-                    opacity={lit ? 0.9 : 0.12}
+                    stroke={labelHalo}
+                    strokeWidth={3 / v.k}
+                    style={{ paintOrder: "stroke" }}
+                    opacity={lit ? 0.92 : 0.1}
                     pointerEvents="none"
                   >
-                    {n.roleName.length > 18 ? n.roleName.slice(0, 17) + "…" : n.roleName}
+                    {n.roleName.length > 20 ? n.roleName.slice(0, 19) + "…" : n.roleName}
                   </text>
                 </g>
               );
             })}
           </g>
         </svg>
+
+        {/*
+          Text alternative for the graph's ACTUAL thesis. Focusable nodes make the
+          graph operable, but "which roles are effectively interchangeable" is
+          carried by the hull blobs — a purely visual grouping. A reader who never
+          sees the blobs still needs the claim, so the clusters are stated in
+          words. sr-only, because sighted readers already have the blobs.
+        */}
+        <div className="sr-only">
+          <h4>Role similarity, in text</h4>
+          {clusters.length === 0 ? (
+            <p>
+              No cluster of roles reached {Math.round(CLUSTER_WEIGHT * 100)}% similarity, so no roles are flagged as
+              near-interchangeable.
+            </p>
+          ) : (
+            <>
+              <p>
+                {clusters.length} {clusters.length === 1 ? "cluster" : "clusters"} of roles are at least{" "}
+                {Math.round(CLUSTER_WEIGHT * 100)}% similar by folder permissions, making them candidates for
+                consolidation.
+              </p>
+              <ul>
+                {clusters.map((ids) => (
+                  <li key={ids.join("|")}>
+                    {ids.map((id) => byId.get(id)?.roleName ?? id).join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h4>All roles by reach</h4>
+          <ul>
+            {[...pnodes]
+              .sort((a, b) => b.folderCount - a.folderCount)
+              .map((n) => (
+                <li key={n.roleId}>{nodeLabel(n)}</li>
+              ))}
+          </ul>
+        </div>
 
         <button
           type="button"
@@ -297,15 +567,29 @@ export function RoleSimilarityGraph({
 
         {hovered && (
           <div
-            className="pointer-events-none absolute left-3 top-3 max-w-[260px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
+            className="pointer-events-none absolute left-3 top-3 max-w-[280px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
             // Tooltip stays pinned top-left (already in-bounds). If it ever follows a node,
             // clamp via CSS: left/top must not exceed panel - card dimensions.
           >
-            <div className="font-semibold text-foreground">{hovered.roleName}</div>
-            <div className="text-muted-foreground">{hovered.folderCount} folders</div>
-            {hoverNeighbors && hoverNeighbors.size > 0 && (
-              <div className="mt-1 text-muted-foreground">
-                Most similar: <span className="text-foreground/90">{[...hoverNeighbors].map((id) => pnodes.find((p) => p.roleId === id)?.roleName ?? id).slice(0, 5).join(", ")}</span>
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: tierSwatch(hovered.maxRank, dark) }} aria-hidden />
+              {hovered.roleName}
+            </div>
+            <div className="text-muted-foreground">
+              {hovered.folderCount} folders
+              {hoveredClusterSize >= 2 && (
+                <> · in a cluster of {hoveredClusterSize} near-interchangeable roles</>
+              )}
+            </div>
+            {hoveredNeighborRows.length > 0 && (
+              <div className="mt-1.5 space-y-0.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Most similar</div>
+                {hoveredNeighborRows.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate text-foreground/90">{r.name}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{Math.round(r.w * 100)}%</span>
+                  </div>
+                ))}
               </div>
             )}
             {onNodeClick && (

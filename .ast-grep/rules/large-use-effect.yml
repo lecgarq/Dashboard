@@ -1,0 +1,11 @@
+id: large-use-effect
+language: Tsx
+message: Review useEffect blocks for mixed responsibilities; extract effects with fetching, DOM work, and state orchestration.
+severity: hint
+rule:
+  pattern: useEffect($$$)
+files:
+  - app/**/*.tsx
+  - components/**/*.tsx
+  - hooks/**/*.tsx
+  - lib/**/*.tsx

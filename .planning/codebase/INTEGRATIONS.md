@@ -1,262 +1,490 @@
 # External Integrations
 
-**Analysis Date:** 2026-06-17
-
-## APIs & External Services
-
-**Autodesk APS (Architecture, Engineering & Construction Cloud):**
-- APS Authentication - Three-legged OAuth for user-context authorization
-  - SDK: `@aps_sdk/authentication` 1.0.1
-  - Auth file: `server/auth.ts` (Autodesk provider at lines 69-105)
-  - Env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`
-  - Scopes: `openid data:read data:create viewables:read user:read account:read`
-  - Token endpoints: `https://developer.api.autodesk.com/authentication/v2/*`
-  - Usage: `lib/server/integrations/aps.ts`, `lib/acc/dcIngest.ts`
-
-- APS Model Derivative - 3D model translation to SVF2
-  - SDK: `@aps_sdk/model-derivative` 1.2.1
-  - File: `lib/server/integrations/aps.ts` (lines 49-73)
-  - Methods: `translateToSvf2()`, `getManifest()`
-  - Used for BIM model processing
-
-- APS Object Storage (OSS) - Bucket upload/download
-  - SDK: `@aps_sdk/oss` 1.3.3
-  - File: `lib/server/integrations/aps.ts` (lines 26-47)
-  - Bucket key: `bim_dashboard_families_[CLIENT_ID_PREFIX]`
-  - Method: `uploadToAps()`
-
-- APS Data Connector - Access Analysis data extraction
-  - Requires 3-legged user-context auth (Data Connector mandates)
-  - Used for ACC project/folder/permission data retrieval
-  - Implementation: `lib/acc/dcIngest.ts`
-
-**Google Workspace APIs:**
-- Google OAuth - Primary auth provider
-  - SDK: `googleapis` 171.4.0
-  - Auth config: `server/auth.ts` (GoogleProvider, lines 38-50)
-  - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-  - Scopes: openid, email, profile, calendar, chat, directory, drive, mail
-  - Client: `lib/server/google-service-auth.ts` → `buildPrimaryGoogleOAuthClient()`
-
-- Google Chat OAuth - Separate OAuth flow for Chat integrations
-  - Env vars: `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET`
-  - Falls back to `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` if not configured
-  - Scopes defined in `lib/google/oauth.ts` (lines 18-25)
-  - Auth: `server/auth.ts` (lines 51-67)
-
-- Gmail - Email access and message retrieval
-  - API: `gmail()` from googleapis
-  - File: `lib/server/user-gmail.ts`, `lib/google/gmail.ts`
-  - Scope: `https://mail.google.com/`
-  - Usage: Chat module, email sync
-
-- Google Calendar - Event retrieval and sync
-  - API: `calendar()` from googleapis
-  - File: `lib/google/calendar.ts`
-  - Scope: `https://www.googleapis.com/auth/calendar`
-
-- Google Drive - File access and listing
-  - API: `drive()` from googleapis
-  - File: `lib/google/drive.ts`, `lib/server/wiki-media-drive.ts`
-  - Scope: `https://www.googleapis.com/auth/drive`
-  - Used for wiki media and family document storage
-
-- Google Directory - User/group management
-  - API: `admin()` from googleapis
-  - File: `lib/google/directory.ts`
-  - Scope: `https://www.googleapis.com/auth/directory.readonly`
-
-- Google Sheets - Approval list and user management
-  - API: `sheets()` from googleapis
-  - File: `lib/google/sheets.ts`
-  - Usage: Email approval workflow, admin notifications
-
-- Google Forms - Form data collection
-  - API: `forms()` from googleapis
-  - File: `lib/google/forms.ts`
-
-- Google Chat - Messaging and space integration
-  - API: `chat()` from googleapis
-  - File: `lib/google/chat.ts`
-  - Scopes: memberships.readonly, messages, spaces.readonly
-
-## Data Storage
-
-**Databases:**
-- PostgreSQL 18+
-  - Connection: `DATABASE_URL` (pooled) or `DIRECT_URL` (direct)
-  - Client: Prisma + PrismaPg adapter (`server/db.ts`)
-  - Schema: `prisma/schema.prisma`
-  - Models: User, Account, Session, Project, ACC models (AccActivity, AccFolder, AccRole, etc.), Wiki models (ClashWiki, SimWiki), etc.
-  - Pool config: `PG_POOL_MAX` (default 5 prod, 10 dev), `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`
-  - Local instance: `.local/postgresql18/`, managed by `scripts/postgres-local.js`
-
-**File Storage:**
-- Uploadthing - Managed file upload service
-  - Token: `UPLOADTHING_TOKEN` (env var)
-  - Route: `app/api/uploadthing/route.ts`
-  - React client: `@uploadthing/react` 7.3.3
-  - Used for family file uploads
-
-- Google Drive - Secondary file storage for wiki media
-  - OAuth integration via Google Drive API
-  - Route: `app/api/wiki-media/route.ts`, `app/api/wiki-media/[id]/route.ts`
-
-**In-Memory / Analytical:**
-- DuckDB-WASM - Browser-side analytical database
-  - Library: `@duckdb/duckdb-wasm` 1.33.1-dev45.0
-  - Used for access analysis charts and data aggregation
-  - Client-side columnar queries on bulk user/activity data
-
-- Mosaic - Data-driven visualization queries
-  - Libraries: `@uwdata/mosaic-core`, `@uwdata/mosaic-sql`, `@uwdata/vgplot` (0.25.0)
-  - Integration: Access Analysis visual components
-
-**Caching:**
-- Upstash Redis (optional)
-  - Client: `@upstash/redis` 1.38.0
-  - Connection: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-  - File: `lib/redis.ts`
-  - Returns `null` if not configured; graceful degradation
-
-## Authentication & Identity
-
-**Auth Provider:**
-- NextAuth 5.0.0-beta.31 - Multi-provider authentication
-  - Config: `auth.config.ts`, `server/auth.ts`
-  - Providers: Google, Google Chat (separate), Autodesk APS, Credentials (username/password)
-  - Adapter: `@auth/prisma-adapter` (Prisma-backed sessions/accounts)
-  - Tables: User, Account, Session, VerificationToken
-
-**Auth Methods:**
-1. **Google OAuth** - Primary federated auth
-   - Client: `@auth/prisma-adapter`
-   - Tokens persisted in Account table
-
-2. **Autodesk APS OAuth** - 3-legged user-context auth
-   - Issuer: `https://developer.api.autodesk.com`
-   - Token URL: `https://developer.api.autodesk.com/authentication/v2/token`
-   - Profile mapping: `profile()` callback in `server/auth.ts` (lines 91-104)
-   - Persistent account linking enabled
-
-3. **Credentials Provider** - Local username/password
-   - File: `server/auth.ts` (lines 106-141)
-   - Password hashing: bcryptjs 3.0.3
-   - Canonical admin email mapping via `getCanonicalAdminEmail()` in `lib/auth-env.ts`
-
-**Session Management:**
-- NextAuth session tokens stored in Session table
-- Session callbacks in auth.config.ts (callbacks.authorized)
-- Public routes: /login, /register, /forgot-password, /reset-password, /unauthorized
-- Protected routes require auth; unauthorized returns 401
-
-**Admin/Role System:**
-- User.role field: VIEWER, EDITOR, ADMIN
-- Admin email configuration: `ADMIN_EMAIL`, `ADMIN_EMAIL_ALIAS` (env)
-- Primary admin: `luis.cortes@hermosillo.com` (default, overridable)
-- Role-based procedures: `protectedProcedure`, `editorProcedure`, `adminProcedure` in `server/trpc.ts`
-
-## Monitoring & Observability
-
-**Error Tracking:**
-- Not detected - No Sentry/DataDog/Rollbar configured
-
-**Logs:**
-- File-based: `lib/server/logger.ts` (custom logger implementation)
-- Console: Development mode logs "error", "warn"; production logs "error" only
-- Prisma logs: Only errors in production (via `prisma.log` config in `server/db.ts`)
-
-**Telemetry:**
-- Custom event tracking: `lib/events/user.ts` (user-related events)
-- Ingest telemetry: `AccDcIngestRun.rowsByModule` (tracks extraction metrics)
-
-## CI/CD & Deployment
-
-**Hosting:**
-- Production: Historically Railway (trial expired 2026-05-13)
-- Current: Local Windows Task Scheduler on Luis's PC via `start-local.ps1`
-- Build: `npm run build` → `.next` directory
-- Start: `npm start` on :3000 or `next start -H 0.0.0.0 --port 3000`
-
-**Local Dev Stack:**
-- Python orchestration: `scripts/run_dev_stack.py`
-- Simultaneous services:
-  - Next.js dev server (:3000)
-  - Hocuspocus collaboration server (:1234, inferred)
-  - LOD engine Python service (:8091)
-- Command: `npm run dev` or `npm run dev:restart`
-
-**Build Pipeline:**
-- Entry: `npm run build` → Next.js build with webpack
-- Checks: TypeScript noEmit in tsconfig.json (strict mode)
-- Output: `.next` directory
-- Build artifacts: `.next-e2e` (isolated e2e env), `.next-dev` (dev), `.next-deploy`, etc.
-
-## Environment Configuration
-
-**Required env vars:**
-- `DATABASE_URL` - PostgreSQL pooled connection
-- `DIRECT_URL` - PostgreSQL direct connection (railway/prod fallback)
-- `AUTH_SECRET` / `NEXTAUTH_SECRET` - NextAuth secret
-- `APS_CLIENT_ID`, `APS_CLIENT_SECRET` - Autodesk APS OAuth
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Google OAuth
-- `OPENAI_API_KEY` - OpenAI LLM
-- `UPLOADTHING_TOKEN` - File uploads
-- `ADMIN_EMAIL` - Primary admin email
-
-**Optional env vars:**
-- `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` - Google Chat (falls back to GOOGLE_*)
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` - Redis cache
-- `NEXTAUTH_URL` / `AUTH_URL` - Auth redirect base
-- `ADMIN_EMAIL_ALIAS` - Admin email aliases (comma/newline/semicolon-separated)
-- `PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS` - DB tuning
-- `OPENAI_MODEL` - LLM model selection (default: gpt-4o)
-- `LOD_SIGLIP_MODEL_ID` - ML model for LOD engine
-- `E2E_PORT`, `E2E_BASE_URL` - Playwright test config
-- `NEXT_PUBLIC_*` - Client-side public vars
-- `NEXT_DIST_DIR` - Alternative build output (e.g., .next-e2e)
-- `DC_*` - Data Connector flags (DC_PRIORITY_BACKFILL, DC_RESUME, DC_403_BISECT, etc.)
-
-**Secrets location:**
-- `.env` file (git-ignored) on local machine
-- Railway environment (historical)
-- Windows Task Scheduler task environment (current prod)
-
-## Webhooks & Callbacks
-
-**Incoming:**
-- Uploadthing webhooks - File upload completion callbacks
-- NextAuth OAuth provider callbacks - Google, Autodesk token exchange
-- Google Drive change notifications (optional, for wiki-media sync)
-
-**Outgoing:**
-- None detected - No outbound webhooks observed
-
-## Real-time Collaboration
-
-**WebSocket Server:**
-- Hocuspocus 4.0.0 server (`@hocuspocus/server`)
-- Connection: Yjs document sync, awareness (cursor/selection state)
-- Port: 1234 (inferred, configured in dev stack)
-- Database persistence: `@hocuspocus/extension-database`
-- Rooms: Wiki collaboration rooms (`wiki-room-${module}-${sectionId}`)
-- Token auth: JWT via `api/wiki-collab-token/route.ts` (12-hour max age)
-
-**Client Collaboration:**
-- Hocuspocus provider (`@hocuspocus/provider`)
-- TipTap + Yjs integration (`@tiptap/y-tiptap`)
-- Modules: Clash wiki, Simulation wiki
-- Real-time cursor position and selection sharing
-
-## LOD Engine Integration
-
-**Service:**
-- Python FastAPI server: `services/lod-engine/server.py`
-- Port: 8091 (default)
-- Model: SigLIP (`google/siglip-base-patch16-224` by default)
-- GPU support: CUDA device selection via `LOD_CUDA_DEVICE_INDEX`
-- Route integration: tRPC router for image processing requests
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-16 — unified activity source (`lib/server/unifiedActivitySource.ts`, accds-primary + DC-backfill merge) documented; DC admin-snapshot weekly refresh + `DC_SKIP_ADMIN_SNAPSHOT` added; ACCDS session env vars resolved; Task Scheduler task name corrected to `LECG Dashboard Local`; several stale VERIFY items closed
+**Refreshed:** 2026-07-20 — post v2.5 close: unified-activity consumer list corrected (per-panel views do the merge in raw SQL, not via imports); DC env flag names corrected (`RESERVE` → `DC_FAIRNESS_RESERVE`, added `DC_PROGRESSIVE_SLICE_DAYS` + `DC_BACKFILL_CUTOFF_DATE`); Electron pin corrected to `^43.1.0`; dead `KV_REST_API_*` aliases removed; Redis usage resolved; `NEXT_PUBLIC_ACC_3D_GRAPH` flag added
+**Refreshed:** 2026-07-22 — post v2.7 "Activity Universe" close (commits through `c998db1e`): activity-universe embedding artifact + payload route documented; nightly instance-embedding step removed from the DC daily ingest description (retired `c28cb962`); `NEXT_PUBLIC_*` flag list re-grepped at HEAD (`NEXT_PUBLIC_ACC_GPU_2D`, `NEXT_PUBLIC_ACC_JS_SNAPSHOT`, `NEXT_PUBLIC_ACC_SIM_WEB` retired with the old instance graph; `NEXT_PUBLIC_ACC_SCALE_SPIKE` added); `ACC_ACTIVITY_TEST_FIXTURE` server flag added
+**Refreshed:** 2026-07-23 — activity-universe 2D/3D pass (commits `1c346714`..`7d1420b9`) plus uncommitted working-tree WIP. Changes are confined to the activity-universe artifact pipeline: a 3D PaCMAP sidecar table `AccActivityEmbedding3D` (raw SQL, not Prisma), two new payload columns `positions3` + `weekId` (the latter UNCOMMITTED), four new dict keys (`positions3HalfExtent`, `weekFloor`, `weekCount`, `weekUnknownCount`), and a served artifact now at 196.2 MB / 4,904,886 rows. No new external service, no new credential, no new integration surface; `package.json` untouched. Playwright `E2E_REUSE_SERVER`/`E2E_BASE_URL` added to the build/deploy env list
 
 ---
 
-*Integration audit: 2026-06-17*
+## Autodesk Platform Services (APS / ACC)
+
+**2-Leg OAuth (server-to-server):**
+- SDK: `@aps_sdk/authentication ^1.0.1`
+- Token helper: `lib/acc/apsAuth.ts`
+- Auth env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`
+- Scope granted: `openid data:read data:create viewables:read user:read account:read`
+- Hub context: `APS_HUB_ID`, `ACC_ACCOUNT_ID`, `APS_USER_EMAIL`, `APS_PROJECT_NAME`
+- Refresh token rotation: APS v2 tokens are SINGLE-USE; any script that refreshes must persist the new token immediately or breaks dashboard login. Re-login via `scripts/aps-login.cjs`.
+
+**3-Leg OAuth (user-delegated):**
+- Provider: `server/auth.ts` custom Autodesk provider using NextAuth credentials flow
+- Stored in: `Account` Prisma model (`refresh_token`, `access_token`, `expires_at`)
+- Scope: `openid data:read data:create viewables:read user:read account:read`
+
+**ACC Members / Projects API (live feed):**
+- Router: `server/routers/acc-members.ts` (`accMembers` tRPC namespace)
+- Prisma models sourced: `AccProjectMember`, `AccRole`, `AccMemberCache`, `AccHubRoleCache`
+- Sync script: `scripts/sync-acc-users.ts` (TypeScript), cron wrapper `scripts/sync-acc-users-cron.ps1`
+
+**ACC Issues API:**
+- No dedicated issues router; `AccIssue` data is read via `lib/server/issueFunnelView.ts`, `lib/server/coordinationByProjectView.ts`, and `lib/server/projectClashView.ts` (consumed from existing routers)
+- Backfill scripts: `scripts/acc-issues-backfill.cjs`, `scripts/acc-issue-types-backfill.cjs`, `scripts/acc-issues-validate-clashes.cjs`
+- Prisma models: `AccIssue`, `AccIssueFetchRun`, `AccIssueProjectFetchResult`, `AccIssueType` (added via raw migration `prisma/migrations-raw/2026-07-10-acc-issue-type.sql`)
+- Grant scripts: `scripts/acc-grant-model-coordination.cjs`, `scripts/acc-grant-project-admin.cjs`
+
+**APS Object Storage (OSS):**
+- SDK: `@aps_sdk/oss ^1.3.3`
+- Used for model upload/management workflows
+
+**APS Model Derivative:**
+- SDK: `@aps_sdk/model-derivative ^1.2.1`
+- Model Coordination clash retrieval; Model Coordination container = `projectId`
+
+---
+
+## ACC Data Connector (DC)
+
+**Purpose:** Bulk CSV export of ACC project activity and access data. Quota: ~25 requests/UTC-day per user. 403 = project-scoped admin; Account Admin required to unlock full project universe.
+
+**Authorization:**
+- Requires 3-leg user-context token (2-leg permanently blocked for DC)
+- Access limited to projects where `luis` is project-scoped admin. Historical framing was "428/1,152 extractable; 724 locked (403)"; the v2.1 Ph11 data-truthfulness pass rejected that headline (coverage had grown to roughly ~550/1,153). VERIFY the current covered-project count from `AccDcBackfillProgress` before citing a figure in UI or docs.
+- Env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET` (same APS app)
+- Feature flag: `DC_PRIORITY_BACKFILL` — priority ordering mode
+- Feature flag: `DC_403_BISECT` — bisect-on-403 salvage mode
+- Feature flag: `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips the admin snapshot rebuild (the daily MTY-allowlisted extract covers too few projects and trips the `dcAnomalyChecks` user-drop guard; the full-universe weekly refresh owns admin snapshots instead)
+- Feature flag: `DC_RESUME` — resume pending/running rows only (lives in `scripts/dc-ingest-where-i-admin.cjs`, not the daily ingest)
+- Feature flag: `DC_FAIRNESS_RESERVE` — per-run fairness reserve slot count when priority backfill is on (default ~20% of remaining safe budget; `lib/acc/dcIngest.ts`)
+- Feature flag: `DC_PROGRESSIVE_SLICE_DAYS` — override the default 30-day progressive extraction window (`lib/acc/dcProgressiveBackfill.ts`)
+- Feature flag: `DC_BACKFILL_CUTOFF_DATE` — YYYY-MM-DD extraction ceiling for manual history mode (`lib/acc/dcIngest.ts`)
+- Pool config: `PG_POOL_MAX` (default 10 dev / 5 prod)
+
+**Ingest pipeline:**
+- Entry: `scripts/dc-daily-ingest.cjs` (primary daily job, wraps `lib/acc/dcIngest.ts`)
+- Cron wrappers: `scripts/dc-daily-cron.ps1`, `scripts/dc-daily-ingest.ps1`
+- Bisect-on-403: `lib/acc/dcBisect.ts` — salvages good projects from 403-failed batches; flag `DC_403_BISECT`
+- Priority backfill: `lib/acc/dcBackfillPriority.ts`, `lib/acc/dcProgressiveBackfill.ts`
+- CSV parsing: `lib/acc/dcActivityCsvIngest.ts`, `lib/acc/dcAdminCsvIngest.ts`
+- CSV schema: 46 files per-module (`activities_<mod>_activities.csv`) + 15+ admin CSVs per 2-yr backfill
+- Quota tracking: `lib/acc/dcQuota.ts`
+- Admin snapshot refresh: `scripts/dc-admin-snapshot-refresh.cjs` (+ `.ps1` wrapper) — full-universe DC admin extract run weekly; exists because the daily ingest only extracts MTY-allowlisted projects (~183 of ~527 admin projects), whose partial admin CSVs would otherwise be quarantined by the anomaly guard
+- Prisma models written: `AccDataConnectorJob`, `AccDcIngestRun`, `AccDcBackfillProgress`, `AccDcProject`, `AccDcProjectUser`, `AccDcProjectRole`, `AccDcProjectProduct`, `AccDcProjectService`, `AccDcProjectCompany`, `AccDcUser`, `AccDcRole`, `AccDcAccount`, `AccDcAccountService`, `AccDcBusinessUnit`, `AccDcCompany`, `AccDcProjectUserRole`, `AccDcProjectUserProduct`, `AccDcProjectUserService`, `AccDcProjectUserCompany`
+- Known gap: `AccDcRole` permanently empty (DC never sends `admin_roles.csv`); role names sourced from live `AccRole` via `mergeRoleNames`
+- Known gap: `AccDcIngestRun.rowsByModule` always 0 (telemetry skipped); measure from `AccActivity` directly
+
+**Role-name fallback (`AccDcRole` → `AccRole`):**
+
+The DC snapshot architecture intended `AccDcRole` as the authoritative role-name table,
+populated from `admin_roles.csv`. In production, Autodesk never delivers that file, so
+`AccDcRole` is permanently empty. Without a fallback every `AccDcProjectUserRole`
+assignment resolves to an unknown name and is silently dropped in the downstream join —
+causing role counts to display as 0 on `/access-analysis`.
+
+The fix lives in `lib/server/accessInstanceView.ts`. The exported `mergeRoleNames`
+function accepts two sources and returns a single `Map<id, name>`:
+
+1. All `AccRole` rows (live APS account-roles API, synced by `scripts/sync-acc-users.ts`)
+   are loaded into the map first.
+2. All `AccDcRole` rows are applied on top — **DC wins on conflict**, by design, matching
+   the general snapshot-takes-precedence architecture.
+
+Both models use the same APS role ID as the primary key (`AccRole.id` / `AccDcRole.id`),
+so the merge is a direct id-keyed overlay.
+
+`loadInstanceView()` (same file) queries both tables in parallel via `Promise.all`,
+calls `mergeRoleNames`, then passes the merged list to `buildInstanceView`. Any
+`AccDcProjectUserRole` entry whose `roleId` is absent from the merged map is silently
+skipped (`if (!name) continue`) — no error, no placeholder. This silent-drop is tested
+in `lib/server/accessInstanceView.test.ts` ("drops an assignment when no name source has
+the roleId") to prevent the bug from regressing without visibility.
+
+**Conflict behavior when DC supplies a name:** If `AccDcRole` is ever populated (i.e.,
+Autodesk resumes delivering `admin_roles.csv`), the DC name will override the `AccRole`
+name for any shared role id. `AccRole` then acts as the fallback baseline only.
+
+**Downstream label requirement:** Role names shown on `/access-analysis` currently come
+from `AccRole` (live APS sync), not from the DC extraction window. This inverts the
+usual DC-snapshot authority for role data: the "live" source is the ground truth until
+DC delivers `admin_roles.csv`. Downstream views that present role-derived metrics should
+note that role names reflect the live APS state, not the DC snapshot date.
+
+**Folder crawl:**
+- Script: `scripts/folder-crawl-cron.cjs` (cron job); recovery helper `scripts/folder-perms-recover.cjs` (the old `dry-run-folder-crawl.cjs` is gone from `scripts/`)
+- Prisma models: `AccFolder`, `AccFolderPermission`
+- Verified: 111,308 folders / 3.49TB crawled (FOLD-04 gate passed)
+- 6 folder attrs (size, version, last-updated, updated-by, added-by, description) are available in crawl response
+
+**AccFolderPermissionSummary projection (REF-03):**
+- WHAT: a materialised projection of the `includePermissionSummary` GROUP BY aggregate —
+  per `(projectId, roleId)`: `folderCount`, `totalBytes`, `permTypes` (model
+  `prisma/schema.prisma`, built by `scripts/backfill-folder-perm-summary.cjs`, reconciled
+  by `scripts/verify-folder-perm-summary.cjs`). Entirely server-side: `TRUNCATE` +
+  `INSERT...SELECT...GROUP BY`, never a Node-side row scan of the ~6M-row
+  `AccFolderPermission` table.
+- CONSUMER: `lib/server/acc-hot-cache.ts` `includePermissionSummary` path reads it
+  (PROJ-02), feeding the per-project permission dims (`permissionStrength`,
+  `folderBreadth`, `accessibleDataBytes`, `permMixedProfile`, `fullController`) on
+  `/access-analysis`; the runtime hot-cache adds <=10min (sliding-TTL ceiling <=1h) on top.
+- REFRESH + STALENESS BOUND (SC#4): `scripts/dc-daily-ingest.cjs` re-runs
+  `scripts/backfill-folder-perm-summary.cjs` as the first step of its success branch,
+  non-fatal, after every successful daily ingest — before the person-graph rebuild.
+  (The nightly per-instance embedding build that used to follow —
+  `build-instance-features.ts` + `compute_instance_embeddings.py` — was RETIRED in
+  v2.7 Ph39 (ACT-03) along with the user×project instance graph; the ingest script's
+  own comment records this.) Staleness bound: **<=1 daily ingest cycle**.
+- CAVEAT (honest): the projection's SOURCE (`AccFolderPermission`) is updated by the
+  SEPARATE folder-crawl task (`scripts/folder-crawl-cron.cjs`), not by the DC ingest.
+  Folder-permission changes made by a crawl between ingest runs lag until the next
+  successful ingest refresh — the bound above is measured from ingest cycles, not crawl
+  cycles.
+- MANUAL FALLBACK: `node scripts/backfill-folder-perm-summary.cjs` (idempotent) forces an
+  immediate rebuild outside the cron cycle.
+
+**ACC Activity (DC-extracted):**
+- Prisma model: `AccActivity` — 4.55M rows per the 2026-06-23 data census in `STATE.md` (still cited as current at v2.2 close); 623K rows in AccActivity grouped query
+- Taxonomy classifier: `app/(dashboard)/users/access-analysis/accTaxonomy.ts` + `accTaxonomyActions.generated.ts`
+- Module overrides: `app/(dashboard)/access-analysis/moduleOverrides.ts` — UI re-export shell; the pure classification logic moved to `lib/acc/activityClassification.ts` in v2.1 Ph10 (BND-02), so diagnostic scripts now import from `lib/` (dependency-cruiser warning resolved)
+- Activity attribution: `lib/acc/activityAttribution.ts`
+- Role name fix: `lib/acc/activityActorClassification.ts`
+
+**Unified activity source (accds-primary + DC-backfill; SHIPPED, LIVE):**
+- Module: `lib/server/unifiedActivitySource.ts` (tested in `lib/server/unifiedActivitySource.test.ts`)
+- `mergeActivitySources({ dcRows, accdsRows })` — ACCDS rows are primary; per project, DC (`AccActivity`) rows are kept only when they predate that project's earliest ACCDS row (DC acts as historical backfill before the ~12-month ACCDS window)
+- Query helpers: `listUnifiedActivityRows`, `countUnifiedActivityRows`, `groupUnifiedActivityByUserProjectAction`, `groupUnifiedAdminActionsByActor`, `groupUnifiedActivityByRawAction`, `getLastUnifiedActivityByEmail` (same file)
+- Direct importers of the helper module: `lib/server/acc-hot-cache.ts`, `lib/server/projectCoverageView.ts`, `server/routers/acc-activity.ts`, `server/routers/acc-members.ts`, `server/routers/users/acc-profile.ts`
+- The per-panel view modules (`lib/server/activityByActorView.ts`, `activityRecencyView.ts`, `activityTimelineView.ts`, `moduleActivityView.ts`, `folderActivityView.ts`, `folderActivityByCompanyView.ts`, `workflowToolsView.ts`) implement the SAME accds-primary + DC-backfill policy as raw-SQL `UNION ALL` queries over `AccActivityAccds`/`AccActivity` directly — they do NOT import `unifiedActivitySource.ts` (correcting the 2026-07-16 consumer list)
+- EXCEPTION (`lib/server/workflowToolsView.ts`): ACCDS never emits `rfi-`/`submittal-` family verbs, so RFI/submittal rows are taken from `AccActivity` (DC) unconditionally — the naive merge would undercount those workflows ~20×
+
+**Activity-universe embedding artifact (v2.7 Ph38, SHIPPED):**
+- Offline pipeline: `scripts/build-activity-author-attributes.ts` (author sidecar + ACT-02 coverage measurement) → `scripts/compute_activity_embeddings.py` (full-fit PaCMAP over the unified corpus read directly from PostgreSQL via `psycopg`; mirrors the `UNIFIED_ACTIVITY_CTE` merge semantics of `lib/server/unifiedActivitySource.ts`, including the two id spaces `"accds:"+accdsActivityId` vs plain `AccActivity.id`; TRUNCATE+COPY into `AccActivityEmbedding`) → `scripts/build-activity-universe-payload.ts` (keyset-paginated stream of `AccActivityEmbedding` into the binary columnar codec `lib/acc/columnarPayload.ts`)
+- 3D sidecar (NEW 2026-07-23, `ae195f00`): `python scripts/compute_activity_embeddings.py --components 3` re-fits PaCMAP with `n_components=3` over the SAME corpus, features, and `random_state=42`, then TRUNCATE+COPYs `(id, x, y, z, embeddingRunId)` into `AccActivityEmbedding3D`. That table is created by the script itself with raw `CREATE TABLE IF NOT EXISTS` — it is deliberately NOT a Prisma model (`prisma db push` would drop the expression indexes on the activity tables). 3D mode writes `.embedding/activity-embedding-gate-3d.json` and never overwrites the canonical 2D table or `activity-universe-dicts.json`. `--single-fit` skips the fit#2 determinism proof and discloses that in the log
+- Artifacts (gitignored, under `.embedding/`): `activity-universe.bin` (196,196,404 bytes ≈ 196.2 MB, 4,904,886 events — re-measured on disk 2026-07-23; it grew from ~149.7MB when the `positions3` and `weekId` columns landed) + `activity-universe-meta.json` + `activity-universe-dicts.json` + gate/coverage sidecars (`activity-embedding-gate.json`, `activity-embedding-gate-3d.json`, `activity-author-attributes.json`, `activity-author-coverage.json`)
+- Payload columns added 2026-07-23:
+  - `positions3` (u16, stride 3) — the `AccActivityEmbedding3D` xyz quantized by `lib/acc/positions3Quant.ts` (`quantizePositions3` / `dequantizePosition3`, `POSITIONS3_QMAX = 65535`, linear over `[-halfExtent, +halfExtent]`). The builder emits it only when `AccActivityEmbedding3D` row count MATCHES the 2D count; on mismatch it warns `positions3 SKIPPED` and ships a 2D-only payload. The client (`ActivityUniverseShell.tsx`) treats `positions3` + a positive `positions3HalfExtent` as the feature switch for the true-3D view and falls back to the disclosed month-depth cube otherwise
+  - `weekId` (u16) — **UNCOMMITTED working-tree change**, no commit hash. `AccActivityEmbedding` keeps only `monthId`, so the builder LEFT JOINs the source event timestamp back per chunk: `AccActivity a ON a.id = e.id` and `AccActivityAccds ac ON ac."accdsActivityId" = substr(e.id, 7)` (the two id spaces — plain `AccActivity.id` vs `"accds:"+accdsActivityId` — are why `substr(...,7)` is needed), then `COALESCE(a."createdAt", ac."createdAt")`. Week math is the new shared, untracked `lib/acc/activityWeeks.ts` (Monday-anchored UTC weeks counted from the Monday on/before the corpus `monthFloor`; `WEEK_UNKNOWN = 65535` is the honest sentinel for a row whose timestamp did not resolve, disclosed in the scrubber caption rather than folded into a real week)
+- New dict keys in `activity-universe-dicts.json`: `positions3HalfExtent` (1000 in the current artifact), `weekFloor` (`2024-11-25`), `weekCount` (87), `weekUnknownCount` (0 in the current build). The builder now reads the dicts file BEFORE streaming rows because the week floor derives from `monthFloor`, and throws if `monthFloor` yields no parseable week floor
+- Serving: `app/api/activity-universe/payload/route.ts` — whole-file bytes per request, `ETag = embeddingRunId` (artifact only changes on a manual pipeline rerun; owner decision: NO nightly refit), `?meta=1` returns the JSON meta with the honest author-coverage figures; no session gate (matches other local data routes). Shared path/meta logic: `lib/server/activityUniversePayload.ts`; client hook `app/(dashboard)/users/access-analysis/activity/useActivityUniversePayload.ts`. (The route's own inline comment still says "~149.7 MB" — stale as of the 2026-07-23 rebuild.)
+- Test fixture: the route serves `lib/server/activityUniverseTestFixture.ts` ONLY when BOTH `NEXT_PUBLIC_ACC_GRAPH_TEST === "1"` AND `ACC_ACTIVITY_TEST_FIXTURE === "1"`; either one alone falls through to the real 196.2 MB artifact. Exercised by `tests/e2e/activity-universe-view-toggle.spec.ts`
+- TRAP: after any `AccActivityEmbedding` **or `AccActivityEmbedding3D`** table change, the binary artifact must be rebuilt (`build-activity-universe-payload.ts`) or the route serves stale positions/dicts. Running the 2D and 3D fits at different times can also desync the two row counts, which silently downgrades the payload to 2D-only
+- The predecessor per-instance pipeline (`build-instance-features.ts` + `compute_instance_embeddings.py` + `AccInstanceEmbedding`) is fully retired (commit `c28cb962`; drop migration `prisma/migrations-raw/2026-07-21-drop-acc-instance-embedding.sql`)
+
+---
+
+## ACC Data Store (ACCDS) — Free Web-Session Crawl
+
+**Purpose:** Alternative activity source from `acc.autodesk.com` user session (no DC quota). ~12-month history floor. Member-accessible (admin NOT required).
+
+**Base URL:** `https://developer.api.autodesk.com/accds/v0/projects`
+
+**Auth:** Playwright-scraped browser session cookies from `acc.autodesk.com`; refreshed via `lib/acc/accdsToken.ts`
+
+**Login / Session:**
+- Login script: `scripts/accds-login.cjs`
+- Token module: `lib/acc/accdsToken.ts` — reads Playwright `storageState` JSON; builds `Cookie:` header; throws `SessionExpiredError` when cookies invalid; exports `getSessionHealth()` (`healthy`/`expiring`/`expired`/`missing`, warn threshold `SESSION_WARN_HOURS = 12`)
+- Session file path: `ACC_SESSION_PATH` env var, default `scratch/acc-session.json` (`scripts/accds-activity-ingest.cjs`)
+
+**Ingest:**
+- Script: `scripts/accds-activity-ingest.cjs`
+- Env vars: `ACCDS_PROJECT`, `ACCDS_NAME_LIKE`, `ACCDS_MONTHS_BACK`, `ACCDS_CONCURRENCY`, `ACCDS_PAGE_CONCURRENCY`, `ACCDS_RESUME`
+- Domain module: `lib/acc/accdsActivity.ts` — paginated fetch with 30-day window splits
+- Map: `lib/acc/accdsActivityMap.ts` — maps raw ACCDS rows to `AccActivityAccds` Prisma model
+- Prisma model: `AccActivityAccds`
+- Verified coverage: 956 projects / 4.55M rows (4.1× expansion from 231 base); per-project loop via `scratch/accds-fullcrawl.sh`
+- Diagnostic: `scripts/verify-accds-merge.cjs`
+
+**Downstream label requirement:** ACCDS has ~12-month history floor; downstream date-range views must label this limitation. Pre-window history comes from the DC backfill via the unified activity source (see "Unified activity source" above).
+
+---
+
+## Google Workspace APIs
+
+**SDK:** `googleapis ^173.0.0` — server-only; declared in `next.config.ts` `serverExternalPackages`
+
+**Auth modes:**
+- OAuth (user-delegated): `lib/google/oauth.ts`, `lib/google/oauth-connect.ts`
+- Service Account: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY` / `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+
+**Per-service env vars and modules:**
+
+| Service | Env Vars | Module | tRPC Router |
+|---------|----------|--------|-------------|
+| Gmail | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `lib/google/chat.ts` | `server/routers/gmail.ts` → `gmail` |
+| Google Chat | `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` | `lib/google/chat.ts` | `server/routers/chat.ts` → `chat` |
+| Google Calendar | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `lib/google/calendar.ts` | `server/routers/calendar.ts` → `calendar` |
+| Google Directory | `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY` | `lib/google/directory.ts` | (via users router) |
+| Google Drive | `GOOGLE_DRIVE_FOLDER_ID`, service account | `lib/google/drive.ts` | (file upload/wiki media) |
+| Google Sheets | `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_BLACKLIST_RANGE`, service account | `lib/google/sheets.ts` | (approved email / blacklist lookup) |
+
+**Chat panel:** `components/dashboard/MailPanel.tsx` (43KB — monolith combining Gmail inbox + Chat + Calendar surface)
+
+---
+
+## NextAuth / Authentication
+
+**Package:** `next-auth ^5.0.0-beta.31` + `@auth/prisma-adapter ^2.11.2`
+
+**Auth file split:**
+- Edge config (middleware): `auth.config.ts` — route protection, public routes list
+- Server config + providers: `server/auth.ts` — Google provider, Google Chat provider, Autodesk provider, Credentials provider (bcrypt), admin email helpers
+- No root `middleware.ts` exists (verified against `git ls-files`); `auth.config.ts` is consumed by `server/auth.ts`, not by an edge middleware file
+
+**Providers configured in `server/auth.ts`:**
+1. `GoogleProvider` — standard Google OAuth (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`)
+2. `GoogleProvider` (Chat scopes) — separate OAuth client (`GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET`)
+3. Autodesk custom provider — 3-leg APS OAuth
+4. `CredentialsProvider` — email/password with bcrypt
+
+**Session storage:** `Session` and `Account` Prisma models via `PrismaAdapter`
+
+**Access control env vars:**
+- `AUTH_SECRET` / `NEXTAUTH_SECRET` — JWT signing
+- `AUTH_URL` / `NEXTAUTH_URL` — canonical origin
+- `NEXTAUTH_URL_INTERNAL` — internal Next.js callback URL
+
+**Admin email helpers:** `lib/auth-env.ts` — `getCanonicalAdminEmail()`, `getPrimaryAdminEmail()`, `isPrimaryAdminEmail()`
+
+**Approved email list:** Google Sheets (`GOOGLE_SHEETS_ID`) via `lib/google/sheets.ts` → `isEmailApproved()`; `ApprovedEmail` Prisma model mirrors approved list
+
+---
+
+## Local PostgreSQL
+
+**Version:** PostgreSQL 18 (local install; trust auth on localhost)
+
+**Connection:**
+- Env vars: `DATABASE_URL` (pooled/primary), `DIRECT_URL` (session/direct; preferred in production)
+- Client: `server/db.ts` — `PrismaClient` with `PrismaPg` adapter from `@prisma/adapter-pg`
+- Pool config: `PG_POOL_MAX` (default 10 dev / 5 prod), `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`
+- `keepAlive: true` / `keepAliveInitialDelayMillis: 30000` — prevents NAT/idle-drop
+
+**Local management:**
+- Start/stop: `npm run db:start` / `npm run db:stop` / `npm run db:status` → `scripts/postgres-local.js`
+- Task Scheduler: `LECG Postgres Local` task starts Postgres at user logon
+- Migrations: `prisma migrate dev` (dev) / `prisma migrate deploy` (prod; called by `start-local.ps1`)
+- Schema: `prisma/schema.prisma`; migrations under `prisma/migrations/`
+- Raw migrations: `prisma/migrations-raw/` (for ALTER TABLE patches outside Prisma migrate)
+
+**Notable schema decisions:**
+- Prisma datasource: `provider = "postgresql"` (no `directUrl` in schema — connection handled in `server/db.ts` adapter)
+- `AccDcRole` permanently empty — DC never delivers `admin_roles.csv`
+- `AccActivity.service` field carries Autodesk product attribution (~40.7% of rows) — not used by `classifyActivity` (uses `rawAction` only). The two attributions disagree on ~40.7% of rows: Autodesk's `service` attribution is not yet reconciled with the `rawAction`-based module classification used by the Activity-by-module donut on `/access-analysis`. This unreconciled gap is surfaced as a hover/focus-only ⓘ tooltip on that panel (TRUTH-03).
+- `AccGraphLayoutCache` — persists cosmos.gl 3D layout positions for cache reuse
+- `AccPersonGraphSnapshot` — snapshot model for person graph rebuild scripts
+
+---
+
+## Upstash Redis
+
+**SDK:** `@upstash/redis ^1.38.0`
+
+**Module:** `lib/redis.ts` — lazy-initialized; returns `null` if env vars absent (optional integration)
+
+**Env vars:** `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+
+**Usage:** server-side caching in `server/routers/aps-search.ts` and `server/routers/lod.ts` (the only importers of `lib/redis.ts`). The previously listed `KV_REST_API_URL`/`KV_REST_API_TOKEN` Vercel KV aliases no longer appear anywhere in source — removed.
+
+---
+
+## UploadThing
+
+**SDK:** `uploadthing ^7.7.4` + `@uploadthing/react ^7.3.3`
+
+**Module:** `lib/server/uploadthing.ts` — `createUploadthing()` router; auth-gated to `ADMIN` or `EDITOR` role
+
+**Env var:** `UPLOADTHING_TOKEN`
+
+**Image hosting:** `next.config.ts` image `remotePatterns` allows `uploadthing.com` and `utfs.io` hostnames; also `lh3.googleusercontent.com` for Google profile photos
+
+---
+
+## OpenAI
+
+**SDK:** `openai ^6.37.0`
+
+**Env vars:** `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o`)
+
+**Usage:** `lib/server/integrations/ai.ts` (streaming chat completions) and `server/routers/lod.ts`
+
+---
+
+## LOD Engine (Python Microservice)
+
+**Language:** Python 3.x with FastAPI `2.0.0`
+
+**Location:** `services/lod-engine/server.py`
+
+**Model:** Google SigLIP (`google/siglip-base-patch16-224` default; override via `LOD_SIGLIP_MODEL_ID`)
+
+**Host/Port:** `127.0.0.1:8091` default (`DEFAULT_PORT = 8091`); port override env var: `LOD_QUERY_ENCODER_PORT`
+
+**Start:** `npm run lod:engine` → `python services/lod-engine/server.py`
+
+**Next.js proxy route:** `app/api/lod-img/[fileId]/route.ts` — proxies image requests to LOD engine
+
+**tRPC router:** `server/routers/lod.ts` → `lod` namespace (also calls OpenAI for query handling)
+
+**Prisma models:** `LodCategory`, `LodEmbedding`, `LodFamily`, `LodGraphNode`
+
+**Dependencies:** PyTorch, HuggingFace Transformers, `numpy`, `yaml`; `img_pipeline/` subdirectory contains provider implementations
+
+---
+
+## Hocuspocus / Yjs Collaboration Server
+
+**SDK:** `@hocuspocus/server ^4.0.0` + database/logger extensions
+
+**Start:** `npm run yjs:server` → `node scripts/yjs-server.mjs`; also started by `scripts/start-local.ps1` as background process
+
+**Endpoint:** `ws://localhost:4444` (default; overridable via `NEXT_PUBLIC_YJS_WS_URL`)
+
+**DB persistence:** `@hocuspocus/extension-database` — persists Yjs docs to PostgreSQL (`SimWiki`, `ClashWiki` models)
+
+**Client provider:** `@hocuspocus/provider ^4.0.0` in wiki editor components
+
+**Log output:** `logs/yjs.log`
+
+---
+
+## Electron (Optional Desktop Shell)
+
+**Package:** `electron ^43.1.0` (devDependency)
+
+**Entrypoint:** `electron/main.cjs`
+
+**Start command:** `npm run desktop`
+
+**Isolation:** Electron code is isolated; no application routes import from `electron/`
+
+---
+
+## Task Scheduler Jobs (Windows)
+
+These run on Luis's Windows PC via Task Scheduler — NOT via CI/CD or cron daemon:
+
+| Task | Script | Trigger | Purpose |
+|------|--------|---------|---------|
+| `LECG Dashboard Local` | `scripts/start-local.ps1` | At logon | Boot Next.js :3000 + Yjs :4444 (this task name is what the deploy sequence stops/starts) |
+| `LECG Postgres Local` | `scripts/postgres-local.js start` | At logon | Start PostgreSQL 18 |
+| DC Daily Ingest | `scripts/dc-daily-cron.ps1` → `scripts/dc-daily-ingest.cjs` | Daily (UTC midnight window) | ACC Data Connector ingest; quota ~25 req/UTC-day; runs with `DC_SKIP_ADMIN_SNAPSHOT=1` |
+| DC Admin Snapshot Refresh | `scripts/dc-admin-snapshot-refresh.ps1` → `scripts/dc-admin-snapshot-refresh.cjs` | Weekly | Full-universe DC admin snapshot (daily allowlisted extract is too partial for admin tables) |
+| Folder Crawl | `scripts/folder-crawl-cron.cjs` | Periodic | ACC folder metadata crawl |
+| ACC User Sync | `scripts/sync-acc-users-cron.ps1` → `scripts/sync-acc-users.ts` | Periodic | Sync ACC member cache from live ACC API |
+
+**DC daily ingest env flags:**
+- `DC_PRIORITY_BACKFILL=1` — enable priority ordering (set in `.env`)
+- `DC_SKIP_ADMIN_SNAPSHOT=1` — skip the admin snapshot rebuild in the daily run
+- `DC_FAIRNESS_RESERVE` — fairness reserve slot count override (the previously documented bare `RESERVE` name does not exist in source; `SAFE_BUDGET` no longer appears outside `scripts/_attic/`)
+
+**Progress monitor (read-only ops UI):**
+- `node scripts/progress-monitor.cjs` → `http://localhost:4321` (override with `PORT`) — standalone monitor for DC activity extraction and folder/permission crawl progress
+
+---
+
+## ngrok / Tunnel
+
+**SDK:** `@ngrok/ngrok ^1.7.0` (devDependency)
+
+**Script:** `npm run tunnel` → `node scripts/run-tunnel.js`
+
+**Use:** Expose `:3000` externally for live demos or webhook testing
+
+---
+
+## Trello
+
+**Module:** `lib/trello/client.ts`
+
+**Env vars:** `TRELLO_API_KEY`, `TRELLO_TOKEN`
+
+**tRPC router:** `server/routers/trello.ts` → `trello` namespace
+
+**Components:** `components/trello/` — `CardDialog.tsx` (40KB monolith), `KanbanBoard.tsx`, `CalendarView.tsx`, `ActivitySheet.tsx`, `ArchiveSheet.tsx`
+
+---
+
+## Environment Variable Reference (Keys Only)
+
+**Database:**
+- `DATABASE_URL` — primary PostgreSQL connection string (pooled or direct)
+- `DIRECT_URL` — session/direct PostgreSQL connection string (preferred in production)
+- `PG_POOL_MAX` — connection pool size override
+- `PG_IDLE_TIMEOUT_MS` — pool idle timeout override
+- `PG_CONNECTION_TIMEOUT_MS` — pool connection timeout override
+
+**Auth:**
+- `AUTH_SECRET` / `NEXTAUTH_SECRET` — JWT signing secret
+- `AUTH_URL` / `NEXTAUTH_URL` — canonical application origin
+- `NEXTAUTH_URL_INTERNAL` — internal callback URL
+
+**Google:**
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — standard Google OAuth app
+- `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` — Google Chat OAuth app (separate client)
+- (`GOOGLE_ID`/`GOOGLE_SECRET` legacy aliases: no longer referenced anywhere in source — removed from this reference)
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` — service account for Directory/Drive/Sheets
+- `GOOGLE_SHEETS_ID`, `GOOGLE_SHEETS_BLACKLIST_RANGE` — approved email sheet config
+- `GOOGLE_DRIVE_FOLDER_ID` — Drive folder for wiki media
+
+**Autodesk / APS:**
+- `APS_CLIENT_ID`, `APS_CLIENT_SECRET` — APS application credentials
+- `APS_HUB_ID` — Autodesk Hub (ACC account hub)
+- `ACC_ACCOUNT_ID` — ACC account identifier
+- `APS_USER_EMAIL` — primary APS user identity
+- `APS_PROJECT_NAME` — default project name for scripts
+- `APS_CLI_CALLBACK_URL` — OAuth callback for CLI scripts
+
+**Data Connector:**
+- `DC_PRIORITY_BACKFILL` — enable priority backfill mode (`1` = on)
+- `DC_403_BISECT` — bisect-on-403 salvage mode
+- `DC_SKIP_ADMIN_SNAPSHOT` — daily ingest skips admin snapshot rebuild
+- `DC_RESUME` — resume pending/running rows only (`scripts/dc-ingest-where-i-admin.cjs`)
+- `DC_FAIRNESS_RESERVE` — fairness reserve slots when priority backfill is on
+- `DC_PROGRESSIVE_SLICE_DAYS` — progressive extraction window override
+- `DC_BACKFILL_CUTOFF_DATE` — manual history-mode extraction ceiling (YYYY-MM-DD)
+
+**ACCDS:**
+- `ACC_SESSION_PATH` — Playwright storageState path (default `scratch/acc-session.json`)
+- `ACCDS_PROJECT`, `ACCDS_NAME_LIKE` — project scoping for the crawl
+- `ACCDS_MONTHS_BACK` — history window
+- `ACCDS_CONCURRENCY`, `ACCDS_PAGE_CONCURRENCY` — crawl parallelism
+- `ACCDS_RESUME` — resume mode
+
+**Trello:**
+- `TRELLO_API_KEY`, `TRELLO_TOKEN`
+
+**OpenAI:**
+- `OPENAI_API_KEY`, `OPENAI_MODEL`
+
+**Redis / Cache:**
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash Redis (`KV_REST_API_*` aliases removed — no longer in source)
+
+**UploadThing:**
+- `UPLOADTHING_TOKEN`
+
+**Feature Flags (NEXT_PUBLIC_ — client-visible; re-grepped at HEAD 2026-07-22):**
+- `NEXT_PUBLIC_ACC_3D_GRAPH` — 3D physics graph mode (`app/(dashboard)/users/access-analysis/graphModeFlag.ts`)
+- `NEXT_PUBLIC_ACC_GRAPH_TEST` — Playwright E2E test mode for ACC graph (also gates the activity-universe payload fixture together with `ACC_ACTIVITY_TEST_FIXTURE`)
+- `NEXT_PUBLIC_ACC_PERSON_GRAPH` — person graph feature flag
+- `NEXT_PUBLIC_ACC_SCALE_SPIKE` — scale-spike diagnostic surface (`app/(dashboard)/users/scale-spike/`, `app/api/scale-spike/payload/route.ts`)
+- `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` — new ECharts-based access analysis dashboard
+- `NEXT_PUBLIC_YJS_WS_URL` — Yjs WebSocket URL override (default `ws://localhost:4444`)
+- `NEXT_PUBLIC_LOD_CHECKER_URL` — set by `scripts/patch-env.js` at dev-stack start (points at a `:5173` checker UI); no app-code consumer at HEAD
+- Retired with the old instance graph (v2.7 Ph39): `NEXT_PUBLIC_ACC_GPU_2D`, `NEXT_PUBLIC_ACC_JS_SNAPSHOT`, `NEXT_PUBLIC_ACC_SIM_WEB` — no longer referenced anywhere in `app`/`lib`/`components`/`server`/`scripts`
+
+**Activity universe (server-side):**
+- `ACC_ACTIVITY_TEST_FIXTURE` — BOTH this and `NEXT_PUBLIC_ACC_GRAPH_TEST` must equal `"1"` for `/api/activity-universe/payload` to serve the in-memory test fixture; otherwise it serves the real 196.2 MB artifact
+
+**LOD Engine:**
+- `LOD_SIGLIP_MODEL_ID` — HuggingFace model ID override
+- `LOD_QUERY_ENCODER_PORT` — port override (`DEFAULT_PORT = 8091` in `services/lod-engine/server.py`); the previously documented `LOD_ENGINE_PORT` name does not exist in source
+
+**Build / Deploy:**
+- `NEXT_DIST_DIR` — alternate `.next` output directory (used for E2E isolation: `.next-e2e`)
+- `E2E_PORT` — Playwright suite port (default `3100`)
+- `E2E_BASE_URL` — Playwright base URL override (default `http://localhost:${E2E_PORT}`)
+- `E2E_REUSE_SERVER` — when set, `playwright.config.ts` reuses an already-running server instead of spawning `next dev --webpack` (added `55625c91`; the suite's own dev server 500s, so the working path is an isolated prod build + `next start`)
+
+---
+
+*Integration audit: 2026-06-23 — verified from `server/auth.ts`, `server/db.ts`, `lib/acc/accdsToken.ts`, `lib/acc/accdsActivity.ts`, `lib/redis.ts`, `lib/server/uploadthing.ts`, `lib/google/` directory listing, `services/lod-engine/server.py`, `scripts/` directory listing, `scripts/start-local.ps1`, `next.config.ts`, `package.json`, env-var grep across all `.ts/.tsx/.cjs/.mjs` sources, `.tools/repo-map/architecture-summary.md`. Refreshed 2026-07-02 (post v2.2): `AccFolderPermissionSummary` projection + staleness bound documented (Ph19), DC coverage framing corrected, BND-02 resolution noted. Refreshed 2026-07-16: unified activity source documented from `lib/server/unifiedActivitySource.ts` + `lib/server/workflowToolsView.ts`; DC admin snapshot refresh from `scripts/dc-admin-snapshot-refresh.cjs`; ACCDS env vars from `scripts/accds-activity-ingest.cjs`; Trello/OpenAI/LOD/middleware VERIFY items closed against the tree. Refreshed 2026-07-20 (post v2.5 close, working tree includes the uncommitted `feat/access-analysis-redesign` state): unified-activity consumers re-derived by import grep; DC env flags re-verified from `scripts/dc-daily-ingest.cjs` header + `lib/acc/dcIngest.ts`/`dcProgressiveBackfill.ts`; Redis usage from `lib/redis.ts` importers; `NEXT_PUBLIC_*` flags re-grepped across `app`/`lib`/`components`/`server`. Refreshed 2026-07-22 (post v2.7 close): activity-universe pipeline verified from `scripts/compute_activity_embeddings.py`, `scripts/build-activity-universe-payload.ts`, `scripts/build-activity-author-attributes.ts`, `lib/server/activityUniversePayload.ts`, `app/api/activity-universe/payload/route.ts`; instance-pipeline retirement verified from commit `c28cb962` + `scripts/dc-daily-ingest.cjs` comment; flag list re-grepped at HEAD (working tree carries uncommitted access-analysis-redesign WIP with the same flag set). Refreshed 2026-07-23: `--components 3` / `AccActivityEmbedding3D` / `--single-fit` read from `scripts/compute_activity_embeddings.py`; `positions3` + `weekId` columns, the `TS_JOIN` back to `AccActivity`/`AccActivityAccds`, and the new dict keys read from `scripts/build-activity-universe-payload.ts` (the `weekId` hunk is UNCOMMITTED working tree — no commit hash); quantization read from `lib/acc/positions3Quant.ts`; week math read from the untracked `lib/acc/activityWeeks.ts`; fixture gating read from `app/api/activity-universe/payload/route.ts` (BOTH flags required); dict values (`weekFloor 2024-11-25`, `weekCount 87`, `weekUnknownCount 0`, `positions3HalfExtent 1000`) and `count 4904886` read from `.embedding/activity-universe-meta.json`; artifact size measured on disk (196,196,404 bytes); `E2E_REUSE_SERVER`/`E2E_BASE_URL`/`E2E_PORT` read from `playwright.config.ts`. No integration/credential/service change this pass.*

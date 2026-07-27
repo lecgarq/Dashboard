@@ -86,10 +86,24 @@ type UnifiedWhere = {
 };
 
 const UNIFIED_ACTIVITY_CTE = Prisma.sql`
-  WITH astart AS (
-    SELECT "projectId", MIN("createdAt") AS s
-    FROM "AccActivityAccds"
-    GROUP BY "projectId"
+  WITH proj AS (
+    SELECT id FROM "AccProject"
+    UNION
+    SELECT id FROM "AccDcProject"
+  ),
+  astart AS (
+    -- Per-project ACCDS start boundary. Driven by index probes from the small
+    -- project tables (LATERAL MIN via the (projectId, createdAt) index) instead
+    -- of GROUP BY over all of AccActivityAccds (~4.7M rows): ~500ms -> ~10ms,
+    -- paid on EVERY unified query. Both activity ingests source their projectId
+    -- from these project tables, so the union covers every boundary the old
+    -- GROUP BY produced (verified: 0 orphan projectIds at cutover).
+    SELECT p.id AS "projectId", m.s
+    FROM proj p
+    CROSS JOIN LATERAL (
+      SELECT MIN("createdAt") AS s FROM "AccActivityAccds" a WHERE a."projectId" = p.id
+    ) m
+    WHERE m.s IS NOT NULL
   ),
   unified_activity AS (
     SELECT
@@ -140,10 +154,15 @@ function andSql(parts: Prisma.Sql[]): Prisma.Sql {
 
 function whereParts(where: UnifiedWhere = {}): Prisma.Sql[] {
   const parts: Prisma.Sql[] = [];
-  if (where.userEmail) parts.push(Prisma.sql`LOWER("userEmail") = ${where.userEmail.toLowerCase()}`);
+  // Raw equality on the lowercased param — NOT LOWER("userEmail") = x. Stored
+  // emails are lowercase-normalized at every ingest boundary (verified: 0 of
+  // 5.8M rows differ from LOWER(userEmail)); wrapping the column in LOWER()
+  // made the (userEmail, createdAt) indexes unusable and forced full scans of
+  // both activity tables on every per-user query (~11.9s -> ~70ms per query).
+  if (where.userEmail) parts.push(Prisma.sql`"userEmail" = ${where.userEmail.toLowerCase()}`);
   if (where.userEmails) {
     const emails = where.userEmails.map((email) => email.toLowerCase());
-    parts.push(emails.length > 0 ? Prisma.sql`LOWER("userEmail") = ANY(${emails})` : Prisma.sql`FALSE`);
+    parts.push(emails.length > 0 ? Prisma.sql`"userEmail" = ANY(${emails})` : Prisma.sql`FALSE`);
   }
   if (where.userEmailNotNull) parts.push(Prisma.sql`"userEmail" IS NOT NULL`);
   if (where.userEmailNull) parts.push(Prisma.sql`"userEmail" IS NULL`);
@@ -171,7 +190,7 @@ function whereSql(where: UnifiedWhere = {}): Prisma.Sql {
   return Prisma.sql`WHERE ${andSql(parts)}`;
 }
 
-export function normalizeAccdsActivityRow(row: AccdsActivitySourceRow): UnifiedActivityRow {
+function normalizeAccdsActivityRow(row: AccdsActivitySourceRow): UnifiedActivityRow {
   return {
     id: `accds:${row.accdsActivityId}`,
     autodeskId: row.autodeskId,

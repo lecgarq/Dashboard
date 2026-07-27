@@ -267,9 +267,14 @@ const directoryInFlight = new Map<string, Promise<OrgPerson[]>>();
 // This prevents multiple components from hammering the People API for the same user.
 const globalPersonCache = new Map<string, { person: OrgPerson; timestamp: number }>();
 const globalPersonInFlight = new Map<string, Promise<OrgPerson | null>>();
+// Negative cache: remember ids that recently resolved to nothing (missing profile,
+// 403, timeout) so we don't re-hit the People API for them on every message render.
+const globalPersonNegativeCache = new Map<string, number>();
 
 const DIRECTORY_CACHE_TTL = 300000; // 5 minutes
 const PERSON_CACHE_TTL = 3600000; // 1 hour for individuals (avatars don't change often)
+const PERSON_NEGATIVE_TTL = 600000; // 10 minutes — don't keep retrying dead lookups
+const PERSON_REQUEST_TIMEOUT_MS = 8000; // a single profile lookup must never hang the caller
 const DIRECTORY_REQUEST_TIMEOUT_MS = 30000; // raised from 8s — large orgs on Railway need more headroom
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -373,7 +378,14 @@ export async function getOrgDirectoryPersonByAccountId(
     return cached.person;
   }
 
-  // 2. Check if a fetch is already in-flight (Single-Flight)
+  // 2. Check the negative cache — skip ids that recently resolved to nothing so a
+  //    missing/forbidden profile doesn't re-hit the People API on every render.
+  const negativeAt = globalPersonNegativeCache.get(resourceName);
+  if (negativeAt && Date.now() - negativeAt < PERSON_NEGATIVE_TTL) {
+    return null;
+  }
+
+  // 3. Check if a fetch is already in-flight (Single-Flight)
   if (globalPersonInFlight.has(resourceName)) {
     return globalPersonInFlight.get(resourceName)!;
   }
@@ -386,15 +398,22 @@ export async function getOrgDirectoryPersonByAccountId(
     const people = google.people({ version: "v1", auth });
 
     try {
-      const res = await people.people.get({
-        resourceName,
-        personFields: "names,emailAddresses,photos,organizations,phoneNumbers",
-        sources: ["READ_SOURCE_TYPE_PROFILE"],
-      });
+      const res = await withTimeout(
+        people.people.get({
+          resourceName,
+          personFields: "names,emailAddresses,photos,organizations,phoneNumbers",
+          sources: ["READ_SOURCE_TYPE_PROFILE"],
+        }),
+        PERSON_REQUEST_TIMEOUT_MS,
+        "Google People profile request"
+      );
 
       const mapped = mapPersonToOrgPerson(res.data);
       if (mapped) {
         globalPersonCache.set(resourceName, { person: mapped, timestamp: Date.now() });
+        globalPersonNegativeCache.delete(resourceName);
+      } else {
+        globalPersonNegativeCache.set(resourceName, Date.now());
       }
       return mapped;
     } catch (err: any) {
@@ -402,6 +421,8 @@ export async function getOrgDirectoryPersonByAccountId(
         accountId,
         error: err,
       });
+      // Remember the failure briefly so we stop hammering a dead/forbidden id.
+      globalPersonNegativeCache.set(resourceName, Date.now());
       return null;
     } finally {
       globalPersonInFlight.delete(resourceName);
@@ -410,6 +431,27 @@ export async function getOrgDirectoryPersonByAccountId(
 
   globalPersonInFlight.set(resourceName, fetchPromise);
   return fetchPromise;
+}
+
+/**
+ * Pre-load the full organization directory into the shared in-memory caches.
+ *
+ * After this resolves, {@link getOrgDirectoryPersonByAccountId} serves every org
+ * member from memory instead of making one People API call per person. Safe to
+ * call on a hot path: it is cached (5 min), single-flighted, time-bounded, and
+ * never throws — if the directory scope is missing it simply no-ops and callers
+ * fall back to per-person lookups.
+ */
+export async function warmOrgDirectoryCache(userId: string): Promise<void> {
+  try {
+    await withTimeout(
+      listOrgDirectoryPeople(userId),
+      DIRECTORY_REQUEST_TIMEOUT_MS,
+      "Google Directory warm"
+    );
+  } catch (err) {
+    logger.debug("Directory warm skipped", { userId, error: err });
+  }
 }
 
 export async function listCalendarGuestDirectory(

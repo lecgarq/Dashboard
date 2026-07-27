@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  type CSSProperties,
+  Fragment,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -122,6 +124,44 @@ function extractEmail(value: string) {
 function displaySender(value: string) {
   const beforeAddress = value.split("<")[0]?.replace(/^"|"$/g, "").trim();
   return beforeAddress || extractEmail(value) || value;
+}
+
+function initialsFromSender(value: string) {
+  const name = displaySender(value).trim();
+  const source = name.includes("@") ? name.split("@")[0] : name;
+  const parts = source.split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// Deterministic, theme-agnostic avatar tint derived from the sender address.
+// Translucent background layers over the row so it adapts to light/dark.
+function senderAvatarStyle(value: string): CSSProperties {
+  const seed = extractEmail(value).toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 360;
+  }
+  return {
+    backgroundColor: `hsl(${hash} 65% 50% / 0.16)`,
+    color: `hsl(${hash} 60% 52%)`,
+  };
+}
+
+function mailDateGroup(value: string) {
+  const date = parseMailDate(value);
+  if (!date) return "Earlier";
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayDiff = Math.round(
+    (startOfToday.getTime() - startOfDate.getTime()) / 86_400_000
+  );
+  if (dayDiff <= 0) return "Today";
+  if (dayDiff === 1) return "Yesterday";
+  if (dayDiff <= 7) return "Earlier this week";
+  return "Older";
 }
 
 function ensureSubjectPrefix(subject: string, prefix: "Re" | "Fwd") {
@@ -349,31 +389,100 @@ function InboxView({
 }) {
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
+  const utils = trpc.useUtils();
+
+  const recentInput = useMemo(
+    () => ({ maxResults: 30, query: query || undefined }),
+    [query]
+  );
+
   const { data: messages, isLoading, refetch, isFetching, error } =
-    trpc.gmail.getRecent.useQuery({
-      maxResults: 30,
-      query: query || undefined,
-    });
+    trpc.gmail.getRecent.useQuery(recentInput);
 
   const needsAccess = error?.message === "gmail_access_required";
   const isUpdating = isFetching && !isLoading;
+  const unreadCount =
+    messages?.reduce((total, message) => total + (message.isUnread ? 1 : 0), 0) ?? 0;
+
+  // Instant triage: optimistically patch the cached list so archive / read
+  // toggles feel immediate, then reconcile with Gmail in the background.
+  const removeFromList = (id: string) =>
+    utils.gmail.getRecent.setData(recentInput, (current) =>
+      current?.filter((message) => message.id !== id)
+    );
+  const setUnreadInList = (id: string, isUnread: boolean) =>
+    utils.gmail.getRecent.setData(recentInput, (current) =>
+      current?.map((message) =>
+        message.id === id ? { ...message, isUnread } : message
+      )
+    );
+
+  const archive = trpc.gmail.archive.useMutation({
+    onMutate: async ({ id }) => {
+      await utils.gmail.getRecent.cancel(recentInput);
+      const previous = utils.gmail.getRecent.getData(recentInput);
+      removeFromList(id);
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) utils.gmail.getRecent.setData(recentInput, context.previous);
+    },
+    onSettled: () => void utils.gmail.getRecent.invalidate(),
+  });
+
+  const markRead = trpc.gmail.markRead.useMutation({
+    onMutate: async ({ id }) => {
+      await utils.gmail.getRecent.cancel(recentInput);
+      const previous = utils.gmail.getRecent.getData(recentInput);
+      setUnreadInList(id, false);
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) utils.gmail.getRecent.setData(recentInput, context.previous);
+    },
+    onSettled: () => void utils.gmail.getRecent.invalidate(),
+  });
+
+  const markUnread = trpc.gmail.markUnread.useMutation({
+    onMutate: async ({ id }) => {
+      await utils.gmail.getRecent.cancel(recentInput);
+      const previous = utils.gmail.getRecent.getData(recentInput);
+      setUnreadInList(id, true);
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) utils.gmail.getRecent.setData(recentInput, context.previous);
+    },
+    onSettled: () => void utils.gmail.getRecent.invalidate(),
+  });
+
+  const rowBusy = archive.isPending || markRead.isPending || markUnread.isPending;
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setQuery(searchInput.trim());
   };
 
+  let lastGroup: string | null = null;
+
   return (
-    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-full flex-col bg-background">
       <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/50 text-primary">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
             <Inbox size={18} />
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold text-foreground">Gmail</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-foreground">Gmail</h2>
+              {unreadCount > 0 ? (
+                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
+                  {unreadCount} new
+                </span>
+              ) : null}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {query ? `Search: ${query}` : isUpdating ? "Refreshing inbox" : "Inbox"}
+              {query ? `Search: ${query}` : isUpdating ? "Refreshing…" : "Inbox"}
             </p>
           </div>
         </div>
@@ -412,7 +521,7 @@ function InboxView({
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Search mail"
-              className="h-9 w-full rounded-md border border-border bg-muted/30 pl-9 pr-9 text-sm outline-none transition focus:border-primary/60 focus:bg-background"
+              className="h-9 w-full rounded-lg border border-border bg-muted/30 pl-9 pr-9 text-sm outline-none transition focus:border-primary/60 focus:bg-background focus:ring-2 focus:ring-primary/15"
             />
             {searchInput ? (
               <button
@@ -421,14 +530,14 @@ function InboxView({
                   setSearchInput("");
                   setQuery("");
                 }}
-                className="absolute right-2 top-1/2 rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 title="Clear search"
               >
                 <X size={14} />
               </button>
             ) : null}
           </form>
-          <Button onClick={onCompose} className="h-9 gap-2 rounded-md px-3">
+          <Button onClick={onCompose} className="h-9 gap-2 rounded-lg px-3">
             <Plus size={16} />
             Compose
           </Button>
@@ -453,14 +562,32 @@ function InboxView({
             description={query ? "Try a different search." : "New messages will appear here."}
           />
         ) : (
-          <div className="divide-y divide-border/60">
-            {messages?.map((message) => (
-              <InboxMessageRow
-                key={message.id}
-                message={message}
-                onSelect={() => onSelect(message.id)}
-              />
-            ))}
+          <div>
+            {messages?.map((message) => {
+              const group = mailDateGroup(message.date);
+              const showHeader = group !== lastGroup;
+              lastGroup = group;
+              return (
+                <Fragment key={message.id}>
+                  {showHeader ? (
+                    <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur">
+                      {group}
+                    </div>
+                  ) : null}
+                  <InboxMessageRow
+                    message={message}
+                    busy={rowBusy}
+                    onSelect={() => onSelect(message.id)}
+                    onArchive={() => archive.mutate({ id: message.id })}
+                    onToggleRead={() =>
+                      message.isUnread
+                        ? markRead.mutate({ id: message.id })
+                        : markUnread.mutate({ id: message.id })
+                    }
+                  />
+                </Fragment>
+              );
+            })}
           </div>
         )}
       </div>
@@ -468,62 +595,136 @@ function InboxView({
   );
 }
 
-function InboxMessageRow({
-  message,
-  onSelect,
+function RowAction({
+  icon,
+  label,
+  onClick,
+  disabled,
 }: {
-  message: MailSummary;
-  onSelect: () => void;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="rounded-md p-1.5 text-muted-foreground transition hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+    >
+      {icon}
+    </button>
+  );
+}
+
+function InboxMessageRow({
+  message,
+  onSelect,
+  onArchive,
+  onToggleRead,
+  busy,
+}: {
+  message: MailSummary;
+  onSelect: () => void;
+  onArchive: () => void;
+  onToggleRead: () => void;
+  busy?: boolean;
+}) {
+  const unread = message.isUnread;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
       className={cn(
-        "flex w-full gap-3 px-4 py-3 text-left transition hover:bg-background",
-        message.isUnread
-          ? "bg-blue-50/70 dark:bg-blue-950/20"
-          : "bg-transparent"
+        "group relative flex cursor-pointer gap-3 border-b border-border/50 px-4 py-3 outline-none transition-colors",
+        "hover:bg-muted/60 focus-visible:bg-muted/60",
+        unread ? "bg-primary/[0.045]" : "bg-transparent"
       )}
     >
       <span
         className={cn(
-          "mt-1 h-2 w-2 shrink-0 rounded-full",
-          message.isUnread ? "bg-primary" : "bg-transparent"
+          "absolute left-0 top-0 h-full w-[3px] rounded-r-full transition-colors",
+          unread ? "bg-primary" : "bg-transparent"
         )}
+        aria-hidden
       />
+
+      <span
+        className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-semibold ring-1 ring-inset ring-border/40"
+        style={senderAvatarStyle(message.from)}
+        aria-hidden
+      >
+        {initialsFromSender(message.from)}
+      </span>
+
       <span className="min-w-0 flex-1">
-        <span className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2">
           <span
             className={cn(
-              "min-w-0 truncate text-sm",
-              message.isUnread ? "font-semibold text-foreground" : "font-medium"
+              "min-w-0 flex-1 truncate text-sm",
+              unread ? "font-semibold text-foreground" : "font-medium text-foreground/90"
             )}
           >
             {displaySender(message.from)}
           </span>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {message.date ? formatMailDate(message.date, true) : ""}
-          </span>
-        </span>
-        <span className="mt-1 flex items-center gap-2">
+
+          {message.hasAttachments ? (
+            <Paperclip size={13} className="shrink-0 text-muted-foreground/70" />
+          ) : null}
+
           <span
             className={cn(
-              "min-w-0 truncate text-sm",
-              message.isUnread ? "font-semibold text-foreground" : "text-foreground/80"
+              "shrink-0 text-xs tabular-nums group-hover:hidden",
+              unread ? "font-medium text-primary" : "text-muted-foreground"
             )}
           >
-            {message.subject}
+            {message.date ? formatMailDate(message.date, true) : ""}
           </span>
-          {message.hasAttachments ? (
-            <Paperclip size={13} className="shrink-0 text-muted-foreground" />
-          ) : null}
+
+          <span className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+            <RowAction
+              icon={unread ? <MailOpen size={14} /> : <Mail size={14} />}
+              label={unread ? "Mark as read" : "Mark as unread"}
+              onClick={onToggleRead}
+              disabled={busy}
+            />
+            <RowAction
+              icon={<Archive size={14} />}
+              label="Archive"
+              onClick={onArchive}
+              disabled={busy}
+            />
+          </span>
         </span>
-        <span className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+
+        <span
+          className={cn(
+            "mt-0.5 block truncate text-sm",
+            unread ? "font-medium text-foreground" : "text-foreground/75"
+          )}
+        >
+          {message.subject}
+        </span>
+
+        <span className="mt-0.5 block truncate text-xs leading-relaxed text-muted-foreground">
           {message.snippet}
         </span>
       </span>
-    </button>
+    </div>
   );
 }
 

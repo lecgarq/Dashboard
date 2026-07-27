@@ -16,10 +16,12 @@ function slugify(label: string): string {
 }
 
 export function RoleManagerDialog({
-  state, existingIds, onAdd, onRename, onDelete, onClose,
+  state, existingIds, assignmentCount = 0, onAdd, onRename, onDelete, onClose,
 }: {
   state: RoleDialogState;
   existingIds: string[];
+  /** Explicit folder assignments held by the role being edited — shown in the delete confirmation. */
+  assignmentCount?: number;
   onAdd: (role: FormaRole) => void;
   onRename: (roleId: string, label: string) => void;
   onDelete: (roleId: string) => void;
@@ -83,7 +85,13 @@ export function RoleManagerDialog({
               variant="ghost"
               className="text-destructive hover:text-destructive"
               onClick={() => {
-                if (state) onDelete(state.role.id);
+                if (!state) return;
+                const what =
+                  assignmentCount > 0
+                    ? `its ${assignmentCount} folder assignment${assignmentCount === 1 ? "" : "s"}`
+                    : "no folder assignments yet";
+                if (!window.confirm(`Delete the "${state.role.label}" role? This removes ${what} from the draft.`)) return;
+                onDelete(state.role.id);
                 onClose();
               }}
             >

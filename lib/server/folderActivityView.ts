@@ -1,0 +1,183 @@
+import "server-only";
+import { db } from "@/server/db";
+import type { FolderProjectRow } from "@/app/(dashboard)/access-analysis/folderActivityCounts";
+import type { FolderActionCell } from "@/app/(dashboard)/access-analysis/folderActionTypes";
+
+/** One folder's activity totals across the selected projects (level-1 ranking). */
+export interface FolderRankTotal {
+  folderName: string;
+  /** Total user-attributed activity in this folder name across projects. */
+  activity: number;
+  /** Distinct projects containing a folder with this name. */
+  projects: number;
+  /** Distinct users active in this folder name. */
+  users: number;
+}
+
+/** Level-1 ranking is capped server-side to keep the payload bounded. */
+const FOLDER_RANK_LIMIT = 250;
+
+const TTL_MS = 5 * 60 * 1000;
+let rankingCache: { at: number; key: string; rows: FolderRankTotal[] } | null = null;
+const detailCache = new Map<string, { at: number; rows: FolderProjectRow[] }>();
+let matrixCache: { at: number; key: string; rows: FolderActionCell[] } | null = null;
+
+/**
+ * Builds a merged project-name map from AccProject (authoritative live superset)
+ * and AccDcProject (Data Connector subset). AccProject names take precedence when
+ * the same id appears in both sources; the DC names fill in any gap not covered
+ * by the live superset.
+ *
+ * Split out as a pure function so it can be unit-tested without a DB connection.
+ */
+export function buildProjectNameMap(
+  accProject: ReadonlyArray<{ id: string; name: string }>,
+  accDcProject: ReadonlyArray<{ id: string; name: string }>,
+): Map<string, string> {
+  // Load DC names first so AccProject entries (authoritative) overwrite on conflict.
+  const map = new Map<string, string>();
+  for (const p of accDcProject) {
+    map.set(p.id, p.name);
+  }
+  for (const p of accProject) {
+    map.set(p.id, p.name);
+  }
+  return map;
+}
+
+/**
+ * Resolves a projectId to a human-readable name using the provided name map.
+ * Returns "Unknown project" for any id absent from the map or for a blank id —
+ * previously the code fell back to the raw project id string, which leaked
+ * internal identifiers in the "Folder Activity by Role" view.
+ *
+ * Pure function — safe to unit-test without a DB connection.
+ */
+export function resolveProjectName(nameById: Map<string, string>, projectId: string): string {
+  if (!projectId) return "Unknown project";
+  return nameById.get(projectId) ?? "Unknown project";
+}
+
+/**
+ * Level-1 folder ranking across the selected projects (owner-directed inversion,
+ * 2026-07-07: folders first, then projects → roles → people). Same-name folders
+ * merge across projects — that is the point of the view (standard ACC folder
+ * names like "Project Files" exist in most projects). One grouped index scan
+ * over AccActivityAccds folder rows; capped at FOLDER_RANK_LIMIT by activity.
+ *
+ * The `userEmail IS NOT NULL` filter matches loadFolderDetail's filter, so a
+ * folder's headline `activity` reconciles exactly with the sum of its drill-down
+ * (project → role → user) tree — a user-less (system) action can't be attributed
+ * to a role, so it is excluded from both the headline and the tree.
+ */
+export async function loadFolderRanking(projectIds: string[]): Promise<FolderRankTotal[]> {
+  if (projectIds.length === 0) return [];
+  const key = [...projectIds].sort().join(",");
+  if (rankingCache && rankingCache.key === key && Date.now() - rankingCache.at < TTL_MS) {
+    return rankingCache.rows;
+  }
+
+  const rows = await db.$queryRaw<FolderRankTotal[]>`
+    SELECT "folderName" AS "folderName",
+           COUNT(*)::int AS activity,
+           COUNT(DISTINCT "projectId")::int AS projects,
+           COUNT(DISTINCT "userEmail")::int AS users
+    FROM "AccActivityAccds"
+    WHERE "projectId" = ANY(${projectIds})
+      AND "folderName" IS NOT NULL AND "folderName" <> ''
+      AND "userEmail" IS NOT NULL
+    GROUP BY "folderName"
+    ORDER BY activity DESC, "folderName" ASC
+    LIMIT ${FOLDER_RANK_LIMIT}
+  `;
+
+  rankingCache = { at: Date.now(), key, rows };
+  return rows;
+}
+
+/**
+ * One folder name's activity across the selected projects, grouped to
+ * (project, actor) totals with project names resolved server-side (merged
+ * AccProject-over-AccDcProject map — never a raw GUID). Feeds the client fold
+ * summarizeFolderProjects (projects → roles → people). Cached per
+ * (folderName, selection).
+ */
+export async function loadFolderDetail(folderName: string, projectIds: string[]): Promise<FolderProjectRow[]> {
+  if (!folderName || projectIds.length === 0) return [];
+  const key = `${folderName}\0${[...projectIds].sort().join(",")}`;
+  const hit = detailCache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.rows;
+
+  const [raw, accProjects, dcProjects] = await Promise.all([
+    db.$queryRaw<Array<{ projectId: string; userEmail: string; userName: string; count: number }>>`
+      SELECT "projectId" AS "projectId",
+             "userEmail" AS "userEmail",
+             MAX(COALESCE(NULLIF("userName", ''), "userEmail")) AS "userName",
+             COUNT(*)::int AS count
+      FROM "AccActivityAccds"
+      WHERE "folderName" = ${folderName}
+        AND "projectId" = ANY(${projectIds})
+        AND "userEmail" IS NOT NULL
+      GROUP BY "projectId", "userEmail"
+    `,
+    db.accProject.findMany({ select: { id: true, name: true } }),
+    db.accDcProject.findMany({ select: { id: true, name: true } }),
+  ]);
+
+  const nameById = buildProjectNameMap(accProjects, dcProjects);
+  const rows: FolderProjectRow[] = raw.map((r) => ({
+    ...r,
+    projectName: resolveProjectName(nameById, r.projectId),
+  }));
+
+  detailCache.set(key, { at: Date.now(), rows });
+  return rows;
+}
+
+/** Default folder rows on the "Activity types by folder" heatmap's y-axis. */
+const MATRIX_FOLDER_DEFAULT = 50;
+
+/**
+ * (folder, verb) activity counts for the top `limit` folders by volume — the
+ * "Activity types by folder" heatmap's cell source. `limit` defaults to
+ * MATRIX_FOLDER_DEFAULT and is clamped to FOLDER_RANK_LIMIT (the heatmap's
+ * "Show all" expands to the same cap the ranking panel uses). Verb → action
+ * type bucketing happens client-side (folderActionTypes.ts) on the lossless
+ * activityVerb. Same folder-scoped + user-attributed filters as the ranking,
+ * so both panels reconcile.
+ */
+export async function loadFolderActionMatrix(
+  projectIds: string[],
+  limit: number = MATRIX_FOLDER_DEFAULT,
+): Promise<FolderActionCell[]> {
+  if (projectIds.length === 0) return [];
+  const capped = Math.max(1, Math.min(Math.floor(limit), FOLDER_RANK_LIMIT));
+  const key = `${capped} ${[...projectIds].sort().join(",")}`;
+  if (matrixCache && matrixCache.key === key && Date.now() - matrixCache.at < TTL_MS) {
+    return matrixCache.rows;
+  }
+
+  const rows = await db.$queryRaw<FolderActionCell[]>`
+    WITH top AS (
+      SELECT "folderName"
+      FROM "AccActivityAccds"
+      WHERE "projectId" = ANY(${projectIds})
+        AND "folderName" IS NOT NULL AND "folderName" <> ''
+        AND "userEmail" IS NOT NULL
+      GROUP BY "folderName"
+      ORDER BY COUNT(*) DESC, "folderName" ASC
+      LIMIT ${capped}
+    )
+    SELECT a."folderName" AS "folderName",
+           a."activityVerb" AS verb,
+           COUNT(*)::int AS count
+    FROM "AccActivityAccds" a
+    JOIN top t ON t."folderName" = a."folderName"
+    WHERE a."projectId" = ANY(${projectIds})
+      AND a."userEmail" IS NOT NULL
+    GROUP BY a."folderName", a."activityVerb"
+  `;
+
+  matrixCache = { at: Date.now(), key, rows };
+  return rows;
+}

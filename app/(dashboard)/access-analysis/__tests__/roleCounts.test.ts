@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summarizeRoles, collapseToTopSlices, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
+import { summarizeRoles, collapseToTopSlices, UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER } from "../roleCounts";
 import type { AccessInstance } from "../types";
 
 const mk = (roles: string[]): AccessInstance => ({
@@ -25,6 +25,30 @@ describe("summarizeRoles", () => {
       { name: MULTIPLE_ROLES, value: 1 },
       { name: UNKNOWN_ROLE, value: 1 },
     ]);
+  });
+
+  it("routes deleted memberships into the Removed-member bucket, not Unknown", () => {
+    const s = summarizeRoles([
+      { ...mk([]), status: "deleted" },        // deleted, role-less (the 100% real-DB case)
+      { ...mk(["Member"]), status: "deleted" }, // deleted wins even if roles somehow survive
+      mk([]),                                   // active + role-less -> Unknown
+      mk(["Member"]),
+    ]);
+    expect(s.total).toBe(4);
+    expect(s.slices).toEqual(
+      expect.arrayContaining([
+        { name: REMOVED_MEMBER, value: 2 },
+        { name: UNKNOWN_ROLE, value: 1 },
+        { name: "Member", value: 1 },
+      ]),
+    );
+    // Lossless: still one bucket per membership.
+    expect(s.slices.reduce((n, x) => n + x.value, 0)).toBe(4);
+  });
+
+  it("treats missing status as active (back-compat for rows without the field)", () => {
+    const s = summarizeRoles([{ roles: [] }]);
+    expect(s.slices).toEqual([{ name: UNKNOWN_ROLE, value: 1 }]);
   });
 
   it("counts distinct role names across all memberships, including inside multi-role", () => {
@@ -96,6 +120,12 @@ describe("collapseToTopSlices", () => {
     // Kept: A (30). Others = B+C+D+E = 36, which outranks A by count.
     expect(out.map((s) => s.name)).toEqual([UNKNOWN_ROLE, MULTIPLE_ROLES, "Others (4 roles)", "A"]);
     expect(out.find((s) => s.name === "A")).toEqual({ name: "A", value: 30 });
+  });
+
+  it("pins Removed member alongside the warning buckets", () => {
+    const out = collapseToTopSlices([{ name: REMOVED_MEMBER, value: 40 }, ...slices], 1);
+    expect(out.map((s) => s.name)).toContain(REMOVED_MEMBER);
+    expect(out.some((s) => s.name.startsWith("Others"))).toBe(true);
   });
 
   it("adds no Others slice when topN covers every role", () => {

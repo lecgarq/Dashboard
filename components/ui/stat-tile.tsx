@@ -3,14 +3,15 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/core/utils";
 import { useEntrance } from "./animated-list";
 
-export type StatAccent = "primary" | "emerald" | "amber" | "violet" | "orange";
+/** Accent bar colors: LECG brand chart families only (DESIGN.md §2). */
+export type StatAccent = "primary" | "seaweed" | "goldenrod" | "wine" | "naranja";
 
-const ACCENT: Record<StatAccent, { bar: string; glow: string }> = {
-  primary: { bar: "from-primary to-chart-1", glow: "bg-primary/20" },
-  emerald: { bar: "from-emerald-500 to-teal-500", glow: "bg-emerald-500/20" },
-  amber: { bar: "from-amber-500 to-orange-500", glow: "bg-amber-500/20" },
-  violet: { bar: "from-violet-500 to-fuchsia-500", glow: "bg-violet-500/20" },
-  orange: { bar: "from-orange-500 to-rose-500", glow: "bg-orange-500/20" },
+const ACCENT: Record<StatAccent, string> = {
+  primary: "bg-primary",
+  seaweed: "bg-chart-3",
+  goldenrod: "bg-chart-4",
+  wine: "bg-chart-5",
+  naranja: "bg-chart-2",
 };
 
 export type Stat = {
@@ -37,16 +38,9 @@ export function StatStrip({ stats }: { stats: Stat[] }) {
           <motion.div
             key={s.label}
             {...entrance(i)}
-            className="panel-elevated group relative overflow-hidden p-4"
+            className="panel-elevated relative overflow-hidden p-4"
           >
-            <span
-              aria-hidden
-              className={cn(
-                "pointer-events-none absolute -right-5 -top-7 h-16 w-16 rounded-full blur-2xl transition-opacity duration-300 group-hover:opacity-90",
-                a.glow,
-              )}
-            />
-            <span aria-hidden className={cn("mb-2.5 block h-1 w-8 rounded-full bg-gradient-to-r", a.bar)} />
+            <span aria-hidden className={cn("mb-2.5 block h-1 w-8 rounded-full", a)} />
             <div className="font-display text-[28px] font-bold leading-none tabular-nums tracking-tight text-foreground">
               {typeof s.value === "number" ? s.value.toLocaleString() : s.value}
             </div>

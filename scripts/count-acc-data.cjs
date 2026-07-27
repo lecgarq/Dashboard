@@ -11,7 +11,8 @@ if (!dbUrlMatch) { console.error('DATABASE_URL not found'); process.exit(1); }
 const connectionString = dbUrlMatch[1];
 
 async function main() {
-  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  // DB-02: local trust-auth Postgres (no SSL/TLS bypass needed; sslmode inherits from DATABASE_URL)
+  const client = new Client({ connectionString });
   await client.connect();
 
   const tables = [

@@ -2,14 +2,14 @@ import { cn } from "@/lib/core/utils";
 
 /**
  * PremiumSurface — RSC-safe card primitive with 4 depth variants (base | float | glass | inset)
- * and an optional indigo glow accent. Wraps any panel content and provides the
+ * and an optional brand-primary glow accent. Wraps any panel content and provides the
  * `relative` positioning context required for the `.panel-elevated::after` catch-light pseudo.
  */
 
 export interface PremiumSurfaceProps extends React.ComponentProps<"div"> {
   /** Visual depth variant. Defaults to "base" (panel-elevated with catch-light). */
   variant?: "base" | "float" | "glass" | "inset";
-  /** Adds an indigo accent ring via --glow-primary. Use only on selected/accent elements. */
+  /** Adds a brand-primary accent ring via --glow-primary. Use only on selected/accent elements. */
   glow?: boolean;
   className?: string;
   children: React.ReactNode;

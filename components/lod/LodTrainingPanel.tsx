@@ -90,14 +90,14 @@ export function LodTrainingPanel() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-xl flex items-center gap-2 text-foreground">
-              <FlaskConical className="w-5 h-5 text-indigo-400" />
+              <FlaskConical className="w-5 h-5 text-primary" />
               LOD Training Engine (Super Stack)
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Process new Revit families through the 13-stage vision pipeline to build the RAG collection.
             </CardDescription>
           </div>
-          <Badge variant={isTraining ? "default" : "secondary"} className={isTraining ? "bg-indigo-600 animate-pulse" : ""}>
+          <Badge variant={isTraining ? "default" : "secondary"} className={isTraining ? "bg-primary animate-pulse" : ""}>
             {isTraining ? "Training Active" : "Engine Ready"}
           </Badge>
         </div>
@@ -112,7 +112,7 @@ export function LodTrainingPanel() {
             </div>
             <Button 
               variant="outline" 
-              className="mt-4 border-indigo-500/50 hover:bg-indigo-500/10 text-indigo-300"
+              className="mt-4 border-primary/50 hover:bg-primary/10 text-primary"
               onClick={handleStart}
               disabled={startMutation.isPending}
             >
@@ -131,7 +131,7 @@ export function LodTrainingPanel() {
             <div className="flex justify-between items-end mb-2">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground/80 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-indigo-400" />
+                  <Monitor className="w-4 h-4 text-primary" />
                   {currentMessage}
                 </p>
                 <p className="text-xs text-muted-foreground/70">
@@ -148,7 +148,7 @@ export function LodTrainingPanel() {
                   <div 
                     className={`h-1 rounded-full transition-all duration-500 ${
                       i < currentStageIdx ? "bg-emerald-500" : 
-                      i === currentStageIdx ? "bg-indigo-500 animate-pulse" : 
+                      i === currentStageIdx ? "bg-primary animate-pulse" : 
                       "bg-muted"
                     }`} 
                   />
@@ -162,8 +162,8 @@ export function LodTrainingPanel() {
             </div>
 
             {status?.etr && (
-              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 flex items-center justify-between mt-6">
-                <span className="text-xs text-indigo-300 flex items-center gap-2">
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 flex items-center justify-between mt-6">
+                <span className="text-xs text-primary flex items-center gap-2">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Estimating Time to Return...
                 </span>

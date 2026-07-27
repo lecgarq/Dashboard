@@ -23,12 +23,10 @@ import { DataTable } from "@/components/ui/DataTable";
 import { DrillSheet } from "@/components/ui/DrillSheet";
 import { USERS_COLUMNS } from "./DirectoryTableColumns";
 import { buildDirectoryRows, type DirectoryRow } from "./directoryTableRow";
+import { classifyAffiliation } from "./access-analysis/internalDomains";
 import { PeekPanel } from "./PeekPanel";
 import { UsersTableSkeleton } from "./UsersTableSkeleton";
 import { UsersTableHeader } from "./UsersTableHeader";
-
-// Re-export MODULE_BADGE_COLORS and ModuleBadge for backward-compat consumers.
-export { MODULE_BADGE_COLORS, ModuleBadge } from "./ModuleBadge";
 
 const UserActivityBody = dynamic<{ email: string; users: BulkAccUser[] }>(
   () => import("./dashboard/DashboardSidePanel").then((m) => m.UserActivityBody),
@@ -66,12 +64,12 @@ export function UsersDirectoryClient() {
   const {
     setSearch, setDebouncedSearch, setGroupBy,
     setStatusFilter, setProjectAdminFilter, setActivityEmail, setSelectedEmail,
-    clearAllFilters, cycleActivitySort, activateEmail: storeActivateEmail,
+    clearAllFilters, activateEmail: storeActivateEmail,
   } = useUsersDirectoryStore(useShallow((s) => ({
     setSearch: s.setSearch, setDebouncedSearch: s.setDebouncedSearch, setGroupBy: s.setGroupBy,
     setStatusFilter: s.setStatusFilter, setProjectAdminFilter: s.setProjectAdminFilter,
     setActivityEmail: s.setActivityEmail, setSelectedEmail: s.setSelectedEmail,
-    clearAllFilters: s.clearAllFilters, cycleActivitySort: s.cycleActivitySort, activateEmail: s.activateEmail,
+    clearAllFilters: s.clearAllFilters, activateEmail: s.activateEmail,
   })));
 
   // ---- Shell-only state / refs --------------------------------------------
@@ -122,7 +120,6 @@ export function UsersDirectoryClient() {
   }, [setStatusFilter, scrollToTop]);
 
   const handleAdminPillClick = useCallback(() => { setProjectAdminFilter((prev) => !prev); scrollToTop(); }, [setProjectAdminFilter, scrollToTop]);
-  const handleActivitySortClick = useCallback(() => { cycleActivitySort(); scrollToTop(); }, [cycleActivitySort, scrollToTop]);
 
   // ---- Activity-sort infinite query ---------------------------------------
   const sortInfiniteQuery = trpc.accActivity.usersOrderedByLastFileActivity.useInfiniteQuery(
@@ -185,25 +182,42 @@ export function UsersDirectoryClient() {
     const now = Date.now();
     let active30d = 0;
     let admins = 0;
+    let inAcc = 0;
+    let externals = 0;
+    let internals = 0;
     for (const person of people) {
+      const affiliation = classifyAffiliation(person.email);
+      if (affiliation === "external") externals += 1;
+      else if (affiliation === "internal") internals += 1;
       const accUser = accSummaryMap.get(person.email.toLowerCase());
       if (accUser) {
+        if (accUser.found) inAcc += 1;
         // active30d: use lastActivityByEmail map (G1 fix) when available.
         // project.lastActivity is never populated by the /users feed (always null),
-        // so falling back to it gives 0. Use the map when loaded; show 0 while loading.
-        let hasRecentActivity = false;
+        // so falling back to it gives 0. While the map is still undefined this
+        // counter stays at 0 and is DISCARDED below — reporting 0 as if it were
+        // measured is a wrong operational number, and the tile animates it.
         if (lastActivityByEmail !== undefined) {
           const ts = lastActivityByEmail.get(person.email.toLowerCase());
-          hasRecentActivity = !!ts && now - new Date(ts).getTime() <= ACTIVE_30D_MS;
+          if (!!ts && now - new Date(ts).getTime() <= ACTIVE_30D_MS) active30d += 1;
         }
-        if (hasRecentActivity) active30d += 1;
         // admins: project admin on any project or has adminCount > 0 or isAccountAdmin
         if (accUser.adminCount > 0 || accUser.projectAdmin === true || accUser.isAccountAdmin) {
           admins += 1;
         }
       }
     }
-    return { totalUsers: people.length, active30d, admins };
+    return {
+      totalUsers: people.length,
+      inAcc,
+      notInAcc: people.length - inAcc,
+      internals,
+      externals,
+      // null = not measured yet. The activity map is a separate query; until it
+      // lands there is no honest count, and "0" is a claim we cannot make.
+      active30d: lastActivityByEmail === undefined ? null : active30d,
+      admins,
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, accSummaryMap, lastActivityByEmail]); // ACTIVE_30D_MS is a constant, no dep needed
 
@@ -215,6 +229,14 @@ export function UsersDirectoryClient() {
     () => buildDirectoryRows(displayRows, accSummaryMap, lastActivityByEmail),
     [displayRows, accSummaryMap, lastActivityByEmail],
   );
+
+  // ---- Group-by banding (makes the Group-by select real) ------------------
+  // Stable per-field lambdas so DataTable's displayItems memo doesn't rebuild
+  // every render. "none" passes undefined — no bands, plain sorted list.
+  const getGroupLabel = useMemo(() => {
+    if (groupBy === "none") return undefined;
+    return (r: DirectoryRow) => r[groupBy];
+  }, [groupBy]);
 
   // ---- Retry handler for error state -------------------------------------
   const handleRetry = useCallback(() => {
@@ -233,6 +255,10 @@ export function UsersDirectoryClient() {
       {/* Page header — KPI glass strip + particle accent (Plan 04-04) */}
       <UsersTableHeader
         totalUsers={kpiValues.totalUsers}
+        inAcc={kpiValues.inAcc}
+        notInAcc={kpiValues.notInAcc}
+        internals={kpiValues.internals}
+        externals={kpiValues.externals}
         active30d={kpiValues.active30d}
         admins={kpiValues.admins}
       />
@@ -297,10 +323,14 @@ export function UsersDirectoryClient() {
       {!isLoading && (
         <div className="flex-1 min-h-0 h-[calc(100vh-280px)]">
           <DataTable
+            // Remount on sort-mode switch: activity sort is SERVER-ordered
+            // (displayRows), so TanStack's internal name sort must be cleared
+            // — otherwise it silently re-sorts the server order away.
+            key={activitySort.active ? "activity-sort" : "client-sort"}
             data={rows}
             columns={USERS_COLUMNS as ColumnDef<DirectoryRow>[]}
             pinnedColumn="name"
-            defaultSort={[{ id: "name", desc: false }]}
+            defaultSort={activitySort.active ? [] : [{ id: "name", desc: false }]}
             renderExpanded={(r) => (
               <PeekPanel
                 row={r.original}
@@ -314,6 +344,7 @@ export function UsersDirectoryClient() {
             onClearFilters={clearAllFilters}
             filteredEmptyMessage="No one matches those filters"
             emptyMessage="No people found in your organization directory."
+            getGroupLabel={getGroupLabel}
           />
         </div>
       )}

@@ -17,8 +17,8 @@
  * alpha mask + cosmos `pointGreyoutOpacity` / three.js DIM), kept orthogonal to
  * color so the two never fight.
  *
- * NOTE: additive and intentionally UNWIRED. A later phase adds a color-by selector
- * in the Toolbar and swaps the constant buffer in the shell for `buildNodeColors`.
+ * NOTE: additive and wired — Toolbar.tsx renders a color-by selector over
+ * COLOR_MODES and calls `buildNodeColors` to color the graph.
  */
 
 import {
@@ -57,8 +57,10 @@ const EXTRA_COLOR_MODES = ["cluster", "status", "user"] as const;
 
 export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
-// Exactly three presets for the projector map: Role (default), Project, User name.
-// Other dims remain valid for the helpers below but are no longer offered in the UI.
+// PINNED to the original three presets (Phase 25): the live picker went
+// catalog-native (dimensionIdSpace.PRESET_DIMENSION_IDS + bucketedColorsFromClustering),
+// so this list no longer derives from it — it only serves the parked registry-color
+// path (flag-ON 3D graph) and must not widen when the catalog aperture does.
 export const COLOR_MODES: readonly ColorMode[] = ["role", "project", "user"];
 
 /** Human-readable labels for the Toolbar color-mode selector. */

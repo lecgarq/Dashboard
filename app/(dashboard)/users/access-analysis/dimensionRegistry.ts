@@ -86,7 +86,7 @@ export const CONFIDENCE_FACTOR: Readonly<Record<Confidence, number>> = {
 export const BASELINE_MODULES: readonly string[] = ["insight", "docs"];
 
 /** A node's value for a dimension. `null`/`[]` mean "no value" (availability 0). */
-export type DimensionValue = string | string[] | number | null;
+type DimensionValue = string | string[] | number | null;
 
 export interface DimensionDescriptor {
   id: DimensionId;
@@ -311,10 +311,21 @@ export function getDimension(id: DimensionId): DimensionDescriptor | undefined {
 export const DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.map((d) => d.id);
 
 /**
- * The dimensions wired into the LIVE runtime today (slider state + layout targets
- * + force weighting), in display order. This is the subset of the registry the
- * current 6-slider UI exposes — NOT the full taxonomy. The advanced UI phase widens
- * this list; until then it is the single source of truth for "what the runtime uses".
+ * Real ownership (corrected Phase 24 / DIM-06 — this comment previously overstated
+ * RUNTIME_DIMENSION_IDS' scope; corrected below):
+ *
+ * - The CATALOG (`dimensionCatalog.ts`) is the dimension id-space of record. It owns
+ *   slider state/defaults, the Group-by option list, and clustering; the picker
+ *   option list itself lives in `dimensionIdSpace.ts` (Phase 24 unification).
+ * - The REGISTRY (this file) owns color descriptors + filter-chip metadata
+ *   (`nodeColors.ts` `categoryForColor`, `SliderContext.DIMENSIONS` chips) and the
+ *   legacy physics target list (`featureTargets.ts` derives `TARGET_DIMENSIONS`
+ *   from `RUNTIME_DIMENSION_IDS` below — a flag-off legacy path).
+ * - `RUNTIME_DIMENSION_IDS` below is only that legacy 6-slider runtime subset — the
+ *   subset of the registry the pre-catalog 6-slider UI exposed, in display order.
+ *   It does not describe everything the runtime draws on.
+ * - The registry is NOT retired in this phase (owner decision — full collapse into
+ *   the catalog is deferred).
  *
  * `internalExternal` replaces the legacy `isExternal` slider id (P3 reconciliation).
  * `company`, `isAdmin`, `module` are registered but intentionally NOT in this list:

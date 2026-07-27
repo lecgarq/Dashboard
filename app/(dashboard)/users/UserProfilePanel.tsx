@@ -5,8 +5,7 @@
  *
  * Renders the same rich ACC profile that /users shows (AccProfileFull), but fed
  * from an in-memory synced BulkAccUser via bulkUserToProfileData — so it opens
- * INSTANTLY with no getAccProfile round trip. The manual Refresh button is the
- * only path that fetches live from Autodesk.
+ * INSTANTLY with no getAccProfile round trip.
  *
  * G4 fix: in dialog variant the panel additionally fetches the FULL (non-lean)
  * BulkAccUser from accDcGraph.bulkUser — a local DC snapshot proc with no live
@@ -15,13 +14,21 @@
  * the ACC section when the full data arrives. A subtle "loading details…" indicator
  * is shown on the ACC section header while the fetch is in flight.
  *
+ * Freshness fix (2026-07-07): the DC snapshot can lag weeks behind the DC ingest
+ * cadence (observed 33 days), which left roles/modules stale until the manual
+ * Refresh. The dialog now ALSO queries users.getAccProfile — server-side it
+ * serves the member cache when <1h old and otherwise fetches live from ACC and
+ * re-caches — and baseData prefers whichever source has the newer syncedAt. The
+ * panel still opens instantly from the snapshot, then upgrades in place. The
+ * Refresh button remains the immediate force-live path.
+ *
  * variant:
  *   - "dialog" — embedded inside the /users PersonDetailModal (modal owns chrome).
  *   - "rail"   — mounted in the access-analysis right rail; fixed w-96 (camera
  *                stability) with its own header + close button + scroll.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { RefreshCw, Mail, Building2, Briefcase, Phone, DollarSign, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -43,6 +50,8 @@ export interface UserProfilePanelProps {
    *  contact rows) above the ACC profile body. Omitting it preserves the prior
    *  behavior — no chrome rendered. Rail variant ignores this prop. */
   person?: OrgPerson;
+  /** Rail-only content rendered after the single identity header and before ACC details. */
+  railPrelude?: ReactNode;
 }
 
 export function UserProfilePanel({
@@ -51,34 +60,55 @@ export function UserProfilePanel({
   onClose,
   variant = "dialog",
   person,
+  railPrelude,
 }: UserProfilePanelProps): React.JSX.Element {
   const utils = trpc.useUtils();
   const [override, setOverride] = useState<AccProfileData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // G4: fetch the full (non-lean) BulkAccUser from the DC snapshot so per-project
-  // roles[] and modules[] are populated automatically — no Autodesk API call.
-  // Only enabled in dialog variant (rail panels don't need the enrichment).
+  // Fetch one full user snapshot on demand. The rail deliberately does not load
+  // the multi-user directory payload before a node is selected.
   const { data: fullBulkUser, isLoading: fullUserLoading } =
     trpc.accDcGraph.bulkUser.useQuery(
       { email },
       {
-        enabled: variant === "dialog" && !!email,
+        enabled: !!email && (variant === "dialog" || user === null),
         staleTime: 5 * 60_000,
       },
     );
 
-  // Derive display data: Refresh override wins; otherwise use the full DC snapshot
-  // if available (has real roles/modules and email matches); fall back to lean
-  // in-memory user.
+  // Self-healing profile source: member cache when <1h old, otherwise a live ACC
+  // fetch server-side. retry:false — on APS credential/permission errors the DC
+  // snapshot below still renders, and the Refresh button is the manual retry.
+  const { data: cachedProfile, isLoading: profileLoading } =
+    trpc.users.getAccProfile.useQuery(
+      { email },
+      {
+        enabled: variant === "dialog" && !!email,
+        staleTime: 5 * 60_000,
+        retry: false,
+      },
+    );
+
+  // Derive display data: Refresh override wins; otherwise the NEWER of the
+  // member-cache profile vs the full DC snapshot (the snapshot can lag weeks
+  // behind ingest); fall back to the lean in-memory user.
   const baseData: AccProfileData | null = (() => {
     if (override) return override;
+    const candidates: AccProfileData[] = [];
+    const profile = cachedProfile as AccProfileData | undefined;
+    if (profile?.found) candidates.push(profile);
     if (
       fullBulkUser &&
       fullBulkUser.found &&
       fullBulkUser.email.toLowerCase() === email.toLowerCase()
     ) {
-      return bulkUserToProfileData(fullBulkUser);
+      candidates.push(bulkUserToProfileData(fullBulkUser));
+    }
+    if (candidates.length > 0) {
+      // ISO timestamps — lexicographic compare is chronological.
+      candidates.sort((a, b) => (b.syncedAt ?? "").localeCompare(a.syncedAt ?? ""));
+      return candidates[0];
     }
     if (user && user.found) return bulkUserToProfileData(user);
     return null;
@@ -99,11 +129,14 @@ export function UserProfilePanel({
       .finally(() => setRefreshing(false));
   }
 
-  // G4: true when the full-user fetch is in-flight (dialog only; rail skips it)
-  const detailLoading = variant === "dialog" && fullUserLoading && !fullBulkUser;
+  const resolvedUser = fullBulkUser ?? user;
+
+  const detailLoading =
+    (fullUserLoading && !fullBulkUser) ||
+    (variant === "dialog" && profileLoading && !cachedProfile);
 
   const body =
-    refreshing && !baseData ? (
+    (refreshing || detailLoading) && !baseData ? (
       <AccLoadingProgress />
     ) : baseData ? (
       <>
@@ -233,12 +266,15 @@ export function UserProfilePanel({
       data-testid="user-detail-panel"
       className="flex h-full w-full shrink-0 flex-col border-l border-border/30 bg-card"
     >
-      <header className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3">
+      <header
+        data-testid="user-detail-header"
+        className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3"
+      >
         <div className="flex min-w-0 items-center gap-3">
-          <ProfileAvatar name={user?.name} email={email} photoUrl={user?.photoUrl} size="lg" />
+          <ProfileAvatar name={resolvedUser?.name} email={email} photoUrl={resolvedUser?.photoUrl} size="lg" />
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-semibold" title={user?.name || email}>
-              {user?.name || email}
+            <h2 className="truncate text-sm font-semibold" title={resolvedUser?.name || email}>
+              {resolvedUser?.name || email}
             </h2>
             <p className="truncate text-xs text-muted-foreground" title={email}>
               {email}
@@ -255,7 +291,12 @@ export function UserProfilePanel({
           </button>
         )}
       </header>
-      <div className="flex-1 overflow-y-auto px-4 pb-6">{body}</div>
+      <div className="flex-1 overflow-y-auto">
+        {railPrelude}
+        <div data-testid="acc-profile-body" className="px-4 pb-6">
+          {body}
+        </div>
+      </div>
     </aside>
   );
 }

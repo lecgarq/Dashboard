@@ -1,165 +1,281 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-23 (original full scan)
+**Refreshed:** 2026-07-23 — post 2D/3D activity-universe arc (surface-scoped commit scopes, `ponytail:` corner-marker comments, three.js 3D arm on the activity universe, WIP note refresh). Previous refreshes 2026-07-22, 2026-07-20, 2026-07-16, 2026-07-02.
+
+## TypeScript & Next.js App Router Idioms
+
+**Server vs Client boundary:**
+- Page files (`page.tsx`) are async RSC by default. Mark `export const dynamic = "force-dynamic"` when server-side data must not be cached at the route level.
+- Interactive client components require `"use client"` as the first line.
+- Server actions (data mutations / heavy server reads triggered lazily) use `"use server"` as the first line. Examples: `app/(dashboard)/access-analysis/coordinationActions.ts`, `folderTerrainActions.ts`, `folderActivityActions.ts`.
+- Pure transform/compute modules (`roleCounts.ts`, `companyCounts.ts`, etc.) carry no directive — they are safe for both client and server imports.
+- **Directive-free shared-constant rule (v2.5 PERF-05):** any constant shared by a server prefetch and a client query (e.g. a tRPC input that must produce identical cache keys on both sides) MUST live in a directive-free module — pattern: `lib/acc/cachePolicy.ts` (`BULK_USERS_LEAN_INPUT`). Importing any export of a `"use client"` module from server code yields a client-reference **proxy**, not the value — the SSR prefetch silently breaks and the client refetches the full payload.
+- Both `EChart` wrappers (`components/ui/EChart.tsx` — canonical; `app/(dashboard)/access-analysis/components/EChart.tsx` — legacy, consumers not yet migrated) are `"use client"` because `echarts-for-react` relies on the DOM.
+
+**RSC data loading pattern (`access-analysis`, `template-mty`):**
+```tsx
+// page.tsx — async RSC, no hooks, no state
+export default async function AccessAnalysisRoute() {
+  return (
+    <div className="h-full overflow-y-auto text-foreground">
+      <Suspense fallback={<...Skeleton />}>
+        <MainCharts />   {/* async RSC — fetches data */}
+      </Suspense>
+    </div>
+  );
+}
+
+// mainCharts.tsx — async RSC, parallel fetches
+export async function MainCharts() {
+  const [view, moduleRows, ...] = await Promise.all([
+    loadInstanceView(),
+    loadModuleActivity(),
+    ...
+  ]);
+  return <AccessAnalysisCharts {...props} />;  // client component, receives all data
+}
+```
+
+**`/users` prefetch pattern:**
+```tsx
+// page.tsx — server-side TanStack Query prefetch
+const helpers = await createAccRouteHelpers();
+await prefetchUsersRouteAccData(helpers);
+return (
+  <HydrationBoundary state={helpers.dehydrate()}>
+    <Suspense ...><UsersDirectoryClient /></Suspense>
+  </HydrationBoundary>
+);
+```
+
+**Import path aliases:**
+- Always use `@/` alias, not relative `../../../` for cross-zone imports.
+- Examples: `@/lib/server/accessInstanceView`, `@/components/ui/PremiumSurface`, `@/server/db`.
+- In-route relative imports (`./roleCounts`, `../types`) are acceptable within the same route subtree.
 
 ## Naming Patterns
 
 **Files:**
-- Descriptive camelCase for data/logic files: `companyCounts.ts`, `accdsActivity.ts`, `activityByRolePieChart.tsx`
-- Test files co-located in `__tests__/` directories or with `.test.ts`/`.spec.ts` suffix
-- Routes use Next.js convention: `route.ts` in `app/api/[path]/`
-- Components: PascalCase for React components: `AccessAnalysisCharts.tsx`, `RolesPieChart.tsx`
-- Utility files: lowercase with hyphens for cross-cutting concerns: `create-logger.ts`, `split-windows.ts`
+- Route pages: `page.tsx`, `loading.tsx` (Next.js conventions).
+- RSC data bridges co-located with the route: `mainCharts.tsx`, `templateTerrainActions.ts`.
+- Pure domain transforms: camelCase, descriptive noun — `roleCounts.ts`, `companyCounts.ts`, `moduleCounts.ts`, `folderTerrain.ts`.
+- Type contracts: `types.ts` per route or component directory.
+- Tests: `__tests__/` folder adjacent to the code, or co-located `*.test.ts(x)` (both patterns exist).
 
 **Functions:**
-- Named exports for public API: `export function summarizeCompanies(...)`
-- camelCase for all function names: `fetchActivityWindow`, `collapseCompanySlices`, `labelFor`
-- Private helpers: lowercase or underscore prefix for scope (e.g., `const labelFor = (...) => ...`)
-- Server-side functions typically exported with descriptive intent: `crawlProjectActivity`, `writeLog`
+- Named exports only — no default exports for logic modules.
+- Loaders follow `load*` convention: `loadInstanceView()`, `loadModuleActivity()`, `loadTemplateOverview()`.
+- Summarizers follow `summarize*`: `summarizeRoles()`, `summarizeFolders()`.
+- Builders follow `build*`: `buildUserRows()`.
 
 **Variables:**
-- camelCase for all local and module-level variables: `const counts = new Map()`, `let cbFailures = 0`
-- Constants: SCREAMING_SNAKE_CASE when truly immutable across the app: `UNKNOWN_COMPANY`, `DEFAULT_TOP`, `MAX_SPACES_TO_POLL`
-- Private module constants: lowercase if scoped: `const ACCDS_BASE = '...'` (used in one file)
-- Map/Set names are plural or descriptive: `usersByCompany`, `lastSeenTime`, `colorByName`
+- camelCase throughout.
+- Boolean flags: `dark`, `isInternal`, `isAdmin`, `isPrimaryAdmin`.
+- Env vars read by name with `process.env.NAME`.
 
-**Types:**
-- PascalCase for all types and interfaces: `CompanySummary`, `AccdsPage`, `NewMessageEvent`, `RoleActivitySummary`
-- Type aliases: `type LogLevel = "debug" | "info" | "warn" | "error"`
-- Import types explicitly with `import type` to avoid circular deps and signal type-only usage
+**Types & Interfaces:**
+- PascalCase. Interfaces preferred over `type` aliases for object shapes.
+- Prisma-generated types imported from `@prisma/client`. Do not redefine model shapes from scratch.
 
-**React Props:**
-- Destructured in function signature with inline interface or separate `{prop: Type}[]` block
-- Event handler callbacks: `on[Event]` pattern: `onUserClick`, `onRows`, `loadClashes`
+## Component/Boundary Rules
 
-## Code Style
+**Components must NOT reach into Prisma or `server/db` directly.** Database access belongs in:
+1. `lib/server/` view functions (e.g., `lib/server/accessInstanceView.ts`)
+2. `server/routers/` tRPC procedures
+3. `"use server"` actions co-located in the route (lazy/on-demand only)
 
-**Formatting:**
-- ESLint config at `eslint.config.mjs` (flat config, minimal rules)
-- No enforced Prettier config detected; code follows implicit style
-- Indentation: 2 spaces (visible in all samples)
-- Line breaks: 80–100 character soft limit (long lines acceptable for readability, e.g., error messages)
+(Historical note: `coordinationActions.ts` used to be a documented exception importing `{ db }` directly; v2.1 Ph10 (BND-01) moved the query behind `server/routers/acc-coordination.ts` — the action is now a thin delegate and the `direct-prisma-in-ui` ast-grep rule returns 0 matches. There are no sanctioned exceptions anymore.)
 
-**Linting:**
-- ESLint v10 in use; config is minimal (ignores directories only, no other rules enforced)
-- Type checking: TypeScript strict mode enabled (`strict: true` in `tsconfig.json`)
-- `noImplicitAny: false` but all variables have explicit types in real code
+**`components/` is Prisma-free.** `PremiumSurface`, `DrillSheet`, `EChart`, and all shadcn/Radix-derived primitives must import only from `react`, `@/lib/core/utils`, or other pure-UI packages.
 
-**String Literals:**
-- Template literals for multi-line strings and interpolation: `` `${ACCDS_BASE}/${...}` ``
-- Single quotes for simple strings (observed in imports and constants)
-- Backticks for complex expressions
+## Zinc Dark Theme & CSS Variable Tokens
 
-**Const vs Let:**
-- Prefer `const` throughout; `let` only for mutable loop counters or reassigned state (e.g., `let next = 0` in concurrent loops)
-- `var` not used
+**Background color:** `#09090B` (zinc-950). Never `slate`, never hardcoded `#18181B` or other overrides without a token.
 
-## Import Organization
+**Semantic token usage (Tailwind classes):**
+- `bg-background` / `bg-card` / `bg-muted` — surface layers
+- `text-foreground` / `text-muted-foreground` — primary / secondary text
+- `border-border` — all dividers
+- `text-primary` / `bg-primary` — accent color
+- CSS var direct usage: `var(--card)`, `var(--primary)`, `var(--border)`, `var(--ring)` in inline styles and `<style>` blocks.
 
-**Order:**
-1. External packages: `import { describe, it, expect } from "vitest"`
-2. External UI/React: `import { useMemo, useState } from "react"`
-3. Internal type imports: `import type { RoleSlice } from "./roleCounts"`
-4. Internal module imports: `import { summarizeCompanies } from "../companyCounts"`
-5. Relative exports: `export function ...`
+**Never hardcode zinc hex values** in Tailwind classes or inline styles where a semantic token exists.
 
-**Path Aliases:**
-- Root alias `@/*` maps to project root: `import { Button } from "@/components/ui/button"`
-- Used consistently across the codebase for cleaner imports
-- Relative imports `.` and `..` used within same directory/adjacent modules
+**Page root scroll ownership:**
+Every dashboard page root owns its own vertical scroll:
+```tsx
+<div className="h-full overflow-y-auto text-foreground">
+  {/* content */}
+</div>
+```
+The `<main>` wrapper in the dashboard layout is `overflow-hidden`. Pages must NOT use `min-h-screen` or add their own `overflow-hidden` at the root.
 
-**Type imports:**
-- Marked explicitly with `import type` to signal type-only usage
-- Prevents circular dependency hazards and clarifies intent
+**surface-card and surface-panel CSS classes** are utility classes from `globals.css` used on auth pages and some shells. On dashboard data pages, prefer `PremiumSurface` or semantic Tailwind tokens.
 
-## Error Handling
+## ECharts Theme Resolution
 
-**Patterns:**
-- Direct `throw new Error(message)` for synchronous failures: `throw new Error(\`accds ${res.status} for project...\`)`
-- Error messages include context (HTTP status, project ID, scope): makes debugging easier without stack unwinding
-- `try-catch` blocks used for async operations with potential recovery: `await fetchActivityWindow` with retry loop
-- Retry logic with exponential backoff: `Math.min(30_000, 1000 * 2 ** attempt)` (see `accdsActivity.ts`)
-- Circuit breaker pattern for stateful failures: open/half-open/closed states (see `/api/chat/stream/route.ts`)
-- Error categorization: distinguish between retryable (429, 5xx) and fatal (403, 404) errors
-- Failed promise chains in fire-and-forget contexts: `void poll()` with internal error handling
+All ECharts components read `resolvedTheme` from `next-themes` before building the chart `option`:
 
-**Type Guards:**
-- `instanceof Error` checks for error type before accessing `.message` or `.stack`
-- Check for string inclusions to classify errors: `msg.includes("timeout exceeded")` for DB pool detection
+```tsx
+// Every chart component that needs theme-aware colors:
+import { useTheme } from "next-themes";
 
-## Logging
+export function ActivityTimelineChart({ summary }) {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
 
-**Framework:** Structured logging via `createLogger(scope)` factory
-- Located in `lib/server/logger.ts`
-- Not used in client-side code (server-only module)
+  const cAxis = dark ? "#a1a1aa" : "#52525b";  // zinc-400 / zinc-600
+  // ...build option using cAxis, cTitle, etc.
+}
+```
 
-**Patterns:**
-- Create a logger once per route/service: `const logger = createLogger("chat-stream-route")`
-- Emit structured data: `logger.info("message", { userId, spaceName, ...context })`
-- Log levels: `debug`, `info`, `warn`, `error`
-- Debug logs omitted in production (`NODE_ENV !== "production"`)
-- Error objects serialized with `.message`, `.stack`, and `.code` fields for debugging
-- Circular references detected and replaced with `"[Circular]"` to prevent serialization failures
+**Do not hardcode chart colors for a single theme.** Always derive from `resolvedTheme`.
 
-**Usage:**
-- Debug for internal flow tracing: `logger.debug("New message detected in polled space", {...})`
-- Warn for recoverable failures: `logger.warn("Chat stream poll failed", { userId, error })`
-- Error for fatal conditions: `logger.error(...)`
-- Meta object accepts any JSON-serializable value; undefined values are stripped
+**Two EChart wrappers exist (verified 2026-07-16):**
+- `components/ui/EChart.tsx` — **canonical.** Reads `resolvedTheme` once, injects axis/text/tooltip chrome via `mergeEChartsTheme` (`lib/colors/echartsTheme.ts`, pure fn), and passes `key={resolvedTheme}` to force a clean canvas remount on theme switch. Callers still build the data/series option; the wrapper merges theme chrome.
+- `app/(dashboard)/access-analysis/components/EChart.tsx` — legacy wrapper, stays intact until its consumers migrate (per the SCOPE GUARD comment in the canonical file).
+
+**EChart wrapper signature (same prop surface on both):**
+```tsx
+<EChart
+  option={option}           // EChartsOption
+  height={280}              // pixels (default 280)
+  onEvents={handlers}       // optional
+  notMerge={true}           // default; pass false to animate diffs
+  className={...}           // optional (canonical wrapper only)
+/>
+```
+
+## UI Primitives
+
+**PremiumSurface** (`components/ui/PremiumSurface.tsx`) — RSC-safe card shell with 4 depth variants:
+- `variant="base"` — `.panel-elevated` (default, catch-light + layered shadow)
+- `variant="float"` — floating card with `--depth-float` shadow
+- `variant="glass"` — frosted surface via `--surface-2` and `backdrop-blur-md`
+- `variant="inset"` — recessed panel with inset shadow
+- Optional `glow` prop adds `--glow-primary` shadow for selected/accent state.
+- Do NOT stack card-inside-card (`PremiumSurface` inside `PremiumSurface`) without a clear visual need.
+
+**DrillSheet** (`components/ui/DrillSheet.tsx`) — shared right-slide ~480px drill panel for all four pages. Is an empty shell that takes arbitrary `children`. Wire `UserProfilePanel` or list content as children.
+
+**FilterBanner** (`app/(dashboard)/access-analysis/components/FilterBanner.tsx`) — cross-filter clarity bar showing active named filters + N-of-M project scope. Shows nothing when `filters={}`.
+
+## Motion Budget
+
+- `<=200ms` for drill interactions (transitions, slide-in panels).
+- Use `tw-animate-css` Tailwind classes (`animate-fadeIn`, `animate-fade-up`) for entry animations.
+- Respect `prefers-reduced-motion` — do not run motion unconditionally.
+- Keep motion short and purposeful; no decorative scroll or parallax on data surfaces.
+
+## Card Usage Rules
+
+- Use `PremiumSurface` or `surface-card` to frame repeated items, panels, dialogs, or genuinely grouped controls.
+- Do not stack card-inside-card (`PremiumSurface` inside `PremiumSurface` with identical backgrounds).
+- Data surfaces stay flat. R3F (`@react-three/fiber`) accents are limited to two decorative components: `app/(dashboard)/users/HeaderParticleAccent.tsx` and `app/(dashboard)/forma-proposal/components/FormaParticleAccent.tsx`.
+- **3D exception (owner-scoped, verified 2026-07-23):** the activity universe carries a genuine 3D *view*, not an accent — `app/(dashboard)/users/access-analysis/activity/ActivityUniverse3D.tsx` renders raw `three` (`THREE.Points` + `ShaderMaterial`, `THREE.LineSegments`, `OrbitControls`), not R3F, behind an explicit 2D/3D toggle (`activity-view-2d` / `activity-view-3d` testids). It is opt-in per view, the 2D cosmos canvas stays the default, and ambient drift on the hidden 2D canvas is suspended while 3D is mounted. This does not reopen WebGL on the ECharts `/access-analysis` surface — that ban stands.
+
+## Error, Empty, and Under-Covered Data Handling
+
+**Empty state pattern (inline, with icon):**
+```tsx
+if (points.length === 0) {
+  return (
+    <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <svg .../>
+      No activity found.
+      <span className="text-xs opacity-70">Select at least one project above.</span>
+    </div>
+  );
+}
+```
+
+**Under-covered data rule:** Label under-covered analytics sources honestly. Do not hide data gaps behind silent zeros. Examples: DC-only data without activity history, AccDcRole permanently empty (roles sourced from `AccRole`).
+
+**Loading/skeleton pattern:** Co-locate skeleton components in the same folder as the route and export named exports: `KpiStripSkeleton`, `DonutGridSkeleton`, `TimelineSkeleton` (`app/(dashboard)/access-analysis/components/DonutSkeletons.tsx`).
+
+## Prisma & Database Access Patterns
+
+**Single Prisma client** exported from `server/db.ts` as `{ db }`. Pool tuned via env vars:
+- `PG_POOL_MAX` (default: 5 prod / 10 dev)
+- `PG_IDLE_TIMEOUT_MS`
+- `PG_CONNECTION_TIMEOUT_MS`
+
+**Prefer Prisma ORM calls** (`findMany`, `groupBy`, `count`) for straightforward queries.
+
+**Use `$queryRaw` for GROUP BY aggregates** where the result set must be small (e.g., aggregating 623k+ `AccActivity` rows to ~21k). Returning raw rows from large tables into the Node process causes OOM. Example in `server/routers/acc-activity.ts`:
+```ts
+// Heavy GROUP BY → use $queryRaw, not findMany
+const rows = await ctx.db.$queryRaw`
+  SELECT email, COUNT(*)::int AS rows
+  FROM "AccActivity"
+  GROUP BY email
+`;
+```
+
+**Prisma `.groupBy()`** is used for moderate aggregations (`acc-folders.ts`):
+```ts
+await db.accProjectRole.groupBy({
+  by: ["projectId"],
+  _count: { roleId: true },
+  where: { projectId: { in: projectIds } },
+});
+```
+
+**Shared query owner (v2.2 Ph15):** When two or more surfaces need the same base join, extract a single owner module in `lib/server/` (pattern: `lib/server/folderPermQuery.ts` — `loadFolderPermRows(projectId, {l2Only?})` with static, byte-identical tagged-template `$queryRaw` branches so test mocks stay stable). Do **not** add single-use queries to a shared owner, and do not duplicate its join inline in a view file.
+
+**Materialized projection pattern (v2.2 Ph18):** For analytics over very large tables (e.g., ~6M-row `AccFolderPermission`), materialize a small projection model (`AccFolderPermissionSummary`: per project×role `folderCount`/`totalBytes`/`permTypes[]`), backfill server-side with `INSERT .. SELECT .. GROUP BY` (idempotent), reconcile counts against the source, and refresh it from the ingest cron success branch. Consumers read the projection; the raw-scan path is guarded behind an explicit env flag (`ACC_ALLOW_RAW_PERMISSION_SCAN=1`).
+
+**`$transaction` timeout for long server-side writes (Ph18 deviation):** Prisma's default interactive-transaction timeout is 5s — widen it (v2.2 used 300s) when a transaction wraps a long server-side `INSERT .. SELECT` backfill.
+
+**Characterization-before-split (v2.1 Ph14 / v2.2):** Never split a large module or move a query owner without first pinning current behavior with byte-identical characterization tests (see `TESTING.md` — TEST-01/02/03). The pins stay in the suite as standing regression guards after the split ships.
 
 ## Comments
 
-**When to Comment:**
-- Inline comments explain *why* not *what*: `// accds filter[created_at]=a..b may be inclusive on both ends`
-- Reference external context (APIs, specs): `// Bucket for memberships with no resolvable company name`
-- Explain non-obvious algorithm choices: `// windows must not overlap at the seam`
-- Flag architecture decisions or constraints: `// the main throughput lever` for `pageConcurrency > 1`
+**When to comment:**
+- Architectural decisions and tradeoffs (e.g., why `MainCharts` is a single Suspense boundary, the SCOPE GUARD note in `components/ui/EChart.tsx` explaining the legacy-wrapper coexistence).
+- Gotchas and traps (e.g., lean-payload trap on `/users`, `next build` typechecking test files).
+- Non-obvious data authority (e.g., "AccDcRole is permanently empty — source from AccRole").
 
-**JSDoc/TSDoc:**
-- Function-level JSDoc for public APIs with multi-line descriptions
-- Field-level JSDoc (one-liner) for object properties: `/** Company -> membership count, desc; ... */`
-- Omitted for simple functions or when type signatures are self-explanatory
-- Pattern: `/** Multi-line description of behavior, including side effects, preconditions. */`
+**Format:** Block comment at top of module for module-level context. Inline `//` for local decisions.
 
-## Function Design
+**`ponytail:` corner markers (5 occurrences, verified 2026-07-23):** a deliberate simplification with a known ceiling is marked `// ponytail: <ceiling>, <upgrade path>` so the tradeoff is discoverable instead of rediscovered. Live examples: `app/api/activity-universe/payload/route.ts` (whole-file bytes per request, ~149.7 MB; stream if concurrent readers matter), `activity/ActivityUniverseShell.tsx` (strided magnet scan may snap to a near-nearest neighbour at full density), `activity/lodSample.ts`, `activity/ActivityUniverse3D.tsx`, `users/access-analysis/dimensionCoverage.ts`. Use it for a real corner cut (global lock, O(n²) scan, naive heuristic) — not as a general TODO channel.
 
-**Size:** Functions typically 10–50 lines; larger functions (100+) used for complex logic but broken into internal helpers
-- Example: `fetchActivityWindow` is ~45 lines including retry loop
-- Example: `mapLimit` is an internal helper ~25 lines for bounded concurrency
+**JSDoc:** Not enforced across the codebase. Use for exported utility functions in `lib/` that need parameter/return docs.
 
-**Parameters:**
-- Prefer object parameters for functions with >2 args: `fetchActivityWindow({getToken, projectId, ...})`
-- Positional args for simple, obvious parameters: `summarizeCompanies(rows)`
-- Readonly arrays for input data to signal immutability: `ReadonlyArray<T>`
+## Import Organization
 
-**Return Values:**
-- Single return object for multiple outputs: `{ slices, distinctCompanies, total, usersByCompany }`
-- Void for side-effect-only functions (logging, DOM updates)
-- Promise for async functions; no implicit Promise wrapping
+**Order (observed pattern):**
+1. Framework imports: `react`, `next/*`
+2. Third-party packages: `echarts`, `@tanstack/*`, etc.
+3. Internal `@/` aliases: `@/lib/*`, `@/components/*`, `@/server/*`
+4. Route-relative imports: `./roleCounts`, `../types`
 
-**Utility Functions:**
-- Exported at module level; rarely nested
-- Named with intent-driven verbs: `summarize`, `collapse`, `filter`, `crawl`, `normalize`
-- Pure functions preferred; side effects (logging, I/O) encapsulated in route/component handlers
+Blank line between groups. No barrel `index.ts` re-exports observed in route-level code.
 
-## Module Design
+## Git & Commit Conventions
 
-**Exports:**
-- One primary export per file or multiple related exports
-- `export interface` for types consumed by other modules
-- `export function` for public API; private helpers via `const` (not exported)
-- No default exports in utility modules (using named exports enforces clarity)
+**Conventional commits** — `type(scope): subject`, re-verified against `git log` 2026-07-23:
+- Types in active use: `feat`, `fix`, `refactor`, `docs`, `test`, `perf` (v2.5 added standalone test commits; v2.7 added `perf`, e.g. `perf(activity): bound ambient uploads`).
+- Scope is either the phase number (`feat(33): ...`, `docs(27-02): ...`, `feat(30-03): ...`), the surface (`feat(spatial-graph): ...`, `feat(users): ...`), or `planning` for milestone bookkeeping (`docs(planning): close v2.5 milestone`).
+- **Since the v2.7 close, every commit uses a surface scope, not a phase number** — the post-milestone stream is `feat|fix|perf(activity)`, `feat(access-analysis)`, `test(e2e)`. Phase-number scopes return only when a milestone roadmap is open.
+- Subject is imperative, lowercase, no trailing period. Plan/requirement IDs appear in the subject when relevant (`(26-02)`, `(PERF-03)`).
 
-**Barrel Files:**
-- `components/index.ts` pattern observed for component re-exports (not verified as universal)
-- Generally avoided for deep modules; explicit imports preferred
+**Surgical staging is mandatory.** Stage explicit paths only, then inspect `git diff --cached --name-only` before committing. Bulk staging (`git add -A`, `git add .`, `git add -u`, `git commit -a`) is **denied at the tool level** by the PreToolUse hook `.claude/hooks/guard-bash.cjs` — the working tree is permanently WIP-heavy and bulk staging sweeps unrelated edits/deletions into commits.
 
-**File Organization:**
-- Types and interfaces at top of file before implementation
-- Public functions after types, in order of complexity/importance
-- Private helpers (const functions) at bottom
-- Example: `companyCounts.ts` exports `CompanySummary` interface, then `labelFor` helper, then public `summarizeCompanies` and `collapseCompanySlices`
+**Build guard:** the same hook denies `npm run build` / `next build` while `:3000` is live (probes the port), unless the command sets `NEXT_DIST_DIR` to a non-default dir (e.g. `.next-e2e`) — isolated-dist builds never touch the live `.next`. These denials are intentional; do not retry the same command.
+
+## Dependency Patching & Measured Constants
+
+**patch-package for vendored dependency fixes:** behavior fixes to installed packages live in `patches/` (`@cosmos.gl+graph+3.3.0.patch`, `server-only+0.0.1.patch`) and are applied by the `postinstall` script (`prisma generate && patch-package && ...`). Do not fork or vendor package source; extend the existing patch file. The cosmos.gl patch currently carries the GraphData.update memoization, same-count upload skip, `powerPreference: "high-performance"`, and clamp fixes (c998db1e) — any cosmos upgrade must re-roll it.
+
+**Measured perf constants get a pinning test:** when a constant encodes a measured performance decision (e.g. `TIER_0_TARGET_MS = 250` in `app/(dashboard)/users/access-analysis/activity/activityMotion.ts`, halved from 100ms after profiling), the module comment records the measurement and a unit test pins the value's observable effect (see `activityMotion.test.ts` — asserts upload count and `durationMs === 270`). Changing the constant means updating the pin in the same commit; see `TESTING.md`.
 
 ---
 
-*Convention analysis: 2026-06-17*
+**Dashboard self-check:**
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, `.claude/hooks/guard-bash.cjs`, `patches/`, `package.json`, `git log`, direct file reads (refresh 2026-07-23).
+- Evidence: all patterns verified from actual source files listed above.
+- Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root, explicit-path staging enforced by hook.
+- Note: branch `feat/access-analysis-redesign` still carries large uncommitted WIP (re-verified 2026-07-23): root docs `CHANGELOG.md`/`GSD-STYLE.md`/`PROJECT_RULES.md` are deleted in the working tree, and the old `/users` person-card family is deleted in the working tree (`PersonCard`, `PersonRow`, `PersonRowList`, `PersonDetailModal`, `ActivityAuditPanel`, `CollapsibleGroup`, `DirectoryListHeader`, `ModuleBadge`) — the committed replacements are the table components (`DirectoryTableColumns.tsx`, `PeekPanel.tsx`, `UsersTableHeader.tsx`); many `access-analysis` transform modules and components are modified. Also uncommitted: the week-scrubber work (new `lib/acc/activityWeeks.ts` + test, modified `scripts/build-activity-universe-payload.ts`, and the renamed activity test-bridge temporal fields — see `TESTING.md`), plus untracked `lib/acc/issueBackfillAudit.ts`, `lib/acc/issueListQuery.ts`, `lib/acc/modelCoordinationGrant.ts`, `lib/server/uploadthing.ts`, `scripts/lib/`, `scripts/changeset/`. Route-level file examples in this doc reflect the committed tree.
+- VERIFY: none — all claims grounded in verified source.

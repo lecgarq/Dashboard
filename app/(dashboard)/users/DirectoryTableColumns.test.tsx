@@ -16,6 +16,7 @@ const row = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
   photoUrl: null,
   jobTitle: "Architect",
   department: "Engineering",
+  costCenter: null,
   primaryRole: "BIM Manager",
   extraRoleCount: 0,
   officeCode: "MTY",
@@ -23,6 +24,8 @@ const row = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
   lastActivity: "2026-06-01T12:00:00.000Z",
   projectCount: 5,
   isDormant: false,
+  isExternal: false,
+  company: null,
   accUser: null,
   ...overrides,
 });
@@ -31,6 +34,7 @@ const row = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
 interface LooseCol {
   id?: string;
   enableSorting?: boolean;
+  header?: unknown;
   cell?: (ctx: { getValue: () => unknown; row: { original: DirectoryRow } }) => React.ReactNode;
 }
 
@@ -51,13 +55,13 @@ function renderCell(colId: string, data: DirectoryRow): { container: HTMLElement
 // ---------------------------------------------------------------------------
 
 describe("USERS_COLUMNS", () => {
-  it("has exactly 5 columns", () => {
-    expect(USERS_COLUMNS).toHaveLength(5);
+  it("has exactly 6 columns", () => {
+    expect(USERS_COLUMNS).toHaveLength(6);
   });
 
-  it("column ids are: name, role, office, lastActive, projects (in order)", () => {
+  it("column ids are: name, role, company, office, lastActive, projects (in order)", () => {
     const ids = cols.map((c) => c.id);
-    expect(ids).toEqual(["name", "role", "office", "lastActive", "projects"]);
+    expect(ids).toEqual(["name", "role", "company", "office", "lastActive", "projects"]);
   });
 
   it("name column has enableSorting true", () => {
@@ -65,12 +69,20 @@ describe("USERS_COLUMNS", () => {
     expect(nameCol?.enableSorting).toBe(true);
   });
 
-  it("office, lastActive, projects columns have enableSorting true", () => {
-    const sortable = ["office", "lastActive", "projects"];
+  it("office, projects columns have enableSorting true", () => {
+    const sortable = ["office", "projects"];
     for (const id of sortable) {
       const col = cols.find((c) => c.id === id);
       expect(col?.enableSorting).toBe(true);
     }
+  });
+
+  it("lastActive column has TanStack sorting OFF — its header drives the server-truth activity sort", () => {
+    // The header component cycles cycleActivitySort (off → desc → asc → off);
+    // client-sorting the partial lastActivity field would contradict it.
+    const col = cols.find((c) => c.id === "lastActive");
+    expect(col?.enableSorting).toBe(false);
+    expect(typeof col?.header).toBe("function");
   });
 
   it("role column has enableSorting false (multi-role badge not meaningfully sortable)", () => {

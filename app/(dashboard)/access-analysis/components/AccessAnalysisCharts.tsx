@@ -1,28 +1,28 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Reveal } from "@/components/ui/animated-list";
 import { StatStrip, type Stat } from "@/components/ui/stat-tile";
-import { PremiumSurface } from "@/components/ui/PremiumSurface";
+import { SourcesFailedBanner } from "./LoadFailedNotice";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProjectPicker } from "./ProjectPicker";
-import { RolesPieChart } from "./RolesPieChart";
-import { ModulesPieChart } from "./ModulesPieChart";
-import { ActivityByRolePieChart } from "./ActivityByRolePieChart";
-import { CompaniesPieChart } from "./CompaniesPieChart";
-import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
-import { CoordinationByProject } from "./CoordinationByProject";
-import { TerrainReveal } from "./TerrainReveal";
-import { ActivityTimelineChart } from "./ActivityTimelineChart";
-import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
+import { OverviewTabPanel } from "./OverviewTabPanel";
+import { RolesTabPanel } from "./RolesTabPanel";
+import { UsersTabPanel } from "./UsersTabPanel";
+import { CompaniesTabPanel } from "./CompaniesTabPanel";
+import { ProjectsTabPanel } from "./ProjectsTabPanel";
+import { CompareTabPanel } from "./CompareTabPanel";
 import { activityCoverageCounts } from "../coverageCounts";
-import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
+import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
+import { summarizeProvisionedModules } from "../provisionedModulesCounts";
+import { summarizeProjectActivity } from "../projectActivityCounts";
 import { summarizeActivityByRole, type MembershipRolesInput } from "../roleActivityCounts";
 import { summarizeCompanies, UNKNOWN_COMPANY } from "../companyCounts";
 import { summarizeActivityByCompany } from "../companyActivityCounts";
 import { rankDormantByPeople } from "../dormantActivity";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
+import { summarizeWorkflowTools } from "../workflowToolCounts";
 import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectRoleRow, type SliceFilters } from "../projectFilter";
 import { FilterBanner } from "./FilterBanner";
 import { PeopleDrillList } from "./PeopleDrillList";
@@ -31,9 +31,21 @@ import { groupProjectOptions } from "../projectGroups";
 import type { DrillPerson } from "../roleCounts";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
+import type { DcCoverage } from "@/lib/server/dcCoverageView";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
 import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
+import type { FolderRankTotal } from "@/lib/server/folderActivityView";
+import type { FolderProjectRow } from "../folderActivityCounts";
+import type { FolderActionCell } from "../folderActionTypes";
+import type { IngestFreshness } from "@/lib/server/ingestFreshnessView";
+import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
+import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
+import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
+import type { FolderActivityActorRow, CompanyFolderSlice } from "@/lib/server/folderActivityByCompanyView";
+import type { IssueFunnelData, IssueFunnelStatusRow, IssueFunnelTypeRow } from "@/lib/server/issueFunnelView";
+import type { AdminsPerProjectData } from "@/lib/server/adminsPerProjectView";
+import type { ProvisionedModuleRow } from "@/lib/server/provisionedModulesView";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -43,6 +55,38 @@ const AuthorProfileDrawer = dynamic(
 );
 
 /**
+ * One lazy per-tab loader: fires at most once on first activation (ref flag —
+ * a no-session `null` result must not refetch on tab revisit), tracks loading,
+ * and distinguishes a REJECTED promise (`failed`, retryable) from an honest
+ * empty/null resolve. `retry` clears the failure and re-fires the same load.
+ */
+function useLazyAction<T>(active: boolean, load: (() => Promise<T | null>) | undefined) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const startedRef = useRef(false);
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  const run = useCallback(() => {
+    const fn = loadRef.current;
+    if (!fn) return;
+    setFailed(false);
+    setLoading(true);
+    fn()
+      .then((d) => setData(d))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => {
+    if (active && loadRef.current && !startedRef.current) {
+      startedRef.current = true;
+      run();
+    }
+  }, [active, run]);
+  return { data, loading, failed, retry: run };
+}
+
+/**
  * The whole Access Analysis surface behind ONE project picker. The selected set
  * of projects focuses BOTH donuts at once: roles (by membership) and module
  * activity (by volume). The project list is the union of the two sources — some
@@ -50,42 +94,125 @@ const AuthorProfileDrawer = dynamic(
  * bucket has activity but no membership — so neither donut hides a project the
  * other knows about. Coordination rows are also included so MC-only projects
  * are selectable.
+ *
+ * 20.1-05 tab-IA redesign (UAT item 7 — "current layout is all over the
+ * place"): this is now a thin shell. Shared state, the project picker, and the
+ * FilterBanner stay pinned ABOVE a 6-tab Radix `<Tabs>` root
+ * (Overview · Roles · Users · Companies · Projects · Compare); every tab
+ * (including Compare's terrain) reads the same `selected`/`sliceFilters`
+ * state. Tab content is controlled client state (`value`/`onValueChange`) —
+ * no useRouter/useSearchParams — so switching tabs never resets scroll
+ * position or selection (research Pitfall 5). Panel JSX itself now lives in
+ * the six sibling *TabPanel components; this file owns state + wiring only.
+ *
+ * 20.1-06 panel-semantic swaps: the tab value is now controlled (not
+ * `defaultValue`) so an effect can fetch the three ENG-01/PERM-01/UAT-6
+ * loaders lazily on first Roles/Users/Companies tab activation — never
+ * eagerly in mainCharts.tsx's Promise.all (fan-out stays at 9). Each loader
+ * fires at most once per page load (a ref flag, not a null-check, gates the
+ * fetch — a no-session `null` result must not cause an infinite refetch loop
+ * every time the tab is revisited); the resulting rows (`T[] | null`) are
+ * passed straight to the panels, which already render an honest empty state
+ * for zero rows.
  */
 export function AccessAnalysisCharts({
   roleRows,
   moduleRows,
   timelineRows,
+  dataFloor,
+  floorByProject,
   activityActorRows,
   membershipRows,
   coordinationData,
   coverage,
+  dcCoverage,
   mtyIds,
   loadClashes,
   terrainProjects,
   initialTerrain,
   loadTerrain,
   loadOverview,
+  loadFolderRanking,
+  loadFolderDetail,
+  loadFolderActionMatrix,
+  loadActivityRecency,
+  loadPermissionLevel,
+  loadPermissionUsers,
+  loadFolderScopedActivity,
+  loadCompanyFolderBreakdown,
+  loadIssueFunnel,
+  loadWorkflowTools,
+  loadAdminsPerProject,
+  ingestFreshness,
+  provisionedModuleRows,
+  failedSources,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
   /** Per-(project, month) activity totals for the Activity timeline. When omitted, that section is hidden. */
   timelineRows?: ActivityTimelineRow[];
+  /** TRUTH-02: account-wide earliest activity month as "YYYY-MM", or null. Shown as caption under the timeline. */
+  dataFloor?: string | null;
+  /** TRUTH-02: per-project earliest activity month as "YYYY-MM". Key "" = account-level bucket. */
+  floorByProject?: Record<string, string>;
   /** Per-(project, actor) activity totals for the Activity-by-role donut. When omitted, that section is hidden. */
   activityActorRows?: ActivityActorRow[];
   /** Slim memberships (projectId, email, roles) used to attribute activity to a role. */
   membershipRows?: MembershipRolesInput[];
   coordinationData?: CoordinationByProjectData;
   coverage?: ProjectCoverage[];
+  /** TRUTH-01: live DC-metadata coverage (AccDcProject count over AccProject total). */
+  dcCoverage?: DcCoverage;
   mtyIds?: string[];
   loadClashes?: (projectId: string) => Promise<ClashIssue[]>;
   terrainProjects?: TerrainProjectOption[];
   initialTerrain?: FolderTerrainData | null;
   loadTerrain?: (projectId: string) => Promise<FolderTerrainData | null>;
   loadOverview?: () => Promise<FolderTerrainData | null>;
+  loadFolderRanking?: (ids: string[]) => Promise<FolderRankTotal[]>;
+  loadFolderDetail?: (folderName: string, ids: string[]) => Promise<FolderProjectRow[]>;
+  loadFolderActionMatrix?: (ids: string[], limit?: number) => Promise<FolderActionCell[]>;
+  /** ENG-01 pivot: lazy per-tab fetch (Roles + Users tabs), fired at most once. Presence gates both panels. */
+  loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
+  /** PERM-01 reframe: lazy per-tab fetch (Roles tab), fired at most once. Presence gates the panel. */
+  loadPermissionLevel?: () => Promise<PermissionLevelRow[] | null>;
+  /** Users-by-permission-level donut: lazy per-tab fetch (Users tab), fired at most once. Presence gates the panel. */
+  loadPermissionUsers?: () => Promise<PermissionUserCounts | null>;
+  /** UAT-6: lazy per-tab fetch (Companies tab), fired at most once. Presence gates the panel. */
+  loadFolderScopedActivity?: () => Promise<FolderActivityActorRow[] | null>;
+  /** UAT-6: lazy per-company folder drill, fired on click (never eager, never cached account-wide). */
+  loadCompanyFolderBreakdown?: (emails: string[], projectIds: string[]) => Promise<CompanyFolderSlice[] | null>;
+  /** Phase 21 ISSUE-02/03: lazy per-tab fetch (Projects tab), fired at most once. Presence gates both issue-funnel panels. */
+  loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
+  /** Reviews/RFIs/Submittals donuts: lazy per-tab fetch (Projects tab), fired at most once. Presence gates the panel. */
+  loadWorkflowTools?: () => Promise<ModuleActivityRow[] | null>;
+  /** Admins-per-project chart (owner ask 2026-07-23): lazy per-tab fetch (Projects tab), fired at most once. Presence gates the panel. */
+  loadAdminsPerProject?: () => Promise<AdminsPerProjectData | null>;
+  /** PIPE-01: latest Data Connector ingest run + live throughput. Account-wide, NOT project-filtered. */
+  ingestFreshness?: IngestFreshness | null;
+  /** UAT-21.1-01: eager Overview-tab prop (mainCharts.tsx's Promise.all fan-out, 9->10 — Overview is
+   *  never lazy-gated). Presence gates the Provisioned-modules panel. */
+  provisionedModuleRows?: ProvisionedModuleRow[];
+  /** Product-facing names of eager server loaders that REJECTED (mainCharts.tsx settles
+   *  per-loader). Their panels render empty; this labels that emptiness as a fetch
+   *  failure so it never reads as "no data". */
+  failedSources?: string[];
 }) {
+  // Union of every source that can name a project — including
+  // `provisionedModuleRows` (AccProjectMember covers all 1,153 live projects;
+  // `roleRows` is DC-scoped) — so a live-membership-only project stays
+  // selectable and default-selected; otherwise `filterRowsBySelection` would
+  // silently drop its grants from the Provisioned-modules panel.
   const options = useMemo(
-    () => projectOptions([...roleRows, ...moduleRows, ...(timelineRows ?? []), ...(coordinationData?.rows ?? [])]),
-    [roleRows, moduleRows, timelineRows, coordinationData],
+    () =>
+      projectOptions([
+        ...roleRows,
+        ...moduleRows,
+        ...(timelineRows ?? []),
+        ...(coordinationData?.rows ?? []),
+        ...(provisionedModuleRows ?? []),
+      ]),
+    [roleRows, moduleRows, timelineRows, coordinationData, provisionedModuleRows],
   );
 
   // Per-project number shown in the picker = membership count (the roles donut's
@@ -162,6 +289,17 @@ export function AccessAnalysisCharts({
     () => summarizeModules(filterRowsBySelection(moduleRows, selected)),
     [moduleRows, selected],
   );
+  // Overview 2-up row (UAT-21.1-01/03): both picker-only, same convention as
+  // moduleSummary above — driven by `selected` directly, never
+  // `sliceFilteredProjectIds`, no sliceFilters coupling (CONTEXT.md locked).
+  const provisionedModuleSummary = useMemo(
+    () => summarizeProvisionedModules(filterRowsBySelection(provisionedModuleRows ?? [], selected)),
+    [provisionedModuleRows, selected],
+  );
+  const projectActivitySummary = useMemo(
+    () => summarizeProjectActivity(filterRowsBySelection(moduleRows, selected)),
+    [moduleRows, selected],
+  );
   const activityByRoleSummary = useMemo(
     () =>
       summarizeActivityByRole(
@@ -187,6 +325,90 @@ export function AccessAnalysisCharts({
     [coordinationData, selected],
   );
 
+  // 20.1-06: controlled tab value so an effect can drive lazy per-tab fetches
+  // (Pitfall 5 still respected — plain useState, no useRouter/useSearchParams).
+  const [tab, setTab] = useState("overview");
+
+  // Lazy-fetched ENG-01/PERM-01/UAT-6 slices via useLazyAction. `data: null` =
+  // not-yet-resolved OR a no-session loader result (both cases: the panel below
+  // renders its own honest empty state — never a fake chart). A ref flag (not
+  // the `data === null` check the data itself would give) gates each fetch to
+  // fire AT MOST ONCE per page load, so a no-session `null` result never
+  // re-triggers on every tab revisit. A REJECTED load sets `failed` instead —
+  // the panels render a distinct "couldn't load — retry" state, never the
+  // honest-empty lie — and `retry` re-fires the fetch on demand.
+  const activityRecency = useLazyAction(tab === "roles" || tab === "users", loadActivityRecency);
+  const permissionLevel = useLazyAction(tab === "roles", loadPermissionLevel);
+  const permissionUsers = useLazyAction(tab === "users", loadPermissionUsers);
+  const folderScopedActivity = useLazyAction(tab === "companies", loadFolderScopedActivity);
+  // Phase 21 ISSUE-02/03 + workflow tools + admins: same fetch-once pattern, Projects tab.
+  const issueFunnel = useLazyAction(tab === "projects", loadIssueFunnel);
+  const workflowTools = useLazyAction(tab === "projects", loadWorkflowTools);
+  const admins = useLazyAction(tab === "projects", loadAdminsPerProject);
+  const activityRecencyRows = activityRecency.data;
+  const permissionLevelRows = permissionLevel.data;
+  const permissionUserCounts = permissionUsers.data;
+  const folderScopedActivityRows = folderScopedActivity.data;
+  const issueFunnelData = issueFunnel.data;
+  const workflowToolRows = workflowTools.data;
+  const adminsData = admins.data;
+
+  // 20.1-06 panels — picker-only filtering (locked decision: no sliceFilters
+  // extension, mirrors moduleSummary's pattern). Ingest freshness is account-global
+  // and deliberately NOT filtered.
+  const filteredActivityRecencyRows = useMemo(
+    () => filterRowsBySelection(activityRecencyRows ?? [], selected),
+    [activityRecencyRows, selected],
+  );
+  // Admins-per-project honors the picker; account-wide coverage figures stay
+  // as-is (they frame source trust, not the filtered view).
+  const filteredAdminsData = useMemo(
+    () =>
+      adminsData
+        ? {
+            ...adminsData,
+            rows: filterRowsBySelection(adminsData.rows, selected),
+            zeroAdminProjects: filterRowsBySelection(adminsData.zeroAdminProjects, selected),
+          }
+        : null,
+    [adminsData, selected],
+  );
+  const filteredPermissionLevelRows = useMemo(
+    () => filterRowsBySelection(permissionLevelRows ?? [], selected),
+    [permissionLevelRows, selected],
+  );
+  const filteredFolderScopedActivityRows = useMemo(
+    () => filterRowsBySelection(folderScopedActivityRows ?? [], selected),
+    [folderScopedActivityRows, selected],
+  );
+  const filteredIssueCoverageProjects = useMemo(
+    () => filterRowsBySelection(coordinationData?.issueCoverage?.projects ?? [], selected),
+    [coordinationData, selected],
+  );
+  // Phase 21 ISSUE-02/03: picker-only filtering (locked decision) — deliberately
+  // `selected`, NOT `sliceFilteredProjectIds`, unlike the Overview timeline two
+  // memos above, which does narrow by sliceFilters. No cross-filter bus wiring here.
+  const issueTimelineSummary = useMemo(
+    () => summarizeActivityTimeline(issueFunnelData?.monthRows ?? [], selected),
+    [issueFunnelData, selected],
+  );
+  const filteredIssueStatusRows: IssueFunnelStatusRow[] = useMemo(
+    () => filterRowsBySelection(issueFunnelData?.statusRows ?? [], selected),
+    [issueFunnelData, selected],
+  );
+  // Phase 22 ISSUE-05: same picker-only filtering — deliberately `selected`,
+  // never `sliceFilteredProjectIds`. No cross-filter bus wiring here either.
+  const filteredIssueTypeRows: IssueFunnelTypeRow[] = useMemo(
+    () => filterRowsBySelection(issueFunnelData?.typeRows ?? [], selected),
+    [issueFunnelData, selected],
+  );
+  // Reviews/RFIs/Submittals donuts: same picker-only filtering. `undefined`
+  // until the lazy fetch resolves with rows (a no-session null stays hidden).
+  const workflowToolSummaries = useMemo(
+    () => (workflowToolRows ? summarizeWorkflowTools(filterRowsBySelection(workflowToolRows, selected)) : undefined),
+    [workflowToolRows, selected],
+  );
+
   // Dormant = entities with members in the current selection but 0 activity there,
   // ranked by headcount. Picker-scoped, so it mirrors the activity donut it sits under.
   const dormantRoles = useMemo(
@@ -194,7 +416,7 @@ export function AccessAnalysisCharts({
       rankDormantByPeople(
         roleSummary.usersByRole,
         new Set(activityByRoleSummary.slices.map((s) => s.name)),
-        new Set([UNKNOWN_ROLE, MULTIPLE_ROLES]),
+        new Set([UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER]),
       ),
     [roleSummary, activityByRoleSummary],
   );
@@ -216,18 +438,43 @@ export function AccessAnalysisCharts({
 
   const kpis: Stat[] = [
     { label: "Projects", value: selected.size, accent: "primary" },
-    { label: "Memberships", value: roleSummary.total, accent: "emerald" },
-    { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "violet" },
+    { label: "Memberships", value: roleSummary.total, accent: "seaweed" },
+    { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "wine" },
     { label: "Companies", value: companySummary.distinctCompanies, accent: "primary" },
-    { label: "Activities", value: moduleSummary.total, accent: "amber" },
-    { label: "Coordination issues", value: coordSummary.total, accent: "orange" },
+    { label: "Activities", value: moduleSummary.total, accent: "goldenrod" },
+    { label: "Coordination issues", value: coordSummary.total, accent: "naranja" },
   ];
 
   return (
     <div className="flex flex-col gap-8">
+      {/* Above the KPIs on purpose: if a source failed, the reader must know BEFORE
+          they read a number derived from it. */}
+      {failedSources !== undefined && failedSources.length > 0 && <SourcesFailedBanner sources={failedSources} />}
+
       {/* VIS-05: StatStrip is NOT keyed by filter values — it mounts once and updates
           in-place so the entrance animation fires only on first load. */}
       <StatStrip stats={kpis} />
+
+      {/* TRUTH-01: metric-specific coverage header. Activity (~956/1,153 via free ACCDS
+          crawl) leads; DC-metadata coverage (~550/1,153) is labeled separately.
+          All counts come from live server props — no hard-coded literals. */}
+      {covTotal > 0 && (
+        <p data-testid="coverage-header" className="text-xs text-muted-foreground -mt-4">
+          Activity data covers{" "}
+          <span className="tabular-nums">{covCovered}</span>{" "}
+          of{" "}
+          <span className="tabular-nums">{covTotal}</span>{" "}
+          ACC projects
+          {dcCoverage != null && (
+            <>
+              {" · "}Data Connector metadata covers{" "}
+              <span className="tabular-nums">{dcCoverage.covered}</span>{" "}
+              of{" "}
+              <span className="tabular-nums">{dcCoverage.total}</span>
+            </>
+          )}
+        </p>
+      )}
 
       <ProjectPicker
         options={options}
@@ -255,165 +502,145 @@ export function AccessAnalysisCharts({
         />
       )}
 
-      {/* Activity over time — full-width, activity-derived → coverage badge */}
-      {timelineRows ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader
-              title="Activity over time"
-              subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <ActivityTimelineChart summary={timelineSummary} />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
+      {/* 20.1-05/06: 6 themed tabs for storytelling (UAT item 7). Controlled
+          Radix state (value/onValueChange, plain useState) — no URL params
+          (Pitfall 5) — so 20.1-06's lazy-fetch effect can key off the active
+          tab. Every tab reads the SAME selected/sliceFilters state above;
+          switching tabs never resets the picker or filters. */}
+      <Tabs value={tab} onValueChange={setTab} className="gap-6">
+        <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="companies">Companies</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
+        </TabsList>
 
-      {/* Terrain — full-width, collapsed by default (ACC-03) */}
-      {terrainProjects && terrainProjects.length > 0 && loadTerrain && loadOverview && (
-        <Reveal>
-          <TerrainReveal
-            projects={terrainProjects}
+        <TabsContent value="overview">
+          <OverviewTabPanel
+            timelineRows={timelineRows}
+            timelineSummary={timelineSummary}
+            dataFloor={dataFloor}
+            floorByProject={floorByProject}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            moduleSummary={moduleSummary}
+            ingestFreshness={ingestFreshness}
+            projectActivitySummary={projectActivitySummary}
+            provisionedModuleSummary={provisionedModuleRows !== undefined ? provisionedModuleSummary : undefined}
+          />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RolesTabPanel
+            roleSummary={roleSummary}
+            sliceFilters={sliceFilters}
+            toggleSliceFilter={toggleSliceFilter}
+            setProfileEmail={setProfileEmail}
+            setPeopleSheet={setPeopleSheet}
+            activityActorRows={activityActorRows}
+            activityByRoleSummary={activityByRoleSummary}
+            dormantRoles={dormantRoles}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            loadPermissionLevel={loadPermissionLevel}
+            permissionLevelLoading={permissionLevel.loading}
+            permissionLevelFailed={permissionLevel.failed}
+            onRetryPermissionLevel={permissionLevel.retry}
+            filteredPermissionLevelRows={filteredPermissionLevelRows}
+            loadActivityRecency={loadActivityRecency}
+            activityRecencyLoading={activityRecency.loading}
+            activityRecencyFailed={activityRecency.failed}
+            onRetryActivityRecency={activityRecency.retry}
+            filteredActivityRecencyRows={filteredActivityRecencyRows}
+            dataFloor={dataFloor}
+            selected={selected}
+            membershipRows={membershipRows}
+            loadFolderRanking={loadFolderRanking}
+            loadFolderDetail={loadFolderDetail}
+            loadFolderActionMatrix={loadFolderActionMatrix}
+          />
+        </TabsContent>
+
+        <TabsContent value="users">
+          <UsersTabPanel
+            loadActivityRecency={loadActivityRecency}
+            activityRecencyLoading={activityRecency.loading}
+            activityRecencyFailed={activityRecency.failed}
+            onRetryActivityRecency={activityRecency.retry}
+            filteredActivityRecencyRows={filteredActivityRecencyRows}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            dataFloor={dataFloor}
+            loadPermissionUsers={loadPermissionUsers}
+            permissionUsersLoading={permissionUsers.loading}
+            permissionUsersFailed={permissionUsers.failed}
+            onRetryPermissionUsers={permissionUsers.retry}
+            permissionUserCounts={permissionUserCounts}
+          />
+        </TabsContent>
+
+        <TabsContent value="companies">
+          <CompaniesTabPanel
+            companySummary={companySummary}
+            sliceFilters={sliceFilters}
+            toggleSliceFilter={toggleSliceFilter}
+            setProfileEmail={setProfileEmail}
+            setPeopleSheet={setPeopleSheet}
+            activityActorRows={activityActorRows}
+            activityByCompanySummary={activityByCompanySummary}
+            dormantCompanies={dormantCompanies}
+            covCovered={covCovered}
+            covTotal={covTotal}
+            loadFolderScopedActivity={loadFolderScopedActivity}
+            folderScopedActivityLoading={folderScopedActivity.loading}
+            folderScopedActivityFailed={folderScopedActivity.failed}
+            onRetryFolderScopedActivity={folderScopedActivity.retry}
+            filteredFolderScopedActivityRows={filteredFolderScopedActivityRows}
+            membershipRows={membershipRows}
+            selected={selected}
+            loadCompanyFolderBreakdown={loadCompanyFolderBreakdown}
+          />
+        </TabsContent>
+
+        <TabsContent value="projects">
+          <ProjectsTabPanel
+            coordinationData={coordinationData}
+            filteredIssueCoverageProjects={filteredIssueCoverageProjects}
+            coordSummary={coordSummary}
+            coverageMap={coverageMap}
+            mtySet={mtySet}
+            loadClashes={loadClashes}
+            setProfileEmail={setProfileEmail}
+            loadIssueFunnel={loadIssueFunnel}
+            issueFunnelLoading={issueFunnel.loading}
+            issueFunnelFailed={issueFunnel.failed}
+            onRetryIssueFunnel={issueFunnel.retry}
+            issueTimelineSummary={issueTimelineSummary}
+            filteredIssueStatusRows={filteredIssueStatusRows}
+            filteredIssueTypeRows={filteredIssueTypeRows}
+            workflowToolSummaries={workflowToolSummaries}
+            workflowToolsLoading={workflowTools.loading}
+            workflowToolsFailed={workflowTools.failed}
+            onRetryWorkflowTools={workflowTools.retry}
+            adminsData={filteredAdminsData}
+            adminsEnabled={Boolean(loadAdminsPerProject)}
+            adminsLoading={admins.loading}
+            adminsFailed={admins.failed}
+            onRetryAdmins={admins.retry}
+          />
+        </TabsContent>
+
+        <TabsContent value="compare">
+          <CompareTabPanel
+            terrainProjects={terrainProjects}
             loadTerrain={loadTerrain}
             loadOverview={loadOverview}
+            selected={selected}
           />
-        </Reveal>
-      )}
-
-      {/* ACC-02: Denser 2-up donut grid for membership and activity donuts.
-          lg:grid-cols-2 keeps two columns on wide screens; stacks to 1-up below `lg`.
-          Timeline and terrain stay full-width (above). */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-        {/* Role distribution — membership (not activity-derived → no coverage badge) */}
-        <Reveal><PremiumSurface
-          variant="base"
-          glow={!!sliceFilters.role}
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeaderWithPeople
-            title="Role distribution"
-            subtitle="Roles held across all project memberships."
-            people={[...roleSummary.usersByRole.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Role distribution — people", people })}
-            testId="view-people-role"
-          />
-          <RolesPieChart
-            data={roleSummary.slices}
-            distinctRoles={roleSummary.distinctRoles}
-            usersByRole={roleSummary.usersByRole}
-            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-            onSliceClick={(val) => toggleSliceFilter("role", val)}
-            activeSlice={sliceFilters.role}
-          />
-        </PremiumSurface></Reveal>
-
-        {/* Users by company — membership (not activity-derived → no coverage badge) */}
-        <Reveal><PremiumSurface
-          variant="base"
-          glow={!!sliceFilters.company}
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeaderWithPeople
-            title="Users by company"
-            subtitle="Project memberships grouped by each member's company."
-            people={[...companySummary.usersByCompany.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Users by company — people", people })}
-            testId="view-people-company"
-          />
-          <CompaniesPieChart
-            data={companySummary.slices}
-            distinctCompanies={companySummary.distinctCompanies}
-            usersByCompany={companySummary.usersByCompany}
-            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-            onSliceClick={(val) => toggleSliceFilter("company", val)}
-            activeSlice={sliceFilters.company}
-          />
-        </PremiumSurface></Reveal>
-
-        {/* Activity by role — activity-derived → coverage badge */}
-        {activityActorRows ? (
-          <Reveal><PremiumSurface
-            variant="base"
-            glow={!!sliceFilters.role}
-            className="flex flex-col gap-3 p-5 overflow-hidden"
-          >
-            <SectionHeaderWithPeople
-              title="Activity by role"
-              subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
-              people={[...activityByRoleSummary.usersByRole.values()].flat()}
-              onViewPeople={(people) => setPeopleSheet({ title: "Activity by role — people", people })}
-              testId="view-people-activity-role"
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <ActivityByRolePieChart
-              summary={activityByRoleSummary}
-              dormant={dormantRoles}
-              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-              onSliceClick={(val) => toggleSliceFilter("role", val)}
-              activeSlice={sliceFilters.role}
-            />
-          </PremiumSurface></Reveal>
-        ) : null}
-
-        {/* Activity by company — activity-derived → coverage badge */}
-        {activityActorRows ? (
-          <Reveal><PremiumSurface
-            variant="base"
-            glow={!!sliceFilters.company}
-            className="flex flex-col gap-3 p-5 overflow-hidden"
-          >
-            <SectionHeaderWithPeople
-              title="Activity by company"
-              subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
-              people={[...activityByCompanySummary.usersByCompany.values()].flat()}
-              onViewPeople={(people) => setPeopleSheet({ title: "Activity by company — people", people })}
-              testId="view-people-activity-company"
-              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-            />
-            <CompaniesActivityPieChart
-              summary={activityByCompanySummary}
-              dormant={dormantCompanies}
-              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-              onSliceClick={(val) => toggleSliceFilter("company", val)}
-              activeSlice={sliceFilters.company}
-            />
-          </PremiumSurface></Reveal>
-        ) : null}
-
-        {/* Activity by module — activity-derived → coverage badge; full-width in the grid */}
-        <Reveal className="lg:col-span-2"><PremiumSurface
-          variant="base"
-          className="flex flex-col gap-3 p-5 overflow-hidden"
-        >
-          <SectionHeader
-            title="Activity by module"
-            subtitle="Total actions recorded in each ACC module."
-            badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
-          />
-          <ModulesPieChart summary={moduleSummary} />
-        </PremiumSurface></Reveal>
-
-      </div>
-
-      {/* Model Coordination — full-width, not in the donut grid */}
-      {coordinationData ? (
-        <Reveal>
-          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
-            <SectionHeader title="Model Coordination" subtitle="Coordination-classified issues, by project." />
-            <CoordinationByProject
-              summary={coordSummary}
-              accessibleProjects={coordinationData.accessibleProjects}
-              forbiddenProjects={coordinationData.forbiddenProjects}
-              latestRunAt={coordinationData.latestRunAt}
-              coverage={coverageMap}
-              mtyIds={mtySet}
-              loadClashes={loadClashes}
-              onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
-            />
-          </PremiumSurface>
-        </Reveal>
-      ) : null}
+        </TabsContent>
+      </Tabs>
 
       {profileEmail && (
         <AuthorProfileDrawer email={profileEmail} onClose={() => setProfileEmail(null)} />
@@ -430,7 +657,7 @@ export function AccessAnalysisCharts({
           <div data-testid="people-sheet">
             <PeopleDrillList
               title={peopleSheet.title}
-              color="#6366f1"
+              color="var(--chart-1)"
               people={peopleSheet.people}
               total={peopleSheet.people.reduce((s, p) => s + p.count, 0)}
               unitNoun="people"
@@ -443,97 +670,6 @@ export function AccessAnalysisCharts({
           </div>
         )}
       </DrillSheet>
-    </div>
-  );
-}
-
-/**
- * Consistent section heading: a readable title with a one-line plain-English
- * subtitle and an optional inline badge (e.g. ActivityCoverageBadge for NA-01).
- */
-function SectionHeader({
-  title,
-  subtitle,
-  badge,
-}: {
-  title: string;
-  subtitle: string;
-  badge?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-          {badge}
-        </div>
-        <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Section heading variant for filterable panels that also carry a "View N people →"
- * affordance (INT-02). The affordance opens the shared people sheet — clicking a
- * slice does NOT open it (locked CONTEXT decision).
- */
-function SectionHeaderWithPeople({
-  title,
-  subtitle,
-  people,
-  onViewPeople,
-  testId,
-  badge,
-}: {
-  title: string;
-  subtitle: string;
-  /** All people in the current filtered view (from in-memory summary). */
-  people: DrillPerson[];
-  /** Opens the people sheet with the supplied list. Called only by this button. */
-  onViewPeople: (people: DrillPerson[]) => void;
-  testId: string;
-  /** Optional inline badge (e.g. ActivityCoverageBadge for activity-derived panels). */
-  badge?: React.ReactNode;
-}) {
-  // Deduplicate by email so cross-role/company duplication doesn't inflate count.
-  const uniquePeople = useMemo(() => {
-    const seen = new Set<string>();
-    return people.filter((p) => {
-      if (seen.has(p.email)) return false;
-      seen.add(p.email);
-      return true;
-    });
-  }, [people]);
-
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-            {badge}
-          </div>
-          <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
-        </div>
-      </div>
-      {uniquePeople.length > 0 && (
-        <button
-          type="button"
-          data-testid={testId}
-          onClick={() => onViewPeople(uniquePeople)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary shadow-sm transition hover:bg-primary/20"
-        >
-          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          View {uniquePeople.length} {uniquePeople.length === 1 ? "person" : "people"}
-        </button>
-      )}
     </div>
   );
 }

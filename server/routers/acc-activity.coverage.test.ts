@@ -12,31 +12,27 @@ function makeCaller(db: unknown) {
 describe("accActivityRouter coverage", () => {
   it("returns attribution coverage and unknown actor counts", async () => {
     const db = {
-      accActivity: {
-        count: vi
-          .fn()
-          .mockResolvedValueOnce(100)
-          .mockResolvedValueOnce(95)
-          .mockResolvedValueOnce(12),
-        groupBy: vi
-          .fn()
-          .mockResolvedValueOnce([
-            { autodeskId: "N/A", _count: { _all: 3 } },
-            { autodeskId: "unknown-b", _count: { _all: 2 } },
-          ])
-          .mockResolvedValueOnce([
-            { autodeskId: "N/A", rawAction: "add-entity-by-automation", _count: { _all: 3 } },
-            { autodeskId: "unknown-b", rawAction: "view-entity", _count: { _all: 2 } },
-          ])
-          .mockResolvedValueOnce([
-            { service: "docs", _count: { _all: 4 } },
-            { service: "issues", _count: { _all: 1 } },
-          ])
-          .mockResolvedValueOnce([
-            { userEmail: "alice@example.com", _count: { _all: 60 } },
-            { userEmail: "bob@example.com", _count: { _all: 35 } },
-          ]),
-      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([{ count: 100 }])
+        .mockResolvedValueOnce([{ count: 95 }])
+        .mockResolvedValueOnce([{ count: 12 }])
+        .mockResolvedValueOnce([
+          { autodeskId: "N/A", rows: 3 },
+          { autodeskId: "unknown-b", rows: 2 },
+        ])
+        .mockResolvedValueOnce([
+          { autodeskId: "N/A", rawAction: "add-entity-by-automation", rows: 3 },
+          { autodeskId: "unknown-b", rawAction: "view-entity", rows: 2 },
+        ])
+        .mockResolvedValueOnce([
+          { service: "docs", rows: 4 },
+          { service: "issues", rows: 1 },
+        ])
+        .mockResolvedValueOnce([
+          { userEmail: "alice@example.com", rows: 60 },
+          { userEmail: "bob@example.com", rows: 35 },
+        ]),
     };
 
     const result = await makeCaller(db).getCoverage();
@@ -73,5 +69,6 @@ describe("accActivityRouter coverage", () => {
         rawActions: ["view-entity"],
       },
     ]);
+    expect(db.$queryRaw).toHaveBeenCalledTimes(7);
   });
 });

@@ -25,9 +25,7 @@ export interface OrganicLayoutNode {
   roles: string[];
   lastAddedBucket: string;
   modules: string[];
-  // ── Extra optional dimensions used by computeBlobSeedPositions for
-  //    feature-tension positioning. Older callers (Canvas2D, tests) can
-  //    leave these undefined; the layout treats absent fields as empty.
+  // Optional dimensions used by topology consumers.
   /** Company name as extracted from ACC HQ (e.g. "Acme Corp"). */
   companyName?: string | null;
   /** Company-specific role (e.g. "Senior Architect"). */
@@ -48,23 +46,6 @@ export interface OrganicLayoutNode {
    *  domain). Used as a binary axis in the blob layout so internal and
    *  external populations form distinct centers of mass. */
   isExternal?: boolean;
-}
-
-/**
- * Bucket a last-sign-in timestamp into a coarse activity tier so two users
- * who haven't logged in for ~the same amount of time land near each other.
- * Returns one of: "never" | "today" | "week" | "month" | "quarter" | "stale".
- */
-function activityBucket(lastSignIn: string | null | undefined): string {
-  if (!lastSignIn) return "never";
-  const ts = Date.parse(lastSignIn);
-  if (!Number.isFinite(ts)) return "never";
-  const days = (Date.now() - ts) / 86_400_000;
-  if (days < 1) return "today";
-  if (days < 7) return "week";
-  if (days < 30) return "month";
-  if (days < 90) return "quarter";
-  return "stale";
 }
 
 type AccTopologyHubKind = "project" | "role" | "module" | "access" | "user" | "folder";
@@ -137,27 +118,6 @@ function hashU32(value: string, salt = ""): number {
 
 function hash01(value: string, salt = ""): number {
   return (hashU32(value, salt) % 100000) / 100000;
-}
-
-function featureAnchor(value: string, salt: string): { x: number; y: number } {
-  const angle = hash01(value, `${salt}:angle`) * Math.PI * 2;
-  const radius = 0.24 + hash01(value, `${salt}:radius`) * 0.24;
-  return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius,
-  };
-}
-
-function averageFeatureAnchor(values: readonly string[], salt: string): { x: number; y: number; weight: number } {
-  if (!values.length) return { x: 0, y: 0, weight: 0 };
-  let x = 0;
-  let y = 0;
-  for (const value of values) {
-    const anchor = featureAnchor(value, salt);
-    x += anchor.x;
-    y += anchor.y;
-  }
-  return { x: x / values.length, y: y / values.length, weight: 1 };
 }
 
 function normalizeHubValue(value: string): string {
@@ -379,143 +339,3 @@ export function buildAccTopologyGraph(
  * arrangement looks "chaotic" because both centroid and jitter are derived
  * from hashes of the projectId and node id respectively.
  */
-/**
- * Feature-based blob: each node's position is a weighted average of "anchor
- * points" derived from its attributes (roles, modules, admin status, project,
- * lastAdded, identity). Two users with the same roles + modules land near
- * each other because their anchors overlap. Users with nothing in common
- * scatter freely.
- *
- * This produces *tension*: the position is a function of *who* the user is,
- * not just an unstructured hash of an id. The visual result is a chaotic
- * blob whose density variations actually mean something — clumps are
- * statistical "tribes" of users sharing attributes, not arbitrary geometry.
- *
- * Deterministic: same nodes → byte-identical positions.
- */
-interface BlobWeightOverrides {
-  role?: number;
-  modules?: number;
-  access?: number;
-  project?: number;
-  lastAdded?: number;
-  company?: number;
-  companyRole?: number;
-  activity?: number;
-  perProjectRoles?: number;
-  status?: number;
-  executive?: number;
-  folders?: number;
-  external?: number;
-  identity?: number;
-}
-
-export function computeBlobSeedPositions(
-  nodes: readonly OrganicLayoutNode[],
-  overrides: BlobWeightOverrides = {},
-): Float32Array {
-  const positions = new Float32Array(nodes.length * 2);
-  if (nodes.length === 0) return positions;
-
-  // Weights per feature axis. Higher = stronger pull from that dimension =
-  // more visible clustering when users share that attribute. Overrides let
-  // the Physics & Clustering panel drive each axis from a slider; missing
-  // keys fall back to the tuned default.
-  const pick = (k: keyof BlobWeightOverrides, dflt: number): number => {
-    const v = overrides[k];
-    return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : dflt;
-  };
-  const W = {
-    role: pick("role", 1.0),
-    modules: pick("modules", 1.0),
-    access: pick("access", 0.8),
-    project: pick("project", 0.6),
-    lastAdded: pick("lastAdded", 0.4),
-    company: pick("company", 0.7),
-    companyRole: pick("companyRole", 0.5),
-    activity: pick("activity", 0.5),
-    perProjectRoles: pick("perProjectRoles", 0.6),
-    status: pick("status", 0.3),
-    executive: pick("executive", 0.4),
-    folders: pick("folders", 0.9),
-    external: pick("external", 0.7),
-    identity: pick("identity", 0.3),
-  } as const;
-  const TOTAL =
-    (W.role + W.modules + W.access + W.project + W.lastAdded +
-      W.company + W.companyRole + W.activity + W.perProjectRoles +
-      W.status + W.executive + W.folders + W.external + W.identity) || 1;
-
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-
-    const role = averageFeatureAnchor(node.roles, "role");
-    const modules = averageFeatureAnchor(node.modules, "modules");
-    const access = featureAnchor(node.isAdmin ? "admin" : "non-admin", "access");
-    const project = featureAnchor(node.projectId || "no-project", "project");
-    const lastAdded = featureAnchor(node.lastAddedBucket || "unknown", "lastAdded");
-    const company = featureAnchor(node.companyName || "no-company", "company");
-    const companyRole = featureAnchor(node.companyRole || "no-companyRole", "companyRole");
-    const activity = featureAnchor(activityBucket(node.lastSignIn), "activity");
-    const perProjectRoles = averageFeatureAnchor(node.perProjectRoleNames ?? [], "perProjectRoles");
-    const status = featureAnchor(node.aggregatedStatus || "unknown", "status");
-    const executive = featureAnchor(node.executive ? "exec" : "non-exec", "executive");
-    const folders = averageFeatureAnchor(node.accessibleFolderHubs ?? [], "folders");
-    const external = featureAnchor(node.isExternal ? "external" : "internal", "external");
-    const identity = featureAnchor(node.userId || node.email, "identity");
-
-    const x =
-      (role.x * W.role + modules.x * W.modules + access.x * W.access +
-        project.x * W.project + lastAdded.x * W.lastAdded + company.x * W.company +
-        companyRole.x * W.companyRole + activity.x * W.activity +
-        perProjectRoles.x * W.perProjectRoles + status.x * W.status +
-        executive.x * W.executive + folders.x * W.folders +
-        external.x * W.external + identity.x * W.identity) / TOTAL;
-    const y =
-      (role.y * W.role + modules.y * W.modules + access.y * W.access +
-        project.y * W.project + lastAdded.y * W.lastAdded + company.y * W.company +
-        companyRole.y * W.companyRole + activity.y * W.activity +
-        perProjectRoles.y * W.perProjectRoles + status.y * W.status +
-        executive.y * W.executive + folders.y * W.folders +
-        external.y * W.external + identity.y * W.identity) / TOTAL;
-
-    positions[i * 2] = 0.5 + x;
-    positions[i * 2 + 1] = 0.5 + y;
-  }
-
-  // Weighted-average anchors statistically cancel out, leaving most nodes
-  // clumped near the center. Normalize to fill [0.05, 0.95] so the blob
-  // uses the whole canvas while preserving relative distances (the tension
-  // between users is unchanged — only the scale).
-  return normalizePositions(positions);
-}
-
-function normalizePositions(positions: Float32Array): Float32Array {
-  if (!positions.length) return positions;
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (let i = 0; i < positions.length / 2; i++) {
-    const x = positions[i * 2];
-    const y = positions[i * 2 + 1];
-    if (x < minX) minX = x;
-    if (x > maxX) maxX = x;
-    if (y < minY) minY = y;
-    if (y > maxY) maxY = y;
-  }
-
-  const rangeX = maxX - minX || 1;
-  const rangeY = maxY - minY || 1;
-  const maxRange = Math.max(rangeX, rangeY);
-  const offsetX = (maxRange - rangeX) / 2;
-  const offsetY = (maxRange - rangeY) / 2;
-
-  for (let i = 0; i < positions.length / 2; i++) {
-    positions[i * 2] = 0.05 + ((positions[i * 2] - minX + offsetX) / maxRange) * 0.9;
-    positions[i * 2 + 1] = 0.05 + ((positions[i * 2 + 1] - minY + offsetY) / maxRange) * 0.9;
-  }
-  return positions;
-}
-

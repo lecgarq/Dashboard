@@ -4,32 +4,32 @@ import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import { UNMAPPED_MODULE, type ModuleSummary, type ActivityType } from "../moduleCounts";
-import { CATEGORY_ORDER } from "../moduleOverrides";
+import { GROUP_ORDER } from "../moduleOverrides";
 
-/** Group a module's activity types by action category, ordered for display. */
-function groupByCategory(types: ActivityType[]): Array<[string, ActivityType[]]> {
+/** Group a module's activity types by ACC tool (Files / Reviews / Sheets / …), ordered for display. */
+function groupByTool(types: ActivityType[]): Array<[string, ActivityType[]]> {
   const m = new Map<string, ActivityType[]>();
-  for (const t of types) (m.get(t.category) ?? m.set(t.category, []).get(t.category)!).push(t);
-  const rank = (c: string) => {
-    const i = CATEGORY_ORDER.indexOf(c);
-    return i < 0 ? CATEGORY_ORDER.length : i;
+  for (const t of types) (m.get(t.group) ?? m.set(t.group, []).get(t.group)!).push(t);
+  const rank = (g: string) => {
+    const i = GROUP_ORDER.indexOf(g);
+    return i < 0 ? GROUP_ORDER.length : i;
   };
   return [...m.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
 
 // One stable color per module id — the donut is about *which module*, so colors
 // are fixed (not rotated like role names). Reads well on light + dark cards.
-const MODULE_COLORS: Record<string, string> = {
-  dataManagement: "#6366f1", // indigo
-  build: "#f59e0b", // amber
-  designCollaboration: "#34d399", // emerald
-  preconstruction: "#a78bfa", // violet
-  modelCoordination: "#38bdf8", // sky
-  adminActions: "#ec4899", // pink — permission/membership/admin activity
-  datum: "#fb7185", // rose
-  insight: "#facc15", // yellow
-  design: "#2dd4bf", // teal
-  autospecs: "#c084fc", // purple
+export const MODULE_COLORS: Record<string, string> = {
+  dataManagement: "#4e8ccb", // azul
+  build: "#e2683a", // naranja
+  designCollaboration: "#849c4c", // palm
+  preconstruction: "#b4679c", // wine
+  modelCoordination: "#3a9dbf", // state-blue sky
+  adminActions: "#e0577b", // wine-rose — permission/membership/admin activity
+  datum: "#e05b55", // warm red
+  insight: "#efb628", // goldenrod
+  design: "#0e98a8", // seaweed
+  autospecs: "#c992b8", // wine (light tier)
 };
 const UNMAPPED_COLOR = "#71717a"; // zinc-500 — the data-quality bucket
 
@@ -89,7 +89,7 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
 
   if (slices.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
@@ -207,14 +207,14 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
               ✕
             </button>
           </div>
-          {/* Activity types grouped by action category (Content changes / Workflow / …). */}
+          {/* Activity types grouped by the module's ACC tools (Files / Reviews / Sheets / …). */}
           <div className="max-h-80 space-y-3 overflow-auto pr-1">
-            {groupByCategory(drillTypes).map(([category, items]) => {
+            {groupByTool(drillTypes).map(([group, items]) => {
               const catTotal = items.reduce((s, t) => s + t.count, 0);
               return (
-                <div key={category}>
+                <div key={group}>
                   <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    <span>{category}</span>
+                    <span>{group}</span>
                     <span className="tabular-nums text-muted-foreground/80">
                       {catTotal.toLocaleString()} · {fmtPct(catTotal, drillSlice.value)}
                     </span>

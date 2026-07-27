@@ -59,6 +59,23 @@ export function LassoOverlay({
   const pathRef = useRef<[number, number][]>([]);
   const drawingRef = useRef(false);
 
+  // Latest-ref pattern: the shell passes an INLINE onComplete (onLassoComplete),
+  // so its identity changes on every shell render. If the pointer-listener effect
+  // depended on these callbacks it would re-subscribe MID-DRAG and its cleanup
+  // would reset drawingRef/pathRef, aborting the in-progress lasso (PERF-03). We
+  // read the live callbacks through refs so the effect can key on [active] alone
+  // and an in-progress drag survives any number of re-renders.
+  const hitTestRef = useRef(hitTest);
+  const onCompleteRef = useRef(onComplete);
+  const onDragStartRef = useRef(onDragStart);
+  const onDragEndRef = useRef(onDragEnd);
+  useEffect(() => {
+    hitTestRef.current = hitTest;
+    onCompleteRef.current = onComplete;
+    onDragStartRef.current = onDragStart;
+    onDragEndRef.current = onDragEnd;
+  });
+
   useEffect(() => {
     if (!active) return;
     const cv = canvasRef.current;
@@ -98,7 +115,7 @@ export function LassoOverlay({
     const onDown = (e: PointerEvent): void => {
       drawingRef.current = true;
       pathRef.current = [[e.offsetX, e.offsetY]];
-      onDragStart?.();
+      onDragStartRef.current?.();
       try {
         cv.setPointerCapture(e.pointerId);
       } catch {
@@ -123,9 +140,9 @@ export function LassoOverlay({
       const path = pathRef.current;
       pathRef.current = [];
       clearOverlay();
-      onDragEnd?.(); // always re-enable controls, even on a too-short path
+      onDragEndRef.current?.(); // always re-enable controls, even on a too-short path
       if (path.length < 3) return;
-      onComplete(hitTest(path, cv.clientWidth, cv.clientHeight));
+      onCompleteRef.current(hitTestRef.current(path, cv.clientWidth, cv.clientHeight));
     };
 
     cv.addEventListener("pointerdown", onDown);
@@ -150,13 +167,15 @@ export function LassoOverlay({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
       // Unmounting mid-drag (e.g. the toolbar toggles lasso off while the button is
-      // held) must thaw OrbitControls — onUp won't fire after teardown.
-      if (drawingRef.current) onDragEnd?.();
+      // held) must thaw OrbitControls — onUp won't fire after teardown. This now
+      // runs ONLY on `active` change / unmount (not on every re-render), so an
+      // in-progress drag is no longer reset by an unrelated shell render (PERF-03).
+      if (drawingRef.current) onDragEndRef.current?.();
       drawingRef.current = false;
       pathRef.current = [];
       clearOverlay();
     };
-  }, [active, hitTest, onComplete, onDragStart, onDragEnd]);
+  }, [active]);
 
   return (
     <canvas

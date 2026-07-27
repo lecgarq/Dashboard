@@ -537,6 +537,27 @@ model AccFolderPermission {
 
   @@unique([folderId, roleId])
   @@index([folderId])
+  @@index([roleId])
+}
+
+// PROJ-01 (REF-03 foundation) — projection that mirrors the live
+// includePermissionSummary GROUP BY aggregate in lib/server/acc-hot-cache.ts:304-317
+// row-for-row: per (projectId, roleId), distinct folder count, summed folder bytes,
+// distinct permTypes. Populated by scripts/backfill-folder-perm-summary.cjs via a
+// server-side INSERT...SELECT...GROUP BY — never a Node-side scan of the ~6M-row
+// AccFolderPermission table. No consumer reads this model yet (Phase 19 switches it).
+model AccFolderPermissionSummary {
+  id          String   @id @default(cuid())
+  projectId   String
+  roleId      String
+  folderCount Int
+  totalBytes  BigInt
+  permTypes   String[]
+  refreshedAt DateTime @default(now())
+
+  @@unique([projectId, roleId])
+  @@index([projectId])
+  @@index([roleId])
 }
 
 model AccActivity {
@@ -880,17 +901,45 @@ model AccIssueProjectFetchResult {
   @@index([runId, status])
 }
 
-// ============ MODULE: ACC INSTANCE EMBEDDING ============
-// Precomputed 2D similarity-embedding coordinates + neighbours per graph node.
-// Table is created via prisma/migrations-raw/2026-06-08-acc-instance-embedding.sql
-// (raw SQL, not prisma migrate) so that pgvector / migrate-choke is avoided.
+// ============ MODULE: ACC ISSUE TYPE ============
+// Additive lookup table: resolves AccIssue.issueTypeId / issueSubtypeId GUIDs to
+// human-readable names. Populated by scripts/acc-issue-types-backfill.cjs
+// (manual, re-runnable, upsert-by-GUID). No run-audit table — updatedAt is the
+// freshness record (locked decision, 22-CONTEXT.md).
 
-model AccInstanceEmbedding {
-  nodeId         String   @id
+model AccIssueType {
+  id           String   @id // APS issue-type or issue-subtype GUID
+  name         String
+  kind         String // "type" | "subtype"
+  parentTypeId String? // set only when kind = "subtype"; the parent type's GUID
+  updatedAt    DateTime @updatedAt // freshness record — no separate run-audit table (locked decision)
+
+  @@index([kind])
+  @@index([parentTypeId])
+}
+
+// ============ MODULE: ACTIVITY UNIVERSE EMBEDDING (v2.7 Phase 38) ============
+// One row per extracted activity event (unified corpus: AccActivityAccds +
+// AccActivity backfill/admin). Positions from the offline full-fit PaCMAP
+// pipeline (scripts/compute_activity_embeddings.py); attribute columns are
+// dictionary codes whose labels live in .embedding/activity-universe-dicts.json
+// and ship in the binary payload meta. Created via raw-SQL migration +
+// `prisma migrate resolve` (pgvector shadow-DB: never `migrate dev`).
+// Code 0 = Unknown/none for authorId/roleId/companyId/folderId (ACT-02).
+
+model AccActivityEmbedding {
+  id             String   @id // "accds:"+accdsActivityId | AccActivity.id (two ID spaces)
   x              Float    @db.Real
   y              Float    @db.Real
-  cluster        Int?
-  neighbors      Json     @default("[]")
+  verbId         Int      @db.SmallInt
+  objectTypeId   Int      @db.SmallInt
+  moduleId       Int      @db.SmallInt
+  monthId        Int      @db.SmallInt // months since corpus floor
+  roleId         Int      @db.SmallInt // author role via mergeRoleNames; 0 = Unknown
+  companyId      Int      @db.SmallInt // 0 = Unknown
+  projectId      Int
+  authorId       Int // 0 = Unknown author
+  folderId       Int // 0 = none
   embeddingRunId String
-  updatedAt      DateTime @default(now()) @updatedAt
+  updatedAt      DateTime @default(now())
 }

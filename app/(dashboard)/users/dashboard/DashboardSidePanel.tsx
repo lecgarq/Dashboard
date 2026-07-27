@@ -33,20 +33,21 @@ import { trpc } from "@/lib/core/trpc";
 import { cn } from "@/lib/core/utils";
 import { categorize, type ActivityCategory } from "@/lib/acc/activityCategories";
 
-// Phase 08-07 / DC8-16 — module badge color map, mirrored from
-// UsersDirectoryClient.tsx (canonical home; duplicated here to avoid a
-// circular import since UsersDirectoryClient already pulls UserActivityBody
-// from this file via next/dynamic).
+// Module badge color map — LECG brand families only (DESIGN.md §2), matching
+// the module hue language of ACTIVITY_MODULE_COLORS (docs=azul, bridge=naranja,
+// rfis=seaweed, submittals=goldenrod, cost=wine, assets=palm, sheets=sky,
+// issues=warm red). Text hexes are the chartPalette derived contrast steps
+// (≥6.9:1 on both surfaces).
 const MODULE_BADGE_COLORS_LOCAL: Record<string, string> = {
-  docs: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
-  issues: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300",
-  submittals: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
-  rfis: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
-  sheets: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300",
+  docs: "bg-[#2E5F95]/10 text-[#1c3450] dark:bg-[#4E8CCB]/15 dark:text-[#80acda]",
+  issues: "bg-[#C42021]/10 text-[#641618] dark:bg-[#E05B55]/15 dark:text-[#e98985]",
+  submittals: "bg-[#B0810A]/10 text-[#5b440d] dark:bg-[#BA8A0E]/15 dark:text-[#cdab51]",
+  rfis: "bg-[#0089A3]/10 text-[#064857] dark:bg-[#0E98A8]/15 dark:text-[#51b5c0]",
+  sheets: "bg-[#1B80B3]/10 text-[#13445e] dark:bg-[#3A9DBF]/15 dark:text-[#71b8d1]",
   admin: "bg-muted text-foreground/80",
-  cost: "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300",
-  assets: "bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300",
-  bridge: "bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300",
+  cost: "bg-[#7E3567]/10 text-[#43203a] dark:bg-[#B4679C]/15 dark:text-[#c992b8]",
+  assets: "bg-[#68803A]/10 text-[#384424] dark:bg-[#849C4C]/15 dark:text-[#a6b87e]",
+  bridge: "bg-[#E65A28]/10 text-[#75311c] dark:bg-[#E2683A]/15 dark:text-[#ea9271]",
 };
 
 function ActivityModuleBadge({ service }: { service: string | null | undefined }) {

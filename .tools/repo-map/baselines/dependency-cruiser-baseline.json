@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-07-21T00:00:00.000Z",
+  "policy": {
+    "notes": "dependency-cruiser errors and circular imports fail immediately. Existing warnings are visible but non-blocking while they are tracked down. Ratcheted down 2026-07-14 (23-04): 3 of the 6 prior warningEdges named scripts/diag-activity-{coordination,module-audit,types}.cjs, deleted 2026-07-10 in commit b95bf5c7. Ratcheted UP 2026-07-16 (33-01 housekeeping): third build-instance-features.ts edge. Ratcheted down 2026-07-21 (39-03 ACT-03): all 3 build-instance-features.ts edges gone — the script was deleted with the instance-embedding pipeline. Remaining single edge is Phase-38's build-activity-author-attributes.ts reusing a graphNodesFromUsers helper (same documented-deferred BND-03 scripts-to-app family; previously masked by the higher baseline count)."
+  },
+  "errorCounts": [],
+  "warningCounts": [
+    {
+      "id": "no-scripts-to-app",
+      "count": 1
+    }
+  ],
+  "warningEdges": [
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/build-activity-author-attributes.ts",
+      "to": "app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts"
+    }
+  ]
+}

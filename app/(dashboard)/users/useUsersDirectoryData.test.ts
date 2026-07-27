@@ -25,7 +25,26 @@ import { renderHook } from "@testing-library/react";
 // ---------------------------------------------------------------------------
 // Hoisted spies — must be created before vi.mock hoisting
 // ---------------------------------------------------------------------------
-const { bulkUsersQuerySpy, bulkAccSummaryQuerySpy, listInvitationsQuerySpy } = vi.hoisted(() => {
+const {
+  bulkUsersQuerySpy,
+  bulkAccSummaryQuerySpy,
+  listInvitationsQuerySpy,
+  dataVersionQuerySpy,
+  invalidateSpies,
+} = vi.hoisted(() => {
+  // FRESH-01: controllable version-poll query + stable invalidate spies so
+  // Case 6 can drive a version change across rerenders and assert invalidation.
+  const dataVersionQuerySpy = vi.fn().mockReturnValue({ data: undefined, isLoading: false });
+  const invalidateSpies = {
+    bulkUsers: vi.fn(),
+    bulkUser: vi.fn(),
+    bulkAccSummary: vi.fn(),
+    enrichedUsers: vi.fn(),
+    lastFileActivityByEmailAll: vi.fn(),
+    activityCoverage: vi.fn(),
+    folderCoverage: vi.fn(),
+  };
+
   const bulkUsersQuerySpy = vi.fn().mockReturnValue({
     data: [
       {
@@ -57,7 +76,13 @@ const { bulkUsersQuerySpy, bulkAccSummaryQuerySpy, listInvitationsQuerySpy } = v
     isLoading: false,
   });
 
-  return { bulkUsersQuerySpy, bulkAccSummaryQuerySpy, listInvitationsQuerySpy };
+  return {
+    bulkUsersQuerySpy,
+    bulkAccSummaryQuerySpy,
+    listInvitationsQuerySpy,
+    dataVersionQuerySpy,
+    invalidateSpies,
+  };
 });
 
 // ---------------------------------------------------------------------------
@@ -65,7 +90,23 @@ const { bulkUsersQuerySpy, bulkAccSummaryQuerySpy, listInvitationsQuerySpy } = v
 // ---------------------------------------------------------------------------
 vi.mock("@/lib/core/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      accDcGraph: {
+        bulkUsers: { invalidate: invalidateSpies.bulkUsers },
+        bulkUser: { invalidate: invalidateSpies.bulkUser },
+      },
+      users: { bulkAccSummary: { invalidate: invalidateSpies.bulkAccSummary } },
+      accMembers: { enrichedUsers: { invalidate: invalidateSpies.enrichedUsers } },
+      accActivity: {
+        lastFileActivityByEmailAll: { invalidate: invalidateSpies.lastFileActivityByEmailAll },
+        getCoverage: { invalidate: invalidateSpies.activityCoverage },
+      },
+      accFolders: { getCoverage: { invalidate: invalidateSpies.folderCoverage } },
+    }),
     accDcGraph: {
+      dataVersion: {
+        useQuery: dataVersionQuerySpy,
+      },
       bulkUsers: {
         useQuery: bulkUsersQuerySpy,
       },
@@ -205,5 +246,38 @@ describe("useUsersDirectoryData — PERF-03 assertions", () => {
       undefined,
       expect.objectContaining({ enabled: false }),
     );
+  });
+
+  // -------------------------------------------------------------------------
+  // Case 6 (FRESH-01): data-version poll invalidates snapshots on CHANGE only
+  //   - first observed version must NOT invalidate (initial page load)
+  //   - a changed version must invalidate every snapshot query exactly once
+  //   - a null/unavailable probe must never invalidate
+  // -------------------------------------------------------------------------
+  it("Case 6 (FRESH-01): invalidates snapshot queries when the data version changes, not on first sight", () => {
+    dataVersionQuerySpy.mockReturnValue({ data: { version: "aaaa" }, isLoading: false });
+    const { rerender } = renderHook(() => useUsersDirectoryData());
+
+    // First sighting of a version — no invalidation.
+    expect(invalidateSpies.bulkUsers).not.toHaveBeenCalled();
+
+    // Same version again — still no invalidation.
+    rerender();
+    expect(invalidateSpies.bulkUsers).not.toHaveBeenCalled();
+
+    // Version changes — every snapshot query invalidates exactly once.
+    dataVersionQuerySpy.mockReturnValue({ data: { version: "bbbb" }, isLoading: false });
+    rerender();
+    for (const spy of Object.values(invalidateSpies)) {
+      expect(spy).toHaveBeenCalledTimes(1);
+    }
+
+    // Probe becomes unavailable (null) — treated as no-op, no extra invalidation.
+    dataVersionQuerySpy.mockReturnValue({ data: { version: null }, isLoading: false });
+    rerender();
+    expect(invalidateSpies.bulkUsers).toHaveBeenCalledTimes(1);
+
+    // Restore the default so later tests see the quiet probe.
+    dataVersionQuerySpy.mockReturnValue({ data: undefined, isLoading: false });
   });
 });

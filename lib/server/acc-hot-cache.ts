@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { BulkAccUser } from "@/lib/acc/acc-types";
+import type { BulkAccProject, BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
 import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
 import {
@@ -166,6 +166,46 @@ export function invalidateAccHotCache() {
   stats.invalidations++;
 }
 
+// ---------------------------------------------------------------------------
+// Data-version token for client-side freshness polling (/users auto-refresh).
+//
+// Reuses the same count+max fingerprint specs that key this cache, so "the
+// token changed" ⇔ "some bulkUsers/summary/activity snapshot would recompute".
+// Memoised for 30s (single-flight) so N polling tabs share one DB probe; the
+// probe itself is the same cost already paid on every bulkUsers request.
+// Hashed so the client sees an opaque token, not table row counts.
+// ---------------------------------------------------------------------------
+const DATA_VERSION_MEMO_MS = 30_000;
+let dataVersionMemo: { at: number; promise: Promise<string | null> } | null = null;
+
+const USERS_DATA_VERSION_SPECS = [
+  ...DC_VERSION_SPECS,
+  ...PERMISSION_VERSION_SPECS,
+  ...ACTIVITY_VERSION_SPECS,
+  ...BULK_SUMMARY_VERSION_SPECS,
+  { model: "accProjectMember", maxField: "syncedAt" },
+];
+
+export async function getAccDataVersion(db: any): Promise<string | null> {
+  const now = Date.now();
+  if (dataVersionMemo && now - dataVersionMemo.at < DATA_VERSION_MEMO_MS) {
+    return dataVersionMemo.promise;
+  }
+  const promise = (async () => {
+    const version = await dbVersion(db, USERS_DATA_VERSION_SPECS);
+    if (!version) return null;
+    const { createHash } = await import("node:crypto");
+    return createHash("sha256").update(version).digest("hex").slice(0, 16);
+  })();
+  dataVersionMemo = { at: now, promise };
+  try {
+    return await promise;
+  } catch (error) {
+    if (dataVersionMemo?.promise === promise) dataVersionMemo = null;
+    throw error;
+  }
+}
+
 function getAccHotCacheStats() {
   deleteExpired();
   return {
@@ -259,13 +299,15 @@ export async function getCachedAccDcBulkUsers(
         }),
       ]);
 
-      // [Perf 2026-06] Folder-permission data. AccFolderPermission is ~5M rows; loading
-      // them all into Node (the old findMany) was the dominant cause of the 60-90s
-      // access-analysis load + heap OOM. The graph only needs the SUMMARY
-      // (includePermissionSummary, NOT contexts), so aggregate in SQL — per
-      // (projectId, roleId): distinct folder count, summed folder bytes, distinct
-      // permTypes — collapsing ~5M grant rows to ~13k group rows. The contexts path
-      // (WS2 edge feed) still needs raw folder-level grants, so it keeps the row scan.
+      // [Perf 2026-06, switched 2026-07 PROJ-02] Folder-permission data. AccFolderPermission
+      // is ~6M rows; loading them all into Node (the old findMany) was the dominant cause of
+      // the 60-90s access-analysis load + heap OOM. The graph only needs the SUMMARY
+      // (includePermissionSummary, NOT contexts). The summary path now reads the materialised
+      // `AccFolderPermissionSummary` projection (Phase 18) — refreshed post-ingest by
+      // `dc-daily-ingest.cjs`, PROJ-03 — instead of running the live GROUP BY aggregate. The
+      // projection is a proven byte-identical mirror of that aggregate (Phase 18 reconciliation:
+      // 22,082 == 22,082 rows, 0 mismatches). The contexts path (WS2 edge feed) still needs raw
+      // folder-level grants and keeps the row scan, now hard-guarded below.
       let rawFolderPermissions: Array<{
         folderId: string;
         roleId: string;
@@ -278,7 +320,21 @@ export async function getCachedAccDcBulkUsers(
         | Map<string, { folderCount: number; totalBytes: number; permTypes: string[] }>
         | undefined;
       if (needsFolderPerms) {
+        // Hard-guard (PROJ-02): the includePermissionContexts:true branch below materialises
+        // the FULL AccFolderPermission table (~6M+ rows) into Node heap via a findMany scan —
+        // the exact OOM window the summary-projection switch above was added to close. No
+        // production caller enables it (grep confirms only test files reference this flag).
+        // It throws by default; set ACC_ALLOW_RAW_PERMISSION_SCAN=1 to deliberately re-enable
+        // it for the WS2 edge-feed / per-folder-ACL path.
         if (includePermissionContexts) {
+          if (process.env.ACC_ALLOW_RAW_PERMISSION_SCAN !== "1") {
+            throw new Error(
+              "includePermissionContexts:true is hard-guarded (PROJ-02): it materialises the full " +
+              "AccFolderPermission table (~6M rows) into Node heap and re-opens the OOM window TEST-01 guards. " +
+              "No production caller enables it. To deliberately re-enable the WS2 edge-feed / per-folder-ACL " +
+              "path, set ACC_ALLOW_RAW_PERMISSION_SCAN=1.",
+            );
+          }
           rawFolderPermissions = await db.accFolderPermission.findMany({
             where: { folder: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } } },
             select: {
@@ -294,26 +350,15 @@ export async function getCachedAccDcBulkUsers(
             select: { id: true, totalSizeBytes: true },
           });
         } else {
-          const aggRows = await db.$queryRaw<
-            Array<{ projectId: string; roleId: string; folderCount: number; totalBytes: bigint | number; permTypes: string[] }>
-          >`
-            SELECT f."projectId" AS "projectId",
-                   fp."roleId" AS "roleId",
-                   COUNT(DISTINCT fp."folderId")::int AS "folderCount",
-                   COALESCE(SUM(COALESCE(f."totalSizeBytes", 0)), 0)::bigint AS "totalBytes",
-                   array_agg(DISTINCT fp."permType") AS "permTypes"
-            FROM "AccFolderPermission" fp
-            JOIN "AccFolder" f ON f.id = fp."folderId"
-            JOIN "AccProject" p ON p.id = f."projectId"
-            WHERE p."folderCrawlStatus" IN ('ok', 'partial')
-            GROUP BY f."projectId", fp."roleId"
-          `;
+          const summaryRows = await db.accFolderPermissionSummary.findMany({
+            select: { projectId: true, roleId: true, folderCount: true, totalBytes: true, permTypes: true },
+          });
           folderSummaryByProjectRole = new Map(
-            aggRows.map((r) => [
+            summaryRows.map((r: any) => [
               `${r.projectId}::${r.roleId}`,
               {
                 folderCount: Number(r.folderCount),
-                totalBytes: Number(r.totalBytes),
+                totalBytes: Number(r.totalBytes), // BigInt → number, mirrors the old Number(r.totalBytes)
                 permTypes: r.permTypes ?? [],
               },
             ]),
@@ -382,15 +427,27 @@ export async function getCachedAccDcBulkUsers(
       // allRoles/allModules aggregates, which assembly already computed above.
       // Done post-assembly so those aggregates see the full data first.
       if (!leanProjects) return assembled;
-      return assembled.map((u) => ({
+      // TYPE-01: narrow the lean-return variant so per-project roles/modules are
+      // typed never[] at the construction site. never[] is assignable to string[]
+      // (BulkAccProject), so callers using the full BulkAccUser type are unaffected.
+      // The shared BulkAccUser / BulkAccProject interfaces in acc-types.ts are UNCHANGED.
+      type LeanBulkAccProject = Omit<BulkAccProject, "roles" | "modules"> & {
+        roles: never[];
+        modules: never[];
+      };
+      type LeanBulkAccUser = Omit<BulkAccUser, "projects"> & {
+        projects: LeanBulkAccProject[];
+      };
+      return assembled.map((u): LeanBulkAccUser => ({
         ...u,
-        projects: u.projects.map((p) => ({
+        projects: u.projects.map((p): LeanBulkAccProject => ({
           id: p.id,
           name: p.name,
           status: p.status,
           isAdmin: p.isAdmin,
-          roles: [] as string[],
-          modules: [] as string[],
+          // lean payload — always empty; use bulkUser / hover-prefetch for per-project data
+          roles: [] as never[],
+          modules: [] as never[],
         })),
       }));
     },

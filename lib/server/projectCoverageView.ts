@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
+import { getProjectIdsWithUnifiedActivity } from "@/lib/server/unifiedActivitySource";
 
 /**
  * Per-project data-coverage signals for the shared project picker. A project is
@@ -7,7 +8,7 @@ import { db } from "@/server/db";
  * crawl — the two extraction pipelines that feed Access Analysis. The deeper
  * Slice-D file crawl (`fileCrawled`) is surfaced as an extra, stronger tier.
  *
- *  - hasActivity   — appears in AccActivity (DC activity extraction reached it)
+ *  - hasActivity   — appears in unified ACCDS + DC-backfill activity
  *  - folderCrawled — AccProject.folderCrawlStatus === "ok" (folder tree + perms read)
  *  - fileCrawled   — some folder has a populated fileCount (file-level crawl ran)
  */
@@ -25,7 +26,7 @@ export async function loadProjectCoverage(force = false): Promise<ProjectCoverag
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.rows;
 
   const [activity, projects, fileFolders] = await Promise.all([
-    db.accActivity.groupBy({ by: ["projectId"], _count: { id: true } }),
+    getProjectIdsWithUnifiedActivity(db),
     db.accProject.findMany({ select: { id: true, folderCrawlStatus: true } }),
     db.accFolder.groupBy({ by: ["projectId"], where: { fileCount: { not: null } }, _count: { id: true } }),
   ]);

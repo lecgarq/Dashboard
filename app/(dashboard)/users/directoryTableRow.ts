@@ -7,6 +7,7 @@
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type { OrgPerson } from "./useMergedAccUsers";
 import { officeCodeFor, officeLabel as officeLabelFor } from "@/app/(dashboard)/access-analysis/projectGroups";
+import { classifyAffiliation } from "./access-analysis/internalDomains";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -29,6 +30,8 @@ export interface DirectoryRow {
   photoUrl: string | null;
   jobTitle: string | null;
   department: string | null;
+  /** Cost center from the org directory — carried so Group-by can band on it. */
+  costCenter: string | null;
 
   /** First of allRoles (null when the user has no ACC roles). */
   primaryRole: string | null;
@@ -58,6 +61,15 @@ export interface DirectoryRow {
    * Users with lastActivity===null are "status unknown" — isDormant=false.
    */
   isDormant: boolean;
+
+  /**
+   * Company display name — DC firm affiliation (firmName) first, falling back
+   * to the enrichment companyName (AccProjectMember). Null when neither is set.
+   */
+  company: string | null;
+
+  /** True when the email domain is external (canonical internalDomains rule). */
+  isExternal: boolean;
 
   /** The raw BulkAccUser record, or null when no match was found in accSummaryMap. */
   accUser: BulkAccUser | null;
@@ -174,6 +186,7 @@ export function buildDirectoryRows(
       photoUrl: person.photoUrl,
       jobTitle: person.jobTitle,
       department: person.department,
+      costCenter: person.costCenter ?? null,
       primaryRole,
       extraRoleCount,
       officeCode,
@@ -181,6 +194,8 @@ export function buildDirectoryRows(
       lastActivity,
       projectCount,
       isDormant,
+      company: accUser?.firmName ?? accUser?.companyName ?? null,
+      isExternal: classifyAffiliation(person.email) === "external",
       accUser,
     };
   });

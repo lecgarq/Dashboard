@@ -31,15 +31,16 @@ export const ECHARTS_DARK: EChartsPalette = {
   axis: "#3F3F46",         // zinc-700  — split-line
   tooltipBg: "rgba(24,24,27,0.96)",   // zinc-900 96% — tooltip background
   tooltipBorder: "#3F3F46",           // zinc-700 — tooltip border
+  // LECG brand categorical (validated: lightness band, chroma floor, CVD, 3:1 on #18181B)
   chart: [
-    "#6366f1", // indigo-500
-    "#8b5cf6", // violet-500
-    "#ec4899", // pink-500
-    "#f59e0b", // amber-500
-    "#10b981", // emerald-500
-    "#06b6d4", // cyan-500
-    "#f97316", // orange-500
-    "#a78bfa", // violet-400
+    "#4E8CCB", // azul oscuro (lightened for dark)
+    "#E2683A", // naranja
+    "#0E98A8", // seaweed
+    "#BA8A0E", // goldenrod
+    "#B4679C", // wine (lightened)
+    "#849C4C", // palm
+    "#3A9DBF", // pale/state blue → sky step
+    "#E05B55", // warm red (lightened)
   ],
 };
 
@@ -51,15 +52,16 @@ export const ECHARTS_LIGHT: EChartsPalette = {
   axis: "#E5E7EB",         // gray-200  — split-line
   tooltipBg: "rgba(255,255,255,0.98)",  // white 98% — tooltip background
   tooltipBorder: "#E5E7EB",             // gray-200 — tooltip border
+  // LECG brand categorical (validated: lightness band, chroma floor, CVD, 3:1 on #FFFFFF)
   chart: [
-    "#6366f1", // indigo-500
-    "#8b5cf6", // violet-500
-    "#ec4899", // pink-500
-    "#f59e0b", // amber-500
-    "#10b981", // emerald-500
-    "#06b6d4", // cyan-500
-    "#f97316", // orange-500
-    "#a78bfa", // violet-400
+    "#2E5F95", // azul oscuro
+    "#E65A28", // naranja (brand exact)
+    "#0089A3", // seaweed
+    "#B0810A", // goldenrod (darkened for light)
+    "#7E3567", // wine
+    "#68803A", // palm
+    "#1B80B3", // pale/state blue → sky step
+    "#C42021", // warm red (brand exact)
   ],
 };
 
@@ -153,8 +155,45 @@ export function mergeEChartsTheme(option: EChartsOption, dark: boolean): ECharts
     };
   }
 
+  // -- aria: screen readers get a generated chart description --
+  // (aria.decal stays OFF — it would repaint every series with pattern fills.)
+  base.aria = { enabled: true, ...base.aria };
+
+  // -- motion clamp (DESIGN.md §7/§9: ≤200ms, ease-out, no bounces) --
+  // Charts kept shipping 550–800ms elasticOut entrances; clamping here fixes
+  // every chart at the one shared boundary instead of per-option edits.
+  clampMotion(base as unknown as Record<string, unknown>);
+  if (Array.isArray(base.series)) {
+    base.series = base.series.map((s) => {
+      const copy = { ...(s as Record<string, unknown>) };
+      clampMotion(copy);
+      return copy;
+    }) as EChartsOption["series"];
+  } else if (base.series) {
+    const copy = { ...(base.series as Record<string, unknown>) };
+    clampMotion(copy);
+    base.series = copy as EChartsOption["series"];
+  }
+
   // NOTE: series[].itemStyle and series[].data are intentionally NOT touched.
   // Data-series color palettes remain caller-owned.
 
   return base;
+}
+
+const MOTION_MS_CAP = 200;
+const BANNED_EASING = /elastic|bounce|back/i;
+
+/** Mutates a freshly-copied option/series object: caps numeric animation
+ *  durations at 200ms and swaps banned easings for cubicOut. Function-valued
+ *  durations (per-datum staggers) are left alone. */
+function clampMotion(obj: Record<string, unknown>): void {
+  for (const key of ["animationDuration", "animationDurationUpdate"]) {
+    const v = obj[key];
+    if (typeof v === "number" && v > MOTION_MS_CAP) obj[key] = MOTION_MS_CAP;
+  }
+  for (const key of ["animationEasing", "animationEasingUpdate"]) {
+    const v = obj[key];
+    if (typeof v === "string" && BANNED_EASING.test(v)) obj[key] = "cubicOut";
+  }
 }

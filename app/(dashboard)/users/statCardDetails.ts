@@ -1,9 +1,4 @@
-import type { ProjectData } from "./AccProfileSection";
-
-export interface CountSlice {
-  name: string;
-  value: number;
-}
+import type { CountSlice, ProjectData } from "./statCardTypes";
 
 /** ACC module key → friendly label. Mirrors ALL_MODULES in AccProfileSection.tsx. */
 const MODULE_LABELS: Record<string, string> = {

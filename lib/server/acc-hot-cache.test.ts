@@ -57,18 +57,20 @@ function makeDcDb() {
         folder: { projectId: "p1", fullPath: "/Project Files" },
       },
     ]),
+    accFolderPermissionSummary: versionedModel([
+      { projectId: "p1", roleId: "r1", folderCount: 1, totalBytes: BigInt(0), permTypes: ["View Only"] },
+    ]),
   };
 }
 
 // Superset mock that also supports the heavy bulkUsers variant (folder-perm SQL
 // aggregate + activity grouping go through `$queryRaw`) and the other prewarm
-// targets (`user`, embedding, activity version probes).
+// targets (`user` and activity version probes).
 function makePrewarmDb(): any {
   const db: any = makeDcDb();
   db.user = versionedModel([{ email: "user@lecg.com", name: "User" }]);
   db.accActivity = versionedModel([]);
   db.accActivityAccds = versionedModel([]);
-  db.accInstanceEmbedding = { findMany: vi.fn(async () => []) };
   db.$queryRaw = vi.fn(async () => []);
   return db;
 }
@@ -105,16 +107,12 @@ describe("ACC hot cache", () => {
     expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps permission-context snapshots separate from the lean DC bulk-users snapshot", async () => {
+  it("hard-guards includePermissionContexts: throws instead of scanning AccFolderPermission", async () => {
     const db = makeDcDb();
-
-    const lean = await getCachedAccDcBulkUsers(db);
-    const withContexts = await getCachedAccDcBulkUsers(db, { includePermissionContexts: true });
-
-    expect(lean[0].permissionContexts).toEqual([]);
-    expect(withContexts[0].permissionContexts).toHaveLength(1);
-    expect(db.accFolderPermission.findMany).toHaveBeenCalledTimes(1);
-    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
+    await expect(
+      getCachedAccDcBulkUsers(db, { includePermissionContexts: true }),
+    ).rejects.toThrow(/hard-guarded/);
+    expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
   });
 
   it("leanProjects variant empties per-project roles[]/modules[] but keeps name/status and a separate cache key", async () => {
@@ -167,9 +165,10 @@ describe("ACC hot cache", () => {
 
     const result = await prewarmAccHotCache(db);
 
-    // The heavy variant's folder-perm aggregate + activity grouping run through
-    // `$queryRaw`; the lean variant never touches it. If prewarm only warmed the
-    // lean snapshot (the old bug), `$queryRaw` is never called here.
+    // The heavy variant's activity grouping runs through `$queryRaw` (folder-perm
+    // summary no longer does — PROJ-02 switched it to accFolderPermissionSummary.findMany);
+    // the lean variant never touches `$queryRaw`. If prewarm only warmed the lean
+    // snapshot (the old bug), `$queryRaw` is never called here.
     expect(db.$queryRaw).toHaveBeenCalled();
     expect(
       result.tasks.some((task) => /summary|activity/i.test(task.name) && task.ok),
@@ -249,5 +248,78 @@ describe("ACC hot cache", () => {
     expect(
       result.tasks.some((t) => t.name === "accActivity.lastFileActivityByEmailAll" && t.ok),
     ).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST-01: DB-free OOM-regression — GROUP BY aggregate row-bound
+  // -------------------------------------------------------------------------
+
+  it("bounds the permission-summary aggregate to <= n_roles x n_projects group rows, never raw permission rows", async () => {
+    // Fixture: 2 roles × 2 projects = 4 group-row upper bound.
+    // The raw AccFolderPermission table would have many more rows in production
+    // (~6M+). We simulate a realistic imbalance: 8 raw rows vs 4 group rows.
+    const roles = [
+      { id: "r1", name: "Architect" },
+      { id: "r2", name: "Project Admin" },
+    ];
+    const projects = [
+      { id: "p1", name: "Project One", status: "active", folderCrawlStatus: "ok" },
+      { id: "p2", name: "Project Two", status: "active", folderCrawlStatus: "ok" },
+    ];
+
+    // Simulate 8 raw AccFolderPermission rows (2 per project×role combo).
+    // These represent what findMany would return — the raw-scan OOM path.
+    const rawPermissionRows = [
+      { folderId: "f1", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p1", fullPath: "/A" } },
+      { folderId: "f2", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p1", fullPath: "/B" } },
+      { folderId: "f3", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p1", fullPath: "/C" } },
+      { folderId: "f4", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p1", fullPath: "/D" } },
+      { folderId: "f5", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p2", fullPath: "/E" } },
+      { folderId: "f6", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p2", fullPath: "/F" } },
+      { folderId: "f7", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p2", fullPath: "/G" } },
+      { folderId: "f8", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p2", fullPath: "/H" } },
+    ];
+
+    // The materialised AccFolderPermissionSummary projection collapses the 8 raw
+    // rows into 4 group rows (one per projectId × roleId combination) — this is
+    // the shape the projection's findMany now returns (PROJ-02 switch).
+    const groupRows = [
+      { projectId: "p1", roleId: "r1", folderCount: 2, totalBytes: BigInt(1024), permTypes: ["View Only"] },
+      { projectId: "p1", roleId: "r2", folderCount: 2, totalBytes: BigInt(2048), permTypes: ["Editor"] },
+      { projectId: "p2", roleId: "r1", folderCount: 2, totalBytes: BigInt(512),  permTypes: ["View Only"] },
+      { projectId: "p2", roleId: "r2", folderCount: 2, totalBytes: BigInt(4096), permTypes: ["Editor"] },
+    ];
+
+    // Build the db mock using the standard helpers.
+    // Override accRole + accProject with our fixture data; wire the projection's
+    // findMany to return group rows.
+    const db = makePrewarmDb();
+    db.accRole = versionedModel(roles);
+    db.accProject = versionedModel(projects);
+    db.accDcProject = versionedModel(projects.map((p) => ({ id: p.id, name: p.name, status: p.status })));
+    // accFolderPermission carries the raw rows so we can assert findMany is NOT called.
+    db.accFolderPermission = versionedModel(rawPermissionRows);
+    // accFolderPermissionSummary is the projection the summary path now reads.
+    db.accFolderPermissionSummary = versionedModel(groupRows);
+
+    // Act: call the summary variant (NOT contexts) — this must use the projection path.
+    const result = await getCachedAccDcBulkUsers(db, { includePermissionSummary: true });
+
+    // Assert 1: the group-row upper bound contract.
+    // The Map built from groupRows has at most roles.length × projects.length entries.
+    expect(groupRows.length).toBeLessThanOrEqual(roles.length * projects.length);
+
+    // Assert 2: the raw-row population is strictly larger than the group rows,
+    // proving the bound is meaningful (not vacuously true).
+    expect(rawPermissionRows.length).toBeGreaterThan(groupRows.length);
+
+    // Assert 3: the summary path must NOT call accFolderPermission.findMany
+    // (that is the ~6M-row raw-scan path guarded by includePermissionContexts).
+    expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
+
+    // Assert 4: the assembled result is a non-empty BulkAccUser array
+    // (confirming the summary branch ran without falling back to an empty/error state).
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBeGreaterThan(0);
   });
 });

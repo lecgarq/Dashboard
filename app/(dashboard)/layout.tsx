@@ -9,6 +9,7 @@ import { HydrationBoundary } from "@tanstack/react-query";
 import { appRouter } from "@/server/routers/root";
 import { createTRPCContext } from "@/server/trpc";
 import superjson from "superjson";
+import { deserializeHydrationState } from "@/lib/server/hydrationState";
 import { ParticleZoneProvider } from "@/lib/client/particle-zones";
 import ParticleBackground from "@/components/ui/ParticleBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
@@ -30,12 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   });
 
   await Promise.allSettled([
-    helpers.families.getAll.prefetch(),
-    helpers.clash.getWikiSections.prefetch(),
-    helpers.sim.getWikiSections.prefetch(),
-    helpers.exam.getExams.prefetch(),
     helpers.kpi.getHomeDashboard.prefetch(),
-    helpers.tasks.getMyTasks.prefetch(),
     helpers.trello.getBoards.prefetch(),
   ]);
 
@@ -43,7 +39,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <SessionProvider session={session}>
       <DashboardAuthProvider>
         <ProjectProvider>
-          <HydrationBoundary state={helpers.dehydrate()}>
+          <HydrationBoundary state={deserializeHydrationState(helpers.dehydrate())}>
             <ParticleZoneProvider>
               <div className="fixed inset-0 overflow-hidden">
                 <div className="absolute inset-0 overflow-hidden">

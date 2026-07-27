@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useState } from "react";
-import { ArrowRight, KeyRound, Sparkles } from "lucide-react";
+import { ArrowRight, KeyRound } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -52,23 +52,9 @@ function ResetPasswordForm() {
   };
 
   return (
-    <AuthShell
-      eyebrow="Reset password"
-      title="Give password resets the same confidence as the rest of the app."
-      description="The recovery flow now uses the same visual language, motion, and hierarchy as sign-in and onboarding."
-      highlights={[
-        "Error states are easier to scan and recover from.",
-        "Password creation feels like part of the product, not a utility screen.",
-        "The auth stack now presents a consistent visual system end to end.",
-      ]}
-      statusLabel="Reset service active"
-    >
+    <AuthShell>
       <div className="surface-card animate-fadeIn rounded-[2rem] border px-6 py-8 sm:px-8">
         <div className="space-y-3">
-          <div className="surface-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            New credentials
-          </div>
           <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Reset password
           </h2>

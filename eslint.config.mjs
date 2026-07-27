@@ -1,14 +1,19 @@
 export default [
   {
     ignores: [
-      ".next/**",
-      ".next-dev/**",
-      ".next-e2e/**",
+      ".next*/**",
       ".next.bak-*/**",
       ".local/**",
       ".npm-cache/**",
       ".superpowers/**",
       ".cleanup-quarantine/**",
+      ".agents/**",
+      ".claude/**",
+      ".codex/**",
+      ".github/agents/**",
+      ".github/hooks/**",
+      ".github/scripts/**",
+      ".github/skills/**",
       ".tmp/**",
       "scratch/**",
       "scripts/_attic/**",

@@ -129,8 +129,8 @@ export async function extractAndPersistProjects(
   }
 
   const freshIds = new Set<string>(fresh.map((p) => p.id));
-  // Templates are seeded manually (lib/acc/templateSync.ts) and are never in the
-  // live project list, so they must be excluded from the soft-delete sweep —
+  // Templates are seeded manually (see lib/acc/template-mty.ts) and are never in
+  // the live project list, so they must be excluded from the soft-delete sweep —
   // otherwise this would deactivate the template row on every account sync.
   const staleRows = await prisma.accProject.findMany({
     where: { status: "active", type: { not: "template" }, id: { notIn: Array.from(freshIds) } },

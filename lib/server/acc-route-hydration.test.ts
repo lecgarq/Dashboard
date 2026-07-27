@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ACC_SNAPSHOT_STALE_TIME_MS,
-  prefetchAccessAnalysisRouteData,
   prefetchUsersRouteAccData,
 } from "./acc-route-hydration";
 
@@ -14,7 +13,6 @@ function makeHelpers() {
     },
     accDcGraph: {
       bulkUsers: { prefetch: vi.fn(async () => undefined) },
-      instanceEmbedding: { prefetch: vi.fn(async () => undefined) },
     },
     accMembers: {
       enrichedUsers: { prefetch: vi.fn(async () => undefined) },
@@ -52,27 +50,5 @@ describe("ACC route hydration", () => {
       undefined,
       { staleTime: 5 * 60_000 },
     );
-  });
-
-  it("prefetches the DC graph snapshot with the SAME input the client query uses (hydration-key parity)", async () => {
-    const helpers = makeHelpers();
-
-    await prefetchAccessAnalysisRouteData(helpers as never);
-
-    // The input is part of the React-Query/tRPC cache key. It MUST match the
-    // client query in AccessAnalysisShell.tsx — `{ includePermissionSummary:
-    // true, includeActivityMix: true }` — or the dehydrated cache misses and the
-    // client re-fetches the whole heavy payload over the network after mount.
-    expect(helpers.accDcGraph.bulkUsers.prefetch).toHaveBeenCalledWith(
-      { includePermissionSummary: true, includeActivityMix: true },
-      { staleTime: ACC_SNAPSHOT_STALE_TIME_MS },
-    );
-    // The embedding prefetch input (undefined) must match the client's no-input
-    // useQuery so the 2D embedding map hydrates from cache instead of refetching.
-    expect(helpers.accDcGraph.instanceEmbedding.prefetch).toHaveBeenCalledWith(undefined, {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    });
-    expect(helpers.users.bulkAccSummary.prefetch).not.toHaveBeenCalled();
-    expect(helpers.accMembers.enrichedUsers.prefetch).not.toHaveBeenCalled();
   });
 });

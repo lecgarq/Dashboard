@@ -5,7 +5,7 @@ import { trpc } from "@/lib/core/trpc";
 import { signIn } from "next-auth/react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Loader2, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -50,27 +50,21 @@ export function RegistrationForm() {
     return (
       <div className="surface-card animate-fadeIn space-y-8 rounded-[2rem] border px-6 py-8 text-center sm:px-8">
         <div className="flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-500/12 text-emerald-600">
+          <div className="flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-success/10 text-success">
             <CheckCircle2 size={42} />
           </div>
         </div>
         <div className="space-y-2">
-          <div className="surface-chip mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-emerald-700">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Account created
-          </div>
           <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Account created
           </h2>
           <p className="text-sm leading-7 text-muted-foreground">
-            Your local account is ready. Now link your social accounts for full BIM Hub access.
+            Your local account is ready. Link Google or Autodesk to sign in with them later.
           </p>
         </div>
 
         <div className="space-y-4 pt-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            Link social accounts
-          </p>
+          <p className="text-sm font-semibold text-muted-foreground">Link accounts</p>
           <div className="grid gap-4">
             <Button
               variant="outline"
@@ -111,10 +105,6 @@ export function RegistrationForm() {
   return (
     <div className="surface-card animate-fadeIn space-y-6 rounded-[2rem] border px-6 py-8 sm:px-8">
       <div className="space-y-3">
-        <div className="surface-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-          <Sparkles className="h-3.5 w-3.5" />
-          Account setup
-        </div>
         <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
           Create your account
         </h2>

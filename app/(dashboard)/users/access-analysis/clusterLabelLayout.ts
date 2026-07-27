@@ -36,9 +36,9 @@ export function liveLabelCenter(
  * for equal counts (original index order). Pure.
  */
 export function labelCandidateClusters(counts: ReadonlyArray<number>, max: number): number[] {
-  const idx = counts.map((_, i) => i);
+  const idx = counts.flatMap((count, i) => count > 0 ? [i] : []);
   idx.sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)); // V8 sort is stable → ties keep index order
-  return idx.slice(0, Math.min(counts.length, max));
+  return idx.slice(0, Math.min(idx.length, max));
 }
 
 export interface LabelCandidate {

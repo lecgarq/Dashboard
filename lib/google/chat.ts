@@ -6,9 +6,25 @@ import {
   getGoogleChatClientSecret,
   getMissingGoogleScopes,
 } from "@/lib/google/oauth";
-import { getOrgDirectoryPersonByAccountId } from "@/lib/google/directory";
+import {
+  getOrgDirectoryPersonByAccountId,
+  warmOrgDirectoryCache,
+} from "@/lib/google/directory";
 import { createLogger } from "@/lib/server/logger";
 import { db } from "@/server/db";
+
+// A single Google Chat REST call must never hang the request indefinitely.
+// Without this a stalled connection leaves the conversation spinner forever.
+const CHAT_REQUEST_TIMEOUT_MS = 12000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
+}
 
 type GoogleAccountRecord = {
   access_token: string | null;
@@ -613,6 +629,7 @@ async function getUserChatConnection(
 
 // Server-side cache for listChatSpaces to prevent redundant API hits from multiple tabs/SSE
 const spacesCache = new Map<string, { result: ChatSpacesResult; timestamp: number }>();
+const spacesInFlight = new Map<string, Promise<ChatSpacesResult>>();
 const SPACES_CACHE_TTL = 30000; // 30 seconds
 
 /**
@@ -624,6 +641,21 @@ export async function listChatSpaces(userId: string): Promise<ChatSpacesResult> 
     return cached.result;
   }
 
+  // Single-flight: collapse concurrent callers (the 5s SSE poll + the user opening
+  // the panel) onto one rebuild. Without this they each launch a ~10s, ~150-call
+  // sweep in parallel and trip Google Chat rate limits, which is what makes the
+  // list feel like it loads forever.
+  const inFlight = spacesInFlight.get(userId);
+  if (inFlight) return inFlight;
+
+  const build = buildChatSpacesResult(userId).finally(() => {
+    spacesInFlight.delete(userId);
+  });
+  spacesInFlight.set(userId, build);
+  return build;
+}
+
+async function buildChatSpacesResult(userId: string): Promise<ChatSpacesResult> {
   const connection = await getUserChatConnection(userId);
   if (connection.status !== "ok" || !connection.auth) {
     return {
@@ -641,7 +673,16 @@ export async function listChatSpaces(userId: string): Promise<ChatSpacesResult> 
   >();
 
   try {
-    const res = await chat.spaces.list({ pageSize: 50 });
+    // Warm the org directory in parallel with the spaces list so each space's
+    // member/sender profile resolves from memory instead of its own API call.
+    const [res] = await Promise.all([
+      withTimeout(
+        chat.spaces.list({ pageSize: 50 }),
+        CHAT_REQUEST_TIMEOUT_MS,
+        "Google Chat spaces list"
+      ),
+      warmOrgDirectoryCache(userId),
+    ]);
     // Use controlled concurrency for space resolution to prevent rate limiting
     const spaces: ChatSpace[] = [];
     const BATCH_SIZE = 5;
@@ -712,12 +753,22 @@ export async function listChatMessages(
   >();
 
   try {
-    const res = await chat.spaces.messages.list({
-      parent: spaceName,
-      pageSize: 50,
-      pageToken,
-      orderBy: "createTime desc",
-    });
+    // Warm the org directory in parallel with the message fetch so every sender's
+    // name/avatar resolves from the in-memory cache instead of a separate, possibly
+    // hanging, People API call per message.
+    const [res] = await Promise.all([
+      withTimeout(
+        chat.spaces.messages.list({
+          parent: spaceName,
+          pageSize: 50,
+          pageToken,
+          orderBy: "createTime desc",
+        }),
+        CHAT_REQUEST_TIMEOUT_MS,
+        "Google Chat messages list"
+      ),
+      warmOrgDirectoryCache(userId),
+    ]);
 
     const messages: ChatMessage[] = await Promise.all(
       (res.data.messages ?? []).map(async (msg: any) => {
@@ -818,11 +869,15 @@ export async function pollLatestMessage(
   const chat = google.chat({ version: "v1", auth: connection.auth });
 
   try {
-    const res = await chat.spaces.messages.list({
-      parent: spaceName,
-      pageSize: 1,
-      orderBy: "createTime desc",
-    });
+    const res = await withTimeout(
+      chat.spaces.messages.list({
+        parent: spaceName,
+        pageSize: 1,
+        orderBy: "createTime desc",
+      }),
+      CHAT_REQUEST_TIMEOUT_MS,
+      "Google Chat latest-message poll"
+    );
 
     const raw = res.data.messages?.[0];
     if (!raw) {
@@ -889,10 +944,14 @@ export async function sendChatMessage(
   const chat = google.chat({ version: "v1", auth: connection.auth });
 
   try {
-    const res = await chat.spaces.messages.create({
-      parent: spaceName,
-      requestBody: { text },
-    });
+    const res = await withTimeout(
+      chat.spaces.messages.create({
+        parent: spaceName,
+        requestBody: { text },
+      }),
+      CHAT_REQUEST_TIMEOUT_MS,
+      "Google Chat send message"
+    );
 
     const msg = res.data as any;
     return {

@@ -1,0 +1,85 @@
+import "server-only";
+import { db } from "@/server/db";
+import { reduceModules } from "@/app/(dashboard)/access-analysis/modules";
+import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
+
+/**
+ * One (project, module) grant-count row for the "Provisioned modules" panel
+ * (Overview tab, item 1, UAT-21.1-01). Bounded by n_projects x n_modules
+ * (<= ~11,530 hard ceiling: 1,153 AccProject rows x 10 modules) -- NEVER one
+ * row per member-grant.
+ */
+export interface ProvisionedModuleRow {
+  projectId: string;
+  projectName: string;
+  moduleId: string; // ModuleId from app/(dashboard)/access-analysis/modules.ts (10 modules)
+  count: number; // member-grants for this module in this project
+}
+
+let cache: { at: number; rows: ProvisionedModuleRow[] } | null = null;
+const TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Loads member-grant counts per (project, module) from `AccProjectMember.products`
+ * -- the live-API membership table (14,566 rows, full live-project coverage across
+ * all 1,153 `AccProject` rows) -- NOT `AccDcProjectUserProduct`, which is what
+ * `accessInstanceView.ts:107` actually feeds `reduceModules` from and which covers
+ * only the DC-ingested ~550/1,153 project subset (21.1-RESEARCH.md Pitfall 3).
+ *
+ * This is a `findMany` (14,566 rows) + JS reduce over a small, bounded table --
+ * NOT the OOM-guard class of regression (that guardrail targets
+ * AccActivity- and AccFolder-scale tables, millions of rows). `accessInstanceView.ts`
+ * already does the equivalent (multiple findMany calls + JS Map-based reduction)
+ * for this exact Roles/Modules domain -- this loader is precedented, not novel risk.
+ *
+ * `reduceModules` (`app/(dashboard)/access-analysis/modules.ts`) is imported here
+ * from `lib/server/` -- a lib->app import, same precedent as
+ * `accessInstanceView.ts:10`'s identical import of the same function.
+ *
+ * Live products null/malformed incidence (measured 2026-07-06, throwaway
+ * read-only script, not committed): 0 of 14,566 rows have `products` null,
+ * `{}` (empty object), or a non-object value -- 0.0% incidence, well under the
+ * 1% threshold that would warrant a coverage caption on the chart. The guard
+ * below is still applied defensively (a malformed blob undercounts, never
+ * crashes) since this is a live snapshot, not a schema guarantee.
+ */
+export async function loadProvisionedModules(force = false): Promise<ProvisionedModuleRow[]> {
+  if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.rows;
+
+  const [members, liveProjects, dcProjects] = await Promise.all([
+    db.accProjectMember.findMany({ select: { projectId: true, products: true } }),
+    db.accProject.findMany({ select: { id: true, name: true } }),
+    db.accDcProject.findMany({ select: { id: true, name: true } }),
+  ]);
+
+  const nameById = buildProjectNameMap(liveProjects, dcProjects);
+
+  // Accumulate grant counts into (projectId, moduleId) -> count so the emitted
+  // row set stays bounded by n_projects x n_modules, never one row per member.
+  const counts = new Map<string, { projectId: string; moduleId: string; count: number }>();
+
+  for (const m of members) {
+    const raw = m.products;
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) continue; // malformed -> undercount, never throw
+    const pairs = Object.entries(raw as Record<string, unknown>)
+      .filter((entry): entry is [string, string] => typeof entry[1] === "string")
+      .map(([productKey, accessLevel]) => ({ productKey, accessLevel }));
+    const { modules } = reduceModules(pairs);
+    for (const moduleId of modules) {
+      const key = `${m.projectId}\0${moduleId}`;
+      const entry = counts.get(key);
+      if (entry) entry.count += 1;
+      else counts.set(key, { projectId: m.projectId, moduleId, count: 1 });
+    }
+  }
+
+  const rows: ProvisionedModuleRow[] = [...counts.values()].map((c) => ({
+    projectId: c.projectId,
+    projectName: resolveProjectName(nameById, c.projectId),
+    moduleId: c.moduleId,
+    count: c.count,
+  }));
+
+  cache = { at: Date.now(), rows };
+  return rows;
+}

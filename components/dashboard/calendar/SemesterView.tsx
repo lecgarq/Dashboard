@@ -111,7 +111,7 @@ export function SemesterView({ date, items, optimistic, gcalEvents = [], onGCalE
                       "aspect-square flex flex-col items-center justify-center rounded-md text-[9px] font-[500] relative cursor-pointer",
                       !inMonth && "opacity-0",
                       isCurrentDay && "ring-1 ring-primary/40",
-                      dayGcal.length > 0 && "ring-1 ring-purple-400/20"
+                      dayGcal.length > 0 && "ring-1 ring-chart-5/20"
                     )}
                     title={[
                       count > 0 ? `${pending} tasks pending` : "",
@@ -142,7 +142,7 @@ export function SemesterView({ date, items, optimistic, gcalEvents = [], onGCalE
                               key={ev.id}
                               className={cn(
                                 "w-1 h-1 rounded-full",
-                                isPast ? "bg-muted-foreground/40" : "bg-purple-400"
+                                isPast ? "bg-muted-foreground/40" : "bg-chart-5"
                               )}
                             />
                           );

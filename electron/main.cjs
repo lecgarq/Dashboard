@@ -6,7 +6,9 @@ const path = require('node:path');
 
 const REPO_ROOT = path.join(__dirname, '..');
 const DASHBOARD_ORIGIN = process.env.DASHBOARD_ORIGIN || 'http://localhost:3000';
-const SYNC_CENTER_URL = `${DASHBOARD_ORIGIN}/sync-center`;
+// Landing route for the desktop shell. Was /sync-center until that page was
+// removed; /home is the dashboard entry point.
+const LANDING_URL = `${DASHBOARD_ORIGIN}/home`;
 const SMOKE = process.env.ELECTRON_SMOKE === '1' || process.argv.includes('--smoke');
 
 let nextProcess = null;
@@ -85,7 +87,7 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  void win.loadURL(SYNC_CENTER_URL);
+  void win.loadURL(LANDING_URL);
 
   if (SMOKE) {
     win.webContents.once('did-finish-load', () => {

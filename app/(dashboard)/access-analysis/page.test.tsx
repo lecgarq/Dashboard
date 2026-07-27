@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { render, fireEvent } from "@testing-library/react";
 
 vi.mock("@/lib/server/accessInstanceView", () => ({
   loadInstanceView: vi.fn(async () => ([
@@ -30,8 +30,9 @@ vi.mock("@/lib/server/activityByActorView", () => ({
 }));
 // Empty timeline -> the Activity-over-time section renders its empty state
 // (no echart), so the singular getByTestId("echart") still resolves the roles donut.
+// Shape matches the new ActivityTimelineResult { rows, dataFloor, floorByProject }.
 vi.mock("@/lib/server/activityTimelineView", () => ({
-  loadActivityTimeline: vi.fn(async () => []),
+  loadActivityTimeline: vi.fn(async () => ({ rows: [], dataFloor: null, floorByProject: {} })),
 }));
 vi.mock("@/lib/server/coordinationByProjectView", () => ({
   loadCoordinationByProject: () =>
@@ -39,6 +40,10 @@ vi.mock("@/lib/server/coordinationByProjectView", () => ({
 }));
 vi.mock("@/lib/server/projectCoverageView", () => ({
   loadProjectCoverage: () => Promise.resolve([]),
+}));
+// TRUTH-01: DC coverage loader added by plan 11-04.
+vi.mock("@/lib/server/dcCoverageView", () => ({
+  loadDcCoverage: vi.fn(async () => ({ covered: 0, total: 0 })),
 }));
 // Empty terrain project list -> the folder-permission terrain section is omitted,
 // keeping this test focused on the roles donut.
@@ -48,6 +53,15 @@ vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
   loadTerrainProjects: vi.fn(async () => []),
   loadFolderPermissionTerrain: vi.fn(async () => null),
 }));
+vi.mock("@/lib/server/ingestFreshnessView", () => ({
+  loadIngestFreshness: vi.fn(async () => null),
+}));
+// UAT-21.1-01 (21.1-04): loadProvisionedModules joined mainCharts.tsx's eager
+// Promise.all (fan-out 9 -> 10) -- mocked so this route test (which awaits the
+// real MainCharts() RSC directly) doesn't hit real Prisma/db wiring.
+vi.mock("@/lib/server/provisionedModulesView", () => ({
+  loadProvisionedModules: vi.fn(async () => []),
+}));
 // Server actions ("use server") — mocked so the route test doesn't pull auth/db wiring.
 vi.mock("./coordinationActions", () => ({
   loadProjectClashes: vi.fn(async () => []),
@@ -55,6 +69,24 @@ vi.mock("./coordinationActions", () => ({
 vi.mock("./folderTerrainActions", () => ({
   loadTerrainForProject: vi.fn(async () => null),
   loadOverviewTerrain: vi.fn(async () => null),
+}));
+vi.mock("./folderActivityActions", () => ({
+  loadFolderRankingAction: vi.fn(async () => []),
+  loadFolderDetailAction: vi.fn(async () => []),
+  loadFolderActionMatrixAction: vi.fn(async () => []),
+}));
+// 20.1-06 lazy per-tab loaders (ENG-01/PERM-01/UAT-6) — mocked so the Roles-tab
+// activation in the test below (which fires the shell's lazy-fetch effect)
+// doesn't hit real auth/db wiring.
+vi.mock("./activityRecencyActions", () => ({
+  loadActivityRecencyAction: vi.fn(async () => []),
+}));
+vi.mock("./permissionLevelActions", () => ({
+  loadPermissionLevelAction: vi.fn(async () => []),
+}));
+vi.mock("./folderActivityByCompanyActions", () => ({
+  loadFolderScopedActivityAction: vi.fn(async () => []),
+  loadCompanyFolderBreakdownAction: vi.fn(async () => []),
 }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({
@@ -83,7 +115,13 @@ import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrai
 describe("AccessAnalysisRoute (roles donut)", () => {
   it("buckets single role, Multiple roles, and Unknown, and reports the role count", async () => {
     const ui = await MainCharts();
-    const { getAllByTestId, getByText } = render(ui);
+    const { getAllByTestId, getByText, getByRole } = render(ui);
+    // 20.1-05: /access-analysis is now a 6-tab shell — the modules section lives
+    // on the default Overview tab (no click needed); the roles donut lives on
+    // the Roles tab (Radix `TabsContent` unmounts inactive tabs, so it must be
+    // activated first). Trigger activates on `onMouseDown`, not `onClick`.
+    expect(getByText(/Activity by module/)).toBeTruthy();
+    fireEvent.mouseDown(getByRole("tab", { name: /roles/i }), { button: 0 });
     // Two donuts now render an echart (roles + companies). Pick the roles donut
     // by its subtext, which names "roles" ("N roles · M user–project memberships").
     const el = getAllByTestId("echart").find((c) =>
@@ -97,8 +135,6 @@ describe("AccessAnalysisRoute (roles donut)", () => {
     expect(names).toContain("Unknown");
     // Distinct roles seen anywhere = Admin, Member = 2.
     expect(el.getAttribute("data-subtexts")).toContain("2 roles");
-    // The modules section is wired in below the roles donut.
-    expect(getByText(/Activity by module/)).toBeTruthy();
   });
 
   it("does NOT call loadFolderPermissionTerrain during initial render (terrain is lazy)", async () => {

@@ -1,19 +1,36 @@
+// NOTE (OBS-02 deliberate divergence): The roadmap attributes the "after a cache
+// refresh" warning to lib/server/acc-hot-cache.ts, but that file does not reference
+// AccDcRole. The real role-resolution boundary is loadInstanceView() in THIS file,
+// where mergeRoleNames runs. The warning fires on effective-empty (merged map size 0),
+// NOT on the by-design AccDcRole-empty state alone (which is always empty and would
+// warn every refresh). This is intentional and documented in 12-02-SUMMARY.md.
+
 import "server-only";
 import { db } from "@/server/db";
-import { reduceModules } from "@/app/(dashboard)/access-analysis/modules";
-import type { AccessInstance } from "@/app/(dashboard)/access-analysis/types";
+import { reduceModules } from "@/lib/acc/moduleCatalog";
+import type { AccessInstance } from "@/lib/acc/accessInstanceTypes";
+import { buildProjectNameMap, resolveProjectName } from "./folderActivityView";
 
 const INTERNAL_DOMAIN = "@hermosillo.com";
 
 export interface RawDc {
   projectUsers: Array<{ projectId: string; userId: string; status: string | null; addedOn: Date | null }>;
   users: Array<{ id: string; email: string | null; name: string | null }>;
+  /** AccDcProject rows (DC snapshot subset). */
   projects: Array<{ id: string; name: string }>;
   products: Array<{ projectId: string; userId: string; productKey: string; accessLevel: string }>;
   roles: Array<{ projectId: string; userId: string; roleId: string }>;
   roleNames: Array<{ id: string; name: string }>;
   companies: Array<{ projectId: string; userId: string; companyId: string }>;
   companyNames: Array<{ id: string; name: string }>;
+  /**
+   * AccProject rows (live authoritative superset) — optional so existing
+   * DC-only test fixtures keep passing unchanged. Merged over `projects` via
+   * `buildProjectNameMap` (AccProject wins on conflict), same precedence as
+   * `permissionLevelView.ts`/`folderActivityView.ts`. Omitted/empty just means
+   * "no live-superset names available", not an error.
+   */
+  liveProjects?: Array<{ id: string; name: string }>;
 }
 
 /**
@@ -35,9 +52,32 @@ export function mergeRoleNames(
   return map;
 }
 
+/**
+ * Returns true only when role-name resolution is effectively empty — i.e. BOTH the
+ * AccDcRole snapshot AND the live AccRole fallback yield zero usable role names.
+ * This is the real silent failure condition (role labels will be blank for all users).
+ *
+ * Returns false whenever either source produces at least one name, including the
+ * normal production state where AccDcRole is empty by design and AccRole carries
+ * 100% of assigned role names — that by-design AccDcRole-empty state alone is NOT
+ * a warning condition.
+ */
+export function shouldWarnEmptyRoleResolution(
+  dc: Array<{ id: string; name: string }>,
+  live: Array<{ id: string; name: string }>,
+): boolean {
+  return mergeRoleNames(dc, live).size === 0;
+}
+
 export function buildInstanceView(raw: RawDc): AccessInstance[] {
   const userById = new Map(raw.users.map((u) => [u.id, u]));
-  const projectById = new Map(raw.projects.map((p) => [p.id, p]));
+  // Merged AccProject (live superset, wins on conflict) + AccDcProject (DC subset)
+  // name map — same buildProjectNameMap/resolveProjectName precedence used by
+  // permissionLevelView.ts/folderActivityView.ts. A project id absent from BOTH
+  // sources resolves to "Unknown project", never the raw GUID (was:
+  // `projectById.get(pu.projectId)?.name ?? pu.projectId`, which leaked GUIDs into
+  // the global project picker — owner UAT gap-closure item 4).
+  const projectNameById = buildProjectNameMap(raw.liveProjects ?? [], raw.projects);
   const roleNameById = new Map(raw.roleNames.map((r) => [r.id, r.name]));
   const companyNameById = new Map(raw.companyNames.map((c) => [c.id, c.name]));
   const key = (projectId: string, userId: string) => `${projectId}::${userId}`;
@@ -67,7 +107,7 @@ export function buildInstanceView(raw: RawDc): AccessInstance[] {
     const { modules, adminModules } = reduceModules(productsByKey.get(k) ?? []);
     return {
       projectId: pu.projectId,
-      projectName: projectById.get(pu.projectId)?.name ?? pu.projectId,
+      projectName: resolveProjectName(projectNameById, pu.projectId),
       userId: pu.userId,
       email,
       name: u?.name ?? email ?? pu.userId,
@@ -88,10 +128,11 @@ const TTL_MS = 5 * 60 * 1000;
 
 export async function loadInstanceView(force = false): Promise<AccessInstance[]> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.view;
-  const [projectUsers, users, projects, products, roles, dcRoleNames, liveRoleNames, companies, companyNames] = await Promise.all([
+  const [projectUsers, users, projects, liveProjects, products, roles, dcRoleNames, liveRoleNames, companies, companyNames] = await Promise.all([
     db.accDcProjectUser.findMany({ select: { projectId: true, userId: true, status: true, addedOn: true } }),
     db.accDcUser.findMany({ select: { id: true, email: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
+    db.accProject.findMany({ select: { id: true, name: true } }),
     db.accDcProjectUserProduct.findMany({ select: { projectId: true, userId: true, productKey: true, accessLevel: true } }),
     db.accDcProjectUserRole.findMany({ select: { projectId: true, userId: true, roleId: true } }),
     db.accDcRole.findMany({ select: { id: true, name: true } }),
@@ -100,7 +141,12 @@ export async function loadInstanceView(force = false): Promise<AccessInstance[]>
     db.accDcCompany.findMany({ select: { id: true, name: true } }),
   ]);
   const roleNames = [...mergeRoleNames(dcRoleNames, liveRoleNames)].map(([id, name]) => ({ id, name }));
-  const view = buildInstanceView({ projectUsers, users, projects, products, roles, roleNames, companies, companyNames });
+  if (shouldWarnEmptyRoleResolution(dcRoleNames, liveRoleNames)) {
+    console.warn(
+      "[ACC-ROLES] Role-name resolution is empty after refresh — both the AccDcRole snapshot and the AccRole live fallback returned zero usable role names. Role labels will be blank for all users. Check that the AccRole sync has run (server/routers/users/acc-roles.ts)."
+    );
+  }
+  const view = buildInstanceView({ projectUsers, users, projects, liveProjects, products, roles, roleNames, companies, companyNames });
   cache = { at: Date.now(), view };
   return view;
 }

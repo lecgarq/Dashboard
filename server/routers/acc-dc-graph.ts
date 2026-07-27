@@ -4,9 +4,10 @@
  * Sources user/project membership data exclusively from the DC snapshot
  * tables (AccDc*) and assembles it via the pure `assembleDcUsers` function.
  *
- * Procedures:
- *   - bulkUsers: returns all AccDcUser records assembled into BulkAccUser
- *     shape, enriched with project membership, roles, products, and company.
+ * v2.7 Phase 39 (ACT-03): the instance-graph procedures (graphSnapshot,
+ * instanceEmbedding, instanceNeighbors, similarityEdges) retired with the
+ * user×project instance graph. The surviving procedures feed the /users
+ * directory and the profile panels.
  *
  * Note: roleId in AccDcProjectUserRole joins to AccRole (not AccDcRole) —
  * confirmed by live join-count query (AccRole: 13,711 matches; AccDcRole: 0).
@@ -14,10 +15,20 @@
 
 import { z } from "zod";
 import { router, adminProcedure } from "../trpc";
-import { getCachedAccDcBulkUsers } from "@/lib/server/acc-hot-cache";
-import { dedupeAndSelectClusterAware } from "@/lib/acc/embedding/similarityEdgeSet";
+import { getCachedAccDcBulkUsers, getAccDataVersion } from "@/lib/server/acc-hot-cache";
 
 export const accDcGraphRouter = router({
+  /**
+   * Opaque fingerprint of the tables behind the /users directory snapshots
+   * (~50 bytes). The client polls this on an interval and invalidates its
+   * heavy snapshot queries only when the token changes — data lands on
+   * screen without a manual reload, and unchanged data costs no refetch.
+   * `null` means the probe was unavailable; clients must treat it as no-op.
+   */
+  dataVersion: adminProcedure.query(async ({ ctx }) => {
+    return { version: await getAccDataVersion(ctx.db) };
+  }),
+
   bulkUsers: adminProcedure
     .input(z.object({
       includePermissionContexts: z.boolean().optional(),
@@ -48,44 +59,5 @@ export const accDcGraphRouter = router({
       return users.find(
         (u) => u.email.toLowerCase() === input.email.toLowerCase(),
       ) ?? null;
-    }),
-  instanceEmbedding: adminProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.db.accInstanceEmbedding.findMany({
-      select: { nodeId: true, x: true, y: true, cluster: true },
-    });
-    // Map keyed by nodeId; the client joins to its sorted nodeIds (cosmos order).
-    return rows as Array<{ nodeId: string; x: number; y: number; cluster: number | null }>;
-  }),
-  instanceNeighbors: adminProcedure
-    .input(z.object({ nodeId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const row = await ctx.db.accInstanceEmbedding.findUnique({
-        where: { nodeId: input.nodeId },
-        select: { neighbors: true },
-      });
-      return (row?.neighbors ?? []) as Array<{ nodeId: string; score: number }>;
-    }),
-  similarityEdges: adminProcedure
-    .input(
-      z
-        .object({ limit: z.number().int().positive().max(40000).optional() })
-        .optional(),
-    )
-    .query(async ({ ctx, input }) => {
-      const limit = input?.limit ?? 18000;
-      const rows = await ctx.db.accInstanceEmbedding.findMany({
-        select: { nodeId: true, neighbors: true, cluster: true },
-      });
-      const nodes = rows.map((r) => ({
-        nodeId: r.nodeId,
-        neighbors: (r.neighbors ?? []) as Array<{ nodeId: string; score: number }>,
-      }));
-      // Cluster-aware selection so cross-cluster "bridge" edges survive the cap. A
-      // plain top-N-by-score cap is 100% saturated by score-1.0 duplicate-profile
-      // twins (all intra-cluster), so the web never connects different clusters.
-      const clusterById = new Map<string, number | null>(
-        rows.map((r) => [r.nodeId, r.cluster]),
-      );
-      return dedupeAndSelectClusterAware(nodes, clusterById, limit);
     }),
 });

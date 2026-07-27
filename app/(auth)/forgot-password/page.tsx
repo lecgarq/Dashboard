@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
@@ -35,23 +35,9 @@ function ForgotPasswordForm() {
   };
 
   return (
-    <AuthShell
-      eyebrow="Account recovery"
-      title="Recover access without breaking the visual flow."
-      description="Request a reset link and return to the workspace with the same polished onboarding experience."
-      highlights={[
-        "Reset requests keep users in a calm, guided UI instead of a dead-end form.",
-        "Feedback states are clearer, which reduces duplicate recovery requests.",
-        "The auth pages now read like one product instead of isolated screens.",
-      ]}
-      statusLabel="Recovery service active"
-    >
+    <AuthShell>
       <div className="surface-card animate-fadeIn rounded-[2rem] border px-6 py-8 sm:px-8">
         <div className="space-y-3">
-          <div className="surface-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Password recovery
-          </div>
           <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Forgot password
           </h2>

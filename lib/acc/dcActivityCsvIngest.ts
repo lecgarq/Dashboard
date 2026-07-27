@@ -210,7 +210,7 @@ export async function ingestActivityCsv(
 
     buffer.push({
       autodeskId,
-      userEmail: lookupEmail ?? csvEmail ?? null,
+      userEmail: (lookupEmail ?? csvEmail)?.toLowerCase() ?? null,
       projectId,
       rawAction,
       service: moduleName, // ALWAYS set — RESEARCH Anti-Patterns point 3.

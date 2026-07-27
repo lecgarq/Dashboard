@@ -3,13 +3,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
 // ECharts renders to canvas (unhappy in jsdom) — stub it to a div.
-vi.mock("../access-analysis/components/EChart", () => ({
+vi.mock("@/components/ui/EChart", () => ({
   EChart: () => <div data-testid="echart" />,
 }));
 vi.mock("next-themes", () => ({ useTheme: () => ({ resolvedTheme: "dark" }) }));
 
 import { StatCardDetail } from "./StatCardDetail";
-import type { ProjectData } from "./AccProfileSection";
+import type { ProjectData } from "./statCardTypes";
 
 const proj = (o: Partial<ProjectData>): ProjectData => ({
   id: "x", name: "P", status: "active", isAdmin: false, roles: [], modules: [], ...o,

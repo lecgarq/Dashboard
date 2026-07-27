@@ -72,6 +72,7 @@ describe("buildGraphNodesFromUsers", () => {
             roles: ["Project Manager"],
             modules: ["docs", "cost", "build"],
             isAdmin: true,
+            status: "suspended",
           }),
         ],
       }),
@@ -83,6 +84,7 @@ describe("buildGraphNodesFromUsers", () => {
     expect(f.project).toBe("Tower A");
     expect(f.role).toBe("Project Manager");
     expect(f.isAdmin).toBe(true);
+    expect(f.projectStatus).toBe("suspended");
     expect(f.activityCountRaw).toBe(25);
     expect(f.activityBucket).toBe("Med"); // 11..100
     // module signature strips baseline modules (insight/docs), keeps the rest sorted
@@ -102,6 +104,24 @@ describe("buildGraphNodesFromUsers", () => {
     const users = [mkUser({ email: "a@x.com", projects: [mkProject({ id: "p1", roles: [] })] })];
     const { features } = buildGraphNodesFromUsers(users);
     expect(features[0].role).toBe("Unknown");
+  });
+
+  it.each([
+    [0, null, "Unknown"],
+    [1, "view", "View"],
+    [2, "download", "Download"],
+    [3, "upload", "Upload"],
+    [4, "edit", "Edit"],
+    [5, "control", "Full Control"],
+  ] as const)("maps permission strength %i to %s (%s)", (permissionStrength, expected, _label) => {
+    const users = [
+      mkUser({
+        email: "a@x.com",
+        projects: [mkProject({ id: "p1", permissionStrength })],
+      }),
+    ];
+
+    expect(buildGraphNodesFromUsers(users).features[0].permTier).toBe(expected);
   });
 
   it("emits no nodes for a user with no projects", () => {

@@ -1,9 +1,11 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
-import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { PeopleDrillList } from "@/app/(dashboard)/access-analysis/components/PeopleDrillList";
+import { tierSwatch } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import type { DrillPerson } from "@/app/(dashboard)/access-analysis/roleCounts";
 import type { EChartsOption } from "echarts";
 import type { PermissionAccessSummary } from "../permissionAccess";
 
@@ -16,8 +18,20 @@ interface Row {
   roles: Array<{ role: string; userCount: number }>;
 }
 
-export function PermissionAccessChart({ summary }: { summary: PermissionAccessSummary }) {
+export function PermissionAccessChart({
+  summary,
+  members,
+  onMemberClick,
+}: {
+  summary: PermissionAccessSummary;
+  /** Roster members — enables the click-a-bar drill into the people behind a tier. */
+  members?: ReadonlyArray<{ name: string; email: string; role: string }>;
+  /** Open a member's profile (same drawer the members table uses). */
+  onMemberClick?: (email: string) => void;
+}) {
   const { resolvedTheme } = useTheme();
+  // Click-to-drill: the tier label whose members are expanded below the chart.
+  const [drill, setDrill] = useState<string | null>(null);
   const dark = resolvedTheme !== "light";
   const cText = dark ? "#e4e4e7" : "#374151";
   const cAxis = dark ? "#3f3f46" : "#e5e7eb";
@@ -27,7 +41,7 @@ export function PermissionAccessChart({ summary }: { summary: PermissionAccessSu
     const tierRows: Row[] = summary.tiers.map((t) => ({
       label: t.label,
       value: t.userCount,
-      color: TIER_COLORS[t.rank] ?? NO_ACCESS,
+      color: tierSwatch(t.rank, dark),
       roles: t.roles,
     }));
     if (summary.noAccess.userCount > 0) {
@@ -78,6 +92,17 @@ export function PermissionAccessChart({ summary }: { summary: PermissionAccessSu
     };
   }, [rows, byLabel, cText, cAxis, cTipBg]);
 
+  // Members behind the expanded tier — roster members whose role contributes to it.
+  const drillRow = drill ? byLabel.get(drill) : undefined;
+  const drillPeople = useMemo<DrillPerson[]>(() => {
+    if (!drillRow || !members?.length) return [];
+    const roles = new Set(drillRow.roles.map((r) => r.role));
+    return members
+      .filter((m) => roles.has(m.role))
+      .map((m) => ({ name: m.name, email: m.email, count: 1 }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [drillRow, members]);
+
   if (rows.length === 0) {
     return (
       <PremiumSurface variant="inset" className="flex h-[200px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -91,9 +116,36 @@ export function PermissionAccessChart({ summary }: { summary: PermissionAccessSu
 
   return (
     <PremiumSurface variant="base" className="p-5">
-      <EChart option={option} height={Math.max(180, rows.length * 38 + 24)} notMerge={false} />
+      <EChart
+        option={option}
+        height={Math.max(180, rows.length * 38 + 24)}
+        notMerge={false}
+        onEvents={{
+          click: (p) => {
+            if (!members?.length || !p.name) return;
+            const name = p.name;
+            setDrill((cur) => (cur === name ? null : name));
+          },
+        }}
+      />
+
+      {/* Drill-down: the roster members whose role grants the clicked tier. */}
+      {drill && drillRow && (
+        <PeopleDrillList
+          testId="tier-access-drilldown"
+          title={drill}
+          color={drillRow.color}
+          people={drillPeople}
+          total={drillRow.value}
+          unitNoun="members"
+          onUserClick={onMemberClick}
+          onClose={() => setDrill(null)}
+        />
+      )}
+
       <p className="mt-2 px-1 text-xs text-muted-foreground">
         A role can grant several tiers across folders, so a member is counted under every tier their role grants.
+        {members?.length ? " Click a bar to expand the members behind it." : ""}
       </p>
     </PremiumSurface>
   );

@@ -98,9 +98,9 @@ export function TemplateAnalysisCharts({
         <StatStrip
           stats={[
             { label: "Members", value: overview.memberCount, accent: "primary" },
-            { label: "Admins", value: overview.adminCount, accent: "emerald" },
-            { label: "Roles", value: overview.distinctRoles, accent: "violet" },
-            { label: "Companies", value: overview.companyCount, accent: "amber" },
+            { label: "Admins", value: overview.adminCount, accent: "seaweed" },
+            { label: "Roles", value: overview.distinctRoles, accent: "wine" },
+            { label: "Companies", value: overview.companyCount, accent: "goldenrod" },
           ]}
         />
       </div>
@@ -118,21 +118,34 @@ export function TemplateAnalysisCharts({
       <Reveal>
         <section className="flex flex-col gap-3">
           <SectionHeader title="Role distribution" subtitle="Roles held across the template's member roster." />
-          <RolesPieChart data={overview.roleSummary.slices} distinctRoles={overview.distinctRoles} />
+          <RolesPieChart
+            data={overview.roleSummary.slices}
+            distinctRoles={overview.distinctRoles}
+            usersByRole={overview.roleSummary.usersByRole}
+            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="Folder access by tier" subtitle="Which roles — and how many of the members in them — hold each folder permission tier." />
-          <PermissionAccessChart summary={permissionAccess} />
+          <SectionHeader title="Folder access by tier" subtitle="Which roles — and how many of the members in them — hold each folder permission tier. Click a bar for the members behind it." />
+          <PermissionAccessChart
+            summary={permissionAccess}
+            members={overview.members}
+            onMemberClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="ACC module access" subtitle="Which ACC modules the template's members are provisioned for." />
-          <ModuleAccessChart summary={overview.moduleSummary} />
+          <SectionHeader title="ACC module access" subtitle="Which ACC modules the template's members are provisioned for. Click a bar for the members behind it." />
+          <ModuleAccessChart
+            summary={overview.moduleSummary}
+            members={overview.members}
+            onMemberClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section>
       </Reveal>
 
@@ -157,7 +170,7 @@ export function TemplateAnalysisCharts({
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles." />
+          <SectionHeader title="Role similarity" subtitle={`How alike the ${roleSimilarity.nodes.length} roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles.`} />
           <RoleSimilarityGraph
             graph={roleSimilarity}
             onNodeClick={(roleId) => setSelectedRoleId(roleId)}

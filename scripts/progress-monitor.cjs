@@ -32,8 +32,12 @@ const {
   DAILY_QUOTA_CAP,
   DAILY_SAFE_REQUEST_BUDGET,
 } = require(path.resolve(__dirname, "..", "lib", "acc", "dcQuota.ts"));
+const {
+  getSessionHealth,
+} = require(path.resolve(__dirname, "..", "lib", "acc", "accdsToken.ts"));
 
 const PORT = Number.parseInt(process.env.PORT || "4321", 10);
+const SESSION_PATH = process.env.ACC_SESSION_PATH || path.join(process.cwd(), "scratch", "acc-session.json");
 const DAY_MS = 86_400_000;
 const CRAWL_ELIGIBLE = ["never", "partial", "failed"];
 const CRAWL_ACTIVE_WINDOW_MS = 10 * 60_000;
@@ -593,8 +597,19 @@ async function collectCrawl() {
 }
 
 async function collectStatus() {
-  const [extraction, crawl] = await Promise.all([collectExtraction(), collectCrawl()]);
-  return { now: new Date().toISOString(), extraction, crawl };
+  const [extraction, crawl, session] = await Promise.all([
+    collectExtraction(),
+    collectCrawl(),
+    getSessionHealth(SESSION_PATH).catch(() => ({
+      state: "unknown",
+      expiresAt: null,
+      hoursRemaining: null,
+      estimate: true,
+      cookieCount: 0,
+      message: "ACCDS session health could not be read",
+    })),
+  ]);
+  return { now: new Date().toISOString(), extraction, crawl, session };
 }
 
 const PAGE = /* html */ `<!doctype html>
@@ -739,6 +754,9 @@ const PAGE = /* html */ `<!doctype html>
   .metric { margin-top: 6px; font-size: clamp(26px, 4vw, 40px); line-height: 1; font-weight: 720; letter-spacing: 0; }
   .metric small { font-size: 13px; color: var(--muted); font-weight: 500; }
   .note { color: var(--muted); font-size: 12px; margin-top: 9px; }
+  .session-health { margin: 16px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .session-health-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .session-health .note { margin-top: 0; text-align: right; }
   .row {
     display: flex;
     align-items: baseline;
@@ -1051,6 +1069,23 @@ function projectExplorer(items) {
     "No matching MTY projects."
   );
 }
+function sessionHealthLine(session) {
+  var s = session || { state: "unknown", estimate: true, hoursRemaining: null, message: "ACCDS session health unknown" };
+  var state = String(s.state || "unknown");
+  var dotClass = state === "healthy" ? "live" : state === "expiring" ? "warn" : (state === "expired" || state === "missing") ? "bad" : "";
+  var textClass = state === "healthy" ? "good" : state === "expiring" ? "warn" : (state === "expired" || state === "missing") ? "bad" : "muted";
+  var label = state === "healthy"
+    ? "healthy"
+    : state === "expiring"
+      ? "< 12h"
+      : state;
+  var hours = s.hoursRemaining == null ? "" : " - expires in " + fmt(s.hoursRemaining) + "h";
+  var estimate = s.estimate ? " (est.)" : "";
+  return '<div class="card session-health">' +
+    '<div class="session-health-main"><span class="dot ' + dotClass + '"></span><span class="' + textClass + '">ACCDS session: ' + esc(label) + esc(hours) + esc(estimate) + '</span></div>' +
+    '<div class="note">' + esc(s.message || "No session-health message") + '</div>' +
+  '</div>';
+}
 function render(data) {
   var x = data.extraction;
   var c = data.crawl;
@@ -1163,6 +1198,7 @@ function render(data) {
 
   app.innerHTML =
     (query ? '<div class="note">Filtering list rows for "' + esc(searchText) + '". Summary metrics stay unfiltered.</div>' : '') +
+    sessionHealthLine(data.session) +
     sectionBlock("snapshot", "MTY Snapshot", snapshot, fmt(x.scope.allowlistProjects) + " allowlisted projects") +
     sectionBlock("quota", "Quota And Next Extraction", quota, q.safeRemaining >= allTime.requests ? "ready" : "waiting for reset") +
     sectionBlock("crawl", "MTY Crawl Coverage", crawl, fmt(c.ok) + " ok / " + fmt((c.inaccessible || 0) + (c.failed || 0)) + " blocked") +

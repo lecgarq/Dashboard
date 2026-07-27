@@ -22,7 +22,7 @@ export type ViewMode = "grid" | "list";
 // Helpers
 // ---------------------------------------------------------------------------
 
-export function normalize(value: string) {
+function normalize(value: string) {
   return value
     .toLowerCase()
     .normalize("NFD")

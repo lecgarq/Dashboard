@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
-import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { tierSwatch } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { EChartsOption } from "echarts";
 import type { RoleTreeNode } from "@/lib/server/templateRoleTree";
 
@@ -48,9 +48,9 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
     () =>
       nodes.map((n) => {
         const maxRank = Math.max(1, ...n.tiers.map((t) => t.rank));
-        return { roleId: n.roleId, name: n.roleName, value: n.folderCount, maxRank, color: TIER_COLORS[maxRank], node: n };
+        return { roleId: n.roleId, name: n.roleName, value: n.folderCount, maxRank, color: tierSwatch(maxRank, dark), node: n };
       }),
-    [nodes],
+    [nodes, dark],
   );
   const total = slices.reduce((s, x) => s + x.value, 0);
   const byName = useMemo(() => new Map(slices.map((s) => [s.name, s])), [slices]);
@@ -190,13 +190,13 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
           </div>
           <div className="flex h-3 overflow-hidden rounded-full border border-border">
             {selected.node.tiers.map((t) => (
-              <span key={t.rank} title={`${t.label}: ${t.folders.length}`} style={{ width: `${(t.folders.length / Math.max(1, selected.value)) * 100}%`, background: TIER_COLORS[t.rank] }} />
+              <span key={t.rank} title={`${t.label}: ${t.folders.length}`} style={{ width: `${(t.folders.length / Math.max(1, selected.value)) * 100}%`, background: tierSwatch(t.rank, dark) }} />
             ))}
           </div>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {selected.node.tiers.map((t) => (
               <span key={t.rank} className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-sm" style={{ background: TIER_COLORS[t.rank] }} />
+                <span className="inline-block h-2 w-2 rounded-sm" style={{ background: tierSwatch(t.rank, dark) }} />
                 {t.label}: <span className="tabular-nums text-foreground">{t.folders.length}</span>
               </span>
             ))}

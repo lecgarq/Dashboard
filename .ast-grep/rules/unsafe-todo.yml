@@ -1,0 +1,8 @@
+id: unsafe-todo
+language: TypeScript
+message: TODO/FIXME/HACK comments in TypeScript should include owner or issue context before becoming durable debt.
+severity: info
+rule:
+  all:
+    - kind: comment
+    - regex: "\\b(TODO|FIXME|HACK)\\b"

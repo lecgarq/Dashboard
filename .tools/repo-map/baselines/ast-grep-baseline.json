@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-06-17T00:00:00.000Z",
+  "policy": {
+    "blockingRules": [
+      "direct-prisma-in-ui"
+    ],
+    "notes": "Existing ast-grep findings are known debt. New findings in blocking rules fail repo-map:check; warnings/info/hints remain report-only."
+  },
+  "ruleCounts": [
+    {
+      "id": "large-use-effect",
+      "count": 143
+    },
+    {
+      "id": "no-console-log",
+      "count": 121
+    },
+    {
+      "id": "unsafe-todo",
+      "count": 5
+    },
+    {
+      "id": "direct-prisma-in-ui",
+      "count": 1
+    }
+  ],
+  "ruleFiles": [
+    {
+      "id": "direct-prisma-in-ui",
+      "files": [
+        "app/(dashboard)/access-analysis/coordinationActions.ts"
+      ]
+    }
+  ]
+}

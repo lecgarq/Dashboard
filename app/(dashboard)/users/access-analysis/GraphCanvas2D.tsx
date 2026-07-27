@@ -37,6 +37,22 @@ const NOOP_HANDLERS: GraphEventHandlers = {
   onPointHoverEnd: () => {},
 };
 
+/** Link index lookup used to keep magnetic-hover link emphasis in sync with points. */
+export function indexLinksByPoint(links: Float32Array): Map<number, number[]> {
+  const indexed = new Map<number, number[]>();
+  for (let linkIndex = 0; linkIndex < links.length / 2; linkIndex++) {
+    const source = links[linkIndex * 2];
+    const target = links[linkIndex * 2 + 1];
+    const sourceLinks = indexed.get(source);
+    if (sourceLinks) sourceLinks.push(linkIndex);
+    else indexed.set(source, [linkIndex]);
+    const targetLinks = indexed.get(target);
+    if (targetLinks) targetLinks.push(linkIndex);
+    else indexed.set(target, [linkIndex]);
+  }
+  return indexed;
+}
+
 // ---------------------------------------------------------------------------
 // Public handle — exposed to GraphCanvas.tsx via onHandleReady
 // ---------------------------------------------------------------------------
@@ -95,6 +111,8 @@ export interface GraphCanvas2DHandle {
   setLinks(links: Float32Array): void;
   /** Replace per-link RGBA colors (0–1). Length must equal (links.length/2)*4. */
   setLinkColors(rgba: Float32Array): void;
+  /** Atomically replace native similarity links, colors, and widths with one render. */
+  setSimilarityLinks(links: Float32Array, rgba: Float32Array, widths: Float32Array): void;
   /** Test/diagnostic: effective cosmos link-render config + number of links set. */
   getRenderState(): { renderLinks: boolean; linkCount: number };
   /**
@@ -106,6 +124,12 @@ export interface GraphCanvas2DHandle {
   getPointPositions?(): number[];
   /** Test/diagnostic: cosmos's current zoom level (camera scale). */
   getZoomLevel?(): number;
+  /** Capture the exact 2D camera center + zoom for a reversible focus session. */
+  captureView?(): GraphCanvas2DView;
+  /** Center the camera on one point without reheating the frozen simulation. */
+  focusPoint?(index: number, durationMs: number): void;
+  /** Restore a previously captured 2D camera view without simulation. */
+  restoreView?(view: GraphCanvas2DView, durationMs: number): void;
   /**
    * LOD: atomically switch the rendered point SET to a new count — positions (stride-2),
    * colors (RGBA, len = count*4), and optional sizes (len = count). Keeps the camera
@@ -115,6 +139,13 @@ export interface GraphCanvas2DHandle {
   setPointSet?(positions2: Float32Array, colors: Float32Array, sizes?: Float32Array): void;
   /** LOD: position-only update for the CURRENT set (any count), with the no-op skip. */
   pushPointSet?(positions2: Float32Array): void;
+  /**
+   * PERF-07: GPU-animated morph of the CURRENT set to new positions. One CPU
+   * upload; cosmos v3's built-in position transition (source→target FBOs +
+   * interpolatePosition shader, easing from config.transitionEasing) animates
+   * every frame GPU-side — no per-frame CPU writes. durationMs 0 snaps.
+   */
+  morphPointSet?(positions2: Float32Array, durationMs: number): void;
   /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
@@ -132,8 +163,15 @@ export interface GraphCanvas2DHandle {
   spaceToScreen(spaceXY: [number, number]): [number, number];
   /** Highlight selected nodes via outlines and isolated node via focus ring. */
   setSelectedIndices?(indices: number[]): void;
-  /** Focus a point with a blue ring when hovered. */
+  /** Focus a point with a blue ring when hovered; also dims (greys) the rest. */
   setHoveredIndex?(index: number | null): void;
+  /** Re-sync the WebGL drawing buffer to the container size (heals rectangle clip). */
+  resize?(): void;
+}
+
+export interface GraphCanvas2DView {
+  center: [number, number];
+  zoom: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -153,6 +191,18 @@ export interface GraphCanvas2DProps {
   links?: Float32Array;
   /** Per-link RGBA (0–1) buffer, length = links.length/2*4. */
   linkColors?: Float32Array;
+  /**
+   * Render links as curved arcs instead of straight segments (construct-time
+   * cosmos config — cannot change after init). Default false: the spatial-graph
+   * surfaces keep their straight links.
+   */
+  curvedLinks?: boolean;
+  /**
+   * Gradient each link from its source point's color to its target point's
+   * color (cosmos derives both from setPointColors, so recolors and point-set
+   * swaps restyle links automatically). Construct-time. Default false.
+   */
+  linkGradient?: boolean;
   /** Theme-driven canvas background color (e.g. '#09090B' for dark zinc). */
   backgroundColor: string;
   /** When true, run cosmos.gl's GPU force simulation (cluster-anchor layout) instead of frozen mode. */
@@ -252,32 +302,82 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // positions pins the page at ~5fps forever. Skipping no-op uploads recovers
     // to full fps once the blobs stop moving.
     let prevUploaded: Float32Array | null = null;
+    // Container-resize heal: cosmos/luma can leave the drawing buffer at a stale
+    // size (rail open/close, pane/window resize, or a degraded framebuffer after
+    // a fast zoom) → the cloud renders clipped to a rectangle. A ResizeObserver
+    // re-materializes the backing buffer on every size change; the handle also
+    // exposes resize() so the caller can heal after a zoom settles.
+    let resizeObserver: ResizeObserver | null = null;
+    let healRaf = 0;
+    let removeMiddlePanGuards: (() => void) | null = null;
+    let currentLinks = props.links ?? new Float32Array(0);
+    let linksByPoint = indexLinksByPoint(currentLinks);
+    let selectedLinkIndices: number[] | undefined;
+
+    const linksForSelection = (indices: number[]): number[] | undefined => {
+      if (indices.length === 0) return undefined;
+      if (indices.length === 1) return linksByPoint.get(indices[0]) ?? [];
+      const selected = new Set(indices);
+      const highlighted: number[] = [];
+      for (let linkIndex = 0; linkIndex < currentLinks.length / 2; linkIndex++) {
+        if (
+          selected.has(currentLinks[linkIndex * 2]) &&
+          selected.has(currentLinks[linkIndex * 2 + 1])
+        ) {
+          highlighted.push(linkIndex);
+        }
+      }
+      return highlighted;
+    };
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
     void (async () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
       // CRITICAL config flags (Pattern 1 from RESEARCH):
       // - enableSimulation: false  → frozen mode; cosmos.gl never drives physics
       // - transitionDuration: 0   → no GPU tweens; rAF drives all animation (REND-05)
-      // - renderLinks: true        → draws same-user footprint edges (WS2; link colors precomputed)
+      // - renderLinks: true        → draws same-user or native similarity links
       // - pointGreyoutOpacity: 0.15 → matches DIM_ALPHA from CosmosCanvasClient.ts
       g = new Graph(div, {
         enableSimulation: props.gpuSimulation === true,
         transitionDuration: 0,
+        // PERF-07 morph seam: the config default stays 0 (every existing call
+        // path still snaps); morphPointSet alone passes a per-call duration via
+        // render(undefined, durationMs). Easing applies only to those cycles.
+        transitionEasing: "quad-in-out",
         ...(props.gpuSimulation
           ? mapDominantForceConfig(
               Math.max(0, ...Object.values(props.physics.getSliders())),
             )
           : {}),
         renderLinks: true,
-        linkWidth: 0.5,
+        linkWidth: props.curvedLinks ? 1 : 0.7,
+        curvedLinks: props.curvedLinks === true,
+        // Slightly flatter arc than cosmos's 0.5 default — reads as a gentle
+        // Gephi-style bow, not a balloon loop, at same-author link lengths.
+        curvedLinkControlPointDistance: 0.25,
+        linkColorInterpolateFromEndpoints: props.linkGradient === true,
+        linkOpacity: 0.42,
+        linkGreyoutOpacity: 0.15,
+        // Default [50,150]px fades any link longer than 150px to ~7% alpha —
+        // at the far-zoom sample almost every same-author link is longer, so
+        // the whole layer reads as absent and never appears to ride the nodes.
+        linkVisibilityDistanceRange: [80, 1200],
+        linkVisibilityMinTransparency: 0.35,
+        pointOpacity: 0.94,
+        pointSizeScale: 1.15,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
-        fitViewOnInit: true,
+        // Frozen sources own their init framing below (deferred exact-buffer
+        // fit): cosmos's fitViewOnInit tween reads a possibly-stale GPU bbox
+        // and, firing at 250ms with a ~250ms tween, lands AFTER and stomps any
+        // corrective fit — the cloud then sits as an off-center speck.
+        fitViewOnInit: !props.physics.frozen,
         fitViewDelay: 250,
         fitViewPadding: 0.1,
-        pixelRatio: window.devicePixelRatio,
+        pixelRatio,
         renderHoveredPointRing: true,
         hoveredPointRingColor: "#3b82f6",
         // -- Phase 4-01 event wiring (ref-indirect — Pitfall 5) --------------
@@ -325,6 +425,91 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Store in stable ref for reactive effects
       graphRef.current = g;
 
+      // Middle-mouse (wheel-click) drag panning — BIM-tool muscle memory
+      // (Revit/Navisworks pan on the middle button). cosmos's d3-zoom ships
+      // d3's default filter, `(!ctrlKey || wheel) && !event.button`, which only
+      // lets button 0 pan. We widen it to accept button 1 too; wheel-zoom and
+      // left-drag pan are unchanged. Reaches the private zoom behavior through a
+      // cast and no-ops if the internal shape ever drifts (left-drag still pans).
+      try {
+        const zoomBehavior = (
+          g as unknown as {
+            zoomInstance?: { behavior?: { filter: (fn: (event: MouseEvent) => boolean) => unknown } };
+          }
+        ).zoomInstance?.behavior;
+        zoomBehavior?.filter((event: MouseEvent) => {
+          if (event.type === "wheel") return !event.ctrlKey;
+          // Left (0) OR middle (1); right-button is left to cosmos's repulsion.
+          return !event.ctrlKey && (event.button === 0 || event.button === 1);
+        });
+      } catch {
+        // Internal API drift — leave the default left-drag pan in place.
+      }
+
+      // The browser fires its middle-click autoscroll on the native `mousedown`
+      // default; d3-zoom starts the pan but never preventDefaults it, so without
+      // this the page shows the autoscroll "pan the whole page" cursor. CAPTURE
+      // phase is mandatory: d3-zoom's mousedowned() calls stopImmediatePropagation
+      // on the canvas, so a bubble listener on this parent div never runs. Capture
+      // runs parent-first, before cosmos's handlers; preventDefault sticks and we
+      // don't stop propagation, so cosmos still drives the graph pan.
+      const onMiddleDown = (event: MouseEvent): void => {
+        if (event.button === 1) event.preventDefault();
+      };
+      const onMiddleAux = (event: MouseEvent): void => {
+        if (event.button === 1) event.preventDefault();
+      };
+      // NOTE: no pointerdown guard — preventDefault on pointerdown suppresses
+      // the compatibility mousedown, which would kill the d3-zoom pan itself.
+      div.addEventListener("mousedown", onMiddleDown, true);
+      div.addEventListener("auxclick", onMiddleAux, true);
+      removeMiddlePanGuards = () => {
+        div.removeEventListener("mousedown", onMiddleDown, true);
+        div.removeEventListener("auxclick", onMiddleAux, true);
+      };
+
+      // Luma's canvas ResizeObserver can miss the first non-zero size when this
+      // absolute slot settles during hydration. Sync the drawing buffer once at
+      // readiness; the observer continues to own subsequent responsive resizes.
+      // Sync cosmos's WebGL drawing buffer to the container's current CSS size.
+      // Luma applies resize() lazily, so we also materialize the backing
+      // framebuffer (else the browser default 300×150 surface stays bound and
+      // renders transparent / clipped) and force one authoritative resizeCanvas.
+      // Reused at init, on every ResizeObserver tick, and via the handle.
+      const healCanvas = (): void => {
+        if (!g || cancelled) return;
+        const cc = (
+          g as unknown as {
+            device?: {
+              canvasContext?: {
+                resize?: (size: { width: number; height: number }) => void;
+                getCurrentFramebuffer?: () => unknown;
+              };
+            };
+          }
+        ).device?.canvasContext;
+        cc?.resize?.({
+          width: Math.max(1, Math.round(div.clientWidth * pixelRatio)),
+          height: Math.max(1, Math.round(div.clientHeight * pixelRatio)),
+        });
+        cc?.getCurrentFramebuffer?.();
+        (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+        g.render();
+      };
+      healCanvas();
+
+      // Re-heal on any container size change (detail rail open/close, pane or
+      // window resize) — coalesced to one rAF so a burst of resize callbacks
+      // costs a single re-materialize.
+      resizeObserver = new ResizeObserver(() => {
+        if (healRaf) return;
+        healRaf = requestAnimationFrame(() => {
+          healRaf = 0;
+          healCanvas();
+        });
+      });
+      resizeObserver.observe(div);
+
       // Initial data load -------------------------------------------------------
 
       // Get initial positions (stride-3) and allocate the persistent stride-2 buffer.
@@ -360,6 +545,108 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         }
       }
       g.render();
+      // The first Cosmos rAF can retain its pre-resize transparent target even
+      // after Luma materializes the correct framebuffer. Draw the initialized
+      // point/link state once synchronously; Cosmos owns continuous frames after.
+      (g as unknown as { renderFrame?: (timestamp?: number) => void }).renderFrame?.(
+        performance.now(),
+      );
+
+      // Deterministic init framing (frozen sources only): fitViewOnInit races
+      // the async first position upload — on slow inits it frames a stale bbox
+      // and the cloud lands as an off-center speck. Positions on a frozen
+      // source never move on their own, so after cosmos's own 250ms attempt
+      // has passed, re-frame the EXACT uploaded buffer.
+      // fitViewByPointPositions only sets the camera transform (no rescale).
+      if (props.physics.frozen) {
+        // Deterministic init framing for frozen sources. The fitView* family
+        // maps positions through store.scaleX/scaleY, which on this path are
+        // rebuilt from a RACING first rescale and end up garbage (measured:
+        // world ±350 → [-2008,-1308]) — so every cosmos fit frames a speck.
+        // spaceToScreenPosition IS render-consistent (hover/lasso rely on it),
+        // so frame empirically: probe the rendered screen bbox and correct the
+        // d3 camera via scaleBy/translateBy until the cloud fills the view.
+        const fitFrozenView = (): void => {
+          const gAny = g as unknown as {
+            getPointPositions?: () => number[];
+            spaceToScreenPosition?: (xy: [number, number]) => [number, number];
+            zoomInstance?: {
+              eventTransform?: { k: number };
+              behavior?: {
+                scaleBy: (sel: unknown, k: number, p: [number, number]) => void;
+                translateBy: (sel: unknown, x: number, y: number) => void;
+              };
+            };
+            canvasD3Selection?: unknown;
+            render: () => void;
+          };
+          const pts = gAny.getPointPositions?.();
+          const behavior = gAny.zoomInstance?.behavior;
+          const sel = gAny.canvasD3Selection;
+          if (!pts || pts.length < 4 || !behavior || !sel || !gAny.spaceToScreenPosition) return;
+          const toScreen = (p: [number, number]): [number, number] =>
+            gAny.spaceToScreenPosition!(p);
+          const W = div.clientWidth;
+          const H = div.clientHeight;
+          if (W < 2 || H < 2) return;
+          // Space-bbox center probe point (space coords are what toScreen maps).
+          let sMinX = Infinity, sMaxX = -Infinity, sMinY = Infinity, sMaxY = -Infinity;
+          const stride = Math.max(2, Math.floor(pts.length / 2 / 2000) * 2);
+          for (let i = 0; i + 1 < pts.length; i += stride) {
+            const px = pts[i], py = pts[i + 1];
+            if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+            if (px < sMinX) sMinX = px; if (px > sMaxX) sMaxX = px;
+            if (py < sMinY) sMinY = py; if (py > sMaxY) sMaxY = py;
+          }
+          if (!Number.isFinite(sMinX) || !Number.isFinite(sMinY)) return;
+          const spaceCenter: [number, number] = [(sMinX + sMaxX) / 2, (sMinY + sMaxY) / 2];
+          const corners: [number, number][] = [
+            [sMinX, sMinY], [sMinX, sMaxY], [sMaxX, sMinY], [sMaxX, sMaxY],
+          ];
+          // The translate axes' sign conventions are probed, not assumed.
+          let signX = 1;
+          let signY = 1;
+          for (let iter = 0; iter < 4; iter++) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            for (const c of corners) {
+              const [sx, sy] = toScreen(c);
+              if (!Number.isFinite(sx) || !Number.isFinite(sy)) return;
+              if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
+              if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
+            }
+            const bw = Math.max(1, maxX - minX);
+            const bh = Math.max(1, maxY - minY);
+            const bc: [number, number] = [(minX + maxX) / 2, (minY + maxY) / 2];
+            const s = Math.min((W * 0.86) / bw, (H * 0.86) / bh);
+            const centered =
+              Math.abs(bc[0] - W / 2) < 4 && Math.abs(bc[1] - H / 2) < 4;
+            if (Math.abs(s - 1) < 0.02 && centered) break;
+            behavior.scaleBy(sel, s, bc);
+            const k = gAny.zoomInstance?.eventTransform?.k ?? 1;
+            const before = toScreen(spaceCenter);
+            behavior.translateBy(
+              sel,
+              (signX * (W / 2 - before[0])) / k,
+              (signY * (H / 2 - before[1])) / k,
+            );
+            const after = toScreen(spaceCenter);
+            // If a translate axis moved the cloud AWAY from center, its sign
+            // convention is inverted — learn it for the next iteration.
+            if (Math.abs(after[0] - W / 2) > Math.abs(before[0] - W / 2) + 1) signX = -signX;
+            if (Math.abs(after[1] - H / 2) > Math.abs(before[1] - H / 2) + 1) signY = -signY;
+          }
+          gAny.render();
+        };
+        window.setTimeout(() => {
+          if (cancelled || !g) return;
+          // Slow first loads (cold payload) can leave luma's canvas backing in
+          // a degraded state that renders at a fraction of normal fps until a
+          // real resize lands (measured: 1–20fps cold vs ~66fps after resize).
+          // Force one authoritative resize before framing.
+          (g as unknown as { resizeCanvas?: (force?: boolean) => void }).resizeCanvas?.(true);
+          fitFrozenView();
+        }, 450);
+      }
 
       // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs) -----------------
       // The shell computes, from the highest slider: per-node clusterIds + a
@@ -604,6 +891,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setLinks(links: Float32Array): void {
           (g as unknown as { setLinks: (l: Float32Array) => void })!.setLinks(links);
+          currentLinks = links;
+          linksByPoint = indexLinksByPoint(links);
+          selectedLinkIndices = linksForSelection(selectedIndicesRef.current);
+          g!.setConfigPartial({ highlightedLinkIndices: selectedLinkIndices });
           linkCountRef.current = links.length / 2;
           g!.render();
         },
@@ -619,6 +910,39 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           }
           (g as unknown as { setLinkColors: (c: Float32Array) => void })!.setLinkColors(rgba);
           g!.render();
+        },
+
+        setSimilarityLinks(links: Float32Array, rgba: Float32Array, widths: Float32Array): void {
+          if (process.env.NODE_ENV !== "production") {
+            const linkCount = links.length / 2;
+            if (
+              links.length % 2 !== 0 ||
+              rgba.length !== linkCount * 4 ||
+              widths.length !== linkCount
+            ) {
+              throw new Error("GraphCanvas2D.setSimilarityLinks: links/colors/widths length mismatch");
+            }
+            for (let i = 0; i < rgba.length; i++) {
+              const value = rgba[i];
+              if (!Number.isFinite(value) || value < 0 || value > 1) {
+                throw new Error(`GraphCanvas2D.setSimilarityLinks: color out of [0,1]: ${value}`);
+              }
+            }
+          }
+          g!.setLinks(links);
+          g!.setLinkColors(rgba);
+          g!.setLinkWidths(widths);
+          currentLinks = links;
+          linksByPoint = indexLinksByPoint(links);
+          selectedLinkIndices = linksForSelection(selectedIndicesRef.current);
+          g!.setConfigPartial({ highlightedLinkIndices: selectedLinkIndices });
+          linkCountRef.current = links.length / 2;
+          g!.render();
+          // Keep native-link updates visually atomic with their buffers. Cosmos's
+          // scheduled frame can retain the prior target after a Luma resize.
+          (g as unknown as { renderFrame?: (timestamp?: number) => void }).renderFrame?.(
+            performance.now(),
+          );
         },
 
         getRenderState(): { renderLinks: boolean; linkCount: number } {
@@ -638,6 +962,52 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         getZoomLevel(): number {
           return (g as unknown as { getZoomLevel?: () => number }).getZoomLevel?.() ?? NaN;
+        },
+
+        captureView(): GraphCanvas2DView {
+          const center = (
+            g as unknown as {
+              screenToSpacePosition: (xy: [number, number]) => [number, number];
+            }
+          ).screenToSpacePosition([div.clientWidth / 2, div.clientHeight / 2]);
+          return {
+            center,
+            zoom: (g as unknown as { getZoomLevel: () => number }).getZoomLevel(),
+          };
+        },
+
+        focusPoint(index: number, durationMs: number): void {
+          (
+            g as unknown as {
+              zoomToPointByIndex: (
+                index: number,
+                duration: number,
+                scale: number,
+                canZoomOut: boolean,
+                enableSimulation: boolean,
+              ) => void;
+            }
+          ).zoomToPointByIndex(index, durationMs, 2.25, false, false);
+        },
+
+        restoreView(view: GraphCanvas2DView, durationMs: number): void {
+          (
+            g as unknown as {
+              setZoomTransformByPointPositions: (
+                positions: Float32Array,
+                duration: number,
+                scale: number,
+                padding: number,
+                enableSimulation: boolean,
+              ) => void;
+            }
+          ).setZoomTransformByPointPositions(
+            new Float32Array(view.center),
+            durationMs,
+            view.zoom,
+            0,
+            false,
+          );
         },
 
         // LOD — atomic point-SET switch (different count). Keep the camera (dontRescale=
@@ -671,6 +1041,18 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           prevUploaded.set(positions2);
           g!.setPointPositions(positions2, true);
           g!.render();
+        },
+
+        // PERF-07 — GPU-animated morph for the CURRENT set. setPointPositions
+        // queues the Positions transition property; render's second arg
+        // overrides the transition duration for THIS cycle only (public seam,
+        // index.d.ts:375), so cosmos interpolates source→target GPU-side.
+        // prevUploaded resets so the next ambient push isn't no-op-skipped
+        // against pre-morph coordinates.
+        morphPointSet(positions2: Float32Array, durationMs: number): void {
+          g!.setPointPositions(positions2, true);
+          g!.render(undefined, durationMs);
+          prevUploaded = null;
         },
 
         // ---- Phase 4-01 Task 2 primitives ---------------------------------
@@ -718,19 +1100,45 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setSelectedIndices(indices: number[]): void {
           selectedIndicesRef.current = indices;
+          selectedLinkIndices = linksForSelection(indices);
           g!.setConfigPartial({
             outlinedPointIndices: indices.length > 0 ? indices : undefined,
             focusedPointIndex: indices.length === 1 ? indices[0] : undefined,
+            // Dim the rest: cosmos greys every point NOT in highlightedPointIndices
+            // (pointGreyoutOpacity 0.15), so a lasso selection now fades non-members
+            // — the "dim others" affordance the retired user-graph lasso gave.
+            // Empty selection → undefined clears the greyout.
+            highlightedPointIndices: indices.length > 0 ? indices : undefined,
+            highlightedLinkIndices: selectedLinkIndices,
           });
           g!.render();
         },
 
+        resize(): void {
+          healCanvas();
+        },
+
         setHoveredIndex(index: number | null): void {
-          const activeFocus = index !== null 
-            ? index 
+          const activeFocus = index !== null
+            ? index
             : (selectedIndicesRef.current.length === 1 ? selectedIndicesRef.current[0] : undefined);
           g!.setConfigPartial({
             focusedPointIndex: activeFocus,
+            // Highlighting the hovered node greys the rest (pointGreyoutOpacity) —
+            // this is the dim-others affordance cosmos's native hover used to give,
+            // lost when the magnetic pass NOOPed onPointMouseOver. On hover-end,
+            // fall back to any active lasso selection so leaving a hover restores
+            // the selection dim instead of wiping it; undefined only when neither.
+            highlightedPointIndices:
+              index !== null
+                ? [index]
+                : selectedIndicesRef.current.length > 0
+                  ? selectedIndicesRef.current
+                  : undefined,
+            highlightedLinkIndices:
+              index !== null
+                ? linksByPoint.get(index) ?? []
+                : selectedLinkIndices,
           });
           g!.render();
         },
@@ -740,6 +1148,9 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // Cleanup: cancel in-flight init, destroy cosmos.gl graph on unmount
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
+      removeMiddlePanGuards?.();
+      if (healRaf) cancelAnimationFrame(healRaf);
       g?.destroy?.();
       graphRef.current = null;
       xy2Ref.current = null;
