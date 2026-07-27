@@ -4,7 +4,7 @@ import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { PeopleDrillList } from "@/app/(dashboard)/access-analysis/components/PeopleDrillList";
-import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { tierSwatch } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { DrillPerson } from "@/app/(dashboard)/access-analysis/roleCounts";
 import type { EChartsOption } from "echarts";
 import type { PermissionAccessSummary } from "../permissionAccess";
@@ -41,7 +41,7 @@ export function PermissionAccessChart({
     const tierRows: Row[] = summary.tiers.map((t) => ({
       label: t.label,
       value: t.userCount,
-      color: TIER_COLORS[t.rank] ?? NO_ACCESS,
+      color: tierSwatch(t.rank, dark),
       roles: t.roles,
     }));
     if (summary.noAccess.userCount > 0) {

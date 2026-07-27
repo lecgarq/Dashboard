@@ -6,7 +6,7 @@ import {
   forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide,
   type Simulation, type SimulationNodeDatum, type SimulationLinkDatum,
 } from "d3-force";
-import { TIER_COLORS, TIER_LEGEND } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { tierSwatch, TIER_LEGEND } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { RoleSimilarityGraph as GraphData, SimNode } from "../roleSimilarity";
 
 interface PNode extends SimNode, SimulationNodeDatum {
@@ -276,7 +276,7 @@ export function RoleSimilarityGraph({
 
   if (graph.nodes.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         No roles to compare for this template.
       </div>
     );
@@ -296,6 +296,30 @@ export function RoleSimilarityGraph({
     : [];
   const hoveredClusterSize = hovered ? clusters[clusterOf.get(hovered.roleId) ?? -1]?.length ?? 0 : 0;
 
+  /** Top-N most-similar roles for one node, shared by the hover tooltip's data
+   *  shape and the screen-reader text alternative below. */
+  const topSimilar = (roleId: string, n: number) =>
+    [...(neighbors.get(roleId) ?? new Set<string>())]
+      .map((id) => ({ name: byId.get(id)?.roleName ?? id, w: pairWeight(roleId, id) }))
+      .sort((a, b) => b.w - a.w)
+      .slice(0, n);
+
+  /** Accessible name for one node — everything the sighted reader gets from
+   *  size, colour, position and hover, said in words. */
+  const nodeLabel = (n: PNode) => {
+    const clusterSize = clusters[clusterOf.get(n.roleId) ?? -1]?.length ?? 0;
+    const similar = topSimilar(n.roleId, 3);
+    const parts = [
+      `${n.roleName}: ${n.folderCount} folders`,
+      `highest tier ${TIER_LEGEND.find((t) => t.rank === n.maxRank)?.label ?? `rank ${n.maxRank}`}`,
+    ];
+    if (similar.length > 0) {
+      parts.push(`most similar ${similar.map((s) => `${s.name} ${Math.round(s.w * 100)}%`).join(", ")}`);
+    }
+    if (clusterSize >= 2) parts.push(`in a cluster of ${clusterSize} near-interchangeable roles`);
+    return parts.join(". ");
+  };
+
   return (
     <div className="panel-elevated p-5">
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
@@ -312,7 +336,7 @@ export function RoleSimilarityGraph({
         <div className="flex items-center gap-2 text-[11px]" style={{ color: sub }}>
           {TIER_LEGEND.map((t) => (
             <span key={t.rank} className="flex items-center gap-1" title={t.label}>
-              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: TIER_COLORS[t.rank] }} />
+              <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: tierSwatch(t.rank, dark) }} />
               {t.label}
             </span>
           ))}
@@ -326,6 +350,8 @@ export function RoleSimilarityGraph({
           height={H}
           viewBox={`0 0 ${width} ${H}`}
           className="block touch-none select-none"
+          role="group"
+          aria-label={`Role similarity graph: ${graph.nodes.length} roles, ${graph.edges.length} similarity links, ${clusters.length} tight ${clusters.length === 1 ? "cluster" : "clusters"} of near-interchangeable roles. Each role is focusable; press Enter for its details.`}
           style={{ cursor: ix.current.mode === "pan" ? "grabbing" : "grab" }}
           onPointerDown={onSvgDown}
           onPointerMove={onMove}
@@ -337,8 +363,8 @@ export function RoleSimilarityGraph({
             {/* One radial gradient per tier — gives every node a soft top-left sheen. */}
             {TIER_LEGEND.map((t) => (
               <radialGradient key={t.rank} id={`rsg-tier-${t.rank}`} cx="35%" cy="30%" r="80%">
-                <stop offset="0%" stopColor={lighten(TIER_COLORS[t.rank], 0.4)} />
-                <stop offset="100%" stopColor={TIER_COLORS[t.rank]} />
+                <stop offset="0%" stopColor={lighten(tierSwatch(t.rank, dark), 0.4)} />
+                <stop offset="100%" stopColor={tierSwatch(t.rank, dark)} />
               </radialGradient>
             ))}
             <filter id="rsg-shadow" x="-60%" y="-60%" width="220%" height="220%">
@@ -356,7 +382,7 @@ export function RoleSimilarityGraph({
               const hull = convexHull(pts);
               const d = `M${hull.map((p) => `${p[0]},${p[1]}`).join("L")}Z`;
               const pad = Math.max(...members.map((n) => n.r)) + 16;
-              const color = TIER_COLORS[Math.max(...members.map((n) => n.maxRank))] ?? "#71717a";
+              const color = tierSwatch(Math.max(...members.map((n) => n.maxRank)), dark);
               const dim = hover !== null && !ids.includes(hover);
               return (
                 <path
@@ -386,7 +412,7 @@ export function RoleSimilarityGraph({
               const cy = (sy + ty) / 2 + (dx / len) * off;
               const touchesHover = hover !== null && (s.roleId === hover || t.roleId === hover);
               const lit = !hover || touchesHover;
-              const stroke = touchesHover && hovered ? TIER_COLORS[hovered.maxRank] ?? edgeColor : edgeColor;
+              const stroke = touchesHover && hovered ? tierSwatch(hovered.maxRank, dark) : edgeColor;
               // Midpoint of the quadratic at t=0.5 — anchor for the similarity % label.
               const qx = 0.25 * sx + 0.5 * cx + 0.25 * tx;
               const qy = 0.25 * sy + 0.5 * cy + 0.25 * ty;
@@ -423,7 +449,7 @@ export function RoleSimilarityGraph({
             {pnodes.map((n) => {
               const lit = isLit(n.roleId);
               const isHover = hover === n.roleId;
-              const tierColor = TIER_COLORS[n.maxRank] ?? "#71717a";
+              const tierColor = tierSwatch(n.maxRank, dark);
               // Labels are glued to their node (bounds are enforced on the node
               // positions in the sim tick, not by relocating labels).
               const labelX = n.x ?? width / 2;
@@ -436,6 +462,21 @@ export function RoleSimilarityGraph({
                   onPointerDown={onNodeDown(n)}
                   onMouseEnter={() => setHover(n.roleId)}
                   onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
+                  // Keyboard parity with the pointer path. This graph is the ONLY
+                  // caller of onNodeClick, so without these the role sheet — tier
+                  // breakdown plus member roster — is unreachable without a mouse.
+                  // Focus drives the same `hover` state as the pointer, so tabbing
+                  // lights the node and its neighbours exactly like hovering does.
+                  role="button"
+                  tabIndex={0}
+                  aria-label={nodeLabel(n)}
+                  onFocus={() => setHover(n.roleId)}
+                  onBlur={() => setHover((h) => (h === n.roleId ? null : h))}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    onNodeClick?.(n.roleId);
+                  }}
                 >
                   {isHover && (
                     <circle
@@ -475,6 +516,46 @@ export function RoleSimilarityGraph({
           </g>
         </svg>
 
+        {/*
+          Text alternative for the graph's ACTUAL thesis. Focusable nodes make the
+          graph operable, but "which roles are effectively interchangeable" is
+          carried by the hull blobs — a purely visual grouping. A reader who never
+          sees the blobs still needs the claim, so the clusters are stated in
+          words. sr-only, because sighted readers already have the blobs.
+        */}
+        <div className="sr-only">
+          <h4>Role similarity, in text</h4>
+          {clusters.length === 0 ? (
+            <p>
+              No cluster of roles reached {Math.round(CLUSTER_WEIGHT * 100)}% similarity, so no roles are flagged as
+              near-interchangeable.
+            </p>
+          ) : (
+            <>
+              <p>
+                {clusters.length} {clusters.length === 1 ? "cluster" : "clusters"} of roles are at least{" "}
+                {Math.round(CLUSTER_WEIGHT * 100)}% similar by folder permissions, making them candidates for
+                consolidation.
+              </p>
+              <ul>
+                {clusters.map((ids) => (
+                  <li key={ids.join("|")}>
+                    {ids.map((id) => byId.get(id)?.roleName ?? id).join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <h4>All roles by reach</h4>
+          <ul>
+            {[...pnodes]
+              .sort((a, b) => b.folderCount - a.folderCount)
+              .map((n) => (
+                <li key={n.roleId}>{nodeLabel(n)}</li>
+              ))}
+          </ul>
+        </div>
+
         <button
           type="button"
           onClick={resetView}
@@ -491,7 +572,7 @@ export function RoleSimilarityGraph({
             // clamp via CSS: left/top must not exceed panel - card dimensions.
           >
             <div className="flex items-center gap-1.5 font-semibold text-foreground">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: TIER_COLORS[hovered.maxRank] }} aria-hidden />
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: tierSwatch(hovered.maxRank, dark) }} aria-hidden />
               {hovered.roleName}
             </div>
             <div className="text-muted-foreground">

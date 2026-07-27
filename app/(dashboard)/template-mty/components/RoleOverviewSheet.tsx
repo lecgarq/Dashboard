@@ -1,6 +1,7 @@
 "use client";
+import { useTheme } from "next-themes";
 import { DrillSheet } from "@/components/ui/DrillSheet";
-import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { tierSwatch } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { TemplateMember } from "@/lib/server/templateView";
 
 interface TierSummary {
@@ -28,6 +29,8 @@ export function RoleOverviewSheet({
   members,
   onMemberClick,
 }: RoleOverviewSheetProps) {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light";
   const totalTierFolders = tiers.reduce((s, t) => s + t.count, 0);
 
   return (
@@ -55,7 +58,7 @@ export function RoleOverviewSheet({
                     <span className="flex items-center gap-1.5 text-foreground/80">
                       <span
                         className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ background: TIER_COLORS[tier.rank] }}
+                        style={{ background: tierSwatch(tier.rank, dark) }}
                       />
                       {tier.label}
                     </span>
@@ -66,7 +69,7 @@ export function RoleOverviewSheet({
                       className="h-full rounded-full transition-all"
                       style={{
                         width: `${barWidth}%`,
-                        background: TIER_COLORS[tier.rank],
+                        background: tierSwatch(tier.rank, dark),
                         opacity: 0.8,
                       }}
                     />
@@ -119,7 +122,7 @@ export function RoleOverviewSheet({
                         Admin
                       </span>
                     )}
-                    <span className={m.isInternal ? "text-violet-500" : "text-sky-500"}>
+                    <span className={m.isInternal ? "text-chart-5" : "text-chart-7"}>
                       {m.isInternal ? "Internal" : "External"}
                     </span>
                   </div>

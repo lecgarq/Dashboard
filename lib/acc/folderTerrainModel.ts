@@ -116,6 +116,58 @@ export function colorForRank(rank: number): string {
   return TIER_COLORS[rank] ?? TIER_COLORS[1];
 }
 
+/**
+ * Theme-aware tier ramp for FLAT 2D marks — swatches, dots, bars, donut slices,
+ * graph nodes. `TIER_COLORS` above stays as-is because it feeds the lit 3D
+ * terrain geometry, where each face is shaded before it reaches the screen and
+ * the raw hex is a lighting input, not a rendered swatch.
+ *
+ * Why two ramps instead of one: `TIER_COLORS` is theme-INVARIANT, and a single
+ * invariant sequential ramp cannot clear the DESIGN.md §2 3:1 floor at both
+ * ends in both themes. Measured, every one of its six ranks failed in one theme
+ * or the other — ranks 1–2 bottomed out at 1.38:1 and 2.38:1 on the zinc card
+ * (#18181B), ranks 3–6 at 2.84:1 down to 1.48:1 on white. "View only" was
+ * effectively invisible on the workshop projector.
+ *
+ * Both ramps below keep the six brand hue families and the cool→warm break at
+ * rank 3→4 (read/markups vs upload/edit/control), and both are monotone in
+ * luminance so the sequential read survives: each shifts AWAY from its own
+ * surface as access grows — darker on white, lighter on zinc — the same
+ * derivation rule lib/colors/chartPalette.ts uses. Minimum measured contrast is
+ * 3.20:1 in both themes; `tierRamp.test.ts` holds that floor.
+ */
+const TIER_RAMP_LIGHT: readonly string[] = [
+  "#7193b7", // 1 azul        — View Only
+  "#2c8ab9", // 2 sky         — View+Download
+  "#007e95", // 3 seaweed     — +Publish markups
+  "#ac431e", // 4 naranja     — +Upload
+  "#705206", // 5 goldenrod   — +Edit
+  "#534517", // 6 deep gold   — Full administrative controls
+];
+
+const TIER_RAMP_DARK: readonly string[] = [
+  "#3e6b9d", // 1 azul
+  "#2385b6", // 2 sky
+  "#2c9eb3", // 3 seaweed
+  "#ed8b68", // 4 naranja
+  "#d3ba78", // 5 goldenrod
+  "#e8d593", // 6 pale gold
+];
+
+/** Tier colour for a flat 2D mark on the active theme's card surface. */
+export function tierSwatch(rank: number, dark: boolean): string {
+  const ramp = dark ? TIER_RAMP_DARK : TIER_RAMP_LIGHT;
+  return ramp[Math.min(Math.max(rank, 1), ramp.length) - 1];
+}
+
+/** Legible foreground for text drawn ON a `tierSwatch` fill. */
+export function tierSwatchTextColor(rank: number, dark: boolean): string {
+  // Light theme darkens with rank, dark theme lightens — so the ink flips the
+  // opposite way in each. Ranks are clamped the same way as tierSwatch.
+  const r = Math.min(Math.max(rank, 1), 6);
+  return dark ? (r >= 4 ? "#0b1620" : "#ffffff") : "#ffffff";
+}
+
 /** Legible foreground colour for text drawn ON a tier swatch (ranks 4–5 are light). */
 export function tierTextColor(rank: number): string {
   return rank >= 4 ? "#0b1620" : "#ffffff";

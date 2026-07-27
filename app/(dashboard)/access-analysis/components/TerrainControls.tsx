@@ -9,16 +9,33 @@
  */
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import {
-  colorForRank,
-  tierTextColor,
+  tierSwatch,
+  tierSwatchTextColor,
   TIER_LEGEND,
-  TIER_COLORS,
   type TerrainCell,
   type TerrainProjectOption,
 } from "../folderTerrain";
 import { officeLabel } from "../projectGroups";
 import { type Mode, type Metric, type Hover } from "./terrainViewModel";
+
+/**
+ * Theme-aware tier colours for the FLAT chips in this file — legend swatches,
+ * tooltip dots, the detail-panel header, breakdown bars. These are rendered
+ * swatches on the card surface, so they take `tierSwatch`, not the raw
+ * `TIER_COLORS` ramp (which is theme-invariant and fails the 3:1 floor: "View
+ * only" measured 1.38:1 on the zinc card). `TIER_COLORS` stays correct for the
+ * lit 3D terrain geometry, where the hex is a lighting input.
+ */
+function useTierChips() {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light";
+  return {
+    swatch: (rank: number) => tierSwatch(rank, dark),
+    ink: (rank: number) => tierSwatchTextColor(rank, dark),
+  };
+}
 
 export function ToolButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -31,6 +48,7 @@ export function ToolButton({ label, active, onClick }: { label: string; active: 
 }
 
 export function Tooltip({ hover, width, metric }: { hover: Hover; width: number; metric: Metric }) {
+  const chips = useTierChips();
   if (!hover) return null;
   const n = hover.cell.userCount;
   const line = metric === "projects" ? `${n} ${n === 1 ? "project" : "projects"} configure this` : `${n} ${n === 1 ? "user" : "users"} in this role`;
@@ -47,7 +65,7 @@ export function Tooltip({ hover, width, metric }: { hover: Hover; width: number;
       </div>
       <div className="text-muted-foreground">{hover.cell.roleName}</div>
       <div className="mt-1 flex items-center gap-1.5">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: colorForRank(hover.cell.rank) }} />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: chips.swatch(hover.cell.rank) }} />
         <span className="text-foreground">{metric === "projects" ? "typically " : ""}{hover.cell.tier}</span>
         {hover.cell.inherited && <span className="text-muted-foreground">· from parent</span>}
       </div>
@@ -70,7 +88,7 @@ export function ModeToggle({ mode, hasOverview, onChange }: { mode: Mode; hasOve
   );
 }
 
-export function useOfficeGroups(projects: TerrainProjectOption[]) {
+function useOfficeGroups(projects: TerrainProjectOption[]) {
   return useMemo(() => {
     const by = new Map<string, TerrainProjectOption[]>();
     for (const p of projects) { const arr = by.get(p.office); if (arr) arr.push(p); else by.set(p.office, [p]); }
@@ -166,16 +184,17 @@ export function ProjectMultiSelect({ projects, selected, onChange, disabled }: {
 }
 
 export function TierLegend({ ink }: { ink: string }) {
+  const chips = useTierChips();
   return (
     <div className="flex flex-wrap items-center gap-2 text-[11px]" style={{ color: ink }}>
       <span className="uppercase tracking-wider">Less</span>
       <div className="flex items-center gap-0.5">
-        {TIER_LEGEND.map((t) => (<span key={t.rank} title={t.label} className="inline-block h-3 w-5 rounded-sm" style={{ background: TIER_COLORS[t.rank] }} />))}
+        {TIER_LEGEND.map((t) => (<span key={t.rank} title={t.label} className="inline-block h-3 w-5 rounded-sm" style={{ background: chips.swatch(t.rank) }} />))}
       </div>
       <span className="uppercase tracking-wider">Full control</span>
       <span className="mx-0.5 h-3 w-px opacity-25" style={{ background: "currentColor" }} aria-hidden />
       <span className="inline-flex items-center gap-1" title="Folders that simply inherit their parent's permissions are dimmed; the bright bars are deliberate access changes.">
-        <span className="inline-block h-3 w-5 rounded-sm" style={{ background: TIER_COLORS[3], opacity: 0.28 }} />
+        <span className="inline-block h-3 w-5 rounded-sm" style={{ background: chips.swatch(3), opacity: 0.28 }} />
         <span>inherited</span>
       </span>
     </div>
@@ -186,10 +205,11 @@ export function DetailPanel({ cell, project, metric, users, crossProject, onClos
   cell: TerrainCell; project: string; metric: Metric; users: { name: string; email: string }[];
   crossProject: { project: string; tier: string; rank: number }[] | null; onClose: () => void;
 }) {
+  const chips = useTierChips();
   const overview = metric === "projects";
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-muted/40">
-      <div className="flex items-center justify-between gap-3 px-3 py-2" style={{ background: colorForRank(cell.rank), color: tierTextColor(cell.rank) }}>
+      <div className="flex items-center justify-between gap-3 px-3 py-2" style={{ background: chips.swatch(cell.rank), color: chips.ink(cell.rank) }}>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{cell.roleName} <span className="opacity-80">on</span> {cell.folderName}</div>
           <div className="truncate text-[11px] opacity-90">{project} · {cell.tier}</div>
@@ -217,7 +237,7 @@ export function DetailPanel({ cell, project, metric, users, crossProject, onClos
             <ul className="flex flex-wrap gap-1.5">
               {crossProject.map((c) => (
                 <li key={c.project} className="flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-1 text-[11px]" title={`${c.project}: ${c.tier}`}>
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: colorForRank(c.rank) }} />
+                  <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: chips.swatch(c.rank) }} />
                   <span className="max-w-[140px] truncate text-foreground">{c.project}</span>
                 </li>
               ))}
@@ -230,19 +250,20 @@ export function DetailPanel({ cell, project, metric, users, crossProject, onClos
 }
 
 function TierBreakdown({ breakdown, total }: { breakdown: Record<number, number>; total: number }) {
+  const chips = useTierChips();
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex h-3 overflow-hidden rounded-full border border-border">
         {TIER_LEGEND.map((t) => {
           const n = breakdown[t.rank] ?? 0;
           if (n === 0) return null;
-          return <span key={t.rank} title={`${t.label}: ${n}`} style={{ width: `${(n / Math.max(1, total)) * 100}%`, background: TIER_COLORS[t.rank] }} />;
+          return <span key={t.rank} title={`${t.label}: ${n}`} style={{ width: `${(n / Math.max(1, total)) * 100}%`, background: chips.swatch(t.rank) }} />;
         })}
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
         {TIER_LEGEND.filter((t) => (breakdown[t.rank] ?? 0) > 0).map((t) => (
           <span key={t.rank} className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ background: TIER_COLORS[t.rank] }} />
+            <span className="inline-block h-2 w-2 rounded-sm" style={{ background: chips.swatch(t.rank) }} />
             {t.label}: {breakdown[t.rank]}
           </span>
         ))}
