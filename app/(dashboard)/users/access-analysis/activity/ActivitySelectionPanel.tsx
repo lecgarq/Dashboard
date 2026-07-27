@@ -14,9 +14,12 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { EASE, useEntrance } from "@/components/ui/animated-list";
+import { ProfileAvatar } from "@/app/(dashboard)/users/ProfileAvatar";
 import type { DimensionBreakdown } from "./activitySelectionBreakdown";
+import { emailFromLabel } from "./ActivityDimensionsPanel";
 
 const fmt = (n: number): string => n.toLocaleString("en-US");
+const COLLAPSE_AFTER = 8;
 
 /** Dimension → LECG brand chart family (8 dims, 8 CVD-validated families). */
 const DIM_ACCENT: Record<string, string> = {
@@ -34,11 +37,13 @@ export function ActivitySelectionPanel({
   selectedCount,
   renderedCount,
   breakdown,
+  authorPhotoByEmail,
   onClear,
 }: {
   selectedCount: number;
   renderedCount: number;
   breakdown: DimensionBreakdown[];
+  authorPhotoByEmail: ReadonlyMap<string, string>;
   onClear: () => void;
 }): React.JSX.Element {
   const reduce = useReducedMotion();
@@ -97,14 +102,23 @@ export function ActivitySelectionPanel({
           const max = dim.top.length > 0 ? dim.top[0].count : 0;
           const unknown = dim.total - dim.covered;
           return (
-            <motion.section
+            <motion.details
               key={dim.id}
               {...entrance(sectionIdx)}
+              open={dim.distinct <= COLLAPSE_AFTER}
               data-testid={`activity-selection-dim-${dim.id}`}
-              className="flex flex-col gap-1"
+              className="group/section"
             >
-              <div className="flex items-baseline justify-between gap-2">
+              <summary className="flex cursor-pointer list-none items-baseline justify-between gap-2 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
                 <h3 className="flex min-w-0 items-center gap-1.5 truncate text-[11px] font-semibold uppercase tracking-wide text-foreground">
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 16 16"
+                    className="h-3 w-3 shrink-0 -rotate-90 fill-none stroke-current text-muted-foreground transition-transform duration-150 group-open/section:rotate-0 motion-reduce:transition-none"
+                    strokeWidth="1.5"
+                  >
+                    <path d="m4 6 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   <span
                     aria-hidden
                     className="h-2 w-2 shrink-0 rounded-full"
@@ -121,15 +135,16 @@ export function ActivitySelectionPanel({
                 >
                   {fmt(dim.distinct)} distinct
                 </span>
-              </div>
-              <ul className="flex flex-col gap-0.5">
+              </summary>
+              <ul className="mt-1 flex max-h-52 flex-col gap-0.5 overflow-y-auto overscroll-contain pr-1">
                 {dim.top.map((cat, rowIdx) => {
                   const barPct = max > 0 ? (cat.count / max) * 100 : 0;
                   const share = dim.total > 0 ? (cat.count / dim.total) * 100 : 0;
+                  const authorEmail = dim.id === "author" ? emailFromLabel(cat.label) : "";
                   return (
                     <li
                       key={cat.label}
-                      className="relative flex items-center justify-between gap-2 overflow-hidden rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-accent/60"
+                      className="relative flex shrink-0 items-center justify-between gap-2 overflow-hidden rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-accent/60"
                     >
                       <motion.span
                         aria-hidden
@@ -147,6 +162,14 @@ export function ActivitySelectionPanel({
                           delay: reduce ? 0 : Math.min(rowIdx, 8) * 0.02,
                         }}
                       />
+                      {dim.id === "author" ? (
+                        <ProfileAvatar
+                          name={null}
+                          email={authorEmail}
+                          photoUrl={authorPhotoByEmail.get(authorEmail.toLowerCase()) ?? null}
+                          size="sm"
+                        />
+                      ) : null}
                       <span className="relative z-10 min-w-0 flex-1 truncate text-foreground">
                         {cat.label}
                       </span>
@@ -169,7 +192,7 @@ export function ActivitySelectionPanel({
                   {fmt(unknown)} unknown / unattributed
                 </p>
               ) : null}
-            </motion.section>
+            </motion.details>
           );
         })}
       </div>

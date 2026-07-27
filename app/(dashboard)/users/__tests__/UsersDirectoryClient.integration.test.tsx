@@ -162,9 +162,15 @@ vi.mock("@/lib/core/trpc", () => ({
       },
       accDcGraph: {
         bulkUsers: { invalidate: vi.fn().mockResolvedValue(undefined) },
+        bulkUser: { invalidate: vi.fn().mockResolvedValue(undefined) },
       },
+      accMembers: { enrichedUsers: { invalidate: vi.fn() } },
+      accFolders: { getCoverage: { invalidate: vi.fn() } },
     }),
     accDcGraph: {
+      dataVersion: {
+        useQuery: () => ({ data: undefined, isLoading: false }),
+      },
       bulkUsers: {
         useQuery: bulkUsersQuerySpy,
       },

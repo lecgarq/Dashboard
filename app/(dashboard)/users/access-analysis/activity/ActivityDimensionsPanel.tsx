@@ -21,7 +21,7 @@ import { ProfileAvatar } from "@/app/(dashboard)/users/ProfileAvatar";
 export const GROUP_BY_NONE = "none";
 
 /** Pull the email out of an author label ("Name <a@x.com>" or bare "a@x.com"). */
-function emailFromLabel(label: string): string {
+export function emailFromLabel(label: string): string {
   const angle = label.match(/<([^>]+)>/);
   if (angle) return angle[1].trim();
   const bare = label.match(/[\w.+-]+@[\w.-]+\.\w+/);
@@ -249,11 +249,14 @@ export interface ActivityDimensionsPanelProps {
   /** "covered/total" for the active color-by dim. */
   colorCoverageText: string | null;
   colorByLabel: string;
-  residentCount: number;
-  renderedCount: number;
 }
 
 const fmt = (n: number): string => n.toLocaleString("en-US");
+const isPartialCoverage = (text: string | null): boolean => {
+  if (!text) return false;
+  const [covered, total] = text.split("/").map((part) => Number(part.replaceAll(",", "")));
+  return Number.isFinite(covered) && Number.isFinite(total) && covered < total;
+};
 
 /**
  * Categorical multi-select — narrows the rendered universe the same way the
@@ -369,15 +372,13 @@ export function ActivityDimensionsPanel({
   groupByLabel,
   colorCoverageText,
   colorByLabel,
-  residentCount,
-  renderedCount,
 }: ActivityDimensionsPanelProps): React.JSX.Element {
   const allGroupDimsDisabled = groupByOptions.every((o) => o.disabled);
 
   return (
     <aside
       data-testid="activity-dimensions-panel"
-      className="flex w-[260px] shrink-0 flex-col border-l bg-card"
+      className="flex h-full w-[260px] shrink-0 flex-col border-l bg-card"
     >
       <header className="flex items-center justify-between border-b p-4">
         <h2 className="text-sm font-semibold">Dimensions</h2>
@@ -445,34 +446,16 @@ export function ActivityDimensionsPanel({
           </select>
         </label>
 
-        <div className="space-y-1 rounded-md border bg-muted/20 p-3 text-xs text-muted-foreground">
-          <p>Position: Embedding</p>
-          <p>
-            Group into: {groupByLabel ?? "None"}
-            {groupBy !== GROUP_BY_NONE ? ` · ${strength}` : ""}
-          </p>
-          <p>Color: {colorByLabel}</p>
-        </div>
-
-        {groupCoverageText && groupByLabel ? (
+        {isPartialCoverage(groupCoverageText) && groupByLabel ? (
           <p data-testid="activity-group-coverage" className="text-xs text-muted-foreground">
             {groupByLabel} data · {groupCoverageText} events
           </p>
         ) : null}
-        {colorCoverageText ? (
+        {isPartialCoverage(colorCoverageText) ? (
           <p data-testid="activity-color-coverage" className="text-xs text-muted-foreground">
             {colorByLabel} data · {colorCoverageText} events
           </p>
         ) : null}
-
-        <p className="text-xs text-muted-foreground">
-          {fmt(residentCount)} events · rendering ~{fmt(renderedCount)}
-        </p>
-
-        <p className="text-xs text-muted-foreground">
-          0 keeps the embedding · 100 clumps into {groupByLabel ?? "the selected"} groups. Drag to
-          morph in real time.
-        </p>
       </div>
     </aside>
   );

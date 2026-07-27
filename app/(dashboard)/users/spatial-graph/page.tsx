@@ -7,7 +7,7 @@ import { AccessAnalysisShellClient } from "../access-analysis/AccessAnalysisShel
 // prefetch retired with the user×project instance graph (ACT-03).
 export default function Page(): React.JSX.Element {
   return (
-    <div className="h-screen">
+    <div className="h-screen" style={{ contain: "strict" }}>
       <AccessAnalysisShellClient />
     </div>
   );

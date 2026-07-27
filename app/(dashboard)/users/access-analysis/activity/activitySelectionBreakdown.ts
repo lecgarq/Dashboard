@@ -36,14 +36,14 @@ export interface DimensionBreakdown {
 
 /**
  * Build a ranked breakdown of `fullIndices` across every activity dimension.
- * `topN` caps each dimension's category list (default 8).
+ * `topN` optionally caps each dimension's category list.
  */
 export function buildSelectionBreakdown(
   fullIndices: ArrayLike<number>,
   columns: Record<string, ArrayLike<number> | undefined>,
   dicts: Record<string, unknown>,
   projectNames: Record<string, string> | undefined,
-  topN = 8,
+  topN = Number.POSITIVE_INFINITY,
 ): DimensionBreakdown[] {
   const total = fullIndices.length;
   const out: DimensionBreakdown[] = [];

@@ -37,6 +37,22 @@ const NOOP_HANDLERS: GraphEventHandlers = {
   onPointHoverEnd: () => {},
 };
 
+/** Link index lookup used to keep magnetic-hover link emphasis in sync with points. */
+export function indexLinksByPoint(links: Float32Array): Map<number, number[]> {
+  const indexed = new Map<number, number[]>();
+  for (let linkIndex = 0; linkIndex < links.length / 2; linkIndex++) {
+    const source = links[linkIndex * 2];
+    const target = links[linkIndex * 2 + 1];
+    const sourceLinks = indexed.get(source);
+    if (sourceLinks) sourceLinks.push(linkIndex);
+    else indexed.set(source, [linkIndex]);
+    const targetLinks = indexed.get(target);
+    if (targetLinks) targetLinks.push(linkIndex);
+    else indexed.set(target, [linkIndex]);
+  }
+  return indexed;
+}
+
 // ---------------------------------------------------------------------------
 // Public handle — exposed to GraphCanvas.tsx via onHandleReady
 // ---------------------------------------------------------------------------
@@ -294,6 +310,25 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     let resizeObserver: ResizeObserver | null = null;
     let healRaf = 0;
     let removeMiddlePanGuards: (() => void) | null = null;
+    let currentLinks = props.links ?? new Float32Array(0);
+    let linksByPoint = indexLinksByPoint(currentLinks);
+    let selectedLinkIndices: number[] | undefined;
+
+    const linksForSelection = (indices: number[]): number[] | undefined => {
+      if (indices.length === 0) return undefined;
+      if (indices.length === 1) return linksByPoint.get(indices[0]) ?? [];
+      const selected = new Set(indices);
+      const highlighted: number[] = [];
+      for (let linkIndex = 0; linkIndex < currentLinks.length / 2; linkIndex++) {
+        if (
+          selected.has(currentLinks[linkIndex * 2]) &&
+          selected.has(currentLinks[linkIndex * 2 + 1])
+        ) {
+          highlighted.push(linkIndex);
+        }
+      }
+      return highlighted;
+    };
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
@@ -324,6 +359,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         curvedLinkControlPointDistance: 0.25,
         linkColorInterpolateFromEndpoints: props.linkGradient === true,
         linkOpacity: 0.42,
+        linkGreyoutOpacity: 0.15,
         // Default [50,150]px fades any link longer than 150px to ~7% alpha —
         // at the far-zoom sample almost every same-author link is longer, so
         // the whole layer reads as absent and never appears to ride the nodes.
@@ -855,6 +891,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setLinks(links: Float32Array): void {
           (g as unknown as { setLinks: (l: Float32Array) => void })!.setLinks(links);
+          currentLinks = links;
+          linksByPoint = indexLinksByPoint(links);
+          selectedLinkIndices = linksForSelection(selectedIndicesRef.current);
+          g!.setConfigPartial({ highlightedLinkIndices: selectedLinkIndices });
           linkCountRef.current = links.length / 2;
           g!.render();
         },
@@ -892,6 +932,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           g!.setLinks(links);
           g!.setLinkColors(rgba);
           g!.setLinkWidths(widths);
+          currentLinks = links;
+          linksByPoint = indexLinksByPoint(links);
+          selectedLinkIndices = linksForSelection(selectedIndicesRef.current);
+          g!.setConfigPartial({ highlightedLinkIndices: selectedLinkIndices });
           linkCountRef.current = links.length / 2;
           g!.render();
           // Keep native-link updates visually atomic with their buffers. Cosmos's
@@ -1056,6 +1100,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setSelectedIndices(indices: number[]): void {
           selectedIndicesRef.current = indices;
+          selectedLinkIndices = linksForSelection(indices);
           g!.setConfigPartial({
             outlinedPointIndices: indices.length > 0 ? indices : undefined,
             focusedPointIndex: indices.length === 1 ? indices[0] : undefined,
@@ -1064,6 +1109,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             // — the "dim others" affordance the retired user-graph lasso gave.
             // Empty selection → undefined clears the greyout.
             highlightedPointIndices: indices.length > 0 ? indices : undefined,
+            highlightedLinkIndices: selectedLinkIndices,
           });
           g!.render();
         },
@@ -1089,6 +1135,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
                 : selectedIndicesRef.current.length > 0
                   ? selectedIndicesRef.current
                   : undefined,
+            highlightedLinkIndices:
+              index !== null
+                ? linksByPoint.get(index) ?? []
+                : selectedLinkIndices,
           });
           g!.render();
         },

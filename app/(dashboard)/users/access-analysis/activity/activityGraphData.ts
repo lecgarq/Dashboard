@@ -8,6 +8,29 @@ export interface AuthorMatch {
   matchedAuthorCount: number;
 }
 
+/** Carry the nearest magnetic candidate through one bounded residue scan. */
+export function scanMagnetPhase(
+  positions2: Float32Array,
+  center: readonly [number, number],
+  radiusSq: number,
+  step: number,
+  phase: number,
+  current: { index: number; distanceSq: number } = { index: -1, distanceSq: radiusSq },
+): { index: number; distanceSq: number } {
+  let best = current.index;
+  let bestSq = Math.min(current.distanceSq, radiusSq);
+  for (let index = phase; index < positions2.length / 2; index += step) {
+    const dx = positions2[index * 2] - center[0];
+    const dy = positions2[index * 2 + 1] - center[1];
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq < bestSq) {
+      bestSq = distanceSq;
+      best = index;
+    }
+  }
+  return { index: best, distanceSq: bestSq };
+}
+
 /** Case-insensitive substring match over the resident author labels. */
 export function buildAuthorMatch(labels: readonly string[], query: string): AuthorMatch {
   const needle = query.trim().toLocaleLowerCase();
@@ -56,6 +79,11 @@ export function filterActivityIndices(args: {
   timeId: Uint16Array;
   selectedTime: number | null;
   authorMask: Uint8Array | null;
+  /** Optional full-corpus candidates from an already-composed filter pass. */
+  candidates?: Uint32Array;
+  /** Optional generic color/category column and selection mask. */
+  categoryId?: Uint16Array | Uint32Array;
+  categoryMask?: Uint8Array | null;
   projectId?: Uint16Array | Uint32Array;
   projectMask?: Uint8Array | null;
   roleId?: Uint16Array;
@@ -66,6 +94,8 @@ export function filterActivityIndices(args: {
   monthMask?: Uint8Array | null;
 }): Uint32Array | null {
   const { authorId, timeId, selectedTime, authorMask } = args;
+  const categoryMask = args.categoryMask ?? null;
+  const categoryId = categoryMask !== null ? args.categoryId : undefined;
   const projectMask = args.projectMask ?? null;
   const projectId = projectMask !== null ? args.projectId : undefined;
   const roleMask = args.roleMask ?? null;
@@ -77,6 +107,8 @@ export function filterActivityIndices(args: {
   if (
     selectedTime === null &&
     authorMask === null &&
+    !args.candidates &&
+    (categoryMask === null || !categoryId) &&
     (projectMask === null || !projectId) &&
     (roleMask === null || !roleId) &&
     (verbMask === null || !verbId) &&
@@ -88,6 +120,7 @@ export function filterActivityIndices(args: {
   const keep = (i: number): boolean => {
     if (selectedTime !== null && timeId[i] !== selectedTime) return false;
     if (authorMask !== null && authorMask[authorId[i]] !== 1) return false;
+    if (categoryId && categoryMask !== null && categoryMask[categoryId[i]] !== 1) return false;
     if (projectId && projectMask !== null && projectMask[projectId[i]] !== 1) return false;
     if (roleId && roleMask !== null && roleMask[roleId[i]] !== 1) return false;
     if (verbId && verbMask !== null && verbMask[verbId[i]] !== 1) return false;
@@ -95,14 +128,47 @@ export function filterActivityIndices(args: {
     return true;
   };
 
+  const candidates = args.candidates;
+  const candidateCount = candidates?.length ?? authorId.length;
   let count = 0;
-  for (let i = 0; i < authorId.length; i++) if (keep(i)) count += 1;
+  for (let cursor = 0; cursor < candidateCount; cursor++) {
+    const index = candidates?.[cursor] ?? cursor;
+    if (keep(index)) count += 1;
+  }
 
   const indices = new Uint32Array(count);
   let cursor = 0;
-  for (let i = 0; i < authorId.length; i++) if (keep(i)) indices[cursor++] = i;
+  for (let candidate = 0; candidate < candidateCount; candidate++) {
+    const index = candidates?.[candidate] ?? candidate;
+    if (keep(index)) indices[cursor++] = index;
+  }
   return indices;
 }
+
+/** Pin lasso hits to full-corpus rows before the rendered index map can change. */
+export const snapshotRenderedSelection = (
+  rendered: readonly number[],
+  renderedToFull: Uint32Array,
+  allowedFull?: Uint32Array,
+): Uint32Array => {
+  const full: number[] = [];
+  for (const renderedIndex of rendered) {
+    const fullIndex = renderedToFull[renderedIndex];
+    if (fullIndex === undefined) continue;
+    if (allowedFull) {
+      let low = 0;
+      let high = allowedFull.length;
+      while (low < high) {
+        const middle = (low + high) >>> 1;
+        if (allowedFull[middle] < fullIndex) low = middle + 1;
+        else high = middle;
+      }
+      if (allowedFull[low] !== fullIndex) continue;
+    }
+    full.push(fullIndex);
+  }
+  return Uint32Array.from(full);
+};
 
 /**
  * Bounded same-author chains in rendered-index space. Unknown authors are

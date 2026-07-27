@@ -90,7 +90,7 @@ export function MapClusterLabels({
   // Candidates = the largest clusters across the WHOLE clustering (not just the colored
   // legend), so small clusters can earn a chip via the per-frame zoom LOD below.
   const renderIds = useMemo(
-    () => labelCandidateClusters(counts ?? labels.map(() => 0), MAX_LABELS),
+    () => labelCandidateClusters(counts ?? labels.map(() => 1), MAX_LABELS),
     [counts, labels],
   );
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);

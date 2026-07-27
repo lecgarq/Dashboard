@@ -4,6 +4,8 @@ import {
   buildAuthorMatch,
   buildProjectSelectionMask,
   filterActivityIndices,
+  scanMagnetPhase,
+  snapshotRenderedSelection,
 } from "./activityGraphData";
 
 describe("activityGraphData", () => {
@@ -83,6 +85,22 @@ describe("activityGraphData", () => {
     })!)).toEqual([3, 5]);
   });
 
+  it("composes a color-category filter over the existing active full-index set", () => {
+    const candidates = Uint32Array.from([1, 3, 4, 5]);
+    const moduleId = Uint16Array.from([0, 1, 2, 1, 2, 3]);
+    const moduleMask = Uint8Array.from([0, 1, 0, 0]);
+
+    expect(Array.from(filterActivityIndices({
+      authorId,
+      timeId: monthId,
+      selectedTime: null,
+      authorMask: null,
+      categoryId: moduleId,
+      categoryMask: moduleMask,
+      candidates,
+    })!)).toEqual([1, 3]);
+  });
+
   it("filters by activity type (verb) and by month, composed with the scrubber", () => {
     const verbDict = ["Unknown", "created", "viewed"];
     const verbId = Uint16Array.from([1, 2, 1, 2, 1, 2]);
@@ -140,6 +158,22 @@ describe("activityGraphData", () => {
     expect(Array.from(mask!)).toEqual([1, 0, 1]);
   });
 
+  it("snapshots lasso full indices before the rendered map can change", () => {
+    expect(
+      snapshotRenderedSelection([2, 0], Uint32Array.from([11, 22, 33])),
+    ).toEqual(Uint32Array.from([33, 11]));
+  });
+
+  it("drops lasso rows excluded by the active filters", () => {
+    expect(
+      snapshotRenderedSelection(
+        [2, 1, 0, 99],
+        Uint32Array.from([11, 22, 33]),
+        Uint32Array.from([11, 33]),
+      ),
+    ).toEqual(Uint32Array.from([33, 11]));
+  });
+
   it("builds bounded same-author chains in rendered-index space", () => {
     const rendered = Uint32Array.from([1, 2, 3, 4, 5]);
     expect(Array.from(buildActivityAuthorLinks(authorId, rendered, authors.length))).toEqual([
@@ -148,5 +182,19 @@ describe("activityGraphData", () => {
       2, 4,
     ]);
     expect(buildActivityAuthorLinks(authorId, rendered, authors.length, 2)).toHaveLength(4);
+  });
+
+  it("covers every point across bounded magnetic scan phases", () => {
+    const positions = Float32Array.from([
+      10, 10,
+      2, 2,
+      1, 1,
+    ]);
+    let nearest = { index: -1, distanceSq: 100 };
+    for (let phase = 0; phase < 2; phase++) {
+      nearest = scanMagnetPhase(positions, [0, 0], 100, 2, phase, nearest);
+    }
+    expect(nearest).toEqual({ index: 2, distanceSq: 2 });
+    expect(scanMagnetPhase(positions, [0, 0], 1, 2, 0).index).toBe(-1);
   });
 });

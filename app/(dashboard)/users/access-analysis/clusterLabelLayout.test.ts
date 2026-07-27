@@ -12,12 +12,16 @@ describe("labelCandidateClusters", () => {
     expect(labelCandidateClusters([5, 900, 50, 1], 2)).toEqual([1, 2]);
   });
 
+  it("never creates labels for empty filtered groups", () => {
+    expect(labelCandidateClusters([0, 7, 0, 3], 10)).toEqual([1, 3]);
+  });
+
   it("returns every cluster when there are fewer than max", () => {
     expect(labelCandidateClusters([3, 7], 10)).toEqual([1, 0]);
   });
 
   it("preserves original order for equal counts (stable)", () => {
-    expect(labelCandidateClusters([0, 0, 0], 10)).toEqual([0, 1, 2]);
+    expect(labelCandidateClusters([2, 2, 2], 10)).toEqual([0, 1, 2]);
   });
 });
 

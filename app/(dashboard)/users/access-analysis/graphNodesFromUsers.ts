@@ -59,6 +59,7 @@ function toRawFeatureRow(pr: GraphProjectRow, u: GraphUserRow | undefined): RawF
     activity_actions_json: pr.activity_actions_json,
     activity_total: pr.activity_total,
     last_activity: pr.last_activity,
+    project_status: pr.project_status,
   };
 }
 

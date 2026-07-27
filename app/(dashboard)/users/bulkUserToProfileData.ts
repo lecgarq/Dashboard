@@ -1,5 +1,5 @@
 import type { BulkAccUser } from "@/lib/acc/acc-types";
-import type { AccProfileData, ProjectData } from "./AccProfileSection";
+import type { AccProfileData, ProjectData } from "./statCardTypes";
 
 /**
  * Maps an in-memory synced BulkAccUser into the AccProfileData shape that

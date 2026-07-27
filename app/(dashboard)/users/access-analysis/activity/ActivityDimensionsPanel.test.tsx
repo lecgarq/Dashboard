@@ -3,7 +3,7 @@
  * ActivityDimensionsPanel.test.tsx — v2.7 Phase 40 (DIM-07) pins.
  *
  * The repopulated sidebar: 7 group-by options (author absent, owner decision
- * 4), 8 color-by options (author present), honest coverage + corpus lines,
+ * 4), 8 color-by options (author present), partial-coverage caveats,
  * strength slider fires the shell's coalesced callback. Plus the transform-
  * level pin that a group-by switch changes morph targets (select → layout is
  * pure data flow; the canvas is not involved).
@@ -78,8 +78,6 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
     groupByLabel: null as string | null,
     colorCoverageText: "4,904,886/4,904,886",
     colorByLabel: "Module",
-    residentCount: 4_904_886,
-    renderedCount: 196_196,
     ...over,
   };
   render(<ActivityDimensionsPanel {...props} />);
@@ -102,19 +100,19 @@ describe("ActivityDimensionsPanel", () => {
     expect(colorIds).toContain("author");
   });
 
-  it("shows the honest corpus line and per-dim coverage when a dim is active", () => {
+  it("keeps partial-coverage caveats without showing complete-coverage filler", () => {
     renderPanel({
       groupBy: "verb",
       groupByLabel: "Verb",
       groupCoverageText: "4,630,553/4,904,886",
     });
-    expect(screen.getByText(/4,904,886 events · rendering ~196,196/)).toBeTruthy();
     expect(screen.getByTestId("activity-group-coverage").textContent).toContain(
       "Verb data · 4,630,553/4,904,886 events",
     );
-    expect(screen.getByTestId("activity-color-coverage").textContent).toContain(
-      "Module data · 4,904,886/4,904,886 events",
-    );
+    expect(screen.queryByTestId("activity-color-coverage")).toBeNull();
+    expect(screen.queryByText(/rendering ~/)).toBeNull();
+    expect(screen.queryByText(/keeps the embedding/)).toBeNull();
+    expect(screen.queryByText(/Position: Embedding/)).toBeNull();
   });
 
   it("hides the strength slider at group-by none, shows it for a dim, and fires onStrengthChange", () => {

@@ -3,19 +3,15 @@
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import type { EChartsOption } from "echarts";
-import { EChart } from "../access-analysis/components/EChart";
+import { EChart } from "@/components/ui/EChart";
+import { chartColorAt } from "@/lib/colors/chartPalette";
 import { adminProjects, roleCounts, moduleCounts } from "./statCardDetails";
 import type { CountSlice, ProjectData, StatCardDetailKind } from "./statCardTypes";
-
-const PALETTE = [
-  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
-  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f", "#55bcc7", "#e5bc4c",
-];
-const colorFor = (i: number) => PALETTE[i % PALETTE.length];
 
 function Donut({ slices, label }: { slices: CountSlice[]; label: string }): React.JSX.Element {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
+  const colorFor = (i: number) => chartColorAt(i, dark);
   const cText = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#6b7280";
   const cSlice = dark ? "#18181b" : "#ffffff";

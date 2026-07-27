@@ -7,7 +7,7 @@ export type DimConfidence = "high" | "medium" | "low";
 type DimSurface = "slider" | "color";
 
 /** A node's value: number (ordinal), string (categorical/binary), string[] (multiHot), or null (absent). */
-export type DimValue = string | number | string[] | null;
+type DimValue = string | number | string[] | null;
 
 export interface CatalogDimension {
   id: string;

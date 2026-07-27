@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { adminProjects, roleCounts, moduleCounts, moduleLabel } from "./statCardDetails";
-import type { ProjectData } from "./AccProfileSection";
+import type { ProjectData } from "./statCardTypes";
 
 function p(over: Partial<ProjectData>): ProjectData {
   return { id: "x", name: "P", status: "active", isAdmin: false, roles: [], modules: [], ...over };

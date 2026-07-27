@@ -56,9 +56,10 @@ function ActiveFilterPill({
       <span className="truncate max-w-[120px]">{value}</span>
       <button
         onClick={onClear}
+        aria-label={`Clear ${label} filter`}
         className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
       >
-        <X size={10} />
+        <X size={10} aria-hidden />
       </button>
     </span>
   );

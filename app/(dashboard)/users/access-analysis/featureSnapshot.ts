@@ -116,6 +116,7 @@ export interface RawFeatureRow {
   activity_actions_json: string | null;
   activity_total: bigint | number | null;
   last_activity: bigint | number | null;
+  project_status: string | null;
 }
 
 /**
@@ -212,6 +213,7 @@ export function rawRowToSnapshot(r: RawFeatureRow): NodeFeatureSnapshot {
     activityTotal,
     permissionStrength,
     accessibleDataBytes,
+    projectStatus: r.project_status ? String(r.project_status) : undefined,
     permissionTypeSummary: {
       folderBreadth,
       coverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
@@ -282,7 +284,8 @@ export async function buildFeatureSnapshot(
       ANY_VALUE(up.activity_mix_json)                                   AS activity_mix_json,
       ANY_VALUE(up.activity_actions_json)                              AS activity_actions_json,
       COALESCE(ANY_VALUE(up.activity_total), 0)                         AS activity_total,
-      ANY_VALUE(up.last_activity)                                       AS last_activity
+      ANY_VALUE(up.last_activity)                                       AS last_activity,
+      ANY_VALUE(up.project_status)                                      AS project_status
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id

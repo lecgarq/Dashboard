@@ -30,6 +30,8 @@ export interface DirectoryRow {
   photoUrl: string | null;
   jobTitle: string | null;
   department: string | null;
+  /** Cost center from the org directory — carried so Group-by can band on it. */
+  costCenter: string | null;
 
   /** First of allRoles (null when the user has no ACC roles). */
   primaryRole: string | null;
@@ -184,6 +186,7 @@ export function buildDirectoryRows(
       photoUrl: person.photoUrl,
       jobTitle: person.jobTitle,
       department: person.department,
+      costCenter: person.costCenter ?? null,
       primaryRole,
       extraRoleCount,
       officeCode,

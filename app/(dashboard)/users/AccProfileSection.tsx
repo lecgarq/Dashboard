@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { StatCardDetail } from "./StatCardDetail";
+import type { AccProfileData, ProjectData, StatCardDetailKind } from "./statCardTypes";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -224,16 +225,6 @@ function ModuleToggleRow({ name, active }: { name: string; active: boolean }) {
 // Collapsible Project Card — much more visible
 // ---------------------------------------------------------------------------
 
-export type ProjectData = {
-  id: string;
-  name: string;
-  status: string;
-  isAdmin: boolean;
-  roles?: string[];
-  modules?: string[];
-  addedOn?: string;
-};
-
 function AccProjectCard({
   project,
   defaultExpanded = false,
@@ -337,14 +328,14 @@ function AccProjectCard({
           {roles.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide flex items-center gap-1.5">
-                <Shield size={12} className="text-violet-500" />
+                <Shield size={12} className="text-chart-5" />
                 Roles ({roles.length})
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {roles.map((role) => (
                   <span
                     key={role}
-                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-violet-500/20 bg-violet-500/8 text-violet-400 font-semibold"
+                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-chart-5/20 bg-chart-5/10 text-chart-5 font-semibold"
                   >
                     {role}
                   </span>
@@ -382,21 +373,6 @@ function AccProjectCard({
 // AccProfileFull — the full ACC section
 // ---------------------------------------------------------------------------
 
-export type AccProfileData = {
-  found: true;
-  status: string;
-  name?: string;
-  autodeskId?: string;
-  syncedAt: string;
-  role?: string;
-  company?: string;
-  addedOn?: string;
-  lastSignIn?: string;
-  photoUrl?: string | null;
-  costCenter?: string | null;
-  projects?: ProjectData[];
-};
-
 export function AccProfileFull({
   data,
   email,
@@ -407,8 +383,8 @@ export function AccProfileFull({
   onRefresh: () => void;
 }) {
   const projects = data.projects ?? [];
-  const [activeCard, setActiveCard] = useState<"admin" | "roles" | "modules" | null>(null);
-  const toggleCard = (k: "admin" | "roles" | "modules") =>
+  const [activeCard, setActiveCard] = useState<StatCardDetailKind | null>(null);
+  const toggleCard = (k: StatCardDetailKind) =>
     setActiveCard((cur) => (cur === k ? null : k));
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
@@ -576,7 +552,7 @@ export function AccProfileFull({
               onClick={() => toggleCard("admin")} active={activeCard === "admin"} disabled={stats.admin === 0}
             />
             <StatCard
-              icon={Shield} value={stats.roles} label="Roles" color="text-violet-500"
+              icon={Shield} value={stats.roles} label="Roles" color="text-chart-5"
               onClick={() => toggleCard("roles")} active={activeCard === "roles"} disabled={stats.roles === 0}
             />
             <StatCard
@@ -920,7 +896,7 @@ function AccUserFolderAccessPanel({ email }: { email: string }) {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-1.5 py-px font-semibold border-violet-500/30 text-violet-400"
+                        className="text-[10px] px-1.5 py-px font-semibold border-chart-5/30 text-chart-5"
                       >
                         {f.roleName}
                       </Badge>

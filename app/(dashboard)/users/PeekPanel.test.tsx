@@ -33,6 +33,7 @@ const makeRow = (overrides: Partial<DirectoryRow> = {}): DirectoryRow => ({
   photoUrl: null,
   jobTitle: "Architect",
   department: "Engineering",
+  costCenter: null,
   primaryRole: "Architect",
   extraRoleCount: 1,
   officeCode: "MTY",

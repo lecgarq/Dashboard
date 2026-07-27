@@ -72,6 +72,7 @@ describe("buildGraphNodesFromUsers", () => {
             roles: ["Project Manager"],
             modules: ["docs", "cost", "build"],
             isAdmin: true,
+            status: "suspended",
           }),
         ],
       }),
@@ -83,6 +84,7 @@ describe("buildGraphNodesFromUsers", () => {
     expect(f.project).toBe("Tower A");
     expect(f.role).toBe("Project Manager");
     expect(f.isAdmin).toBe(true);
+    expect(f.projectStatus).toBe("suspended");
     expect(f.activityCountRaw).toBe(25);
     expect(f.activityBucket).toBe("Med"); // 11..100
     // module signature strips baseline modules (insight/docs), keeps the rest sorted

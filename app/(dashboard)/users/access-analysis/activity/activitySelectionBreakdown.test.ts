@@ -69,4 +69,27 @@ describe("buildSelectionBreakdown", () => {
     expect(author.distinct).toBe(2);
     expect(author.top.reduce((s, c) => s + c.count, 0)).toBe(2);
   });
+
+  it("returns every distinct category unless an explicit limit is requested", () => {
+    const indices = Uint32Array.from({ length: 12 }, (_, i) => i);
+    const authorId = Uint32Array.from({ length: 12 }, (_, i) => i + 1);
+    const authorDict = ["Unknown author", ...Array.from({ length: 12 }, (_, i) => `user-${i + 1}`)];
+
+    const all = buildSelectionBreakdown(
+      indices,
+      { authorId },
+      { author: authorDict },
+      undefined,
+    ).find((d) => d.id === "author")!;
+    const capped = buildSelectionBreakdown(
+      indices,
+      { authorId },
+      { author: authorDict },
+      undefined,
+      8,
+    ).find((d) => d.id === "author")!;
+
+    expect(all.top).toHaveLength(12);
+    expect(capped.top).toHaveLength(8);
+  });
 });

@@ -26,7 +26,7 @@ export const ACTIVITY_MODULE_COLORS: Record<string, string> = {
   Datum: "#e05b55", // warm red
   Insight: "#efb628", // goldenrod
   Design: "#0e98a8", // seaweed
-  AutoSpecs: "#cd94bb", // wine (light tier)
+  AutoSpecs: "#c992b8", // wine (light tier)
 };
 
 const FALLBACK = "#888888";
