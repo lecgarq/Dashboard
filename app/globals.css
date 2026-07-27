@@ -16,6 +16,9 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-8: var(--chart-8);
+  --color-chart-7: var(--chart-7);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -110,6 +113,9 @@
   --chart-3: #0089A3; /* seaweed */
   --chart-4: #B0810A; /* goldenrod (darkened for contrast) */
   --chart-5: #7E3567; /* wine */
+  --chart-6: #68803A; /* palm */
+  --chart-7: #1B80B3; /* sky */
+  --chart-8: #C42021; /* warm red (brand exact) */
 
   /* Sidebar */
   --sidebar: #FFFFFF;
@@ -206,6 +212,9 @@
   --chart-3: #0E98A8; /* seaweed */
   --chart-4: #BA8A0E; /* goldenrod */
   --chart-5: #B4679C; /* wine */
+  --chart-6: #849C4C; /* palm */
+  --chart-7: #3A9DBF; /* sky */
+  --chart-8: #E05B55; /* warm red */
 
   /* Sidebar */
   --sidebar: #18181B;
@@ -329,14 +338,6 @@
     background-position: 200% 0;
   }
 }
-@keyframes float {
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
 @keyframes pulseGlow {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.28);
@@ -356,17 +357,6 @@
   }
   75% {
     transform: translateX(4px);
-  }
-}
-@keyframes drift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(12px, -10px, 0) scale(1.03);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -401,17 +391,6 @@
 .animate-shake {
   animation: shake 0.24s ease-in-out both;
 }
-.animate-float {
-  animation: float 5s ease-in-out infinite;
-}
-.animate-float-delayed {
-  animation: float 6.5s ease-in-out infinite;
-  animation-delay: 0.8s;
-}
-.animate-drift {
-  animation: drift 12s ease-in-out infinite;
-}
-
 /* Staggered children */
 .stagger-children > * {
   animation: fadeUp 0.35s var(--motion-ease) both;
@@ -503,19 +482,6 @@
   transform: translateY(-3px);
 }
 
-/* Gradient accent */
-.gradient-accent {
-  background:
-    linear-gradient(135deg, rgba(20, 33, 61, 0.98), rgba(30, 64, 175, 0.92) 46%, rgba(15, 118, 110, 0.88));
-}
-.gradient-text {
-  background: linear-gradient(120deg, #14213d 0%, #2563eb 55%, #0f766e 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 900;
-}
-
 /* Smooth transitions */
 .transition-smooth {
   transition: all var(--motion-normal) var(--motion-ease);
@@ -573,12 +539,6 @@
   transform: translateY(-4px);
   box-shadow: var(--shadow-elevated-hover);
   border-color: rgba(96, 165, 250, 0.32);
-}
-.auth-mesh {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
-  background-size: 36px 36px;
 }
 .text-balance {
   text-wrap: balance;
