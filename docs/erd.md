@@ -723,6 +723,23 @@ erDiagram
     }
   
 
+  "AccActivityEmbedding" {
+    String id "🗝️"
+    Float x 
+    Float y 
+    Int verbId 
+    Int objectTypeId 
+    Int moduleId 
+    Int monthId 
+    Int roleId 
+    Int companyId 
+    Int projectId 
+    Int authorId 
+    Int folderId 
+    String embeddingRunId 
+    DateTime updatedAt 
+    }
+  
     "Account" }o--|| "User" : "user"
     "Session" }o--|| "User" : "user"
     "PendingRequest" |o--|o "User" : "user"
