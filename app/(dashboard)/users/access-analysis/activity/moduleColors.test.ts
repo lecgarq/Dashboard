@@ -6,9 +6,12 @@ import {
   moduleColorHex,
 } from "./moduleColors";
 import { buildActivitySizes } from "./activitySizes";
+import { UNMAPPED_MODULE_LABEL, buildActivityTaxonomy } from "./activityTaxonomyLabels";
 
-// Real dict labels from the Phase-38 payload meta.
-const MODULE_LABELS = ["(none)", "admin", "docs", "issues", "rfis", "sheets", "submittals"];
+// The dict the loader now installs: taxonomy product labels, not serviceGroup tags.
+const MODULE_LABELS = buildActivityTaxonomy(["view-entity"], ["(none)"]).moduleLabels;
+const DATA_MANAGEMENT = MODULE_LABELS.indexOf("Data Management");
+const ADMIN_ACTIONS = MODULE_LABELS.indexOf("Admin Actions");
 
 describe("moduleColors (ACT-01 first-paint color-by, owner decision 3)", () => {
   it("covers every real module dict label with a stable distinct color", () => {
@@ -17,14 +20,14 @@ describe("moduleColors (ACT-01 first-paint color-by, owner decision 3)", () => {
     for (const label of MODULE_LABELS) {
       expect(ACTIVITY_MODULE_COLORS[label]).toBeDefined();
     }
-    expect(moduleColorHex("(none)")).toBe("#71717a"); // zinc-500 honest bucket
+    expect(moduleColorHex(UNMAPPED_MODULE_LABEL)).toBe("#71717a"); // zinc-500 honest bucket
   });
 
   it("builds an RGBA buffer keyed by moduleId with alpha 1", () => {
-    const moduleId = new Uint16Array([0, 2, 2, 6]);
+    const moduleId = new Uint16Array([0, DATA_MANAGEMENT, DATA_MANAGEMENT, ADMIN_ACTIONS]);
     const rgba = buildModuleColorBuffer(moduleId, MODULE_LABELS);
     expect(rgba.length).toBe(16);
-    // docs #4e8ccb → r=0x4e/255
+    // Data Management #4e8ccb → r=0x4e/255
     expect(rgba[4]).toBeCloseTo(0x4e / 255, 5);
     expect(rgba[7]).toBe(1);
     // rows 1 and 2 identical (same module)
@@ -32,9 +35,15 @@ describe("moduleColors (ACT-01 first-paint color-by, owner decision 3)", () => {
   });
 
   it("legend counts the FULL set honestly and sorts by count desc", () => {
-    const moduleId = new Uint16Array([2, 2, 2, 1, 1, 0]);
+    const moduleId = new Uint16Array([
+      DATA_MANAGEMENT, DATA_MANAGEMENT, DATA_MANAGEMENT, ADMIN_ACTIONS, ADMIN_ACTIONS, 0,
+    ]);
     const legend = buildModuleLegend(moduleId, MODULE_LABELS);
-    expect(legend.map((e) => e.label)).toEqual(["docs", "admin", "(none)"]);
+    expect(legend.map((e) => e.label)).toEqual([
+      "Data Management",
+      "Admin Actions",
+      UNMAPPED_MODULE_LABEL,
+    ]);
     expect(legend[0].count).toBe(3);
     expect(legend[2].count).toBe(1);
   });

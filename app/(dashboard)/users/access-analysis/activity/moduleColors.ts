@@ -1,21 +1,32 @@
 /**
  * moduleColors.ts — v2.7 Phase 39 (ACT-01, owner decision 3).
  *
- * First-paint color-by for the activity universe: module/serviceGroup.
+ * First-paint color-by for the activity universe: module.
  * Pure — no React/DOM/IO. Colors reuse the established /access-analysis
  * module color language (ModulesPieChart MODULE_COLORS hues), fixed hex that
- * reads on both themes, with zinc-500 as the honest "(none)" bucket.
+ * reads on both themes, with zinc-500 as the honest Unmapped bucket.
+ *
+ * Keyed by the ACC PRODUCT LABEL, not Autodesk's raw serviceGroup tag: the
+ * payload's module dict is rewritten through the shared taxonomy on load
+ * (activityTaxonomyLabels.ts), so a module reads and colors identically here
+ * and in the /access-analysis donut. The hexes are duplicated from
+ * ModulesPieChart.MODULE_COLORS deliberately — importing that client chart
+ * module for a 10-entry color map would drag ECharts into this bundle.
  */
 
-/** serviceGroup dict label → hex. Labels come from the payload meta module dict. */
+/** Module display label → hex. Labels come from the payload meta module dict. */
 export const ACTIVITY_MODULE_COLORS: Record<string, string> = {
-  "(none)": "#71717a", // zinc-500 — data-quality bucket, matches UNMAPPED_COLOR
-  admin: "#e0577b", // wine-rose — adminActions
-  docs: "#4e8ccb", // azul — dataManagement
-  issues: "#e2683a", // naranja — build
-  rfis: "#efb628", // goldenrod — insight tier
-  sheets: "#849c4c", // palm
-  submittals: "#b4679c", // wine
+  Unmapped: "#71717a", // zinc-500 — data-quality bucket, matches UNMAPPED_COLOR
+  "Data Management": "#4e8ccb", // azul
+  Build: "#e2683a", // naranja
+  "Design Collaboration": "#849c4c", // palm
+  Preconstruction: "#b4679c", // wine
+  "Model Coordination": "#3a9dbf", // state-blue sky
+  "Admin Actions": "#e0577b", // wine-rose — permission/membership/admin activity
+  Datum: "#e05b55", // warm red
+  Insight: "#efb628", // goldenrod
+  Design: "#0e98a8", // seaweed
+  AutoSpecs: "#cd94bb", // wine (light tier)
 };
 
 const FALLBACK = "#888888";

@@ -29,6 +29,13 @@ import {
   assembleActivityUniverseMeta,
   type ActivityUniverseCoverage,
 } from "../lib/server/activityUniversePayload";
+import type { AuthorAttributeRow } from "../lib/server/activityAuthorAttributes";
+import { NOT_A_FILE, fileExtensionLabel, fileExtensionOf } from "../lib/acc/fileExtension";
+
+/** Slot-0 label for both membership columns: the author holds no DC membership
+ * row on that project (activity from a since-deleted user, or a project outside
+ * DC coverage). Distinct from "Unknown", which means a real member with no role. */
+const NO_MEMBERSHIP = "No membership record";
 
 function loadEnvFile(file: string) {
   const full = path.resolve(process.cwd(), file);
@@ -78,6 +85,33 @@ interface EmbeddingRow {
   embeddingRunId: string;
   /** Source event timestamp joined back from AccActivity / AccActivityAccds. */
   ts: Date | null;
+  /** accds display filename — the file-format source. Null on DC-sourced rows. */
+  objectName: string | null;
+}
+
+/**
+ * Dict-and-code accumulator for a column derived at BUILD time (file format,
+ * role bucket, access bucket). Slot 0 is always the caller's sentinel, so every
+ * derived column reports coverage the same way the pipeline's own dicts do.
+ */
+class DerivedDict {
+  private readonly slotByValue = new Map<string, number>();
+  readonly labels: string[];
+
+  constructor(sentinel: string) {
+    this.labels = [sentinel];
+  }
+
+  /** Slot for a value, minting one on first sight. null/empty → slot 0. */
+  slot(value: string | null): number {
+    if (!value) return 0;
+    const existing = this.slotByValue.get(value);
+    if (existing !== undefined) return existing;
+    const next = this.labels.length;
+    this.labels.push(value);
+    this.slotByValue.set(value, next);
+    return next;
+  }
 }
 
 /**
@@ -90,6 +124,13 @@ const TS_JOIN = `
   LEFT JOIN "AccActivity" a ON a.id = e.id
   LEFT JOIN "AccActivityAccds" ac ON ac."accdsActivityId" = substr(e.id, 7)`;
 const TS_SELECT = `COALESCE(a."createdAt", ac."createdAt") AS ts`;
+/**
+ * The display filename rides the join that is already paid for. It is the ONLY
+ * source of the file format (pdf/dwg/rvt) — the embedding table keeps object
+ * TYPE ("a File") but never the name — and AccActivity has no equivalent column,
+ * so DC-sourced rows resolve to the "Not a file" sentinel by construction.
+ */
+const NAME_SELECT = `ac."objectName" AS "objectName"`;
 
 const CHUNK = 200_000;
 
@@ -133,6 +174,28 @@ async function main(): Promise<void> {
       throw new Error(`monthFloor "${String(dicts.monthFloor)}" yielded no week floor`);
     }
 
+    // Build-time derived columns join the sidecar on (email, project) — the only
+    // key an activity row carries. Both dict arrays are read straight from the
+    // pipeline meta, so authorId/projectId decode without touching the DB.
+    const authorDict = Array.isArray(dicts.author) ? (dicts.author as string[]).map(String) : [];
+    const projectDict = Array.isArray(dicts.project) ? (dicts.project as string[]).map(String) : [];
+    const sidecar = JSON.parse(
+      readFileSync(join(embDir, "activity-author-attributes.json"), "utf8"),
+    ) as { rows: AuthorAttributeRow[] };
+    const bucketByKey = new Map(
+      sidecar.rows.map((r) => [`${r.emailLower}::${r.projectId}`, r] as const),
+    );
+    const bucketed = sidecar.rows.filter((r) => r.roleBucket).length;
+    if (bucketed === 0) {
+      throw new Error(
+        "sidecar carries no roleBucket — rerun scripts/build-activity-author-attributes.ts first",
+      );
+    }
+    console.log(`sidecar: ${bucketByKey.size} email+project rows, ${bucketed} bucketed`);
+    const roleDict = new DerivedDict(NO_MEMBERSHIP);
+    const accessDict = new DerivedDict(NO_MEMBERSHIP);
+    const fileExtDict = new DerivedDict(NOT_A_FILE);
+
     const positions = new Float32Array(n * 2);
     const positions3f = with3d ? new Float32Array(n * 3) : null;
     const verbId = new Uint16Array(n);
@@ -141,6 +204,8 @@ async function main(): Promise<void> {
     const monthId = new Uint16Array(n);
     const weekId = new Uint16Array(n);
     const roleId = new Uint16Array(n);
+    const accessLevelId = new Uint16Array(n);
+    const fileExtId = new Uint16Array(n);
     const companyId = new Uint16Array(n);
     const projectId = new Uint32Array(n);
     const authorId = new Uint32Array(n);
@@ -158,11 +223,11 @@ async function main(): Promise<void> {
     for (;;) {
       const rows = await db.$queryRawUnsafe<EmbeddingRow[]>(
         with3d
-          ? `SELECT e.*, e3.x AS x3, e3.y AS y3, e3.z AS z3, ${TS_SELECT}
+          ? `SELECT e.*, e3.x AS x3, e3.y AS y3, e3.z AS z3, ${TS_SELECT}, ${NAME_SELECT}
              FROM "AccActivityEmbedding" e
              LEFT JOIN "AccActivityEmbedding3D" e3 ON e3.id = e.id${TS_JOIN}
              WHERE e.id > $1 ORDER BY e.id LIMIT ${CHUNK}`
-          : `SELECT e.*, ${TS_SELECT}
+          : `SELECT e.*, ${TS_SELECT}, ${NAME_SELECT}
              FROM "AccActivityEmbedding" e${TS_JOIN}
              WHERE e.id > $1 ORDER BY e.id LIMIT ${CHUNK}`,
         lastId,
@@ -189,7 +254,19 @@ async function main(): Promise<void> {
           weekId[i] = w;
           if (w > maxWeek) maxWeek = w;
         }
-        roleId[i] = r.roleId;
+        // Role is RE-DERIVED here, not copied from e."roleId": the pipeline's role
+        // dict flattens deleted memberships, role-less members and multi-role seats
+        // into one "Unknown" (and emits that label twice — sentinel plus a literal).
+        // Re-deriving from the sidecar buckets makes this column mean exactly what
+        // the /access-analysis role donut means.
+        const email = r.authorId > 0 ? authorDict[r.authorId] : undefined;
+        const guid = r.projectId > 0 ? projectDict[r.projectId] : undefined;
+        const membership =
+          email && guid ? bucketByKey.get(`${email.toLowerCase()}::${guid}`) : undefined;
+        roleId[i] = roleDict.slot(membership?.roleBucket ?? null);
+        accessLevelId[i] = accessDict.slot(membership?.accessBucket ?? null);
+        const ext = fileExtensionOf(r.objectName);
+        fileExtId[i] = fileExtDict.slot(ext ? fileExtensionLabel(ext) : null);
         companyId[i] = r.companyId;
         projectId[i] = r.projectId;
         authorId[i] = r.authorId;
@@ -212,6 +289,8 @@ async function main(): Promise<void> {
       monthId,
       weekId,
       roleId,
+      accessLevelId,
+      fileExtId,
       companyId,
       projectId,
       authorId,
@@ -232,6 +311,20 @@ async function main(): Promise<void> {
     dicts.weekFloor = weekFloor;
     dicts.weekCount = maxWeek + 1;
     dicts.weekUnknownCount = unknownWeek;
+    // The re-derived role dict REPLACES the pipeline's; the other two are new.
+    dicts.role = roleDict.labels;
+    dicts.accessLevel = accessDict.labels;
+    dicts.fileExt = fileExtDict.labels;
+    const share = (col: Uint16Array) => {
+      let sentinel = 0;
+      for (let j = 0; j < col.length; j++) if (col[j] === 0) sentinel += 1;
+      return `${n - sentinel}/${n}`;
+    };
+    console.log(
+      `derived: role ${roleDict.labels.length} buckets (${share(roleId)} with a membership), ` +
+        `access ${accessDict.labels.length} (${share(accessLevelId)}), ` +
+        `fileExt ${fileExtDict.labels.length} formats (${share(fileExtId)} are files)`,
+    );
     console.log(
       `weeks: floor ${weekFloor}, ${maxWeek + 1} buckets, ${unknownWeek} rows with no source timestamp`,
     );

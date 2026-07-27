@@ -20,7 +20,12 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { getCachedAccDcBulkUsers } from "../lib/server/acc-hot-cache";
 import { countUnifiedActivityRows } from "../lib/server/unifiedActivitySource";
 import { buildGraphNodesFromUsers } from "../app/(dashboard)/users/access-analysis/graphNodesFromUsers";
-import { buildAuthorAttributeMap } from "../lib/server/activityAuthorAttributes";
+import {
+  buildAuthorAttributeMap,
+  mergeMembershipsByEmailProject,
+} from "../lib/server/activityAuthorAttributes";
+import { roleBucketLabel } from "../lib/acc/roleCounts";
+import { accessBucketLabel } from "../lib/acc/accessBucket";
 
 function loadEnvFile(file: string) {
   const full = path.resolve(process.cwd(), file);
@@ -67,6 +72,39 @@ async function main(): Promise<void> {
     });
     const { features } = buildGraphNodesFromUsers(users);
     const rows = buildAuthorAttributeMap(features);
+
+    // Membership buckets ride the SAME AccDcProjectUser view the /access-analysis
+    // donuts read, so "Removed member", "Multiple roles" and the access split mean
+    // exactly one thing across both surfaces. Attaching them here (not in the
+    // payload builder) keeps the DB join in one place: the builder then works from
+    // the sidecar alone.
+    // Imported lazily: lib/server/accessInstanceView pulls server/db, which builds
+    // its Prisma client at MODULE load — i.e. before this file's loadEnvFile() has
+    // run — so a static import here fails with "DATABASE_URL must be set".
+    const { loadInstanceView } = await import("../lib/server/accessInstanceView");
+    const memberships = mergeMembershipsByEmailProject(
+      (await loadInstanceView(true)).map((v) => ({
+        email: v.email,
+        projectId: v.projectId,
+        roles: v.roles,
+        status: v.status,
+        modules: v.modules,
+        adminModules: v.adminModules,
+      })),
+    );
+    let bucketed = 0;
+    for (const row of rows) {
+      const m = memberships.get(`${row.emailLower}::${row.projectId}`);
+      if (!m) continue;
+      row.roleBucket = roleBucketLabel(m);
+      row.accessBucket = accessBucketLabel(m);
+      bucketed += 1;
+    }
+    console.log(
+      `membership buckets: ${bucketed}/${rows.length} sidecar rows matched ` +
+        `(${memberships.size} distinct email+project memberships)`,
+    );
+
     const outDir = join(process.cwd(), ".embedding");
     mkdirSync(outDir, { recursive: true });
     writeFileSync(

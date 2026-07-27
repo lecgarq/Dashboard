@@ -87,16 +87,18 @@ function renderPanel(over: Partial<Parameters<typeof ActivityDimensionsPanel>[0]
 }
 
 describe("ActivityDimensionsPanel", () => {
-  it("offers 7 group-by dims (author absent) and 8 color-by dims (author present)", () => {
+  it("offers 9 group-by dims (author absent) and 10 color-by dims (author present)", () => {
     renderPanel();
     const groupSelect = screen.getByTestId("activity-group-by-select") as HTMLSelectElement;
     const colorSelect = screen.getByTestId("activity-color-by-select") as HTMLSelectElement;
     const groupIds = Array.from(groupSelect.options).map((o) => o.value);
     const colorIds = Array.from(colorSelect.options).map((o) => o.value);
-    expect(groupIds).toHaveLength(8); // "none" + 7 dims
+    expect(groupIds).toHaveLength(10); // "none" + 9 dims
     expect(groupIds[0]).toBe(GROUP_BY_NONE);
     expect(groupIds).not.toContain("author");
-    expect(colorIds).toHaveLength(8);
+    // The two derived dims are selectable on both axes (build-time columns).
+    expect(groupIds).toEqual(expect.arrayContaining(["accessLevel", "fileExt"]));
+    expect(colorIds).toHaveLength(10);
     expect(colorIds).toContain("author");
   });
 

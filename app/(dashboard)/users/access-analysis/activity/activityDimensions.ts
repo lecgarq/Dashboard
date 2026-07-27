@@ -1,14 +1,26 @@
 /**
  * activityDimensions.ts — v2.7 Phase 40 (DIM-07, owner decisions 3+4).
  *
- * The activity universe's dimension model: 8 descriptors over the payload's
+ * The activity universe's dimension model: 10 descriptors over the payload's
  * resident int columns. All labels resolve from meta dicts — never hardcoded.
+ *
+ * `accessLevel` and `fileExt` are DERIVED columns: the payload builder resolves
+ * them from the membership sidecar and the accds display filename, so they cost
+ * a build-time table lookup rather than a re-run of the embedding fit. `role` is
+ * re-derived the same way — it buckets identically to the /access-analysis donut
+ * (Removed member / Unknown / role / Multiple roles).
  * Author is color-by/filter/hover only, NEVER group-by (owner decision 4).
  * Pure — no React/DOM/IO.
  *
  * Coverage is honest and node-derived: dicts reserve slot 0 as the sentinel
- * ("Unknown", "(none)", "Unknown author"), so covered = rows with a nonzero
- * id. Month has no sentinel (derived from the event timestamp) → full corpus.
+ * ("Unknown", "(none)", "Unknown author", module "Unmapped"), so covered = rows
+ * with a nonzero id. Month has no sentinel (derived from the event timestamp) →
+ * full corpus.
+ *
+ * Module's slot 0 became a true sentinel when the dict moved from Autodesk's raw
+ * serviceGroup tag to the /access-analysis taxonomy (activityTaxonomyLabels.ts):
+ * "(none)" was a real service value, "Unmapped" is a verb the catalog cannot
+ * place — so it belongs in the uncovered count, not the legend's product list.
  */
 
 import { activityProjectLabel, monthLabel } from "./activityEventLabels";
@@ -19,6 +31,8 @@ export type ActivityDimensionId =
   | "objectType"
   | "month"
   | "role"
+  | "accessLevel"
+  | "fileExt"
   | "company"
   | "project"
   | "author";
@@ -40,10 +54,12 @@ export interface ActivityDimension {
 
 export const ACTIVITY_DIMENSIONS: readonly ActivityDimension[] = [
   { id: "verb", label: "Verb", column: "verbId", dictKey: "verb", groupBy: true, hasSentinel: true },
-  { id: "module", label: "Module", column: "moduleId", dictKey: "module", groupBy: true, hasSentinel: false },
+  { id: "module", label: "Module", column: "moduleId", dictKey: "module", groupBy: true, hasSentinel: true },
   { id: "objectType", label: "Object type", column: "objectTypeId", dictKey: "objectType", groupBy: true, hasSentinel: true },
   { id: "month", label: "Month", column: "monthId", dictKey: "month", groupBy: true, hasSentinel: false },
   { id: "role", label: "Author role", column: "roleId", dictKey: "role", groupBy: true, hasSentinel: true },
+  { id: "accessLevel", label: "Access level", column: "accessLevelId", dictKey: "accessLevel", groupBy: true, hasSentinel: true },
+  { id: "fileExt", label: "File format", column: "fileExtId", dictKey: "fileExt", groupBy: true, hasSentinel: true },
   { id: "company", label: "Author company", column: "companyId", dictKey: "company", groupBy: true, hasSentinel: true },
   { id: "project", label: "Project", column: "projectId", dictKey: "project", groupBy: true, hasSentinel: true, labelViaProjectNames: true },
   { id: "author", label: "Author", column: "authorId", dictKey: "author", groupBy: false, hasSentinel: true },
@@ -99,8 +115,8 @@ export interface ActivityDimensionCoverage {
 
 /**
  * Honest per-dimension coverage over the resident column: sentinel dims count
- * nonzero ids; sentinel-free dims (module's "(none)" is a real category the
- * legend shows; month is derived) report the full corpus.
+ * nonzero ids; sentinel-free dims (month is derived from the timestamp) report
+ * the full corpus.
  */
 export function activityDimensionCoverage(
   ids: ArrayLike<number>,

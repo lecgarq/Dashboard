@@ -36,6 +36,23 @@ export const MULTIPLE_ROLES = "Multiple roles";
 export const REMOVED_MEMBER = "Removed member";
 
 /**
+ * The bucket ONE membership belongs to. Exported because the activity-universe
+ * payload builder buckets the same memberships offline — sharing this function
+ * is what keeps the universe's role legend and the donut from drifting apart
+ * (they did: the universe used to flatten deleted + role-less into one "Unknown"
+ * and drop every second role of a multi-role seat).
+ *
+ * Order matters: deleted is checked FIRST because deleted rows never carry roles,
+ * so a lifecycle bucket would otherwise be indistinguishable from a data gap.
+ */
+export function roleBucketLabel(row: { roles: readonly string[]; status?: string | null }): string {
+  if (row.status === "deleted") return REMOVED_MEMBER;
+  const uniqueRoles = [...new Set(row.roles)];
+  if (uniqueRoles.length === 0) return UNKNOWN_ROLE;
+  return uniqueRoles.length === 1 ? uniqueRoles[0] : MULTIPLE_ROLES;
+}
+
+/**
  * Summarise role distribution across (user, project) memberships.
  *
  * Each membership lands in exactly one bucket: deleted membership -> "Removed
@@ -59,11 +76,7 @@ export function summarizeRoles(
   for (const row of rows) {
     const uniqueRoles = [...new Set(row.roles)];
     for (const r of uniqueRoles) distinct.add(r);
-    const label =
-      row.status === "deleted" ? REMOVED_MEMBER
-        : uniqueRoles.length === 0 ? UNKNOWN_ROLE
-          : uniqueRoles.length === 1 ? uniqueRoles[0]
-            : MULTIPLE_ROLES;
+    const label = roleBucketLabel(row);
     counts.set(label, (counts.get(label) ?? 0) + 1);
 
     // Attribute the seat to its person. No email -> not attributable, so it stays

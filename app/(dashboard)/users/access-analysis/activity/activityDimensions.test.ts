@@ -22,15 +22,16 @@ const DICTS: Record<string, unknown> = {
 };
 
 describe("activityDimensions (DIM-07)", () => {
-  it("lists exactly the 8 resident dims", () => {
+  it("lists exactly the 10 resident dims", () => {
     expect(ACTIVITY_DIMENSIONS.map((d) => d.id)).toEqual([
-      "verb", "module", "objectType", "month", "role", "company", "project", "author",
+      "verb", "module", "objectType", "month", "role", "accessLevel", "fileExt",
+      "company", "project", "author",
     ]);
   });
 
-  it("author is excluded from group-by (owner decision 4); the other 7 are eligible", () => {
+  it("author is excluded from group-by (owner decision 4); the other 9 are eligible", () => {
     const groupable = groupByDimensionList().map((d) => d.id);
-    expect(groupable).toHaveLength(7);
+    expect(groupable).toHaveLength(9);
     expect(groupable).not.toContain("author");
     expect(activityDimensionById("author")?.groupBy).toBe(false);
   });
