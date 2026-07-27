@@ -5,13 +5,10 @@ import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import type { ProjectActivitySummary } from "../projectActivityCounts";
 import { summarizeModules } from "../moduleCounts";
+import { chartPalette } from "@/lib/colors/chartPalette";
 
 // Vibrant, cohesive palette for the project slices (mirrors RolesPieChart's
 // name-keyed categorical rotation — the donut is about *which project*).
-const PALETTE = [
-  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
-  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f",
-];
 const OTHER_COLOR = "#71717a"; // zinc-500 — the data-rollup color (ModulesPieChart's UNMAPPED_COLOR role)
 
 /** Lighten a hex color by mixing it toward white by `amt` (0–1). */
@@ -81,12 +78,13 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
   // the Other bucket always gets the muted zinc rollup color.
   const colorByProject = useMemo(() => {
     const m = new Map<string, string>();
+    const palette = chartPalette(dark);
     let hue = 0;
     for (const s of slices) {
-      m.set(s.projectId, s.projectId === "" ? OTHER_COLOR : PALETTE[hue++ % PALETTE.length]);
+      m.set(s.projectId, s.projectId === "" ? OTHER_COLOR : palette[hue++ % palette.length]);
     }
     return m;
-  }, [slices]);
+  }, [slices, dark]);
   const colorFor = (projectId: string) => colorByProject.get(projectId) ?? "#888";
 
   const drillSummary = useMemo(() => {
@@ -105,7 +103,7 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
 
   if (slices.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />

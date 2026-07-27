@@ -5,7 +5,11 @@ import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption, LineSeriesOption } from "echarts";
 import type { TimelineSummary } from "../timelineCounts";
 
-const ACCENT = "#3a9dbf"; // state-blue sky — same accent as the Model-Coordination module
+// State-blue sky family (same accent as the Model-Coordination module) — one
+// step per theme so the light surface gets the darker brand variant (DESIGN §2:
+// never mix a light-variant hex onto a dark surface, or vice versa).
+const ACCENT_DARK = "#3a9dbf";
+const ACCENT_LIGHT = "#1b80b3";
 
 const MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -48,7 +52,7 @@ export function ActivityTimelineChart({
 
   if (points.length === 0) {
     return (
-      <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M3 3v18h18" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M7 14l4-4 3 3 4-6" strokeLinecap="round" strokeLinejoin="round" />
@@ -65,6 +69,7 @@ export function ActivityTimelineChart({
   // genuine projector headroom while remaining a muted sub-label. ~7.0:1 on #fff.
   const cAxis = dark ? "#a1a1aa" : "#52525b";
   const cTitle = dark ? "#fafafa" : "#111827";
+  const ACCENT = dark ? ACCENT_DARK : ACCENT_LIGHT;
 
   // Formatted floor label for the tooltip (TRUTH-02 — account-wide scope floor).
   const floorLabel = dataFloor ? fmtFloor(dataFloor) : null;

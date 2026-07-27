@@ -9,18 +9,25 @@ import {
   type IssueCoverageInputRow,
 } from "../issueFetchCoverageCounts";
 
-// Semantically honest bucket colors — ok = positive (emerald), zero_issues =
-// neutral (zinc), forbidden = amber, error = red/rose. Matches the amber/rose
-// precedent already used for warning slices (roleColors.ts UNKNOWN/MULTIPLE).
-const BUCKET_COLORS: Record<string, string> = {
-  ok: "#34d399", // emerald — issues were fetched
+// Semantically honest bucket colors from the shipped status tokens
+// (globals.css --success/--warning/--destructive, per theme): ok = success,
+// zero_issues = neutral zinc, forbidden = warning, error = destructive.
+const BUCKET_COLORS_LIGHT: Record<string, string> = {
+  ok: "#0E8A6D", // --success — issues were fetched
   zero_issues: "#71717a", // zinc-500 — neutral, not a problem
-  forbidden: "#f59e0b", // amber — credentials issue
-  error: "#fb7185", // rose — fetch failed
+  forbidden: "#B0810A", // --warning — credentials issue
+  error: "#C42021", // --destructive — fetch failed
 };
-const OVERFLOW_COLOR = "#a78bfa"; // violet — any unexpected raw status value
+const BUCKET_COLORS_DARK: Record<string, string> = {
+  ok: "#43BA9B",
+  zero_issues: "#71717a",
+  forbidden: "#EFB628",
+  error: "#E05B55",
+};
+const OVERFLOW_COLOR = "#a1a1aa"; // zinc-400 — any unexpected raw status value
 
-const colorFor = (status: string) => BUCKET_COLORS[status] ?? OVERFLOW_COLOR;
+const colorFor = (status: string, dark: boolean) =>
+  (dark ? BUCKET_COLORS_DARK : BUCKET_COLORS_LIGHT)[status] ?? OVERFLOW_COLOR;
 
 /** Lighten a hex color by mixing it toward white by `amt` (0–1). */
 function lighten(hex: string, amt: number): string {
@@ -75,7 +82,7 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
 
   if (coverage === null) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
@@ -87,7 +94,7 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
 
   if (projects.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
@@ -154,13 +161,13 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
         },
         blur: { itemStyle: { opacity: 0.22 } },
         animationType: "scale",
-        animationEasing: "elasticOut",
+        animationEasing: "cubicOut",
         animationDuration: 800,
         animationDelay: (idx: number) => idx * 24,
         animationDurationUpdate: 550,
         animationEasingUpdate: "cubicInOut",
         data: summary.slices.map((s) => {
-          const base = colorFor(s.status);
+          const base = colorFor(s.status, dark);
           return {
             name: s.label,
             value: s.count,
@@ -218,7 +225,7 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
         <div data-testid="issue-coverage-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorFor(drill) }} aria-hidden />
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorFor(drill, dark) }} aria-hidden />
               {drillSlice.label}
               <span className="text-xs font-normal text-muted-foreground">
                 {drillRows.length} {drillRows.length === 1 ? "project" : "projects"}
@@ -259,7 +266,7 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
         {summary.slices.map((s) => {
           const open = drill === s.status;
           const barPct = total > 0 ? (s.count / total) * 100 : 0;
-          const color = colorFor(s.status);
+          const color = colorFor(s.status, dark);
           return (
             <li key={s.status} className="mb-1 break-inside-avoid">
               <button

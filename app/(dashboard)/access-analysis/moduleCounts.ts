@@ -30,7 +30,7 @@ export interface ActivityType {
   group: string; // ACC tool group inside the module (Files / Reviews / Sheets / …)
 }
 
-export interface ModuleSlice {
+interface ModuleSlice {
   id: string; // ModuleId or UNMAPPED_MODULE
   name: string;
   value: number; // total activities

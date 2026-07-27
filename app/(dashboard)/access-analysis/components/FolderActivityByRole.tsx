@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 import { buildRoleColorMap } from "../roleColors";
 import { UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import type { FolderActivitySummary, FolderActivityNode } from "../folderActivityCounts";
@@ -53,17 +54,20 @@ export function FolderActivityByRole({
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
   const [openRoles, setOpenRoles] = useState<Set<string>>(new Set()); // key = `${folder} ${role}`
 
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
+
   // Stable color per role across every folder bar in this project.
   const colorMap = useMemo(() => {
     const names: string[] = [];
     for (const f of summary.folders) for (const s of f.roleSlices) if (!names.includes(s.name)) names.push(s.name);
-    return buildRoleColorMap(names);
-  }, [summary]);
+    return buildRoleColorMap(names, dark);
+  }, [summary, dark]);
   const colorFor = (r: string) => colorMap.get(r) ?? "#888";
 
   if (summary.folders.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         No folder activity found for this selection.
       </div>
     );

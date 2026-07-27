@@ -9,23 +9,29 @@ import {
   type IssueStatusInputRow,
 } from "../issueFunnelCounts";
 import type { IssueCoverageInputRow } from "../issueFetchCoverageCounts";
+import { chartPalette } from "@/lib/colors/chartPalette";
 
-// Fixed per-status color map — semantic honesty: "settled" statuses (closed/
-// completed) read green/teal, "active" statuses (open/in_progress) read
-// warm/blue. Colors are distinct from the timeline's amber accent.
-const STATUS_COLORS: Record<string, string> = {
-  open: "#38bdf8", // sky — active
-  in_progress: "#f59e0b", // amber — active
-  in_review: "#a78bfa", // violet — active, pending review
-  pending: "#fbbf24", // yellow — active, waiting
-  draft: "#71717a", // zinc — not yet active
-  not_approved: "#fb7185", // rose — active, blocked
-  completed: "#34d399", // emerald — settled
-  closed: "#10b981", // green — settled
+// Fixed per-status brand-family map — semantic honesty: "settled" statuses
+// (closed/completed) read green/teal (palm/seaweed), "active" statuses read
+// warm/blue. Indexes the canonical chartPalette families (DESIGN.md §2), so
+// colors stay theme-aware and on brand.
+const STATUS_FAMILY: Record<string, number> = {
+  open: 6, // sky — active
+  in_progress: 1, // naranja — active
+  in_review: 4, // wine — active, pending review
+  pending: 3, // goldenrod — active, waiting
+  not_approved: 7, // warm red — active, blocked
+  completed: 2, // seaweed — settled
+  closed: 5, // palm — settled
 };
-const OVERFLOW_COLOR = "#e879f9"; // fuchsia — any unexpected raw status value
+const DRAFT_COLOR = "#71717a"; // zinc-500 — not yet active, matches UNMAPPED convention
+const OVERFLOW_COLOR = "#a1a1aa"; // zinc-400 — any unexpected raw status value
 
-const colorFor = (status: string) => STATUS_COLORS[status] ?? OVERFLOW_COLOR;
+const colorFor = (status: string, dark: boolean) => {
+  if (status === "draft") return DRAFT_COLOR;
+  const family = STATUS_FAMILY[status];
+  return family === undefined ? OVERFLOW_COLOR : chartPalette(dark)[family];
+};
 
 /** Lighten a hex color by mixing it toward white by `amt` (0–1). */
 function lighten(hex: string, amt: number): string {
@@ -76,7 +82,7 @@ export function IssueStatusChart({
     return (
       <div
         data-testid="issue-status-empty"
-        className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card px-6 text-center text-sm text-muted-foreground"
+        className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 text-center text-sm text-muted-foreground"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
@@ -134,13 +140,13 @@ export function IssueStatusChart({
         },
         blur: { itemStyle: { opacity: 0.22 } },
         animationType: "scale",
-        animationEasing: "elasticOut",
+        animationEasing: "cubicOut",
         animationDuration: 800,
         animationDelay: (idx: number) => idx * 24,
         animationDurationUpdate: 550,
         animationEasingUpdate: "cubicInOut",
         data: summary.slices.map((s) => {
-          const base = colorFor(s.status);
+          const base = colorFor(s.status, dark);
           return {
             name: s.label,
             value: s.count,
@@ -178,7 +184,7 @@ export function IssueStatusChart({
         <div data-testid="issue-status-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorFor(drill) }} aria-hidden />
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorFor(drill, dark) }} aria-hidden />
               {drillSlice.label}
               <span className="text-xs font-normal text-muted-foreground">
                 {drillRows.length} {drillRows.length === 1 ? "project" : "projects"}
@@ -215,7 +221,7 @@ export function IssueStatusChart({
         {summary.slices.map((s) => {
           const open = drill === s.status;
           const barPct = summary.total > 0 ? (s.count / summary.total) * 100 : 0;
-          const color = colorFor(s.status);
+          const color = colorFor(s.status, dark);
           return (
             <li key={s.status} className="mb-1 break-inside-avoid">
               <button

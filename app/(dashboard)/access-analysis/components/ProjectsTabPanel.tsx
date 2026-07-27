@@ -5,6 +5,7 @@ import { SectionHeader } from "./SectionHeaders";
 import { IssueFetchCoverageDonut } from "./IssueFetchCoverageDonut";
 import { CoordinationByProject } from "./CoordinationByProject";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
+import { LoadFailedNotice } from "./LoadFailedNotice";
 import { IssueTimelineChart } from "./IssueTimelineChart";
 import { IssueStatusChart } from "./IssueStatusChart";
 import { IssueTypeChart } from "./IssueTypeChart";
@@ -41,14 +42,20 @@ export function ProjectsTabPanel({
   setProfileEmail,
   loadIssueFunnel,
   issueFunnelLoading,
+  issueFunnelFailed,
+  onRetryIssueFunnel,
   issueTimelineSummary,
   filteredIssueStatusRows,
   filteredIssueTypeRows,
   workflowToolSummaries,
   workflowToolsLoading,
+  workflowToolsFailed,
+  onRetryWorkflowTools,
   adminsData,
   adminsEnabled,
   adminsLoading,
+  adminsFailed,
+  onRetryAdmins,
 }: {
   coordinationData?: CoordinationByProjectData;
   filteredIssueCoverageProjects: IssueCoverageProjectRow[];
@@ -60,6 +67,10 @@ export function ProjectsTabPanel({
   /** Phase 21 ISSUE-02/03: presence gates both issue-funnel panels below the coverage donut. */
   loadIssueFunnel?: () => Promise<IssueFunnelData | null>;
   issueFunnelLoading?: boolean;
+  /** True when the lazy issue-funnel fetch REJECTED — the timeline panel shows
+   *  the retry state and the two sibling issue panels collapse (one fetch, one notice). */
+  issueFunnelFailed?: boolean;
+  onRetryIssueFunnel?: () => void;
   issueTimelineSummary?: TimelineSummary;
   filteredIssueStatusRows?: IssueFunnelStatusRow[];
   /** Phase 22 ISSUE-05: rides the same lazy loadIssueFunnel fetch, no new fetch branch. */
@@ -68,10 +79,14 @@ export function ProjectsTabPanel({
    *  until resolved (or forever, on a no-session result) → section stays hidden. */
   workflowToolSummaries?: Record<WorkflowTool, WorkflowToolSummary>;
   workflowToolsLoading?: boolean;
+  workflowToolsFailed?: boolean;
+  onRetryWorkflowTools?: () => void;
   /** Admins-per-project chart — lazy loadAdminsPerProject fetch, picker-filtered upstream. */
   adminsData?: AdminsPerProjectData | null;
   adminsEnabled?: boolean;
   adminsLoading?: boolean;
+  adminsFailed?: boolean;
+  onRetryAdmins?: () => void;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -102,6 +117,8 @@ export function ProjectsTabPanel({
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {issueFunnelLoading ? (
               <DonutPanelSkeleton />
+            ) : issueFunnelFailed && onRetryIssueFunnel ? (
+              <LoadFailedNotice what="the issue funnel (timeline, status, and type)" onRetry={onRetryIssueFunnel} />
             ) : (
               <>
                 <SectionHeader
@@ -118,8 +135,10 @@ export function ProjectsTabPanel({
         </Reveal>
       ) : null}
 
-      {/* Issues by status (ISSUE-03) — full-width, beneath the timeline. */}
-      {loadIssueFunnel ? (
+      {/* Issues by status (ISSUE-03) — full-width, beneath the timeline.
+          Collapsed while the shared issue-funnel fetch is failed: the timeline
+          panel above carries the single retry notice for all three. */}
+      {loadIssueFunnel && !issueFunnelFailed ? (
         <Reveal>
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {issueFunnelLoading ? (
@@ -140,8 +159,9 @@ export function ProjectsTabPanel({
         </Reveal>
       ) : null}
 
-      {/* Issues by type (ISSUE-05) — full-width, beneath the status panel. */}
-      {loadIssueFunnel ? (
+      {/* Issues by type (ISSUE-05) — full-width, beneath the status panel.
+          Collapsed while failed — same shared-fetch rule as Issues by status. */}
+      {loadIssueFunnel && !issueFunnelFailed ? (
         <Reveal>
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {issueFunnelLoading ? (
@@ -166,14 +186,16 @@ export function ProjectsTabPanel({
           grid. Hidden until the lazy fetch resolves (no-session results keep it
           hidden). RFI/submittal volume comes only from the DC feed — see
           lib/server/workflowToolsView.ts for the per-verb-family keep rules. */}
-      {(workflowToolsLoading || workflowToolSummaries) && (
+      {(workflowToolsLoading || workflowToolsFailed || workflowToolSummaries) && (
         <Reveal>
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             <SectionHeader
               title="Workflow tools"
               subtitle="How much are the document Reviews, Transmittals, RFIs, and Submittals workflows actually used? Every recorded action, by type — click one for its per-project breakdown. RFI and Submittal events come only from the batch Data Connector feed (the live feed does not report them), so recent weeks may lag."
             />
-            {workflowToolsLoading || !workflowToolSummaries ? (
+            {workflowToolsFailed && onRetryWorkflowTools ? (
+              <LoadFailedNotice what="workflow tool activity" onRetry={onRetryWorkflowTools} />
+            ) : workflowToolsLoading || !workflowToolSummaries ? (
               <DonutPanelSkeleton />
             ) : (
               <div className="grid gap-6 md:grid-cols-2">
@@ -191,14 +213,16 @@ export function ProjectsTabPanel({
 
       {/* Admins per project (owner ask 2026-07-23) — visible while loading;
           hidden only when the lazy loader is absent or returned no session. */}
-      {adminsEnabled && (adminsLoading || adminsData) && (
+      {adminsEnabled && (adminsLoading || adminsFailed || adminsData) && (
         <Reveal>
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             <SectionHeader
               title="Admins per project"
               subtitle="Who holds project-admin power, per project? ACC member sync and the Data Connector feed, deduped by email — with the projects neither source can see disclosed below."
             />
-            {adminsLoading || !adminsData ? (
+            {adminsFailed && onRetryAdmins ? (
+              <LoadFailedNotice what="admins per project" onRetry={onRetryAdmins} />
+            ) : adminsLoading || !adminsData ? (
               <DonutPanelSkeleton />
             ) : (
               <AdminsPerProjectChart data={adminsData} />

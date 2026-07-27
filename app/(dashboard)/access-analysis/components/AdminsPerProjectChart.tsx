@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { chartPalette } from "@/lib/colors/chartPalette";
 import type { EChartsOption } from "echarts";
 import type { AdminsPerProjectData, ProjectAdminsRow } from "@/lib/server/adminsPerProjectView";
 
@@ -11,16 +12,21 @@ const DEFAULT_TOP_N = 25;
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-/** Source split colors — steady blue for ACC sync, goldenrod for DC-only, zinc for unresolved. */
-const COLOR_MEMBER = "#4fabc9";
-const COLOR_DC_ONLY = "#d2a012";
+/** Zinc — the unresolved rollup, never a brand slot. */
 const COLOR_UNRESOLVED = "#71717a";
 
+/**
+ * Source split — sky for ACC sync, goldenrod for DC-only, zinc for unresolved.
+ * `slot` indexes the shared brand palette; -1 means the zinc rollup.
+ */
 const SERIES = [
-  { key: "member", label: "ACC member sync", color: COLOR_MEMBER },
-  { key: "dcOnly", label: "DC only", color: COLOR_DC_ONLY },
-  { key: "unresolved", label: "DC (no email)", color: COLOR_UNRESOLVED },
+  { key: "member", label: "ACC member sync", slot: 6 },
+  { key: "dcOnly", label: "DC only", slot: 3 },
+  { key: "unresolved", label: "DC (no email)", slot: -1 },
 ] as const;
+
+const seriesColor = (slot: number, dark: boolean): string =>
+  slot < 0 ? COLOR_UNRESOLVED : chartPalette(dark)[slot];
 
 function splitCounts(row: ProjectAdminsRow): { member: number; dcOnly: number; unresolved: number } {
   let member = 0;
@@ -58,7 +64,7 @@ export function AdminsPerProjectChart({ data }: { data: AdminsPerProjectData }) 
 
   if (data.rows.length === 0) {
     return (
-      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         No admin data in either source for this view.
       </div>
     );
@@ -116,7 +122,7 @@ export function AdminsPerProjectChart({ data }: { data: AdminsPerProjectData }) 
       stack: "admins",
       cursor: "pointer",
       barWidth: "58%",
-      itemStyle: { color: s.color },
+      itemStyle: { color: seriesColor(s.slot, dark) },
       data: splits.map((sp) => sp[s.key]),
       animationDuration: 700,
       animationEasing: "cubicOut" as const,

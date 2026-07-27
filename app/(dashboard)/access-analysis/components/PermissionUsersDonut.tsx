@@ -1,6 +1,7 @@
 "use client";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { permissionLevelColor } from "../permissionLevelColors";
 import type { EChartsOption } from "echarts";
 import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
 
@@ -16,15 +17,6 @@ import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
  * warm for power tiers, cool for read-mostly tiers, zinc for Unrecognized
  * (the sibling donuts' data-rollup color role).
  */
-const TIER_COLORS: Record<string, string> = {
-  "Full Controller": "#e06a62",
-  "View+Download+Upload+Edit": "#e8763f",
-  "View+Download+Upload": "#d2a012",
-  "View+Download": "#5e96ce",
-  "Upload Only": "#4fabc9",
-  "View Only": "#21a3b0",
-  Unrecognized: "#71717a",
-};
 
 /** Lighten a hex color by mixing it toward white by `amt` (0–1). */
 function lighten(hex: string, amt: number): string {
@@ -52,7 +44,7 @@ export function PermissionUsersDonut({ counts }: { counts: PermissionUserCounts 
 
   if (tiers.length === 0) {
     return (
-      <div className="flex h-[420px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[420px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         No recorded folder permissions.
         <span className="text-xs opacity-70">Run the folder crawl to populate permission data.</span>
       </div>
@@ -61,7 +53,7 @@ export function PermissionUsersDonut({ counts }: { counts: PermissionUserCounts 
 
   const cSlice = dark ? "#18181b" : "#ffffff";
   const cShadow = dark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.12)";
-  const colorFor = (permType: string) => TIER_COLORS[permType] ?? "#71717a";
+  const colorFor = (permType: string) => permissionLevelColor(permType, dark);
 
   const option: EChartsOption = {
     title: [

@@ -8,6 +8,7 @@ import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
 import { PermissionLevelChart } from "./PermissionLevelChart";
 import { ActivityRecencyChart } from "./ActivityRecencyChart";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
+import { LoadFailedNotice } from "./LoadFailedNotice";
 import { FolderActivityReveal } from "./FolderActivityReveal";
 import type { RoleSummary } from "../roleCounts";
 import type { RoleActivitySummary, MembershipRolesInput } from "../roleActivityCounts";
@@ -47,9 +48,13 @@ export function RolesTabPanel({
   covTotal,
   loadPermissionLevel,
   permissionLevelLoading,
+  permissionLevelFailed,
+  onRetryPermissionLevel,
   filteredPermissionLevelRows,
   loadActivityRecency,
   activityRecencyLoading,
+  activityRecencyFailed,
+  onRetryActivityRecency,
   filteredActivityRecencyRows,
   dataFloor,
   selected,
@@ -72,10 +77,15 @@ export function RolesTabPanel({
   /** Presence gates the Permission volume by level panel (PERM-01). */
   loadPermissionLevel?: () => Promise<PermissionLevelRow[] | null>;
   permissionLevelLoading: boolean;
+  /** True when the lazy fetch REJECTED (network/server failure) — render the retry state, not the honest-empty chart. */
+  permissionLevelFailed?: boolean;
+  onRetryPermissionLevel?: () => void;
   filteredPermissionLevelRows: PermissionLevelRow[];
   /** Presence gates the Activity recency by role panel (ENG-01). */
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
   activityRecencyLoading: boolean;
+  activityRecencyFailed?: boolean;
+  onRetryActivityRecency?: () => void;
   filteredActivityRecencyRows: ActivityRecencyRow[];
   dataFloor?: string | null;
   selected: Set<string>;
@@ -142,6 +152,8 @@ export function RolesTabPanel({
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {permissionLevelLoading ? (
               <DonutPanelSkeleton />
+            ) : permissionLevelFailed && onRetryPermissionLevel ? (
+              <LoadFailedNotice what="permission volume by level" onRetry={onRetryPermissionLevel} />
             ) : (
               <>
                 <SectionHeader
@@ -161,6 +173,8 @@ export function RolesTabPanel({
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {activityRecencyLoading ? (
               <DonutPanelSkeleton />
+            ) : activityRecencyFailed && onRetryActivityRecency ? (
+              <LoadFailedNotice what="activity recency by role" onRetry={onRetryActivityRecency} />
             ) : (
               <>
                 <SectionHeader

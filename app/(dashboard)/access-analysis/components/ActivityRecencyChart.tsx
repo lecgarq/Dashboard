@@ -46,7 +46,7 @@ export function ActivityRecencyChart({
   const [drill, setDrill] = useState<ActivityRecencyBand | null>(null);
 
   const summary = useMemo(() => summarizeActivityRecencyByRole(rows, now), [rows, now]);
-  const roleColors = useMemo(() => buildRoleColorMap(summary.roleNames), [summary.roleNames]);
+  const roleColors = useMemo(() => buildRoleColorMap(summary.roleNames, dark), [summary.roleNames, dark]);
 
   // Owner ask 2026-07-13: surface "no activity in the last year" (the >365d
   // band PLUS Never active) as a headline number, counted in PEOPLE (distinct
@@ -81,7 +81,7 @@ export function ActivityRecencyChart({
 
   if (rows.length === 0) {
     return (
-      <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" strokeLinecap="round" />

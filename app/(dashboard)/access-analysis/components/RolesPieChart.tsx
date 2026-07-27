@@ -4,18 +4,14 @@ import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import { PeopleDrillList } from "./PeopleDrillList";
-import { UNKNOWN_ROLE, MULTIPLE_ROLES, collapseToTopSlices, type RoleSlice, type DrillPerson } from "../roleCounts";
+import { UNKNOWN_ROLE, MULTIPLE_ROLES, REMOVED_MEMBER, collapseToTopSlices, type RoleSlice, type DrillPerson } from "../roleCounts";
+import { chartPalette } from "@/lib/colors/chartPalette";
 
 // Vibrant, cohesive palette for the role slices. These are data colors and
 // read well on both the light and dark card surfaces.
-const PALETTE = [
-  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
-  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f", "#55bcc7", "#e5bc4c",
-  "#cd94bb", "#abbd7c", "#7cc2da", "#ea928c", "#abcbe8", "#f6bc9d",
-  "#8ad2da", "#f0d384", "#dfb5d2", "#c6d3a0", "#a8d8e8", "#f2b7b3",
-];
-const UNKNOWN_COLOR = "#efb628"; // goldenrod — warning: membership has no role
+const UNKNOWN_COLOR = "#efb628"; // goldenrod — warning: ACTIVE membership has no role
 const MULTIPLE_COLOR = "#e0577b"; // wine-rose — warning: membership has several roles
+const REMOVED_COLOR = "#a1a1aa";  // zinc-400 — lifecycle: deleted membership (roles dropped by ACC, not missing data)
 const OTHERS_COLOR = "#71717a";   // zinc-500 — the folded tail
 
 const DEFAULT_TOP = 8;
@@ -41,6 +37,9 @@ const PIE_CSS = `
 `;
 
 const isWarning = (name: string) => name === UNKNOWN_ROLE || name === MULTIPLE_ROLES;
+// Lifecycle bucket, not a real role name: no ⚠ styling, no cross-filter, and it
+// never counts toward the "of N roles" slider total.
+const isRemoved = (name: string) => name === REMOVED_MEMBER;
 const isOthers = (name: string) => name.startsWith("Others (");
 
 function fmtPct(value: number, total: number): string {
@@ -80,18 +79,20 @@ export function RolesPieChart({
   // Stable color per role name (kept across collapse/expand).
   const colorByName = useMemo(() => {
     const m = new Map<string, string>();
+    const palette = chartPalette(dark);
     let hue = 0;
     for (const d of data) {
       m.set(
         d.name,
         d.name === UNKNOWN_ROLE ? UNKNOWN_COLOR
           : d.name === MULTIPLE_ROLES ? MULTIPLE_COLOR
-            : PALETTE[hue++ % PALETTE.length],
+            : d.name === REMOVED_MEMBER ? REMOVED_COLOR
+              : palette[hue++ % palette.length],
       );
     }
     return m;
-  }, [data]);
-  const singleCount = useMemo(() => data.filter((d) => !isWarning(d.name)).length, [data]);
+  }, [data, dark]);
+  const singleCount = useMemo(() => data.filter((d) => !isWarning(d.name) && !isRemoved(d.name)).length, [data]);
 
   const [topN, setTopN] = useState(DEFAULT_TOP);
   const [expanded, setExpanded] = useState(false);
@@ -115,7 +116,7 @@ export function RolesPieChart({
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
@@ -133,8 +134,8 @@ export function RolesPieChart({
   const toggleDrill = (name: string) => {
     if (isOthers(name)) { setExpanded(true); return; }
     setDrill((cur) => (cur === name ? null : name));
-    // Cross-filter: real role names only (not Others/warnings)
-    if (!isOthers(name) && !isWarning(name)) onSliceClick?.(name);
+    // Cross-filter: real role names only (not Others/warnings/lifecycle buckets)
+    if (!isOthers(name) && !isWarning(name) && !isRemoved(name)) onSliceClick?.(name);
   };
   const changeTopN = (raw: string) => {
     const n = Math.max(1, Math.floor(Number(raw) || 1));

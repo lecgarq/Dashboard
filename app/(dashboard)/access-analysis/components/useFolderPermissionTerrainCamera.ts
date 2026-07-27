@@ -16,7 +16,7 @@ import {
 
 export type DragMode = "select" | "orbit" | "pan";
 
-export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 // ---------------------------------------------------------------------------
 // Camera hook — Revit-style navigation around a fixed pivot.

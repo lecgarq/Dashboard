@@ -51,7 +51,7 @@ export function attributeRole(roles: string[]): string {
   return MULTIPLE_ROLES;
 }
 
-export interface ActivityRecencyDrillPerson {
+interface ActivityRecencyDrillPerson {
   name: string;
   company: string;
   role: string;

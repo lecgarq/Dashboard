@@ -41,7 +41,7 @@ export interface IssueStatusInputRow {
   count: number;
 }
 
-export interface IssueStatusSlice {
+interface IssueStatusSlice {
   /** The bucket key — one of ISSUE_STATUSES, or the raw status for an unexpected value. */
   status: string;
   /** Raw status string verbatim — no prettifying, no grouping. */

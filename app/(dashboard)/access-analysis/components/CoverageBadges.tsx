@@ -7,7 +7,7 @@ export function isFullyCovered(c?: ProjectCoverage): boolean {
   return !!c && c.hasActivity && c.folderCrawled;
 }
 
-export function coverageTitle(c?: ProjectCoverage): string {
+function coverageTitle(c?: ProjectCoverage): string {
   if (!c) return "Coverage unknown";
   const parts = [
     `Activity data ${c.hasActivity ? "✓" : "—"}`,
@@ -26,7 +26,7 @@ function hashHue(s: string): number {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
   return h;
 }
-export function officeHue(code: string): number {
+function officeHue(code: string): number {
   return OFFICE_HUE[code] ?? hashHue(code);
 }
 

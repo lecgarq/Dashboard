@@ -5,15 +5,20 @@ import { Reveal } from "@/components/ui/animated-list";
 import { DataTable } from "@/components/ui/DataTable";
 import { SectionHeader } from "./SectionHeaders";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
+import { LoadFailedNotice } from "./LoadFailedNotice";
 import { formatAbsolute } from "../relativeTime";
 import { bucketActivityRecency, type ActivityRecencyBand } from "../activityRecencyCounts";
 import type { ActivityRecencyRow } from "@/lib/server/activityRecencyView";
 import type { PermissionUserCounts } from "@/lib/server/permissionUserView";
 import { PermissionUsersDonut } from "./PermissionUsersDonut";
+import { ProfileAvatar } from "@/app/(dashboard)/users/ProfileAvatar";
+import { useOrgDirectoryPeople } from "@/app/(dashboard)/users/useMergedAccUsers";
 
 interface RecencyDetailRow {
   key: string;
   name: string;
+  email: string;
+  photoUrl: string | null;
   company: string;
   rolesLabel: string;
   lastActivityAt: string | null;
@@ -30,7 +35,17 @@ const COLUMNS: ColumnDef<RecencyDetailRow>[] = [
     header: "Name",
     size: 220,
     enableSorting: true,
-    cell: (ctx) => <span className="truncate text-sm font-medium text-foreground">{ctx.getValue()}</span>,
+    cell: (ctx) => (
+      <div className="flex min-w-0 items-center gap-2">
+        <ProfileAvatar
+          name={ctx.row.original.name}
+          email={ctx.row.original.email}
+          photoUrl={ctx.row.original.photoUrl}
+          size="sm"
+        />
+        <span className="truncate text-sm font-medium text-foreground">{ctx.getValue()}</span>
+      </div>
+    ),
   }) as ColumnDef<RecencyDetailRow>,
   helper.accessor("company", {
     id: "company",
@@ -76,17 +91,24 @@ const COLUMNS: ColumnDef<RecencyDetailRow>[] = [
 export function UsersTabPanel({
   loadActivityRecency,
   activityRecencyLoading,
+  activityRecencyFailed,
+  onRetryActivityRecency,
   filteredActivityRecencyRows,
   covCovered,
   covTotal,
   dataFloor,
   loadPermissionUsers,
   permissionUsersLoading,
+  permissionUsersFailed,
+  onRetryPermissionUsers,
   permissionUserCounts,
 }: {
   /** Presence gates the panel (fetched lazily by the shell on first Roles/Users tab activation). */
   loadActivityRecency?: () => Promise<ActivityRecencyRow[] | null>;
   activityRecencyLoading: boolean;
+  /** True when the lazy fetch REJECTED — render the retry state, never the honest-empty table. */
+  activityRecencyFailed?: boolean;
+  onRetryActivityRecency?: () => void;
   filteredActivityRecencyRows: ActivityRecencyRow[];
   covCovered: number;
   covTotal: number;
@@ -94,6 +116,8 @@ export function UsersTabPanel({
   /** Presence gates the users-by-permission-level donut (fetched lazily on first Users tab activation). */
   loadPermissionUsers?: () => Promise<PermissionUserCounts | null>;
   permissionUsersLoading?: boolean;
+  permissionUsersFailed?: boolean;
+  onRetryPermissionUsers?: () => void;
   permissionUserCounts?: PermissionUserCounts | null;
 }) {
   const [query, setQuery] = useState("");
@@ -101,18 +125,29 @@ export function UsersTabPanel({
   // Captured once per mount so band boundaries don't shift mid-session.
   const [now] = useState(() => Date.now());
 
+  // Google-directory photos, matched by email (the recency loader is
+  // server-side and carries no directory fields). Cached/deduped via React Query.
+  const people = useOrgDirectoryPeople();
+  const photoByEmail = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of people) if (p.photoUrl) map.set(p.email.toLowerCase(), p.photoUrl);
+    return map;
+  }, [people]);
+
   const rows = useMemo<RecencyDetailRow[]>(
     () =>
       filteredActivityRecencyRows.map((r) => ({
         key: `${r.projectId}::${r.email}`,
         name: r.name,
+        email: r.email,
+        photoUrl: photoByEmail.get(r.email.toLowerCase()) ?? null,
         company: r.company,
         rolesLabel: r.roles.length > 0 ? r.roles.join(", ") : "Unknown role",
         lastActivityAt: r.lastActivityAt,
         lastActivitySort: r.lastActivityAt ? Date.parse(r.lastActivityAt) : Number.NEGATIVE_INFINITY,
         band: bucketActivityRecency(r.lastActivityAt, now),
       })),
-    [filteredActivityRecencyRows, now],
+    [filteredActivityRecencyRows, now, photoByEmail],
   );
 
   const filteredRows = useMemo(() => {
@@ -137,6 +172,8 @@ export function UsersTabPanel({
           <section className="flex flex-col gap-3">
             {permissionUsersLoading ? (
               <DonutPanelSkeleton />
+            ) : permissionUsersFailed && onRetryPermissionUsers ? (
+              <LoadFailedNotice what="users by permission level" onRetry={onRetryPermissionUsers} />
             ) : permissionUserCounts ? (
               <>
                 <SectionHeader
@@ -154,6 +191,8 @@ export function UsersTabPanel({
         <section className="flex flex-col gap-3">
           {activityRecencyLoading ? (
             <DonutPanelSkeleton />
+          ) : activityRecencyFailed && onRetryActivityRecency ? (
+            <LoadFailedNotice what="activity recency detail" onRetry={onRetryActivityRecency} />
           ) : (
             <>
               <SectionHeader

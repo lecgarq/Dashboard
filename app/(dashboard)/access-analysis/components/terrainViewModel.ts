@@ -21,8 +21,8 @@ export type Metric = "users" | "projects";
 export type Hover = { cell: TerrainCell; x: number; y: number } | null;
 export type Picked = { cell: TerrainCell; source: FolderTerrainData } | null;
 
-export const PLANE_GAP = 64; // airy screen-px gap between stacked floating planes
-export const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
+const PLANE_GAP = 64; // airy screen-px gap between stacked floating planes
+const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
 export const VIEW_H = 520; // fixed stage height (px)
 
 /** Blend #rrggbb `hex` toward #rrggbb `target` by t (0 = hex, 1 = target).
@@ -49,7 +49,7 @@ export interface StageView { scenes: SceneEntry[]; connectors: { x1: number; y1:
 // ---------------------------------------------------------------------------
 // Pivot defaults + scene composition
 // ---------------------------------------------------------------------------
-export const centerPivot = (R: number, Cf: number) => ({ col: (R - 1) / 2, row: (Cf - 1) / 2 });
+const centerPivot = (R: number, Cf: number) => ({ col: (R - 1) / 2, row: (Cf - 1) / 2 });
 
 /** Grid dimensions of the active view (role columns × folder rows). */
 export function activeDims(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[]): { R: number; Cf: number } {
@@ -81,7 +81,7 @@ export function fitScale(R: number, Cf: number, vw: number, vh: number): number 
 // Many folders (e.g. the template's all-changed terrain) overflow the roomy
 // evenly-spaced folder-label list, so fall back to compact, collision-pruned
 // labels past this count; small terrains keep the spacious leader list.
-export const MANY_FOLDERS = 20;
+const MANY_FOLDERS = 20;
 
 export function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean, growth: number): StageView {
   const blank = (empty: string): StageView => ({ scenes: [], connectors: [], metric: "users", empty });

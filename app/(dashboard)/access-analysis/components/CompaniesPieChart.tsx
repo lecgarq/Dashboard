@@ -6,15 +6,10 @@ import type { EChartsOption } from "echarts";
 import { PeopleDrillList } from "./PeopleDrillList";
 import { type RoleSlice, type DrillPerson } from "../roleCounts";
 import { UNKNOWN_COMPANY, collapseCompanySlices } from "../companyCounts";
+import { chartPalette } from "@/lib/colors/chartPalette";
 
 // Vibrant, cohesive palette for the company slices. These are data colors and
 // read well on both the light and dark card surfaces.
-const PALETTE = [
-  "#5e96ce", "#e8763f", "#21a3b0", "#d2a012", "#bc74a4", "#8fa65a",
-  "#4fabc9", "#e06a62", "#86b3dc", "#f09a6f", "#55bcc7", "#e5bc4c",
-  "#cd94bb", "#abbd7c", "#7cc2da", "#ea928c", "#abcbe8", "#f6bc9d",
-  "#8ad2da", "#f0d384", "#dfb5d2", "#c6d3a0", "#a8d8e8", "#f2b7b3",
-];
 const UNKNOWN_COLOR = "#efb628"; // goldenrod — warning: membership has no company
 const OTHERS_COLOR = "#71717a";   // zinc-500 — the folded tail
 
@@ -80,12 +75,13 @@ export function CompaniesPieChart({
   // Stable color per company name (kept across collapse/expand).
   const colorByName = useMemo(() => {
     const m = new Map<string, string>();
+    const palette = chartPalette(dark);
     let hue = 0;
     for (const d of data) {
-      m.set(d.name, d.name === UNKNOWN_COMPANY ? UNKNOWN_COLOR : PALETTE[hue++ % PALETTE.length]);
+      m.set(d.name, d.name === UNKNOWN_COMPANY ? UNKNOWN_COLOR : palette[hue++ % palette.length]);
     }
     return m;
-  }, [data]);
+  }, [data, dark]);
   const singleCount = useMemo(() => data.filter((d) => !isWarning(d.name)).length, [data]);
 
   const [topN, setTopN] = useState(DEFAULT_TOP);
@@ -94,7 +90,7 @@ export function CompaniesPieChart({
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />

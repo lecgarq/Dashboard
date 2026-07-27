@@ -13,7 +13,7 @@
 import { UNKNOWN_ROLE, MULTIPLE_ROLES, type RoleSlice } from "./roleCounts";
 
 /** One contributing person within a role slice (the drill-down "from whom"). */
-export interface RoleActivityUser {
+interface RoleActivityUser {
   email: string;
   name: string;
   count: number;

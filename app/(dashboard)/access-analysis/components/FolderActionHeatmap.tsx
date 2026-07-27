@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { chartPalette } from "@/lib/colors/chartPalette";
 import type { EChartsOption } from "echarts";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { summarizeFolderActionMatrix, type FolderActionCell } from "../folderActionTypes";
@@ -68,9 +69,10 @@ export function FolderActionHeatmap({
   const cAxis = dark ? "#71717a" : "#6b7280";
   const cSplit = dark ? "#27272a" : "#e4e4e7";
   // zinc floor → azul mid → naranja peak (brand ramp; readable on both themes).
+  const brand = chartPalette(dark);
   const ramp = dark
-    ? ["#27272a", "#1f4258", "#4e8ccb", "#e8763f"]
-    : ["#f4f4f5", "#c5d9ec", "#4e8ccb", "#e8763f"];
+    ? ["#27272a", "#1f4258", brand[0], brand[1]]
+    : ["#f4f4f5", "#c5d9ec", brand[0], brand[1]];
 
   const option: EChartsOption | null = useMemo(() => {
     if (!matrix || matrix.folders.length === 0) return null;

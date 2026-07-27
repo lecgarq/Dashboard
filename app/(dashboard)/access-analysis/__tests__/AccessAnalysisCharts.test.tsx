@@ -10,6 +10,14 @@ vi.mock("echarts-for-react", () => ({
   },
 }));
 
+// UsersTabPanel enriches avatar photos from the org directory via tRPC hooks;
+// this suite renders without a tRPC provider, so stub the directory to empty
+// (initials fallback) and keep the module's pure exports intact.
+vi.mock("@/app/(dashboard)/users/useMergedAccUsers", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useOrgDirectoryPeople: () => [],
+}));
+
 // UsersTabPanel's activity-recency detail table (20.1-06) uses the shared
 // DataTable (@tanstack/react-virtual). jsdom has no scroll geometry so the
 // real virtualizer returns 0 items by default — mock it to render every row,
@@ -522,6 +530,41 @@ describe("AccessAnalysisCharts — Phase 21 issue-funnel panels (ISSUE-02/03)", 
     openTab(getByRole, /^overview$/i);
     openTab(getByRole, /projects/i);
     expect(loadIssueFunnel).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Fetch-failure hardening: a REJECTED lazy loader must render the distinct
+// "Couldn't load — Retry" state (never the honest-empty chart, which would
+// misreport a network failure as "no data"), and Retry must re-fire the load.
+describe("AccessAnalysisCharts — lazy-loader failure states", () => {
+  it("shows the retry notice when a lazy loader rejects, and recovers on Retry", async () => {
+    const loadIssueFunnel = vi
+      .fn(async () => ({ monthRows: [], statusRows: [], typeRows: [] }))
+      .mockRejectedValueOnce(new Error("network down"));
+    const { getByRole, findByText, findByRole, queryByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadIssueFunnel={loadIssueFunnel} />,
+    );
+    openTab(getByRole, /projects/i);
+    await findByText(/Couldn't load the issue funnel/);
+    // Sibling issue panels collapse behind the single notice — no fake empties.
+    expect(queryByText("Issues by status")).toBeNull();
+
+    fireEvent.click(await findByRole("button", { name: /retry/i }));
+    await findByText("Issues over time");
+    expect(await findByText("Issues by status")).toBeTruthy();
+    expect(loadIssueFunnel).toHaveBeenCalledTimes(2);
+  });
+
+  it("a rejected activity-recency loader shows retry on the Users tab instead of the empty table", async () => {
+    const loadActivityRecency = vi.fn(async (): Promise<ActivityRecencyRow[]> => {
+      throw new Error("boom");
+    });
+    const { getByRole, findByText, queryByText } = render(
+      <AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} loadActivityRecency={loadActivityRecency} />,
+    );
+    openTab(getByRole, /users/i);
+    await findByText(/Couldn't load activity recency detail/);
+    expect(queryByText("No memberships in this view.")).toBeNull();
   });
 });
 

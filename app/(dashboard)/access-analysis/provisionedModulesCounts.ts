@@ -15,14 +15,14 @@ import { MODULES, moduleLabelById } from "./modules";
 import type { ModuleId } from "./types";
 
 /** One module's total grant count -- a horizontal-bar value. */
-export interface ProvisionedModuleBar {
+interface ProvisionedModuleBar {
   id: string;
   name: string;
   value: number; // total grants
 }
 
 /** One project's grant count within a module's drill-down. */
-export interface ProvisionedModuleProjectRow {
+interface ProvisionedModuleProjectRow {
   projectId: string;
   projectName: string;
   count: number;

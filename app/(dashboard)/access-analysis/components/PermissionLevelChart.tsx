@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import { DEFAULT_TOP_N, PERMISSION_LEVEL_ORDER, countRolesPerLevel, summarizePermissionLevel } from "../permissionLevelCounts";
+import { buildLevelColorMap, UNKNOWN_LEVEL_COLOR } from "../permissionLevelColors";
 import type { PermissionLevelRow } from "@/lib/server/permissionLevelView";
 
 const isOther = (roleName: string) => roleName.startsWith("Other (");
@@ -11,31 +12,6 @@ const isOther = (roleName: string) => roleName.startsWith("Other (");
 // ACC role names are third-party data rendered into tooltip HTML via innerHTML
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-
-/**
- * Sequential intensity ramp aligned to `PERMISSION_LEVEL_ORDER` (strongest ->
- * weakest): most-intense color = "Full Controller", coolest = "View Only".
- * Any level beyond the known 6 (research-verified live vocabulary) falls back
- * to a neutral zinc tone — still rendered, never hidden.
- */
-const LEVEL_COLOR_RAMP = [
-  "#d03a35", // Full Controller — warm red
-  "#e2683a", // View+Download+Upload+Edit — naranja
-  "#d2a012", // View+Download+Upload — goldenrod
-  "#e5bc4c", // View+Download — goldenrod (light)
-  "#bc74a4", // Upload Only — wine
-  "#4fabc9", // View Only — state-blue sky
-];
-const UNKNOWN_LEVEL_COLOR = "#71717a"; // zinc-500 — fallback for any unrecognized level
-
-function buildLevelColorMap(levels: ReadonlyArray<string>): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const level of levels) {
-    const knownIndex = (PERMISSION_LEVEL_ORDER as readonly string[]).indexOf(level);
-    m.set(level, knownIndex >= 0 ? LEVEL_COLOR_RAMP[knownIndex] : UNKNOWN_LEVEL_COLOR);
-  }
-  return m;
-}
 
 /**
  * Permission-volume-by-level panel (PERM-01 reframe — owner UAT item 3,
@@ -65,7 +41,7 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
     [rows, expanded],
   );
   const rolesPerLevel = useMemo(() => countRolesPerLevel(rows), [rows]);
-  const colorByLevel = useMemo(() => buildLevelColorMap(summary.levels), [summary.levels]);
+  const colorByLevel = useMemo(() => buildLevelColorMap(summary.levels, dark), [summary.levels, dark]);
 
   const cTitle = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#52525b";
@@ -73,7 +49,7 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
 
   if (rows.length === 0) {
     return (
-      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M3 7h18M3 12h12M3 17h8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

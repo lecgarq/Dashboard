@@ -21,7 +21,7 @@ import {
 export const DEFAULT_TOP_N = 10;
 
 /** One company's aggregated folder-scoped activity (a chart bar). */
-export interface FolderCompanyBar {
+interface FolderCompanyBar {
   company: string;
   count: number;
   /** This company's contributing user emails — feeds the per-company drill action. Empty for the "Other" bucket (no drill). */

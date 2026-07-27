@@ -59,8 +59,8 @@ export function FolderActivityByCompanyChart({
   );
 
   const colorByCompany = useMemo(
-    () => buildRoleColorMap(summary.bars.filter((b) => !isOther(b.company)).map((b) => b.company)),
-    [summary.bars],
+    () => buildRoleColorMap(summary.bars.filter((b) => !isOther(b.company)).map((b) => b.company), dark),
+    [summary.bars, dark],
   );
   const colorFor = (company: string) => (isOther(company) ? OTHER_COLOR : colorByCompany.get(company) ?? "#888");
 
@@ -70,7 +70,7 @@ export function FolderActivityByCompanyChart({
 
   if (rows.length === 0) {
     return (
-      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M3 7h18M3 12h12M3 17h8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

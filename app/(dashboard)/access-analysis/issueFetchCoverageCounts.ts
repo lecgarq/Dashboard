@@ -32,7 +32,7 @@ export interface IssueCoverageInputRow {
   issueCount: number;
 }
 
-export interface IssueCoverageSlice {
+interface IssueCoverageSlice {
   /** The bucket key — one of COVERAGE_BUCKETS, or the raw status for an unexpected value. */
   status: string;
   label: string;

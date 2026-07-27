@@ -7,6 +7,7 @@ import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
 import { FolderActivityByCompanyChart } from "./FolderActivityByCompanyChart";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
+import { LoadFailedNotice } from "./LoadFailedNotice";
 import type { CompanySummary } from "../companyCounts";
 import type { CompanyActivitySummary, MembershipCompanyInput } from "../companyActivityCounts";
 import type { DormantEntity } from "../dormantActivity";
@@ -35,6 +36,8 @@ export function CompaniesTabPanel({
   covTotal,
   loadFolderScopedActivity,
   folderScopedActivityLoading,
+  folderScopedActivityFailed,
+  onRetryFolderScopedActivity,
   filteredFolderScopedActivityRows,
   membershipRows,
   selected,
@@ -54,6 +57,9 @@ export function CompaniesTabPanel({
   /** Presence gates the Folder activity by company panel (UAT-6). */
   loadFolderScopedActivity?: () => Promise<FolderActivityActorRow[] | null>;
   folderScopedActivityLoading: boolean;
+  /** True when the lazy fetch REJECTED — render the retry state, never the honest-empty chart. */
+  folderScopedActivityFailed?: boolean;
+  onRetryFolderScopedActivity?: () => void;
   filteredFolderScopedActivityRows: FolderActivityActorRow[];
   membershipRows?: MembershipCompanyInput[];
   selected: Set<string>;
@@ -117,6 +123,8 @@ export function CompaniesTabPanel({
           <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {folderScopedActivityLoading ? (
               <DonutPanelSkeleton />
+            ) : folderScopedActivityFailed && onRetryFolderScopedActivity ? (
+              <LoadFailedNotice what="folder activity by company" onRetry={onRetryFolderScopedActivity} />
             ) : (
               <>
                 <SectionHeader

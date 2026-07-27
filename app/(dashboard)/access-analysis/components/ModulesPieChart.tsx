@@ -29,7 +29,7 @@ export const MODULE_COLORS: Record<string, string> = {
   datum: "#e05b55", // warm red
   insight: "#efb628", // goldenrod
   design: "#0e98a8", // seaweed
-  autospecs: "#cd94bb", // wine (light tier)
+  autospecs: "#c992b8", // wine (light tier)
 };
 const UNMAPPED_COLOR = "#71717a"; // zinc-500 — the data-quality bucket
 
@@ -89,7 +89,7 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
 
   if (slices.length === 0) {
     return (
-      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
         <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 opacity-40" stroke="currentColor" strokeWidth="1.5">
           <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
           <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
