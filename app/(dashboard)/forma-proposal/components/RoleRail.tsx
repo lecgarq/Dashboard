@@ -49,7 +49,7 @@ export function RoleRail({
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {groupOrder.map((group) => (
           <div key={group} className="mb-3">
-            <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
+            <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/60">
               {group}
             </div>
             <div className="space-y-0.5">
@@ -79,7 +79,7 @@ export function RoleRail({
                     {count > 0 && (
                       <span
                         className={cn(
-                          "rounded-full px-1.5 text-[10px] font-medium tabular-nums",
+                          "rounded-full px-1.5 text-[11px] font-medium tabular-nums",
                           active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground/80",
                         )}
                       >

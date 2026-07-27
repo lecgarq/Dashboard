@@ -295,7 +295,7 @@ function DimFilter({
     <div className="flex flex-col gap-2" data-testid={`activity-${id}-filter`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">{title}</span>
-        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
           {allSelected ? "All" : `${fmt(selected.size)}/${fmt(options.length)}`}
         </span>
       </div>
@@ -340,7 +340,7 @@ function DimFilter({
                   </svg>
                 </span>
                 <span className="min-w-0 flex-1 truncate">{label}</span>
-                <span className="shrink-0 font-mono tabular-nums text-[10px] text-muted-foreground">
+                <span className="shrink-0 font-mono tabular-nums text-[11px] text-muted-foreground">
                   {fmt(counts.get(label) ?? 0)}
                 </span>
               </label>

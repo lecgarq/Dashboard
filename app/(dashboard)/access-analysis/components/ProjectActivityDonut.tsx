@@ -188,7 +188,7 @@ export function ProjectActivityDonut({ summary }: { summary: ProjectActivitySumm
   };
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={400}

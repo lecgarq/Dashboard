@@ -174,7 +174,7 @@ function StatCard({
     <>
       <Icon size={16} className={color} />
       <span className="text-xl font-extrabold tabular-nums text-foreground leading-none">{value}</span>
-      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+      <span className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
     </>
   );
   if (onClick) {
@@ -593,7 +593,7 @@ export function AccProfileFull({
 
           {/* Sort + Filter controls */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-bold">Sort:</span>
+            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider font-bold">Sort:</span>
             {(
               [
                 ["name", "Name"],
@@ -616,14 +616,14 @@ export function AccProfileFull({
                 <ArrowUpDown size={10} />
                 {label}
                 {sortField === field && (
-                  <span className="text-[10px]">{sortAsc ? "↑" : "↓"}</span>
+                  <span className="text-[11px]">{sortAsc ? "↑" : "↓"}</span>
                 )}
               </button>
             ))}
 
             <div className="w-px h-5 bg-border/30 mx-1" />
 
-            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-bold">Filter:</span>
+            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider font-bold">Filter:</span>
             {(["all", "active", "inactive"] as const).map((s) => (
               <button
                 key={s}
@@ -682,7 +682,7 @@ export function AccProfileFull({
       </div>
 
       {/* Synced timestamp */}
-      <p className="text-[10px] text-muted-foreground/40">
+      <p className="text-[11px] text-muted-foreground/40">
         Last synced {new Date(data.syncedAt).toLocaleString()}
       </p>
     </div>
@@ -768,7 +768,7 @@ function AccUserActivityPanel({ email }: { email: string }) {
           {/* Top actions */}
           {data.topActions.length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
                 Top actions
               </p>
               <div className="space-y-1.5">
@@ -784,7 +784,7 @@ function AccUserActivityPanel({ email }: { email: string }) {
           {/* Recent events */}
           {data.recentEvents.length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
                 Recent events ({data.recentEvents.length})
               </p>
               <div className="max-h-[40vh] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
@@ -795,12 +795,12 @@ function AccUserActivityPanel({ email }: { email: string }) {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-foreground">{e.action}</span>
-                      <span className="text-[10px] text-muted-foreground/50">
+                      <span className="text-[11px] text-muted-foreground/50">
                         {new Date(e.createdAt).toLocaleString()}
                       </span>
                     </div>
                     {(e.projectName || e.service) && (
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
                         {e.projectName && <span className="truncate">{e.projectName}</span>}
                         {e.service && (
                           <span className="px-1.5 py-px rounded bg-muted/20">
@@ -896,13 +896,13 @@ function AccUserFolderAccessPanel({ email }: { email: string }) {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-1.5 py-px font-semibold border-chart-5/30 text-chart-5"
+                        className="text-[11px] px-1.5 py-px font-semibold border-chart-5/30 text-chart-5"
                       >
                         {f.roleName}
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-1.5 py-px font-semibold border-amber-500/30 text-amber-400"
+                        className="text-[11px] px-1.5 py-px font-semibold border-amber-500/30 text-amber-400"
                       >
                         {f.permType}
                       </Badge>
@@ -962,12 +962,12 @@ function AccUserRecentAdditionsPanel({ projects }: { projects: ProjectData[] }) 
                   {p.name}
                 </span>
                 {p.isAdmin && (
-                  <Badge variant="outline" className="text-[9px] px-1 py-px font-bold border-amber-500/30 text-amber-400 shrink-0">
+                  <Badge variant="outline" className="text-[11px] px-1 py-px font-bold border-amber-500/30 text-amber-400 shrink-0">
                     ADMIN
                   </Badge>
                 )}
               </div>
-              <span className="text-[10px] text-muted-foreground/60 shrink-0">
+              <span className="text-[11px] text-muted-foreground/60 shrink-0">
                 {new Date(p.addedOn as string).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
               </span>
             </div>

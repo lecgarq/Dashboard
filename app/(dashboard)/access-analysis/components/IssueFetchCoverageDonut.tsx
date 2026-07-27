@@ -192,7 +192,7 @@ export function IssueFetchCoverageDonut({ coverage, projects }: IssueFetchCovera
   const drillRows = drill ? summary.projectsByStatus.get(drill) ?? [] : [];
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         {coverage.runStartedAt && (
           <span

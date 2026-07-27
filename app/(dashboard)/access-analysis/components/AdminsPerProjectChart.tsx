@@ -132,7 +132,7 @@ export function AdminsPerProjectChart({ data }: { data: AdminsPerProjectData }) 
   const drillRow = drill ? data.rows.find((r) => r.projectId === drill) : null;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={Math.max(220, bars.length * 30 + 64)}

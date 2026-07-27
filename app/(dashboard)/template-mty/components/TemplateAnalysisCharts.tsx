@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Reveal } from "@/components/ui/animated-list";
 import { StatStrip } from "@/components/ui/stat-tile";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { RolesPieChart } from "@/app/(dashboard)/access-analysis/components/RolesPieChart";
 import { FolderPermissionTerrain } from "@/app/(dashboard)/access-analysis/components/FolderPermissionTerrain";
 import { loadTemplateTerrain } from "../templateTerrainActions";
@@ -18,6 +19,7 @@ import { RoleAccessPie } from "./RoleAccessPie";
 import { RoleSimilarityGraph } from "./RoleSimilarityGraph";
 import { RoleOverviewSheet } from "./RoleOverviewSheet";
 import { TemplateMembersTableShell } from "./TemplateMembersTableShell";
+import { RosterFreshnessNotice } from "./RosterFreshnessNotice";
 
 // Lazy: keeps the heavy shared users-profile + tRPC chain out of the initial
 // template-mty bundle — loads only once a member row is first clicked. Mirrors
@@ -91,10 +93,7 @@ export function TemplateAnalysisCharts({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">Template</span>
-          <span>Roster updated {overview.updatedAt}</span>
-        </div>
+        <RosterFreshnessNotice age={overview.rosterAge} />
         <StatStrip
           stats={[
             { label: "Members", value: overview.memberCount, accent: "primary" },
@@ -116,7 +115,10 @@ export function TemplateAnalysisCharts({
       </Reveal>
 
       <Reveal>
-        <section className="flex flex-col gap-3">
+        {/* PremiumSurface supplies the card that RolesPieChart used to carry itself.
+            The chart is shell-free now so it never nests inside the /access-analysis
+            tab panels; here it is the outermost surface, so the panel lives here. */}
+        <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
           <SectionHeader title="Role distribution" subtitle="Roles held across the template's member roster." />
           <RolesPieChart
             data={overview.roleSummary.slices}
@@ -124,7 +126,7 @@ export function TemplateAnalysisCharts({
             usersByRole={overview.roleSummary.usersByRole}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
-        </section>
+        </PremiumSurface>
       </Reveal>
 
       <Reveal>
@@ -150,7 +152,7 @@ export function TemplateAnalysisCharts({
       </Reveal>
 
       <Reveal>
-        <section className="flex flex-col gap-3">
+        <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
           <SectionHeader title="Folder permission terrain" subtitle="Every folder under Project Files, at any depth. Bright bars are folders whose permissions were deliberately changed from their parent; dimmed bars simply inherit. Colour = permission tier, height = members in that role. Drag to orbit, scroll to zoom, hover a bar for the folder." />
           <FolderPermissionTerrain
             projects={[terrainOption]}
@@ -158,7 +160,7 @@ export function TemplateAnalysisCharts({
             loadTerrain={loadTemplateTerrain}
             singleProject
           />
-        </section>
+        </PremiumSurface>
       </Reveal>
 
       <Reveal>

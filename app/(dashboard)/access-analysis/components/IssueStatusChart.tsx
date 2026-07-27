@@ -171,7 +171,7 @@ export function IssueStatusChart({
   const drillRows = drill ? summary.projectsByStatus.get(drill) ?? [] : [];
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={400}
@@ -257,7 +257,7 @@ export function IssueStatusChart({
       {caption.total > 0 ? (
         <p
           data-testid="issue-status-coverage-caption"
-          className="mt-2 text-[10px] text-muted-foreground"
+          className="mt-2 text-[11px] text-muted-foreground"
         >
           {coverageCaptionText(caption)}
         </p>

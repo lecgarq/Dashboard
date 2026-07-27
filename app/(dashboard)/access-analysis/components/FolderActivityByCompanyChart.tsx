@@ -148,7 +148,7 @@ export function FolderActivityByCompanyChart({
   const isLoadingDrill = drill !== null && loadingCompany === drill;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={Math.max(200, summary.bars.length * 38 + 40)}
@@ -278,11 +278,11 @@ export function FolderActivityByCompanyChart({
       )}
 
       {coverage && (
-        <p data-testid="folder-activity-coverage-caption" className="mt-2 text-[10px] text-muted-foreground">
+        <p data-testid="folder-activity-coverage-caption" className="mt-2 text-[11px] text-muted-foreground">
           Folder-scoped activity — accds covers {coverage.covered} of {coverage.total} projects.
         </p>
       )}
-      <p data-testid="folder-activity-unknown-caption" className="mt-1 text-[10px] text-muted-foreground">
+      <p data-testid="folder-activity-unknown-caption" className="mt-1 text-[11px] text-muted-foreground">
         Users with no company mapping appear as Unknown company.
       </p>
     </div>

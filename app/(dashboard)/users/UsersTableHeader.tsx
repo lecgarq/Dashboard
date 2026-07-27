@@ -19,6 +19,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Users } from "lucide-react";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 // ---------------------------------------------------------------------------
 // R3F particle accent — dynamic import (ssr:false) to keep WebGL off the
@@ -40,7 +41,7 @@ const HeaderParticleAccent = dynamic(
 // incidental re-renders (sort/filter/density/panel-open) because those don't
 // change the KPI value. Uses requestAnimationFrame for deterministic testing.
 // ---------------------------------------------------------------------------
-function useAnimatedNumber(target: number): number {
+function useAnimatedNumber(target: number, reducedMotion: boolean): number {
   const [displayed, setDisplayed] = useState(0);
   // The value we're animating FROM (the last rendered frame's number).
   const fromRef = useRef(0);
@@ -49,6 +50,17 @@ function useAnimatedNumber(target: number): number {
   const lastTargetRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Checked BEFORE the unchanged-target guard so switching the OS preference
+    // on mid-count lands on the real figure instead of freezing part-way.
+    // The globals.css reduced-motion rule only clamps CSS animation and
+    // transition; a requestAnimationFrame loop is invisible to it.
+    if (reducedMotion) {
+      lastTargetRef.current = target;
+      fromRef.current = target;
+      setDisplayed(target);
+      return;
+    }
+
     if (lastTargetRef.current === target) return; // unchanged value → no restart
     lastTargetRef.current = target;
 
@@ -79,7 +91,7 @@ function useAnimatedNumber(target: number): number {
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [target]); // re-arm whenever the target value changes
+  }, [target, reducedMotion]); // re-arm on a new value or a preference change
 
   return displayed;
 }
@@ -87,8 +99,8 @@ function useAnimatedNumber(target: number): number {
 // ---------------------------------------------------------------------------
 // AnimatedNumber component
 // ---------------------------------------------------------------------------
-function AnimatedNumber({ value }: { value: number }) {
-  const displayed = useAnimatedNumber(value);
+function AnimatedNumber({ value, reducedMotion }: { value: number; reducedMotion: boolean }) {
+  const displayed = useAnimatedNumber(value, reducedMotion);
   return <>{displayed.toLocaleString()}</>;
 }
 
@@ -101,9 +113,10 @@ interface KpiTileProps {
    *  source query hasn't landed must not animate a confident 0 at 24px on a
    *  projector. Truthful over impressive, including while loading. */
   value: number | null;
+  reducedMotion: boolean;
 }
 
-function KpiTile({ label, value }: KpiTileProps) {
+function KpiTile({ label, value, reducedMotion }: KpiTileProps) {
   return (
     <PremiumSurface variant="glass" className="px-4 py-2.5 min-w-[96px]">
       <p className="text-xs text-muted-foreground font-medium leading-tight mb-1 whitespace-nowrap">{label}</p>
@@ -113,7 +126,7 @@ function KpiTile({ label, value }: KpiTileProps) {
             &mdash;
           </span>
         ) : (
-          <AnimatedNumber value={value} />
+          <AnimatedNumber value={value} reducedMotion={reducedMotion} />
         )}
       </p>
     </PremiumSurface>
@@ -135,10 +148,14 @@ export interface UsersTableHeaderProps {
 }
 
 export function UsersTableHeader({ totalUsers, inAcc, notInAcc, internals, externals, active30d, admins }: UsersTableHeaderProps) {
+  const reducedMotion = useReducedMotion();
   return (
     <div className="relative flex flex-wrap items-center justify-between gap-y-2 py-2 overflow-hidden rounded-2xl">
-      {/* Particle accent — absolutely positioned behind KPIs, pointer-events:none */}
-      <HeaderParticleAccent />
+      {/* Particle accent — absolutely positioned behind KPIs, pointer-events:none.
+          Gated here rather than inside the accent so reduced-motion users never
+          fetch the three.js chunk or open a WebGL context at all: the field is a
+          perpetual loop, which is exactly what the preference asks us not to run. */}
+      {!reducedMotion && <HeaderParticleAccent />}
 
       {/* Left: title block */}
       <div className="relative z-10 flex items-center gap-3">
@@ -153,13 +170,13 @@ export function UsersTableHeader({ totalUsers, inAcc, notInAcc, internals, exter
 
       {/* Right: KPI tiles — wraps so no tile is ever clipped by overflow-hidden */}
       <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
-        <KpiTile label="Total users" value={totalUsers} />
-        <KpiTile label="In ACC" value={inAcc} />
-        <KpiTile label="Not in ACC" value={notInAcc} />
-        <KpiTile label="Internal" value={internals} />
-        <KpiTile label="External" value={externals} />
-        <KpiTile label="Active 30d" value={active30d} />
-        <KpiTile label="Admins" value={admins} />
+        <KpiTile label="Total users" value={totalUsers} reducedMotion={reducedMotion} />
+        <KpiTile label="In ACC" value={inAcc} reducedMotion={reducedMotion} />
+        <KpiTile label="Not in ACC" value={notInAcc} reducedMotion={reducedMotion} />
+        <KpiTile label="Internal" value={internals} reducedMotion={reducedMotion} />
+        <KpiTile label="External" value={externals} reducedMotion={reducedMotion} />
+        <KpiTile label="Active 30d" value={active30d} reducedMotion={reducedMotion} />
+        <KpiTile label="Admins" value={admins} reducedMotion={reducedMotion} />
       </div>
     </div>
   );

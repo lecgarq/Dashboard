@@ -313,7 +313,7 @@ export function DirectoryFilterBar({
               <CheckCircle2 size={11} className="shrink-0 text-muted-foreground" />
               Status
               {statusFilter.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[11px]">
                   {statusFilter.length}
                 </Badge>
               )}

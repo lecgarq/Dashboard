@@ -179,7 +179,7 @@ export function IssueTypeChart({
   if (caption.total > 0) captionParts.push(coverageCaptionText(caption));
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={Math.max(220, summary.buckets.length * 38 + 48)}
@@ -254,7 +254,7 @@ export function IssueTypeChart({
       )}
 
       {captionParts.length > 0 && (
-        <p data-testid="issue-type-coverage-caption" className="mt-2 text-[10px] text-muted-foreground">
+        <p data-testid="issue-type-coverage-caption" className="mt-2 text-[11px] text-muted-foreground">
           {captionParts.join(" · ")}
         </p>
       )}

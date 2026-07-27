@@ -304,11 +304,11 @@ export function ProjectPicker({
                           <IconChevron open={!isCollapsed} />
                         </span>
                         <span className="truncate text-xs font-semibold text-foreground">{g.label}</span>
-                        <span className="shrink-0 rounded-md bg-muted px-1.5 py-px text-[10px] tabular-nums text-muted-foreground">
+                        <span className="shrink-0 rounded-md bg-muted px-1.5 py-px text-[11px] tabular-nums text-muted-foreground">
                           {selectedInGroup}/{g.options.length}
                         </span>
                         {hasCoverage && coveredInGroup > 0 && (
-                          <span className="shrink-0 text-[10px] font-medium text-success" title={`${coveredInGroup} fully covered`}>
+                          <span className="shrink-0 text-[11px] font-medium text-success" title={`${coveredInGroup} fully covered`}>
                             ✓{coveredInGroup}
                           </span>
                         )}
@@ -318,7 +318,7 @@ export function ProjectPicker({
                           type="button"
                           onClick={() => addIds(ids)}
                           aria-label={`Select all in ${g.label}`}
-                          className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-foreground transition hover:border-primary/50 hover:bg-primary/10"
+                          className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] font-medium text-foreground transition hover:border-primary/50 hover:bg-primary/10"
                         >
                           All
                         </button>
@@ -326,7 +326,7 @@ export function ProjectPicker({
                           type="button"
                           onClick={() => removeIds(ids)}
                           aria-label={`Deselect all in ${g.label}`}
-                          className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                          className="rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
                         >
                           None
                         </button>
@@ -348,7 +348,7 @@ export function ProjectPicker({
               <b className="text-foreground">{selectedCount.toLocaleString()}</b> selected
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-border bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">Esc</kbd>
+              <kbd className="rounded border border-border bg-muted px-1 py-px font-mono text-[11px] text-muted-foreground">Esc</kbd>
               to close
             </span>
           </div>

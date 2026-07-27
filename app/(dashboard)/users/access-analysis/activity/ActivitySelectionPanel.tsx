@@ -70,7 +70,7 @@ export function ActivitySelectionPanel({
               <span data-testid="activity-selection-count">{fmt(selectedCount)}</span>{" "}
               <span className="text-xs font-medium text-muted-foreground">selected</span>
             </div>
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-[11px] text-muted-foreground">
               {sharePct >= 0.1 ? `${sharePct.toFixed(1)}% ` : ""}of {fmt(renderedCount)} rendered
               events
             </div>
@@ -127,7 +127,7 @@ export function ActivitySelectionPanel({
                   {dim.label}
                 </h3>
                 <span
-                  className="shrink-0 rounded-md px-1.5 py-px font-mono text-[10px] tabular-nums"
+                  className="shrink-0 rounded-md px-1.5 py-px font-mono text-[11px] tabular-nums"
                   style={{
                     background: `color-mix(in srgb, ${accent} 14%, transparent)`,
                     color: accent,
@@ -174,7 +174,7 @@ export function ActivitySelectionPanel({
                         {cat.label}
                       </span>
                       <span
-                        className="relative z-10 shrink-0 font-mono text-[10px] tabular-nums"
+                        className="relative z-10 shrink-0 font-mono text-[11px] tabular-nums"
                         style={rowIdx === 0 ? { color: accent } : undefined}
                         aria-hidden={share < 0.05}
                       >
@@ -188,7 +188,7 @@ export function ActivitySelectionPanel({
                 })}
               </ul>
               {unknown > 0 ? (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground">
                   {fmt(unknown)} unknown / unattributed
                 </p>
               ) : null}

@@ -1560,7 +1560,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               onDragEnd={() => handle3Ref.current?.setControlsEnabled(true)}
             />
             {!has3dEmbedding ? (
-              <div className="pointer-events-none absolute bottom-16 right-4 rounded-md border bg-card/80 px-2 py-1 font-mono text-[10px] text-muted-foreground backdrop-blur-sm">
+              <div className="pointer-events-none absolute bottom-16 right-4 rounded-md border bg-card/80 px-2 py-1 font-mono text-[11px] text-muted-foreground backdrop-blur-sm">
                 3D embedding not built — showing depth = month fallback
               </div>
             ) : null}
@@ -1661,7 +1661,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
               <button
                 type="button"
                 onClick={clearSelection}
-                className="ml-2 rounded border px-1.5 py-0.5 text-[10px] hover:bg-accent"
+                className="ml-2 rounded border px-1.5 py-0.5 text-[11px] hover:bg-accent"
               >
                 Clear
               </button>
@@ -1704,14 +1704,14 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
           className="absolute right-4 top-14 z-10 rounded-md border bg-card/80 px-3 py-2 backdrop-blur-sm transition-[right] duration-150 ease-out motion-reduce:transition-none"
         >
           <div className="mb-1 flex items-center justify-between gap-3">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {colorDim.label}
             </span>
             {selectedLegendLabel !== null ? (
               <button
                 type="button"
                 onClick={() => setLegendFilter(null)}
-                className="rounded px-1 text-[10px] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="rounded px-1 text-[11px] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 All
               </button>
@@ -1744,7 +1744,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             ))}
           </ul>
           {activeLegend.length > 24 ? (
-            <p className="mt-1 border-t pt-1 text-[10px] text-muted-foreground">
+            <p className="mt-1 border-t pt-1 text-[11px] text-muted-foreground">
               {fmt(activeLegend.length)} categories · scroll for all
             </p>
           ) : null}
@@ -1817,7 +1817,7 @@ function ActivityUniverseCanvas({ data }: { data: ActivityUniverseData }): React
             {byWeek ? (
               <div
                 aria-hidden
-                className="relative h-3 select-none font-mono text-[9px] leading-3 text-muted-foreground"
+                className="relative h-3 select-none font-mono text-[11px] leading-3 text-muted-foreground"
               >
                 {monthTicks.map((t, i) => (
                   <span

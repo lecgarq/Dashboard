@@ -179,7 +179,7 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
   const drillSlice = drill ? slices.find((s) => s.id === drill) : undefined;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={400}

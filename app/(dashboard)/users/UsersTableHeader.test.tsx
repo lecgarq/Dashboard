@@ -16,12 +16,31 @@ import React from "react";
 // next/dynamic → render synchronously in tests
 vi.mock("next/dynamic", () => ({
   default: (loader: () => Promise<{ default: React.ComponentType }>) => {
-    // Return a component that renders null (particle accent is visual-only)
-    const Stub = () => null;
+    // Marker stand-in for the R3F particle accent: renders nothing visible but
+    // is observable, so a test can assert the WebGL layer was never mounted.
+    const Stub = () => <div data-testid="particle-accent" />;
     Stub.displayName = "DynamicStub";
     return Stub;
   },
 }));
+
+/** Install a matchMedia that reports the given prefers-reduced-motion state. */
+function mockReducedMotion(reduce: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      matches: reduce && query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      onchange: null,
+      dispatchEvent: () => false,
+    }),
+  });
+}
 
 // framer-motion animate — mock useMotionValue/useTransform/animate so we can
 // control the animation value deterministically in tests.
@@ -43,6 +62,50 @@ describe("UsersTableHeader", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    // @ts-expect-error — remove the per-test matchMedia stub
+    delete window.matchMedia;
+  });
+
+  // -------------------------------------------------------------------------
+  // prefers-reduced-motion
+  //
+  // The blanket rule in globals.css clamps CSS animation and transition only.
+  // It cannot reach a requestAnimationFrame count-up or a perpetual WebGL
+  // render loop, so both have to consult the preference themselves.
+  // -------------------------------------------------------------------------
+  describe("prefers-reduced-motion: reduce", () => {
+    it("shows the real figure immediately, with no count-up frames", () => {
+      mockReducedMotion(true);
+      render(
+        <UsersTableHeader totalUsers={3367} inAcc={2500} notInAcc={867} internals={1265} externals={2102} active30d={742} admins={88} />,
+      );
+      // No timer advance: if a rAF count-up were armed this would still read 0.
+      const value = screen.getByText("Total users").nextElementSibling;
+      expect(value?.textContent).toBe("3,367");
+    });
+
+    it("does not mount the WebGL particle accent at all", () => {
+      mockReducedMotion(true);
+      render(
+        <UsersTableHeader totalUsers={10} inAcc={7} notInAcc={3} internals={8} externals={2} active30d={5} admins={1} />,
+      );
+      expect(screen.queryByTestId("particle-accent")).toBeNull();
+    });
+
+    it("still mounts the accent and animates when no preference is set", async () => {
+      mockReducedMotion(false);
+      render(
+        <UsersTableHeader totalUsers={3367} inAcc={2500} notInAcc={867} internals={1265} externals={2102} active30d={742} admins={88} />,
+      );
+      expect(screen.queryByTestId("particle-accent")).not.toBeNull();
+
+      // Before the animation runs the tile has not reached the target.
+      expect(screen.getByText("Total users").nextElementSibling?.textContent).not.toBe("3,367");
+      await act(async () => {
+        vi.advanceTimersByTime(1500);
+      });
+      expect(screen.getByText("Total users").nextElementSibling?.textContent).toBe("3,367");
+    });
   });
 
   // -------------------------------------------------------------------------

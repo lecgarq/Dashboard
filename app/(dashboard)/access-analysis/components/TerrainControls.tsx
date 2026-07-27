@@ -60,7 +60,7 @@ export function Tooltip({ hover, width, metric }: { hover: Hover; width: number;
       <div className="flex items-center gap-1.5">
         <span className="font-semibold text-foreground">{hover.cell.folderName}</span>
         {hover.cell.inherited && (
-          <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">inherited</span>
+          <span className="rounded-full bg-muted px-1.5 py-px text-[11px] font-medium text-muted-foreground">inherited</span>
         )}
       </div>
       <div className="text-muted-foreground">{hover.cell.roleName}</div>
@@ -163,14 +163,14 @@ export function ProjectMultiSelect({ projects, selected, onChange, disabled }: {
               return (
                 <div key={office} className="mb-1">
                   <div className="flex items-center justify-between px-2 py-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{officeLabel(office)}</span>
-                    <button onClick={() => toggleOffice(fopts)} className="rounded px-1.5 text-[10px] text-primary hover:underline">All</button>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{officeLabel(office)}</span>
+                    <button onClick={() => toggleOffice(fopts)} className="rounded px-1.5 text-[11px] text-primary hover:underline">All</button>
                   </div>
                   {fopts.map((p) => (
                     <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-muted">
                       <input type="checkbox" checked={sel.has(p.id)} onChange={() => toggle(p.id)} className="accent-primary" />
                       <span className="truncate text-foreground">{p.name}</span>
-                      <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">{p.permCount}</span>
+                      <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{p.permCount}</span>
                     </label>
                   ))}
                 </div>

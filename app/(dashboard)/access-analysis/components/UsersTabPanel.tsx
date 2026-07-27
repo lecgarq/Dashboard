@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { createColumnHelper, type ColumnDef } from "@tanstack/react-table";
 import { Reveal } from "@/components/ui/animated-list";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { DataTable } from "@/components/ui/DataTable";
 import { SectionHeader } from "./SectionHeaders";
 import { DonutPanelSkeleton } from "./DonutSkeletons";
@@ -169,7 +170,7 @@ export function UsersTabPanel({
     <div className="flex flex-col gap-6">
       {loadPermissionUsers && (
         <Reveal>
-          <section className="flex flex-col gap-3">
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
             {permissionUsersLoading ? (
               <DonutPanelSkeleton />
             ) : permissionUsersFailed && onRetryPermissionUsers ? (
@@ -183,12 +184,12 @@ export function UsersTabPanel({
                 <PermissionUsersDonut counts={permissionUserCounts} />
               </>
             ) : null}
-          </section>
+          </PremiumSurface>
         </Reveal>
       )}
 
       <Reveal>
-        <section className="flex flex-col gap-3">
+        <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
           {activityRecencyLoading ? (
             <DonutPanelSkeleton />
           ) : activityRecencyFailed && onRetryActivityRecency ? (
@@ -227,16 +228,16 @@ export function UsersTabPanel({
                 className="h-[520px]"
               />
 
-              <p data-testid="activity-recency-detail-coverage-caption" className="text-[10px] text-muted-foreground">
+              <p data-testid="activity-recency-detail-coverage-caption" className="text-[11px] text-muted-foreground">
                 Activity data covers {covCovered} of {covTotal} ACC projects — memberships come from the DC snapshot.
               </p>
-              <p data-testid="activity-recency-detail-semantics-caption" className="text-[10px] text-muted-foreground">
+              <p data-testid="activity-recency-detail-semantics-caption" className="text-[11px] text-muted-foreground">
                 &quot;Never active&quot; = no recorded activity in the ACCDS-crawled window
                 {dataFloor ? ` (data available from ${dataFloor})` : ""}.
               </p>
             </>
           )}
-        </section>
+        </PremiumSurface>
       </Reveal>
     </div>
   );

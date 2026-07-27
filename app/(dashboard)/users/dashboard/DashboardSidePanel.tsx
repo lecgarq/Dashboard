@@ -57,7 +57,7 @@ function ActivityModuleBadge({ service }: { service: string | null | undefined }
   return (
     <span
       className={cn(
-        "inline-block px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wide shrink-0 mr-1.5 align-middle",
+        "inline-block px-1.5 py-0.5 text-[11px] font-medium rounded uppercase tracking-wide shrink-0 mr-1.5 align-middle",
         className
       )}
       title={`Source module: ${service}`}
@@ -828,7 +828,7 @@ function ActivitySection({
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+        <Badge variant="secondary" className="text-[11px] px-1.5 py-0">
           {query.isLoading ? "…" : count}
         </Badge>
       </button>
@@ -1053,7 +1053,7 @@ export function FolderPermissionBody({
           <div className="flex items-center gap-2">
             <span className="text-base font-semibold">{data.permType || "—"}</span>
             {extended && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-[11px]">
                 extended
               </Badge>
             )}

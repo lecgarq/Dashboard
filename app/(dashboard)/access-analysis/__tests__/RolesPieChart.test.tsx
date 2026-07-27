@@ -12,12 +12,16 @@ vi.mock("echarts-for-react", () => ({
         data-slices={series.length}
         data-active={series.filter((d: any) => d.value > 0).length}
         data-names={series.map((d: any) => d.name).join("|")}
+        data-centre-subtext={props.option.title?.[1]?.subtext ?? ""}
+        data-header-subtext={props.option.title?.[0]?.subtext ?? ""}
+        data-tooltip={props.option.tooltip?.formatter ?? ""}
       />
     );
   },
 }));
 
 import { RolesPieChart } from "../components/RolesPieChart";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 
 const data = [
   { name: "Unknown", value: 50 },
@@ -69,6 +73,38 @@ describe("RolesPieChart", () => {
     expect(within(legend).getByRole("button", { name: /Delta/ })).toBeTruthy();
     expect(queryByText(/Others \(/)).toBeNull();
     expect(getByTestId("echart").getAttribute("data-slices")).toBe("6");
+  });
+
+  // The slice total counts (user, project) memberships, not people: a person on
+  // six projects contributes six. Calling that number "users" states a headcount
+  // the data does not support — and it is the number a presenter reads aloud.
+  it("labels the totals as memberships, never users", () => {
+    const { getByTestId } = render(
+      <RolesPieChart data={data} distinctRoles={4} />,
+    );
+    const chart = getByTestId("echart");
+    expect(chart.getAttribute("data-centre-subtext")).toBe("memberships");
+    expect(chart.getAttribute("data-tooltip")).toContain("memberships");
+    expect(chart.getAttribute("data-tooltip")).not.toMatch(/\busers\b/);
+    expect(chart.getAttribute("data-header-subtext")).toContain("memberships");
+  });
+
+  it("titles each legend row with memberships, never users", () => {
+    const { getByTestId } = render(<RolesPieChart data={data} distinctRoles={4} />);
+    const row = within(getByTestId("role-legend")).getByRole("button", { name: /Alpha/ });
+    expect(row.getAttribute("title")).toContain("25 memberships");
+    expect(row.getAttribute("title")).not.toMatch(/\busers\b/);
+  });
+
+  // `.panel-elevated:hover` translates Y by -3px, so a nested shell lifted the
+  // panel twice on one hover — the visible half of the card-inside-card bug.
+  it("adds no second card when rendered inside a panel surface", () => {
+    const { container } = render(
+      <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+        <RolesPieChart data={data} distinctRoles={4} />
+      </PremiumSurface>,
+    );
+    expect(container.querySelectorAll(".panel-elevated")).toHaveLength(1);
   });
 
   it("drills into the people behind a role and fires onUserClick", () => {
