@@ -1,0 +1,6 @@
+id: no-console-log
+language: TypeScript
+message: Avoid console.log in committed TypeScript. Use the project logger or remove diagnostics.
+severity: warning
+rule:
+  pattern: console.log($$$)

@@ -45,7 +45,6 @@
     "prisma.config.ts",
     "proxy.ts",
     "README.md",
-    "STACK.md",
     "tsconfig.json",
     "vitest.config.ts",
     "vitest.setup.ts"

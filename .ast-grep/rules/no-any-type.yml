@@ -1,0 +1,6 @@
+id: no-any-type
+language: TypeScript
+message: Avoid explicit any. Use unknown, generics, or a domain-specific type.
+severity: warning
+rule:
+  pattern: "$A: any"

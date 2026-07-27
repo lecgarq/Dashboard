@@ -1,6 +1,6 @@
 # Codebase Architecture Summary
 
-Generated: 2026-07-21T22:32:14.796Z
+Generated: 2026-07-23T23:43:38.214Z
 
 Inputs:
 - Repomix compressed whole-repo snapshot: `.tools/repo-map/repomix-output.xml`
@@ -25,8 +25,8 @@ Inputs:
 | Dependency errors | Pass | 0 | Yes |
 | Dependency warnings | Warn | 1 | Growth only |
 | AST blocking rules | Pass | 0 / baseline 1 | New only |
-| AST warnings/info/hints | Report | 231 | No |
-| Baseline file refs | Fail | 1 | Yes |
+| AST warnings/info/hints | Report | 220 | No |
+| Baseline file refs | Pass | 0 | Yes |
 
 
 ## 1. App Architecture
@@ -34,13 +34,13 @@ Inputs:
 This repository is a Next.js App Router dashboard backed by tRPC routers, Prisma/Postgres data access, Autodesk Platform Services integrations, Google APIs, collaborative editing infrastructure, and a Python LOD engine. The main UI surface lives in `app/` and `components/`, shared client/server code lives in `lib/`, request boundaries live in `server/routers/`, database schema lives in `prisma/schema.prisma`, operational scripts live in `scripts/`, and the Python image/LOD service lives in `services/lod-engine/`.
 
 Mapped source density:
-- app: 576 mapped files
-- lib: 276 mapped files
-- scripts: 185 mapped files
+- app: 591 mapped files
+- lib: 284 mapped files
+- scripts: 184 mapped files
 - components: 119 mapped files
 - server: 44 mapped files
 - services: 25 mapped files
-- tests: 19 mapped files
+- tests: 15 mapped files
 - hooks: 6 mapped files
 - electron: 1 mapped files
 - types: 1 mapped files
@@ -126,7 +126,6 @@ Prisma models detected:
 - AccFolderPermissionSummary
 - AccGraphLayoutCache
 - AccHubRoleCache
-- AccInstanceEmbedding
 - AccIssue
 - AccIssueFetchRun
 - AccIssueProjectFetchResult
@@ -179,14 +178,14 @@ Prisma models detected:
 Prisma is the central ORM layer, with schema in `prisma/schema.prisma`, client generation in `postinstall`, and server-side DB setup in `server/db.ts`. Direct Prisma access should remain server-only: routers, server helpers, scripts, and migration utilities are expected places. Client components should consume tRPC/API results rather than importing database helpers.
 
 ast-grep structural counts:
-- react-use-effect: 134 matches
+- react-use-effect: 153 matches
 - router-push: 3 matches
 - prisma-access: 61 matches
 - fetch-calls: 7 matches
 
 ast-grep rule scan counts:
-- large-use-effect: 134 matches
-- no-console-log: 95 matches
+- large-use-effect: 153 matches
+- no-console-log: 65 matches
 - unsafe-todo: 2 matches
 
 ## 6. Duplicated Responsibilities
@@ -200,15 +199,15 @@ Likely duplication or responsibility overlap to audit:
 ## 7. Files That Should Be Atomized
 
 Largest source files in the mapped roots:
-- tests/e2e/acc-dc-graph.spec.ts (60 KB)
+- app/(dashboard)/users/access-analysis/activity/ActivityUniverseShell.tsx (67 KB)
 - app/(dashboard)/users/access-analysis/physicsLayer.test.ts (59 KB)
 - lib/acc/dcIngest.ts (57 KB)
+- app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx (56 KB)
 - scripts/progress-monitor.cjs (52 KB)
 - lib/acc/dcIngest.test.ts (47 KB)
 - components/dashboard/MailPanel.tsx (43 KB)
-- app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx (43 KB)
+- app/(dashboard)/access-analysis/__tests__/AccessAnalysisCharts.test.tsx (42 KB)
 - scripts/repo-map/generate.cjs (41 KB)
-- app/(dashboard)/access-analysis/__tests__/AccessAnalysisCharts.test.tsx (41 KB)
 - components/trello/CardDialog.tsx (40 KB)
 - app/(dashboard)/users/AccProfileSection.tsx (37 KB)
 - app/(dashboard)/users/dashboard/DashboardSidePanel.tsx (37 KB)
@@ -218,7 +217,7 @@ These are good first candidates for atomization when they combine fetching, tran
 ## 8. Risky Dependencies
 
 dependency-cruiser findings:
-- Modules analyzed: 1132
+- Modules analyzed: 1150
 - Cross-area dependency edges: 25
 - Circular dependency edges: 0
 - Unresolved dependency edges: 0
@@ -227,16 +226,16 @@ dependency-cruiser findings:
 - Non-blocking dependency warnings: 1
 
 Strongest cross-area dependencies:
-- app -> lib: 295 imports
-- app -> components: 171 imports
+- app -> lib: 304 imports
+- app -> components: 172 imports
 - components -> lib: 122 imports
-- scripts -> node core: 92 imports
+- scripts -> node core: 91 imports
 - server -> lib: 81 imports
+- lib -> server: 37 imports
 - lib -> node core: 37 imports
-- lib -> server: 36 imports
-- app -> server: 32 imports
-- scripts -> lib: 29 imports
-- app -> node core: 22 imports
+- app -> server: 33 imports
+- scripts -> lib: 31 imports
+- app -> node core: 20 imports
 
 Rule violation summary:
 - warn no-scripts-to-app: 1

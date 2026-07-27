@@ -1,0 +1,17 @@
+id: direct-prisma-in-ui
+language: TypeScript
+message: Avoid importing Prisma/database access into UI modules. Use tRPC/API/server data access boundaries.
+severity: error
+rule:
+  any:
+    - pattern: import $$$ from "@prisma/client"
+    - pattern: import { $$$ } from "@prisma/client"
+    - pattern: import $$$ from "@/server/db"
+    - pattern: import { $$$ } from "@/server/db"
+    - pattern: import $$$ from "@/prisma"
+    - pattern: import { $$$ } from "@/prisma"
+files:
+  - "app/(dashboard)/**/*.ts"
+  - "app/(dashboard)/**/*.tsx"
+  - components/**/*.ts
+  - components/**/*.tsx
