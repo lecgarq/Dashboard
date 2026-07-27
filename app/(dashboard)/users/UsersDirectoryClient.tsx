@@ -329,6 +329,8 @@ export function UsersDirectoryClient() {
             key={activitySort.active ? "activity-sort" : "client-sort"}
             data={rows}
             columns={USERS_COLUMNS as ColumnDef<DirectoryRow>[]}
+            label="ACC users directory"
+            getRowLabel={(r) => r.displayName || r.email}
             pinnedColumn="name"
             defaultSort={activitySort.active ? [] : [{ id: "name", desc: false }]}
             renderExpanded={(r) => (

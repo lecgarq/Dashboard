@@ -58,6 +58,18 @@ export interface DataTableProps<T> {
    * each group in the virtualized list.
    */
   getGroupLabel?: (row: T) => string | null;
+  /**
+   * Accessible name for the table. A screen-reader user landing on an unnamed
+   * table in a page with several of them has no way to tell which one they are
+   * in, so pass something specific ("ACC users", "Template members").
+   */
+  label?: string;
+  /**
+   * Per-row name for the expand control. Without it every one of N rows
+   * announces the identical "Expand row", which is useless in a rotor list.
+   * Return the row's human identity (a person's name, a project title).
+   */
+  getRowLabel?: (row: T) => string;
 }
 
 const UNGROUPED_LABEL = "Not specified";
@@ -93,6 +105,8 @@ export function DataTable<T>({
   filteredEmptyMessage = "No results — try adjusting your filters",
   className,
   getGroupLabel,
+  label,
+  getRowLabel,
 }: DataTableProps<T>): React.ReactElement {
   // ------------------------------------------------------------------
   // Density state — reads from localStorage on mount
@@ -182,22 +196,21 @@ export function DataTable<T>({
   }, [rows, getGroupLabel]);
 
   // ------------------------------------------------------------------
-  // Scroll refs + sync
+  // Scroll ref
+  //
+  // The header used to live in its own scroll container whose scrollLeft was
+  // mirrored from the body on every scroll event. With a single table the
+  // <thead> is sticky INSIDE the one scroll container, so horizontal scroll is
+  // shared by construction — no listener, no drift. `scrolledX` survives only
+  // to drive the pinned-column edge shadow.
   // ------------------------------------------------------------------
-  const headerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrolledX, setScrolledX] = useState(false);
 
   useEffect(() => {
     const body = scrollRef.current;
-    const header = headerRef.current;
-    if (!body || !header) return;
-
-    const onScroll = () => {
-      header.scrollLeft = body.scrollLeft;
-      setScrolledX(body.scrollLeft > 0);
-    };
-
+    if (!body) return;
+    const onScroll = () => setScrolledX(body.scrollLeft > 0);
     body.addEventListener("scroll", onScroll, { passive: true });
     return () => body.removeEventListener("scroll", onScroll);
   }, []);
@@ -222,6 +235,31 @@ export function DataTable<T>({
   // Column width helper
   // ------------------------------------------------------------------
   const headerGroups = table.getHeaderGroups();
+  /** Data columns + the leading expand-control column. */
+  const totalColumns = table.getAllColumns().length + 1;
+  /** Width of the leading expand-control column. */
+  const EXPAND_COL = 40;
+  /**
+   * Minimum width the columns need. Flex cells with a fixed width would happily
+   * shrink below it, which silently squashes every column on a narrow viewport
+   * instead of overflowing — and kills the horizontal scroll the pinned column
+   * and its edge shadow exist to serve. The old `table-fixed` layout did not
+   * shrink past content, so this restores that floor.
+   */
+  const minTableWidth = table.getTotalSize() + EXPAND_COL;
+  /**
+   * Reproduces `table-fixed` sizing in a flex row: never shrink below the
+   * column's own width, but share any surplus in proportion to it, so wide
+   * screens still fill edge-to-edge instead of leaving dead space.
+   */
+  const flexFor = (size: number) => `${size} 0 ${size}px`;
+  /**
+   * aria-rowcount covers the WHOLE set, not the ~20 rows virtualization keeps in
+   * the DOM, so a screen reader announces "row 812 of 1,100" instead of
+   * "row 4 of 20". Group bands are rows too, hence displayItems, and the header
+   * row is +1.
+   */
+  const ariaRowCount = displayItems.length + headerGroups.length;
 
   // ------------------------------------------------------------------
   // Render: empty state
@@ -234,7 +272,8 @@ export function DataTable<T>({
           <button
             data-density={density}
             data-testid="density-toggle"
-            aria-label="Toggle density"
+            aria-label="Compact rows"
+            aria-pressed={density === "compact"}
             onClick={toggleDensity}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/60"
           >
@@ -276,7 +315,8 @@ export function DataTable<T>({
         <button
           data-density={density}
           data-testid="density-toggle"
-          aria-label="Toggle density"
+          aria-label="Compact rows"
+          aria-pressed={density === "compact"}
           onClick={toggleDensity}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/60"
         >
@@ -284,17 +324,50 @@ export function DataTable<T>({
         </button>
       </div>
 
-      {/* Header — split-scroll, sticky glass (FND-05-j) */}
-      <div ref={headerRef} className="overflow-x-hidden flex-shrink-0">
-        <table className="w-full table-fixed">
-          <thead className="sticky top-0 z-10 bg-surface-2 backdrop-blur-md border-b border-surface-border">
-            {headerGroups.map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {/* Expand chevron column header */}
+
+      {/*
+       * ONE table.
+       *
+       * This used to be three: a header-only <table>, a body <table> whose single
+       * <td colSpan> held the virtual canvas, and a THIRD <table> per rendered
+       * row. A screen reader saw N+2 unrelated tables, the aria-sort on the
+       * header described a table with no data cells, and the group bands were
+       * role="rowheader" divs sitting outside any row.
+       *
+       * display:grid/flex is how a virtualized table gets absolutely-positioned
+       * rows, but overriding `display` on a table element DROPS its implicit ARIA
+       * role in every major browser — so every role here is stated explicitly.
+       * Removing them silently returns this to a pile of divs.
+       */}
+      <div ref={scrollRef} className="flex-1 overflow-auto">
+        <table
+          role="table"
+          aria-label={label}
+          aria-rowcount={ariaRowCount}
+          className="w-full"
+          style={{ display: "grid", minWidth: minTableWidth }}
+        >
+          <thead
+            role="rowgroup"
+            className="sticky top-0 z-20 bg-surface-2 backdrop-blur-md border-b border-surface-border"
+            style={{ display: "grid" }}
+          >
+            {headerGroups.map((headerGroup, groupIndex) => (
+              <tr
+                key={headerGroup.id}
+                role="row"
+                aria-rowindex={groupIndex + 1}
+                style={{ display: "flex", width: "100%" }}
+              >
+                {/* Expand-control column. Named, not blank: it heads a column of
+                    real controls, and an unnamed columnheader reads as "blank". */}
                 <th
-                  className="w-10 sticky left-0 z-30 bg-surface-2 backdrop-blur-md"
-                  style={{ width: 40, minWidth: 40 }}
-                />
+                  role="columnheader"
+                  className="sticky left-0 z-30 bg-surface-2 backdrop-blur-md"
+                  style={{ display: "flex", flex: `0 0 ${EXPAND_COL}px` }}
+                >
+                  <span className="sr-only">Expand row</span>
+                </th>
                 {headerGroup.headers.map((header) => {
                   const isPinned = header.column.getIsPinned();
                   const isLastPinned = header.column.getIsLastColumn("left");
@@ -304,9 +377,12 @@ export function DataTable<T>({
                   return (
                     <th
                       key={header.id}
+                      role="columnheader"
                       style={{
-                        width: header.getSize(),
-                        left: isPinned === "left" ? header.column.getStart("left") + 40 : undefined,
+                        display: "flex",
+                        alignItems: "center",
+                        flex: flexFor(header.getSize()),
+                        left: isPinned === "left" ? header.column.getStart("left") + EXPAND_COL : undefined,
                       }}
                       className={cn(
                         "text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground px-3 py-2.5 select-none",
@@ -355,179 +431,181 @@ export function DataTable<T>({
               </tr>
             ))}
           </thead>
-        </table>
-      </div>
 
-      {/* Body — virtualizer scroll element */}
-      <div ref={scrollRef} className="flex-1 overflow-auto">
-        <table className="w-full table-fixed">
-          <colgroup>
-            <col style={{ width: 40, minWidth: 40 }} />
-            {table.getAllColumns().map((col) => (
-              <col key={col.id} style={{ width: col.getSize() }} />
-            ))}
-          </colgroup>
-          <tbody>
-            <tr>
-              <td colSpan={table.getAllColumns().length + 1} style={{ padding: 0, border: 0 }}>
-                {/* Virtual canvas */}
-                <div
-                  style={{
-                    height: rowVirtualizer.getTotalSize(),
-                    position: "relative",
-                  }}
+          <tbody
+            role="rowgroup"
+            style={{
+              display: "grid",
+              height: rowVirtualizer.getTotalSize(),
+              position: "relative",
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const item = displayItems[virtualItem.index];
+              // Header rows come first in the row index space.
+              const ariaRowIndex = virtualItem.index + headerGroups.length + 1;
+              const positioned: React.CSSProperties = {
+                display: "flex",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${virtualItem.start}px)`,
+              };
+
+              if (item.kind === "group") {
+                return (
+                  <tr
+                    key={virtualItem.key}
+                    role="row"
+                    aria-rowindex={ariaRowIndex}
+                    data-index={virtualItem.index}
+                    data-testid="group-header"
+                    ref={(el) => rowVirtualizer.measureElement(el)}
+                    style={positioned}
+                  >
+                    {/* A band spanning the row — a real columnheader scoped to the
+                        group, so the rows under it inherit the association. */}
+                    <th
+                      role="columnheader"
+                      scope="colgroup"
+                      colSpan={totalColumns}
+                      className="flex w-full items-baseline gap-2 border-b border-border/60 bg-muted/40 px-3 py-2 text-left"
+                    >
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
+                        {item.label}
+                      </span>
+                      <span className="text-[11px] tabular-nums text-muted-foreground">{item.count}</span>
+                    </th>
+                  </tr>
+                );
+              }
+
+              const row = item.row;
+              const isExpanded = row.getIsExpanded();
+              const rowName = getRowLabel?.(row.original);
+              const expandLabel = rowName ? `Expand ${rowName}` : "Expand row";
+              const peekId = `${row.id}-peek`;
+
+              return (
+                <tr
+                  key={virtualItem.key}
+                  role="row"
+                  aria-rowindex={ariaRowIndex}
+                  data-index={virtualItem.index}
+                  data-density={density}
+                  ref={(el) => rowVirtualizer.measureElement(el)}
+                  style={{ ...positioned, flexWrap: "wrap" }}
+                  className={cn(
+                    density === "comfortable" ? "py-3" : "py-1.5",
+                    "border-b border-border/60",
+                    "hover:bg-muted/30 focus-visible:bg-muted/40 transition-shadow hover:shadow-[var(--depth-float)] group"
+                  )}
+                  onMouseEnter={() => onRowHover?.(row)}
+                  onMouseLeave={() => onRowHoverEnd?.(row)}
+                  // Keyboard path to the row action: Tab to the row,
+                  // Enter opens (same as click); Space toggles the peek.
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onFocus={() => onRowHover?.(row)}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            onRowClick(row);
+                          } else if (e.key === " " && renderExpanded) {
+                            e.preventDefault();
+                            row.getToggleExpandedHandler()();
+                          }
+                        }
+                      : undefined
+                  }
                 >
-                  {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                    const item = displayItems[virtualItem.index];
-                    if (item.kind === "group") {
-                      return (
-                        <div
-                          key={virtualItem.key}
-                          data-index={virtualItem.index}
-                          data-testid="group-header"
-                          ref={(el) => rowVirtualizer.measureElement(el)}
-                          role="rowheader"
-                          style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            transform: `translateY(${virtualItem.start}px)`,
-                          }}
-                          className="flex items-baseline gap-2 border-b border-border/60 bg-muted/40 px-3 py-2"
-                        >
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">
-                            {item.label}
-                          </span>
-                          <span className="text-[11px] tabular-nums text-muted-foreground">{item.count}</span>
-                        </div>
-                      );
-                    }
-                    const row = item.row;
-                    const isExpanded = row.getIsExpanded();
+                  {/* Expand control cell */}
+                  <td
+                    role="cell"
+                    className="sticky left-0 z-10 flex items-center bg-card px-1"
+                    style={{ flex: `0 0 ${EXPAND_COL}px` }}
+                  >
+                    <button
+                      data-expand
+                      aria-label={expandLabel}
+                      aria-expanded={isExpanded}
+                      aria-controls={isExpanded && renderExpanded ? peekId : undefined}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        row.getToggleExpandedHandler()();
+                      }}
+                      className="flex items-center justify-center w-7 h-7 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </button>
+                  </td>
+
+                  {/* Data cells */}
+                  {row.getVisibleCells().map((cell) => {
+                    const col = cell.column;
+                    const isPinned = col.getIsPinned();
+                    const isLastPinned = col.getIsLastColumn("left");
 
                     return (
-                      <div
-                        key={virtualItem.key}
-                        data-index={virtualItem.index}
-                        data-density={density}
-                        ref={(el) => rowVirtualizer.measureElement(el)}
+                      <td
+                        key={cell.id}
+                        role="cell"
+                        data-cell
+                        data-col={col.id}
                         style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          transform: `translateY(${virtualItem.start}px)`,
+                          flex: flexFor(col.getSize()),
+                          left: isPinned === "left" ? col.getStart("left") + EXPAND_COL : undefined,
                         }}
                         className={cn(
-                          density === "comfortable" ? "py-3" : "py-1.5",
-                          "border-b border-border/60"
+                          "flex items-center overflow-hidden text-sm px-3 cursor-pointer",
+                          isPinned === "left" && "sticky z-10 bg-card",
+                          isLastPinned && scrolledX && "shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]"
                         )}
+                        onClick={() => onRowClick?.(row)}
                       >
-                        {/* Row cells */}
-                        <table className="w-full table-fixed">
-                          <colgroup>
-                            <col style={{ width: 40, minWidth: 40 }} />
-                            {table.getAllColumns().map((col) => (
-                              <col key={col.id} style={{ width: col.getSize() }} />
-                            ))}
-                          </colgroup>
-                          <tbody>
-                            <tr
-                              className="hover:bg-muted/30 focus-visible:bg-muted/40 transition-shadow hover:shadow-[var(--depth-float)] group"
-                              onMouseEnter={() => onRowHover?.(row)}
-                              onMouseLeave={() => onRowHoverEnd?.(row)}
-                              // Keyboard path to the row action: Tab to the row,
-                              // Enter opens (same as click); Space toggles the peek.
-                              tabIndex={onRowClick ? 0 : undefined}
-                              onFocus={() => onRowHover?.(row)}
-                              onKeyDown={
-                                onRowClick
-                                  ? (e) => {
-                                      if (e.target !== e.currentTarget) return;
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        onRowClick(row);
-                                      } else if (e.key === " " && renderExpanded) {
-                                        e.preventDefault();
-                                        row.getToggleExpandedHandler()();
-                                      }
-                                    }
-                                  : undefined
-                              }
-                            >
-                              {/* Expand chevron cell */}
-                              <td
-                                style={{ width: 40, minWidth: 40 }}
-                                className="sticky left-0 z-10 bg-card px-1"
-                              >
-                                <button
-                                  data-expand
-                                  aria-label="Expand row"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    row.getToggleExpandedHandler()();
-                                  }}
-                                  className="flex items-center justify-center w-7 h-7 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="w-4 h-4" />
-                                  ) : (
-                                    <ChevronRight className="w-4 h-4" />
-                                  )}
-                                </button>
-                              </td>
-
-                              {/* Data cells */}
-                              {row.getVisibleCells().map((cell) => {
-                                const col = cell.column;
-                                const isPinned = col.getIsPinned();
-                                const isLastPinned = col.getIsLastColumn("left");
-
-                                return (
-                                  <td
-                                    key={cell.id}
-                                    data-cell
-                                    data-col={col.id}
-                                    style={{
-                                      width: col.getSize(),
-                                      left: isPinned === "left" ? col.getStart("left") + 40 : undefined,
-                                    }}
-                                    className={cn(
-                                      "text-sm px-3 truncate cursor-pointer",
-                                      isPinned === "left" && "sticky z-10 bg-card",
-                                      isLastPinned && scrolledX && "shadow-[4px_0_8px_-4px_rgba(0,0,0,0.15)]"
-                                    )}
-                                    onClick={() => onRowClick?.(row)}
-                                  >
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          </tbody>
-                        </table>
-
-                        {/* Inline expand peek — conditionally rendered; AnimatePresence animates enter/exit */}
-                        {isExpanded && renderExpanded && (
-                          <AnimatePresence mode="sync">
-                            <motion.div
-                              key={`${row.id}-expand`}
-                              initial={safeExpand.hidden}
-                              animate={safeExpand.visible}
-                              exit={safeExpand.hidden}
-                              className="overflow-hidden"
-                            >
-                              {renderExpanded(row)}
-                            </motion.div>
-                          </AnimatePresence>
-                        )}
-                      </div>
+                        {/* The cell is a flex box (it has to be, to lay out inside a
+                            flex row), and `truncate` does not ellipsize flex
+                            children — so the clamp lives on this inner block. */}
+                        <div className="min-w-0 flex-1 truncate">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      </td>
                     );
                   })}
-                </div>
-              </td>
-            </tr>
+
+                  {/* Inline expand peek — a full-width cell that wraps onto its own
+                      line inside the SAME row, so the peek stays inside the table
+                      structure instead of escaping it. */}
+                  {isExpanded && renderExpanded && (
+                    <td
+                      role="cell"
+                      id={peekId}
+                      colSpan={totalColumns}
+                      style={{ flexBasis: "100%", width: "100%" }}
+                    >
+                      <AnimatePresence mode="sync">
+                        <motion.div
+                          key={`${row.id}-expand`}
+                          initial={safeExpand.hidden}
+                          animate={safeExpand.visible}
+                          exit={safeExpand.hidden}
+                          className="overflow-hidden"
+                        >
+                          {renderExpanded(row)}
+                        </motion.div>
+                      </AnimatePresence>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -122,6 +122,8 @@ export function TemplateMembersTableShell({
       <DataTable
         data={rows}
         columns={MEMBER_COLUMNS}
+        label="Template project members"
+        getRowLabel={(m) => m.name}
         pinnedColumn="name"
         defaultSort={[{ id: "name", desc: false }]}
         hasActiveFilter={hasActiveFilter}

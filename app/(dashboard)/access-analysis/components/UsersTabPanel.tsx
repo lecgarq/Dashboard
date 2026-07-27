@@ -219,6 +219,8 @@ export function UsersTabPanel({
               <DataTable
                 data={filteredRows}
                 columns={COLUMNS}
+                label="Activity recency by membership"
+                getRowLabel={(r) => r.name || r.email}
                 pinnedColumn="name"
                 defaultSort={[{ id: "lastActivity", desc: false }]}
                 hasActiveFilter={hasActiveFilter}
