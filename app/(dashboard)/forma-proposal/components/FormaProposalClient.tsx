@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Download, RotateCcw } from "lucide-react";
+import { AlertTriangle, Download, RotateCcw, Undo2 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
-import { countExplicit, type FormaFolder } from "@/lib/forma/inheritance";
+import { countExplicit, subtreeSize, type FormaFolder } from "@/lib/forma/inheritance";
+import type { FormaTier } from "@/lib/forma/tiers";
 import { toCsv, toJson, type ExportInput } from "@/lib/forma/exportProposal";
 import { FORMA_TIERS, TIER_COLOR, TIER_SHORT } from "@/lib/forma/tiers";
 import { PremiumSurface } from "@/components/ui/PremiumSurface";
@@ -88,6 +89,20 @@ export function FormaProposalClient({
     assignments: d.draft.assignments,
   });
 
+  // One shared boundary for BOTH views (tree + hierarchy): a subtree apply is
+  // the page's only bulk-destructive edit, so preview its blast radius first.
+  const applySubtreeConfirmed = (folderId: string, tier: FormaTier) => {
+    const n = subtreeSize(folderId, d.index);
+    const name = d.index.byId.get(folderId)?.name ?? "this folder";
+    if (
+      n > 1 &&
+      !window.confirm(`Set "${tier}" on ${n} folders — "${name}" and everything inside it? Existing overrides in the subtree are replaced.`)
+    ) {
+      return;
+    }
+    d.applySubtree(activeId, folderId, tier);
+  };
+
   // ---------------------------------------------------------------------------
   // Idle prefetch — import the HierarchyView bundle after first paint so the
   // first mode-switch feels instant (FRM-01; RESEARCH "Idle prefetch pattern").
@@ -160,6 +175,67 @@ export function FormaProposalClient({
           </div>
         </PremiumSurface>
 
+        {/* Draft-loss guard: persist failed (quota / private mode / storage off)
+            — the draft now lives only in memory, so say so and push export. */}
+        {d.saveFailed && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-2 border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-foreground"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" aria-hidden />
+            <span className="font-medium">This draft is not saving to your browser.</span>
+            <span className="text-muted-foreground">
+              Storage failed (full or blocked) — changes will be lost when you leave. Export now to keep your work.
+            </span>
+            <button
+              type="button"
+              className={cn(barButton, "ml-auto")}
+              onClick={() => download(`forma-proposal-${templateId}.json`, toJson(exportInput()), "application/json")}
+            >
+              <Download className="h-3.5 w-3.5" /> Export JSON
+            </button>
+          </div>
+        )}
+
+        {/* Another tab wrote this draft. Persist is a whole-draft overwrite with
+            no read-back, so without this the last writer silently destroys the
+            other tab's work and neither tab is ever told. */}
+        {d.otherTabChanged && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-2 text-xs text-foreground"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
+            <span className="font-medium">This draft changed in another tab.</span>
+            <span className="text-muted-foreground">
+              Keeping this version overwrites the other tab&apos;s changes.
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <button type="button" className={barButton} onClick={d.acceptOtherTab}>
+                Load other tab&apos;s version
+              </button>
+              <button type="button" className={barButton} onClick={d.keepThisVersion}>
+                Keep this version
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* One-deep undo for the three paths that discard unreconstructable work
+            (reset, subtree apply, role delete). Offered until the next edit. */}
+        {d.undoLabel !== null && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2 text-xs text-foreground"
+          >
+            <Undo2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <span>{d.undoLabel}.</span>
+            <button type="button" className={cn(barButton, "ml-auto")} onClick={d.undo}>
+              <Undo2 className="h-3.5 w-3.5" /> Undo
+            </button>
+          </div>
+        )}
+
         {mode === "permissions" ? (
           <div className="flex min-h-0 flex-1">
             {/* Role rail — glass elevation on outer container; rows inside stay flat */}
@@ -207,7 +283,7 @@ export function FormaProposalClient({
                     explicit={explicit}
                     onSet={(folderId, tier) => d.setTier(activeId, folderId, tier)}
                     onClear={(folderId) => d.clearTier(activeId, folderId)}
-                    onApplySubtree={(folderId, tier) => d.applySubtree(activeId, folderId, tier)}
+                    onApplySubtree={applySubtreeConfirmed}
                   />
                 </div>
               ) : (
@@ -238,7 +314,7 @@ export function FormaProposalClient({
               activeRoleLabel={activeRole?.label ?? "—"}
               onPickRole={setActiveRoleId}
               onSetTier={(folderId, tier) => d.setTier(activeId, folderId, tier)}
-              onApplySubtree={(folderId, tier) => d.applySubtree(activeId, folderId, tier)}
+              onApplySubtree={applySubtreeConfirmed}
               onClear={(folderId) => d.clearTier(activeId, folderId)}
             />
           </PremiumSurface>
@@ -248,6 +324,9 @@ export function FormaProposalClient({
       <RoleManagerDialog
         state={dialog}
         existingIds={d.draft.roles.map((r) => r.id)}
+        assignmentCount={
+          dialog?.mode === "edit" ? countExplicit(d.draft.assignments[dialog.role.id] ?? {}) : 0
+        }
         onAdd={(role) => { d.addRole(role); setActiveRoleId(role.id); }}
         onRename={d.renameRole}
         onDelete={(roleId) => { d.deleteRole(roleId); }}
