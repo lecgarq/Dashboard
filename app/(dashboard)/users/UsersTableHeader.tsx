@@ -97,7 +97,10 @@ function AnimatedNumber({ value }: { value: number }) {
 // ---------------------------------------------------------------------------
 interface KpiTileProps {
   label: string;
-  value: number;
+  /** null = not measured yet. Renders an em-dash instead of a number: a KPI whose
+   *  source query hasn't landed must not animate a confident 0 at 24px on a
+   *  projector. Truthful over impressive, including while loading. */
+  value: number | null;
 }
 
 function KpiTile({ label, value }: KpiTileProps) {
@@ -105,7 +108,13 @@ function KpiTile({ label, value }: KpiTileProps) {
     <PremiumSurface variant="glass" className="px-4 py-2.5 min-w-[96px]">
       <p className="text-xs text-muted-foreground font-medium leading-tight mb-1 whitespace-nowrap">{label}</p>
       <p className="text-2xl font-bold text-foreground tabular-nums leading-none">
-        <AnimatedNumber value={value} />
+        {value === null ? (
+          <span className="text-muted-foreground" title="Still loading — no measurement yet">
+            &mdash;
+          </span>
+        ) : (
+          <AnimatedNumber value={value} />
+        )}
       </p>
     </PremiumSurface>
   );
@@ -120,7 +129,8 @@ export interface UsersTableHeaderProps {
   notInAcc: number;
   internals: number;
   externals: number;
-  active30d: number;
+  /** null while the activity map query is still in flight — see KpiTileProps.value. */
+  active30d: number | null;
   admins: number;
 }
 
