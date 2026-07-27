@@ -183,7 +183,45 @@ async function waitForSuccess(accountId, requestId, accessToken) {
   }
   throw new Error(`Polling timed out after ${POLL_TIMEOUT_MS}ms`);
 }
-async function ingestRequest(prisma, accountId, accessToken, row) {
+async function updateBackfillProgress(prisma, projectIds, startDate, endDate) {
+  for (const projectId of projectIds) {
+    const prev = await prisma.accDcBackfillProgress.findUnique({ where: { projectId } });
+    let projectCreatedAt = prev?.projectCreatedAt || null;
+    if (!projectCreatedAt) {
+      const project = await prisma.accDcProject.findUnique({
+        where: { id: projectId },
+        select: { createdAt: true },
+      });
+      projectCreatedAt = project?.createdAt || startDate;
+    }
+
+    const earliestCovered = prev?.earliestCovered
+      ? (startDate < prev.earliestCovered ? startDate : prev.earliestCovered)
+      : startDate;
+    const latestCovered = prev?.latestCovered
+      ? (endDate > prev.latestCovered ? endDate : prev.latestCovered)
+      : endDate;
+
+    await prisma.accDcBackfillProgress.upsert({
+      where: { projectId },
+      create: {
+        projectId,
+        earliestCovered,
+        latestCovered,
+        projectCreatedAt,
+        newProjectFlag: false,
+      },
+      update: {
+        earliestCovered,
+        latestCovered,
+        projectCreatedAt,
+        newProjectFlag: false,
+      },
+    });
+  }
+}
+
+async function ingestRequest(prisma, accountId, accessToken, row, projectIds) {
   const jobs = await waitForSuccess(accountId, row.requestId, accessToken);
   const urls = await resolveDownloadUrls(accountId, jobs, accessToken);
   if (urls.length === 0) throw new Error("APS job succeeded but returned no ZIP URLs");
@@ -195,6 +233,7 @@ async function ingestRequest(prisma, accountId, accessToken, row) {
     for (const [file, count] of Object.entries(result.rowsByFile)) totals.rowsByFile[file] = (totals.rowsByFile[file] || 0) + count;
     totals.unresolved += result.unresolved;
   }
+  await updateBackfillProgress(prisma, projectIds, new Date(START_DATE), new Date(END_DATE));
   await prisma.accDataConnectorJob.update({ where: { id: row.id }, data: { status: "success", completedAt: new Date(), errorMessage: null, downloadUrl: urls[0]?.url || null } });
   return totals;
 }
@@ -214,7 +253,7 @@ async function processProjectSet(ctx, projectIds, label) {
     requestId = await submitRequest(accountId, accessToken, projectIds);
     row = await prisma.accDataConnectorJob.create({ data: { requestId, status: "pending", serviceGroups: ["activities", "admin"], dateRange: `CUSTOM ${START_DATE} ${END_DATE}` } });
     log(`${label}: saved AccDataConnectorJob ${row.id} request=${requestId}`);
-    const totals = await ingestRequest(prisma, accountId, accessToken, row);
+    const totals = await ingestRequest(prisma, accountId, accessToken, row, projectIds);
     log(`${label}: ingested ${JSON.stringify(totals)}`);
     return { submitted: 1, success: 1, skipped: 0, deferred: 0 };
   } catch (err) {

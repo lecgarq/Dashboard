@@ -6,7 +6,7 @@
  * Env:
  *   ACCDS_MONTHS_BACK=12   trailing window (default 12)
  *   ACCDS_PROJECT=<id>     crawl only this project (smoke test); else all distinct
- *                          projectIds already present in AccActivity (admin-accessible set)
+ *                          projectIds already present in either activity source
  *
  * Requires scratch/acc-session.json (run scripts/accds-login.cjs first).
  * Run: node scripts/accds-activity-ingest.cjs
@@ -82,12 +82,15 @@ async function main() {
     if (ONLY) {
       projectIds = [ONLY];
     } else {
-      const rows = await prisma.accActivity.findMany({
-        where: { projectId: { not: null } },
-        distinct: ['projectId'],
-        select: { projectId: true },
-      });
-      projectIds = rows.map((r) => r.projectId).filter((p) => p && p.length > 0);
+      const [dcRows, accdsRows] = await Promise.all([
+        prisma.accActivity.findMany({
+          where: { projectId: { not: null } },
+          distinct: ['projectId'],
+          select: { projectId: true },
+        }),
+        prisma.accActivityAccds.findMany({ distinct: ['projectId'], select: { projectId: true } }),
+      ]);
+      projectIds = [...new Set([...dcRows, ...accdsRows].map((r) => r.projectId).filter((p) => p && p.length > 0))];
       if (NAME_LIKE) {
         // Filter the admin-accessible set by project name (office scoping).
         const [dc, ap] = await Promise.all([

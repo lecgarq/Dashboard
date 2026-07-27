@@ -19,6 +19,7 @@
  *      extractAndPersistFolders for each (additive upserts; soft-delete
  *      decisions are deferred — see SKIP-ARCHIVED-IN-FLIGHT scope in
  *      04-02-SUMMARY.md).
+ *   4. Rebuild AccFolderPermissionSummary so UI aggregates match the crawl.
  *
  * Operator setup (NOT part of this script):
  *   - Configure a weekly Railway cron job pointing at this file once Plan 04
@@ -28,6 +29,7 @@
  */
 
 const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 
 const dotenv = (() => {
   try { return require("dotenv"); } catch { return null; }
@@ -200,6 +202,13 @@ async function main() {
       `Crawl complete: folders=${totalFolders} perms=${totalPerms} ` +
         `ok=${okCount} partial=${partialCount} failed=${failedCount} ` +
         `duration=${(durationMs / 1000).toFixed(1)}s across ${projects.length} projects`
+    );
+
+    log("Refreshing AccFolderPermissionSummary projection…");
+    execFileSync(
+      process.execPath,
+      [path.resolve(__dirname, "backfill-folder-perm-summary.cjs")],
+      { stdio: "inherit" },
     );
   } catch (err) {
     logErr("Fatal:", err && err.message ? err.message : err);
