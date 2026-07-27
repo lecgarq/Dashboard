@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 
 /**
  * Shaped shimmer skeletons for the Access Analysis page Suspense fallbacks.
@@ -6,10 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
  * for a consistent 200ms shimmer feel.
  */
 
-/** A single donut-ring shimmer: circular outer ring with a card-bg center hole. */
+/**
+ * A single donut-ring shimmer: circular outer ring with a card-bg center hole.
+ *
+ * Shell-free on purpose — it renders inside the tab's own PremiumSurface, and a
+ * second `.panel-elevated` there would nest a card inside a card (and stack two
+ * hover lifts). Standalone callers wrap it themselves; see DonutGridSkeleton.
+ */
 export function DonutPanelSkeleton() {
   return (
-    <div className="panel-elevated flex flex-col gap-3 rounded-2xl p-5">
+    <div className="flex flex-col gap-3">
       {/* Section header shimmer */}
       <div className="flex flex-col gap-1.5">
         <Skeleton className="h-5 w-40 animate-shimmer rounded-md" />
@@ -36,12 +43,21 @@ export function DonutPanelSkeleton() {
   );
 }
 
-/** A 2-up grid of DonutPanelSkeletons for the donut section fallback. */
+/**
+ * A 2-up grid of DonutPanelSkeletons for the page-level Suspense fallback.
+ * This one IS the outermost surface (no tab panel above it), so it supplies the
+ * card that DonutPanelSkeleton no longer carries — matching the geometry of the
+ * PremiumSurface panels it stands in for.
+ */
 export function DonutGridSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <DonutPanelSkeleton />
-      <DonutPanelSkeleton />
+      <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+        <DonutPanelSkeleton />
+      </PremiumSurface>
+      <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+        <DonutPanelSkeleton />
+      </PremiumSurface>
     </div>
   );
 }

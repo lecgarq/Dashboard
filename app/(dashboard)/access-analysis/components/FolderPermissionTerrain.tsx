@@ -219,7 +219,7 @@ export function FolderPermissionTerrain({
   useEffect(() => { framePivot(); }, [viewport.w, viewport.h, framePivot]);
 
   return (
-    <div className="panel-elevated overflow-hidden">
+    <div className="overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pb-2 pt-4">
         <div className="flex min-w-0 flex-col gap-2">
           {!singleProject && (

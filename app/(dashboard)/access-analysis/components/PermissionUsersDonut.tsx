@@ -109,7 +109,7 @@ export function PermissionUsersDonut({ counts }: { counts: PermissionUserCounts 
   };
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart option={option} height={340} notMerge={false} />
 
       {/* Ranked legend — strongest level first. */}

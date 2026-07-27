@@ -146,7 +146,7 @@ export function ActivityRecencyChart({
   const drillPeople = drill ? summary.usersByBand.get(drill) ?? [] : [];
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <div data-testid="activity-recency-headline" className="mb-2 text-sm text-muted-foreground">
         <b className="text-foreground">{rows.length.toLocaleString()}</b> project memberships by activity recency
       </div>
@@ -210,12 +210,12 @@ export function ActivityRecencyChart({
       )}
 
       {coverage && (
-        <p data-testid="activity-recency-coverage-caption" className="mt-2 text-[10px] text-muted-foreground">
+        <p data-testid="activity-recency-coverage-caption" className="mt-2 text-[11px] text-muted-foreground">
           Activity data covers {coverage.covered} of {coverage.total} ACC projects — memberships come from the DC
           snapshot.
         </p>
       )}
-      <p data-testid="activity-recency-semantics-caption" className="mt-1 text-[10px] text-muted-foreground">
+      <p data-testid="activity-recency-semantics-caption" className="mt-1 text-[11px] text-muted-foreground">
         &quot;Never active&quot; = no recorded activity in the ACCDS-crawled window
         {dataFloor ? ` (data available from ${dataFloor})` : ""}.
       </p>

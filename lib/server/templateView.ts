@@ -8,6 +8,7 @@ import {
   type TemplateRosterMember,
 } from "@/lib/acc/template-mty-roster";
 import { TEMPLATE_MTY_ID } from "@/lib/acc/template-mty";
+import { describeRosterAge, type RosterAge } from "@/lib/acc/rosterFreshness";
 import {
   summarizeModuleAccess,
   type ModuleAccessSummary,
@@ -46,6 +47,8 @@ export interface TemplateOverview {
   companyCount: number;
   /** Date the roster was last captured from ACC (it has no API to refresh). */
   updatedAt: string;
+  /** How stale that capture is right now — drives the roster disclosure. */
+  rosterAge: RosterAge;
 }
 
 function tally(items: string[]): CategorySlice[] {
@@ -60,6 +63,8 @@ function tally(items: string[]): CategorySlice[] {
 export function buildTemplateOverview(
   roster: TemplateRosterMember[],
   updatedAt: string,
+  /** Injected so the age is deterministic in tests; the route passes real time. */
+  now: number = Date.now(),
 ): TemplateOverview {
   const members: TemplateMember[] = roster.map((r) => ({
     name: r.name,
@@ -91,6 +96,7 @@ export function buildTemplateOverview(
     adminCount: members.filter((m) => m.isAdmin).length,
     companyCount: companies.length,
     updatedAt,
+    rosterAge: describeRosterAge(updatedAt, now),
   };
 }
 

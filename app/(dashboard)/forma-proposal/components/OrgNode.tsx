@@ -39,12 +39,12 @@ export function OrgNode({
         {tierShort && (
           <span
             className={cn(
-              "inline-flex max-w-[150px] items-center gap-0.5 truncate rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold leading-none",
+              "inline-flex max-w-[150px] items-center gap-0.5 truncate rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-none",
               inherited && "opacity-70",
             )}
             style={{ backgroundColor: `${color}22`, color }}
           >
-            {inherited && <span className="text-[8px] leading-none">⤴</span>}
+            {inherited && <span className="text-[11px] leading-none">⤴</span>}
             {tierShort}
           </span>
         )}

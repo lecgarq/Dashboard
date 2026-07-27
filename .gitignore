@@ -102,6 +102,8 @@ scripts/_attic/
 
 # Local UI inspection screenshots (scripts/ui-inspect.ts, ui-prove-activity.ts)
 .ui-shots/
+# Before/after capture runs — PR evidence, attached to the review, never committed.
+/screenshots/
 
 # Repo architecture map outputs: keep policy/docs, ignore generated snapshots.
 .tools/repo-map/*

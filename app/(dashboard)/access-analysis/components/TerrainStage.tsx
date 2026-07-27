@@ -256,7 +256,7 @@ function SceneLayer({
         );
       })}
       {showRoleLabels && scene.roleLabels.map((r) => (
-        <text key={r.id} x={r.x} y={r.y} fontSize={9} fill={theme.sub}
+        <text key={r.id} x={r.x} y={r.y} fontSize={11} fill={theme.sub}
           stroke={theme.halo} strokeWidth={1.6} paintOrder="stroke" strokeLinejoin="round"
           textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
       ))}
@@ -373,7 +373,7 @@ function Compass({ compass, theme }: { compass: TerrainScene["compass"]; theme: 
       <g key={label}>
         <line x1={cx} y1={cy} x2={tx} y2={ty} stroke={color} strokeWidth={2.2} strokeLinecap="round" />
         <polygon points={head} fill={color} />
-        <text x={cx + v.x * (R + 10)} y={cy + v.y * (R + 10)} fontSize={8.5} fontWeight={600} fill={color} textAnchor="middle" dominantBaseline="middle">{label}</text>
+        <text x={cx + v.x * (R + 10)} y={cy + v.y * (R + 10)} fontSize={11} fontWeight={600} fill={color} textAnchor="middle" dominantBaseline="middle">{label}</text>
       </g>
     );
   };
@@ -385,7 +385,7 @@ function Compass({ compass, theme }: { compass: TerrainScene["compass"]; theme: 
       {axis(compass.folder, "#a21caf", "Folders")}
       {axis(compass.role, "#f9806b", "Roles")}
       <circle cx={cx} cy={cy} r={2.4} fill={theme.sub} />
-      {tilt != null && <text x={cx} y={S - 2} fontSize={8} fill={theme.sub} textAnchor="middle">tilt {tilt}°</text>}
+      {tilt != null && <text x={cx} y={S - 2} fontSize={11} fill={theme.sub} textAnchor="middle">tilt {tilt}°</text>}
     </svg>
   );
 }

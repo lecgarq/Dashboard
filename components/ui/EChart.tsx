@@ -13,27 +13,9 @@
  */
 import ReactECharts from "echarts-for-react";
 import type { EChartsOption } from "echarts";
-import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { mergeEChartsTheme } from "@/lib/colors/echartsTheme";
-
-// prefers-reduced-motion, subscribed so a live OS toggle re-renders charts.
-// matchMedia is feature-checked: absent in jsdom test runs.
-function subscribeReducedMotion(cb: () => void) {
-  if (typeof window.matchMedia !== "function") return () => {};
-  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-function useReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribeReducedMotion,
-    () => (typeof window.matchMedia === "function"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      : false),
-    () => false,
-  );
-}
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 interface EChartProps {
   option: EChartsOption;

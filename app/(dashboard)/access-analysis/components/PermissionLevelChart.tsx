@@ -123,7 +123,7 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
   const drillRows = drill ? summary.projectsByRole.get(drill) ?? [] : [];
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={Math.max(220, summary.bars.length * 38 + 64)}
@@ -155,7 +155,7 @@ export function PermissionLevelChart({ rows }: { rows: PermissionLevelRow[] }) {
             <span className="font-semibold tabular-nums text-foreground">{roles.toLocaleString()}</span>
           </span>
         ))}
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           — a role holding several levels counts under each
         </span>
       </div>

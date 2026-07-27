@@ -14,6 +14,7 @@ import { FolderTreeAssign } from "./FolderTreeAssign";
 import { RoleManagerDialog, type RoleDialogState } from "./RoleManagerDialog";
 import { ModeSwitch, type FormaMode } from "./ModeSwitch";
 import { HierarchyViewSkeleton } from "./HierarchyViewSkeleton";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 // ---------------------------------------------------------------------------
 // Dynamic imports — deferred bundles (FRM-01, FRM-02)
@@ -70,6 +71,7 @@ export function FormaProposalClient({
   templateName: string;
   folders: FormaFolder[];
 }) {
+  const reducedMotion = useReducedMotion();
   const d = useFormaDraft(templateId, folders);
   const [activeRoleId, setActiveRoleId] = useState<string>(d.draft.roles[0]?.id ?? "");
   const [dialog, setDialog] = useState<RoleDialogState>(null);
@@ -139,8 +141,10 @@ export function FormaProposalClient({
   return (
     // Outermost container — relative so FormaParticleAccent can abs-position within it
     <div className="relative flex h-full min-h-0 flex-col">
-      {/* Particle accent — z-0, absolute inset-0, pointer-events:none (FRM-02, PERF-05) */}
-      <FormaParticleAccent />
+      {/* Particle accent — z-0, absolute inset-0, pointer-events:none (FRM-02, PERF-05).
+          Skipped entirely under prefers-reduced-motion: it is a perpetual WebGL
+          drift loop, which the CSS clamp in globals.css cannot reach. */}
+      {!reducedMotion && <FormaParticleAccent />}
 
       {/* All editor content sits at z-[1] so it renders above the accent */}
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
@@ -151,7 +155,7 @@ export function FormaProposalClient({
         >
           <div className="flex min-w-0 items-center gap-2.5">
             <h1 className="text-sm font-semibold tracking-tight text-foreground">Forma Proposal</h1>
-            <span className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground lg:inline-flex">
+            <span className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground lg:inline-flex">
               <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500/80" />
               {templateName} · local draft · never synced to ACC
             </span>
@@ -291,7 +295,7 @@ export function FormaProposalClient({
               )}
 
               {/* Tier legend footer — chips stay flat (CONTEXT.md FRM-02) */}
-              <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 px-4 py-2 text-[10px] text-muted-foreground">
+              <footer className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/60 px-4 py-2 text-[11px] text-muted-foreground">
                 <span className="font-semibold uppercase tracking-wide">Tiers</span>
                 {FORMA_TIERS.map((t) => (
                   <span key={t} className="inline-flex items-center gap-1">

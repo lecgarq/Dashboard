@@ -222,7 +222,7 @@ export function ActivityByRolePieChart({
   const drillSlice = drill ? slices.find((s) => s.name === drill) : undefined;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <style>{PIE_CSS}</style>
 
       <EChart

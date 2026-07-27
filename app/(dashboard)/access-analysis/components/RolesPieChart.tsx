@@ -176,7 +176,10 @@ export function RolesPieChart({
       },
       {
         text: grandTotal.toLocaleString(),
-        subtext: "users",
+        // "memberships", never "users": a person on 6 projects contributes 6 to
+        // this total. The KPI tile above reads the same word, so the number the
+        // presenter says out loud matches the one the audience already read.
+        subtext: "memberships",
         left: "center",
         top: "45%",
         textAlign: "center",
@@ -188,7 +191,7 @@ export function RolesPieChart({
       trigger: "item",
       padding: [8, 12],
       extraCssText: "border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.35);",
-      formatter: `<div style='font-weight:700;color:${cTitle};margin-bottom:2px'>{b}</div><div style='color:${cSub}'>{c} users · <b style='color:${cTitle}'>{d}%</b></div>`,
+      formatter: `<div style='font-weight:700;color:${cTitle};margin-bottom:2px'>{b}</div><div style='color:${cSub}'>{c} memberships · <b style='color:${cTitle}'>{d}%</b></div>`,
     },
     legend: { show: false },
     series: [
@@ -243,7 +246,7 @@ export function RolesPieChart({
   const drillSlice = drill ? data.find((s) => s.name === drill) : undefined;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <style>{PIE_CSS}</style>
 
       <EChart
@@ -313,7 +316,7 @@ export function RolesPieChart({
                 title={
                   others
                     ? "Show every folded role"
-                    : `${s.name} — ${s.value.toLocaleString()} users (${fmtPct(s.value, grandTotal)}) · ${userCount} ${userCount === 1 ? "person" : "people"} — click to ${open ? "collapse" : "expand"}`
+                    : `${s.name} — ${s.value.toLocaleString()} memberships (${fmtPct(s.value, grandTotal)}) · ${userCount} ${userCount === 1 ? "person" : "people"} — click to ${open ? "collapse" : "expand"}`
                 }
                 className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent ${
                   open ? "bg-accent text-foreground" : "text-foreground/85"

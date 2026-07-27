@@ -98,7 +98,7 @@ export function ActivityTimelineChart({
             symbol: "pin",
             symbolSize: 46,
             itemStyle: { color: ACCENT },
-            label: { color: "#06121b", fontSize: 10, fontWeight: 700, formatter: () => "peak" },
+            label: { color: "#06121b", fontSize: 11, fontWeight: 700, formatter: () => "peak" },
             data: [{ name: "peak", coord: [peak.label, peak.count], value: peak.count }],
           },
         }
@@ -162,7 +162,7 @@ export function ActivityTimelineChart({
   };
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <div data-testid="timeline-headline" className="mb-2 text-sm text-muted-foreground">
         <b className="text-foreground">{total.toLocaleString()}</b> activities
         {peak ? <> · busiest month <b className="text-foreground">{peak.label}</b></> : null}
@@ -173,7 +173,7 @@ export function ActivityTimelineChart({
       {dataFloor && floorLabel ? (
         <p
           data-testid="timeline-data-floor"
-          className="mt-2 text-[10px] text-muted-foreground"
+          className="mt-2 text-[11px] text-muted-foreground"
         >
           Data available from {floorLabel}
         </p>

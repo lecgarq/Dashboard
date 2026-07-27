@@ -14,7 +14,7 @@ const TONE_CLASS: Record<StatusToneKind, string> = {
 function Tile({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
     <span className="flex flex-col gap-0.5" title={title}>
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">{label}</span>
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70">{label}</span>
       <span className="text-xs font-medium tabular-nums text-foreground/90">{value}</span>
     </span>
   );
@@ -53,8 +53,8 @@ export function IngestFreshnessPanel({ freshness }: { freshness: IngestFreshness
         title={freshness.endedAt ? formatAbsolute(freshness.endedAt) : undefined}
       />
       <span className="flex flex-col gap-0.5">
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Status</span>
-        <span className={`inline-flex w-fit items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${TONE_CLASS[tone.tone]}`}>
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Status</span>
+        <span className={`inline-flex w-fit items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium ${TONE_CLASS[tone.tone]}`}>
           {tone.label}
         </span>
       </span>
@@ -63,13 +63,13 @@ export function IngestFreshnessPanel({ freshness }: { freshness: IngestFreshness
       <Tile label="Activity rows this run" value={freshness.activityRowCount.toLocaleString()} />
       {stale && (
         <span
-          className="inline-flex w-fit items-center rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning"
+          className="inline-flex w-fit items-center rounded-full bg-warning/15 px-1.5 py-0.5 text-[11px] font-medium text-warning"
           title={`Latest run started ${Math.round(ageHours)}h ago`}
         >
           stale — last run {Math.round(ageHours)}h ago
         </span>
       )}
-      <span className="ml-auto text-[10px] text-muted-foreground/60">
+      <span className="ml-auto text-[11px] text-muted-foreground/60">
         Account-wide — not affected by the project filter.
       </span>
     </div>

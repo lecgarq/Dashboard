@@ -51,7 +51,7 @@ function TopAuthors({
   if (authors.length === 0) return null;
   return (
     <div className="mb-2 flex flex-wrap items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Top authors</span>
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Top authors</span>
       {authors.map((a) => {
         const clickable = !!(a.email && onAuthorClick);
         return (
@@ -66,7 +66,7 @@ function TopAuthors({
             }`}
           >
             <span className={`max-w-[10rem] truncate ${clickable ? "text-primary" : "text-foreground/80"}`}>{a.name}</span>
-            <span className="rounded-full bg-muted px-1 text-[10px] font-semibold tabular-nums text-muted-foreground">{a.count}</span>
+            <span className="rounded-full bg-muted px-1 text-[11px] font-semibold tabular-nums text-muted-foreground">{a.count}</span>
           </button>
         );
       })}
@@ -117,11 +117,11 @@ function ClashCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           {c.displayId != null && (
-            <span className="shrink-0 rounded bg-muted px-1 py-px text-[10px] font-medium tabular-nums text-muted-foreground">#{c.displayId}</span>
+            <span className="shrink-0 rounded bg-muted px-1 py-px text-[11px] font-medium tabular-nums text-muted-foreground">#{c.displayId}</span>
           )}
           <span className="truncate text-xs font-medium text-foreground" title={c.title}>{c.title}</span>
         </div>
-        <span className={`shrink-0 rounded px-1.5 py-px text-[10px] font-medium ${statusStyle(c.status)}`}>{c.status}</span>
+        <span className={`shrink-0 rounded px-1.5 py-px text-[11px] font-medium ${statusStyle(c.status)}`}>{c.status}</span>
       </div>
       {c.author && (
         <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -134,7 +134,7 @@ function ClashCard({
       {c.description && (
         <p className="mt-1 line-clamp-3 whitespace-pre-line text-[11px] leading-relaxed text-muted-foreground">{c.description}</p>
       )}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
         {c.validated && (
           <span className="inline-flex items-center gap-0.5 rounded bg-success/15 px-1 py-px font-medium text-success" title="Confirmed against the clash endpoint">
             ✓ Clash-verified
@@ -209,7 +209,7 @@ export function CoordinationByProject({
   const closedTotal = byProject.reduce((a, p) => a + p.closed, 0);
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <header className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold tabular-nums text-foreground">{total.toLocaleString()}</span>
@@ -281,7 +281,7 @@ export function CoordinationByProject({
                   <div className="border-t border-border bg-muted/20 px-2.5 py-2">
                     {cov && (
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Data coverage</span>
+                        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Data coverage</span>
                         <CoverageChips coverage={cov} />
                       </div>
                     )}
@@ -297,7 +297,7 @@ export function CoordinationByProject({
                             <ClashCard key={`${c.displayId ?? "x"}-${i}`} c={c} index={i} onAuthorClick={onAuthorClick} />
                           ))}
                           {list.length >= 500 && (
-                            <li className="pt-1 text-center text-[10px] text-muted-foreground/70">Showing the first 500 clashes.</li>
+                            <li className="pt-1 text-center text-[11px] text-muted-foreground/70">Showing the first 500 clashes.</li>
                           )}
                         </ul>
                       </>

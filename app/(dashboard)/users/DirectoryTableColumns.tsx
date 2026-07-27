@@ -47,7 +47,7 @@ function NameCell({ row }: { row: { original: DirectoryRow } }) {
       {isExternal && (
         <Badge
           variant="outline"
-          className="shrink-0 text-[10px] px-1.5 py-0 border-sky-500/40 text-sky-400"
+          className="shrink-0 text-[11px] px-1.5 py-0 border-sky-500/40 text-sky-400"
         >
           Ext
         </Badge>

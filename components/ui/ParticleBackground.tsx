@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useParticleZones } from "@/lib/client/particle-zones";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 const CFG = {
   density: 22000,
@@ -80,8 +81,13 @@ export default function ParticleBackground() {
   const { zones } = useParticleZones();
   const zonesRef = useRef(zones);
   zonesRef.current = zones;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    // A perpetual requestAnimationFrame field behind every dashboard route. The
+    // globals.css reduced-motion rule cannot reach a canvas draw loop, so the
+    // effect never starts (and tears down if the preference is switched on).
+    if (reducedMotion) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true })!;
@@ -172,7 +178,11 @@ export default function ParticleBackground() {
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("mouseout", onLeave);
     };
-  }, []);
+  }, [reducedMotion]);
+
+  // Nothing to paint and nothing to drive — drop the element too, so the
+  // preference is observable in the DOM rather than only in the frame budget.
+  if (reducedMotion) return null;
 
   return (
     <canvas

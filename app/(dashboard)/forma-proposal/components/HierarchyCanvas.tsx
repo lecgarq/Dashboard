@@ -39,7 +39,7 @@ function TierMenuItems({ current, onPick }: { current: FormaTier; onPick: (t: Fo
       </DropdownMenuItem>
       {TIER_GROUP_ORDER.map((g) => (
         <Fragment key={g}>
-          <DropdownMenuLabel className="px-2 pb-0.5 pt-1.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">{g}</DropdownMenuLabel>
+          <DropdownMenuLabel className="px-2 pb-0.5 pt-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/70">{g}</DropdownMenuLabel>
           {FORMA_TIERS.filter((t) => TIER_GROUP[t] === g).map((t) => (
             <DropdownMenuItem key={t} onSelect={() => onPick(t)} className="cursor-pointer gap-2.5">
               <span className="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-black/10" style={{ backgroundColor: TIER_COLOR[t] }} />
@@ -283,7 +283,7 @@ export function HierarchyCanvas({
           <DropdownMenuContent align="start" className="max-h-[60vh] w-56 overflow-y-auto">
             {groupOrder.map((g) => (
               <Fragment key={g}>
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
                   {g}
                 </DropdownMenuLabel>
                 {(rolesByGroup.get(g) ?? []).map((r) => (

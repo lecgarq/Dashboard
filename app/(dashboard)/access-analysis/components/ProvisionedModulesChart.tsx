@@ -104,7 +104,7 @@ export function ProvisionedModulesChart({ summary }: { summary: ProvisionedModul
   const hiddenDrillCount = drillRows.length - visibleDrillRows.length;
 
   return (
-    <div className="panel-elevated p-5">
+    <div>
       <EChart
         option={option}
         height={Math.max(220, summary.bars.length * 38 + 48)}

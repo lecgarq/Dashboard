@@ -426,12 +426,14 @@ export function RoleSimilarityGraph({
                     strokeOpacity={lit ? (touchesHover ? 0.85 : 0.55 * (0.4 + e.weight * 0.6)) : 0.05}
                     strokeLinecap="round"
                   />
+                  {/* Edge weight label. `/ v.k` cancels the zoom transform, so the
+                      literal IS the rendered size in screen px — 11px floor, DESIGN.md §3. */}
                   {touchesHover && (
                     <text
                       x={qx}
                       y={qy - 4 / v.k}
                       textAnchor="middle"
-                      fontSize={8.5 / v.k}
+                      fontSize={11 / v.k}
                       fontWeight={600}
                       fill={ink}
                       stroke={labelHalo}
@@ -499,7 +501,7 @@ export function RoleSimilarityGraph({
                     x={labelX}
                     y={labelY}
                     textAnchor="middle"
-                    fontSize={9.5 / v.k}
+                    fontSize={11 / v.k}
                     fontWeight={isHover ? 600 : 400}
                     fill={ink}
                     stroke={labelHalo}
@@ -583,7 +585,7 @@ export function RoleSimilarityGraph({
             </div>
             {hoveredNeighborRows.length > 0 && (
               <div className="mt-1.5 space-y-0.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Most similar</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Most similar</div>
                 {hoveredNeighborRows.map((r) => (
                   <div key={r.id} className="flex items-center justify-between gap-3">
                     <span className="truncate text-foreground/90">{r.name}</span>
@@ -593,7 +595,7 @@ export function RoleSimilarityGraph({
               </div>
             )}
             {onNodeClick && (
-              <div className="mt-1.5 text-[10px] text-primary/70">Click to open role details</div>
+              <div className="mt-1.5 text-[11px] text-primary/70">Click to open role details</div>
             )}
           </div>
         )}

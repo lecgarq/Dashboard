@@ -36,7 +36,7 @@ export function OfficeBadge({ code, label, className = "" }: { code: string; lab
   return (
     <span
       title={label && label !== code ? `${label} (${code})` : label ?? code}
-      className={`inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground ${className}`}
+      className={`inline-flex items-center gap-1 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground ${className}`}
     >
       <span
         aria-hidden
@@ -71,7 +71,7 @@ export function CoverageDots({ coverage }: { coverage?: ProjectCoverage }) {
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
         on ? "bg-success/15 text-success" : "bg-muted/60 text-muted-foreground/60 line-through decoration-1"
       }`}
     >
@@ -98,7 +98,7 @@ export function FullyCoveredBadge({ coverage }: { coverage?: ProjectCoverage }) 
   return (
     <span
       title={coverageTitle(coverage)}
-      className="inline-flex items-center gap-1 rounded-md bg-success/15 px-1.5 py-0.5 text-[10px] font-semibold text-success"
+      className="inline-flex items-center gap-1 rounded-md bg-success/15 px-1.5 py-0.5 text-[11px] font-semibold text-success"
     >
       <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
         <path d="M5 12.5 10 17.5 19 6.5" />

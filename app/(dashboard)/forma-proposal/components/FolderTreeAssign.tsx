@@ -63,7 +63,7 @@ function FolderRow({ id, depth, ctx }: { id: string; depth: number; ctx: RowCtx 
           {folder.name}
         </span>
         {eff.inherited && (
-          <span className="hidden shrink-0 rounded-full bg-muted px-1.5 text-[9px] uppercase tracking-wide text-muted-foreground/70 md:inline">
+          <span className="hidden shrink-0 rounded-full bg-muted px-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/70 md:inline">
             inherited
           </span>
         )}
