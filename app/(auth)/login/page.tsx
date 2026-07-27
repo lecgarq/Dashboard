@@ -4,7 +4,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowRight, KeyRound, Loader2, ShieldAlert, Sparkles, UserCircle2 } from "lucide-react";
+import { ArrowRight, KeyRound, Loader2, ShieldAlert, UserCircle2 } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
@@ -197,32 +197,16 @@ function LoginForm() {
   };
 
   return (
-    <AuthShell
-      eyebrow="Access portal"
-      title="Step back into the workspace with less friction."
-      description="Use your local credentials or connect Google and Autodesk to move from sign-in to delivery work quickly."
-      highlights={[
-        "One place for BIM coordination, QA reviews, and exam tracking.",
-        "OAuth and local credentials share a single polished sign-in flow.",
-        "Public auth host stays aligned for Google and Autodesk callbacks.",
-      ]}
-      statusLabel="Auth services online"
-    >
+    <AuthShell>
       <div className="surface-card animate-fade-up rounded-[2rem] border px-6 py-7 sm:px-8 sm:py-8">
         <div className="space-y-6">
-          <div className="space-y-3">
-            <div className="surface-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              Workspace access
-            </div>
-            <div className="space-y-2">
-              <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
-                Sign in
-              </h2>
-              <p className="text-sm leading-7 text-muted-foreground">
-                Credentials are still supported, but linked identity providers make the daily flow smoother.
-              </p>
-            </div>
+          <div className="space-y-2">
+            <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
+              Sign in
+            </h2>
+            <p className="text-sm leading-7 text-muted-foreground">
+              Use your local credentials, or sign in with Google or Autodesk.
+            </p>
           </div>
 
           {resetSuccess && <Notice tone="success">Password updated. Sign in with your new password.</Notice>}

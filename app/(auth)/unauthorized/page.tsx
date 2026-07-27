@@ -28,26 +28,13 @@ export default async function UnauthorizedPage({ searchParams }: UnauthorizedPag
       : "Your email is not on the approved list. Contact your BIM manager to request access.";
 
   return (
-    <AuthShell
-      eyebrow="Access state"
-      title="Keep access messages clear instead of abrupt."
-      description="Even restricted states should feel like part of the product, with context that tells users what to do next."
-      highlights={[
-        "Pending approval and configuration failures now feel intentional.",
-        "Users get a next step instead of a flat warning screen.",
-        "The tone matches the rest of the auth experience.",
-      ]}
-      statusLabel="Access controls active"
-    >
+    <AuthShell>
       <div className="surface-card animate-fadeIn space-y-6 rounded-[2rem] border px-6 py-8 text-center sm:px-8">
-        <div className="mx-auto flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.75rem] bg-amber-500/12 text-amber-700 dark:text-amber-300">
+        <div className="mx-auto flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.75rem] bg-warning/10 text-warning">
           {isPending ? <ShieldCheck className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
         </div>
 
         <div className="space-y-3">
-          <div className="surface-chip mx-auto inline-flex rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-700 dark:text-amber-300">
-            Access update
-          </div>
           <h1 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             {title}
           </h1>
